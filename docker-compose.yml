@@ -25,6 +25,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  dlq_replayer:
+    build: .
+    container_name: portfolio_dlq_replayer
+    command: ["python", "-m", "worker.dlq_replayer"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   observer:
     build: .
     container_name: portfolio_observer

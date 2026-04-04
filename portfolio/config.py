@@ -25,6 +25,16 @@ class Settings:
 
     notification_queue: str = os.getenv("NOTIFICATION_QUEUE", "message_notifications")
     ingress_queue: str = os.getenv("INGRESS_QUEUE", "message_ingress")
+    ingress_partitions: int = int(os.getenv("INGRESS_PARTITIONS", "8"))
+    ingress_dlq: str = os.getenv("INGRESS_DLQ", "message_ingress_dlq")
+    ingress_max_retries: int = int(os.getenv("INGRESS_MAX_RETRIES", "3"))
+    ingress_retry_base_delay_seconds: float = float(
+        os.getenv("INGRESS_RETRY_BASE_DELAY_SECONDS", "2")
+    )
+    room_seq_key_prefix: str = os.getenv("ROOM_SEQ_KEY_PREFIX", "room_seq")
+    dlq_replay_enabled: bool = os.getenv("DLQ_REPLAY_ENABLED", "true").lower() == "true"
+    dlq_replay_interval_seconds: float = float(os.getenv("DLQ_REPLAY_INTERVAL_SECONDS", "0.2"))
+    dlq_replay_batch_size: int = int(os.getenv("DLQ_REPLAY_BATCH_SIZE", "5"))
     observer_port: int = int(os.getenv("OBSERVER_PORT", "8081"))
     worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9101"))
 

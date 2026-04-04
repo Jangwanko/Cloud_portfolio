@@ -1,6 +1,8 @@
-from contextlib import contextmanager
+﻿from contextlib import contextmanager
 import time
 
+from alembic import command
+from alembic.config import Config
 from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
@@ -30,64 +32,6 @@ def classify_db_error(exc: Exception) -> str:
     return "unknown"
 
 
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS rooms (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS room_members (
-    room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY(room_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS messages (
-    id BIGSERIAL PRIMARY KEY,
-    room_id BIGINT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    body TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-ALTER TABLE messages ADD COLUMN IF NOT EXISTS request_id TEXT;
-
-CREATE INDEX IF NOT EXISTS idx_messages_room_id_id_desc ON messages(room_id, id DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_request_id_unique ON messages(request_id) WHERE request_id IS NOT NULL;
-
-CREATE TABLE IF NOT EXISTS read_receipts (
-    message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY(message_id, user_id)
-);
-
-CREATE TABLE IF NOT EXISTS idempotency_keys (
-    route TEXT NOT NULL,
-    idem_key TEXT NOT NULL,
-    response_json JSONB NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY(route, idem_key)
-);
-
-CREATE TABLE IF NOT EXISTS notification_attempts (
-    id BIGSERIAL PRIMARY KEY,
-    message_id BIGINT NOT NULL,
-    room_id BIGINT NOT NULL,
-    payload JSONB NOT NULL,
-    processed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-"""
-
-
 def _create_pool() -> SimpleConnectionPool:
     return SimpleConnectionPool(
         minconn=1,
@@ -97,6 +41,7 @@ def _create_pool() -> SimpleConnectionPool:
         dbname=settings.db_name,
         user=settings.db_user,
         password=settings.db_password,
+        connect_timeout=3,
     )
 
 
@@ -181,11 +126,21 @@ def get_cursor(conn):
         cur.close()
 
 
+def run_alembic_migrations() -> None:
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option(
+        "sqlalchemy.url",
+        (
+            f"postgresql+psycopg2://{settings.db_user}:{settings.db_password}"
+            f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
+        ),
+    )
+    command.upgrade(alembic_cfg, "head")
+
+
 def run_schema_migrations() -> None:
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(SCHEMA_SQL)
-        conn.commit()
+    # Backward compatibility for old imports.
+    run_alembic_migrations()
 
 
 def ping_db() -> bool:

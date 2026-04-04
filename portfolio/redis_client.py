@@ -15,15 +15,22 @@ def _create_client() -> redis.Redis:
         for node in settings.redis_sentinel_nodes.split(","):
             host, port = node.strip().split(":")
             sentinels.append((host, int(port)))
-        sentinel = Sentinel(sentinels, socket_timeout=1)
+        sentinel = Sentinel(
+            sentinels,
+            socket_timeout=1,
+            sentinel_kwargs={"socket_timeout": 1},
+        )
         return sentinel.master_for(
             settings.redis_sentinel_master,
             socket_timeout=1,
+            socket_connect_timeout=1,
             decode_responses=True,
         )
     return redis.Redis(
         host=settings.redis_host,
         port=settings.redis_port,
+        socket_connect_timeout=1,
+        socket_timeout=1,
         decode_responses=True,
     )
 
@@ -83,7 +90,10 @@ def ping_redis() -> bool:
 
 
 def update_queue_depth(queue_name: str) -> None:
+    global _redis_client
     try:
-        queue_depth.labels(queue=queue_name).set(get_redis().llen(queue_name))
+        if _redis_client is None:
+            return
+        queue_depth.labels(queue=queue_name).set(_redis_client.llen(queue_name))
     except Exception:
         health_status.labels(component="redis").set(0)

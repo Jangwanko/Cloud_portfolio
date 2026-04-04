@@ -5,8 +5,9 @@ from fastapi import FastAPI, Request
 
 from portfolio.api import router as api_router
 from portfolio.config import settings
-from portfolio.db import close_pool, init_pool_with_retry, ping_db, run_schema_migrations
+from portfolio.db import close_pool, init_pool_with_retry, ping_db, run_alembic_migrations
 from portfolio.metrics import api_request_latency_seconds, api_requests_total, metrics_response
+from portfolio.queues import ingress_partition_queues
 from portfolio.redis_client import init_redis_with_retry, ping_redis, update_queue_depth
 
 
@@ -14,7 +15,7 @@ from portfolio.redis_client import init_redis_with_retry, ping_redis, update_que
 async def lifespan(app: FastAPI):
     init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
     init_redis_with_retry(settings.startup_retries, settings.startup_retry_delay)
-    run_schema_migrations()
+    run_alembic_migrations()
     yield
     close_pool()
 
@@ -61,8 +62,11 @@ def root():
 
 @app.get("/metrics")
 def metrics():
-    update_queue_depth(settings.ingress_queue)
-    update_queue_depth(settings.notification_queue)
+    if ping_redis():
+        for queue in ingress_partition_queues():
+            update_queue_depth(queue)
+        update_queue_depth(settings.ingress_dlq)
+        update_queue_depth(settings.notification_queue)
     return metrics_response()
 
 
@@ -75,8 +79,11 @@ def health_live():
 def health_ready():
     db_ok = ping_db()
     redis_ok = ping_redis()
-    update_queue_depth(settings.ingress_queue)
-    update_queue_depth(settings.notification_queue)
+    if redis_ok:
+        for queue in ingress_partition_queues():
+            update_queue_depth(queue)
+        update_queue_depth(settings.ingress_dlq)
+        update_queue_depth(settings.notification_queue)
 
     if not db_ok:
         return {"status": "not_ready", "db": "down", "redis": "unknown"}

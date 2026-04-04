@@ -6,6 +6,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
+from portfolio.queues import ingress_partition_queue
 from portfolio.redis_client import get_redis, reconnect_redis, update_queue_depth
 from portfolio.schemas import (
     MessageCreate,
@@ -53,8 +54,14 @@ def _get_fallback_idem(route: str, idem_key: str) -> str | None:
 
 def _queue_ingress_message(job_payload: dict) -> None:
     redis_client = _redis_client()
-    redis_client.lpush(settings.ingress_queue, json.dumps(job_payload))
-    update_queue_depth(settings.ingress_queue)
+    queue_name = ingress_partition_queue(int(job_payload["room_id"]))
+    redis_client.lpush(queue_name, json.dumps(job_payload))
+    update_queue_depth(queue_name)
+
+
+def _next_room_seq(room_id: int) -> int:
+    key = f"{settings.room_seq_key_prefix}:{room_id}"
+    return int(_redis_client().incr(key))
 
 
 @router.post("/users")
@@ -115,46 +122,65 @@ def create_message(
     route = f"POST:/v1/rooms/{room_id}/messages"
 
     if x_idempotency_key:
-        existing_request_id = _get_fallback_idem(route, x_idempotency_key)
-        if existing_request_id:
-            existing_status = _load_request_status(existing_request_id)
-            if existing_status is not None:
-                return existing_status
-
-    request_id = str(uuid4())
-    queued_at = None
-
-    if x_idempotency_key:
-        inserted = _set_fallback_idem(route, x_idempotency_key, request_id)
-        if not inserted:
+        try:
             existing_request_id = _get_fallback_idem(route, x_idempotency_key)
             if existing_request_id:
                 existing_status = _load_request_status(existing_request_id)
                 if existing_status is not None:
                     return existing_status
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=503, detail="Redis unavailable") from exc
+
+    request_id = str(uuid4())
+    queued_at = None
+
+    if x_idempotency_key:
+        try:
+            inserted = _set_fallback_idem(route, x_idempotency_key, request_id)
+            if not inserted:
+                existing_request_id = _get_fallback_idem(route, x_idempotency_key)
+                if existing_request_id:
+                    existing_status = _load_request_status(existing_request_id)
+                    if existing_status is not None:
+                        return existing_status
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=503, detail="Redis unavailable") from exc
 
     queued_at = datetime.now(timezone.utc).isoformat()
+    room_seq = None
+    try:
+        room_seq = _next_room_seq(room_id)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Redis unavailable") from exc
+
     accepted_response = {
         "request_id": request_id,
         "status": "accepted",
         "persistence": "queued",
         "room_id": room_id,
+        "room_seq": room_seq,
         "user_id": payload.user_id,
         "body": payload.body,
         "queued_at": queued_at,
     }
-    _store_request_status(request_id, accepted_response)
-    _queue_ingress_message(
-        {
-            "request_id": request_id,
-            "route": route,
-            "room_id": room_id,
-            "user_id": payload.user_id,
-            "body": payload.body,
-            "x_idempotency_key": x_idempotency_key,
-            "queued_at": queued_at,
-        }
-    )
+    try:
+        _store_request_status(request_id, accepted_response)
+        _queue_ingress_message(
+            {
+                "request_id": request_id,
+                "route": route,
+                "room_id": room_id,
+                "user_id": payload.user_id,
+                "body": payload.body,
+                "room_seq": room_seq,
+                "x_idempotency_key": x_idempotency_key,
+                "queued_at": queued_at,
+                "retry_count": 0,
+                "next_retry_at": None,
+            }
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Redis unavailable") from exc
     return accepted_response
 
 
@@ -166,6 +192,24 @@ def get_message_request_status(request_id: str):
     return status
 
 
+@router.get("/dlq/ingress")
+def get_ingress_dlq(limit: int = Query(default=20, ge=1, le=200)):
+    redis_client = _redis_client()
+    raw_items = redis_client.lrange(settings.ingress_dlq, 0, limit - 1)
+    items = []
+    for raw in raw_items:
+        try:
+            items.append(json.loads(raw))
+        except Exception:
+            items.append({"raw": raw})
+    update_queue_depth(settings.ingress_dlq)
+    return {
+        "queue": settings.ingress_dlq,
+        "count": len(items),
+        "items": items,
+    }
+
+
 @router.get("/rooms/{room_id}/messages")
 def list_messages(
     room_id: int,
@@ -173,7 +217,7 @@ def list_messages(
     before_id: int | None = Query(default=None),
 ):
     sql = """
-        SELECT id, request_id, room_id, user_id, body, created_at
+        SELECT id, request_id, room_id, room_seq, user_id, body, created_at
         FROM messages
         WHERE room_id=%s
     """
@@ -198,6 +242,7 @@ def list_messages(
                 "id": row["id"],
                 "request_id": row["request_id"],
                 "room_id": row["room_id"],
+                "room_seq": row["room_seq"],
                 "user_id": row["user_id"],
                 "body": row["body"],
                 "created_at": row["created_at"].isoformat(),
