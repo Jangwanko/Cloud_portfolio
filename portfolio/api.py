@@ -1,10 +1,12 @@
-﻿import json
+import json
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Header, HTTPException, Query
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
-from portfolio.redis_client import get_redis
+from portfolio.redis_client import get_redis, reconnect_redis, update_queue_depth
 from portfolio.schemas import (
     MessageCreate,
     ReadReceiptCreate,
@@ -13,6 +15,46 @@ from portfolio.schemas import (
 )
 
 router = APIRouter(prefix="/v1", tags=["messaging"])
+
+
+def _request_status_key(request_id: str) -> str:
+    return f"message_request_status:{request_id}"
+
+
+def _fallback_idem_key(route: str, idem_key: str) -> str:
+    return f"message_request_idem:{route}:{idem_key}"
+
+
+def _redis_client():
+    try:
+        return get_redis()
+    except Exception:
+        return reconnect_redis()
+
+
+def _store_request_status(request_id: str, payload: dict) -> None:
+    _redis_client().set(_request_status_key(request_id), json.dumps(payload))
+
+
+def _load_request_status(request_id: str) -> dict | None:
+    raw = _redis_client().get(_request_status_key(request_id))
+    if not raw:
+        return None
+    return json.loads(raw)
+
+
+def _set_fallback_idem(route: str, idem_key: str, request_id: str) -> bool:
+    return bool(_redis_client().set(_fallback_idem_key(route, idem_key), request_id, nx=True))
+
+
+def _get_fallback_idem(route: str, idem_key: str) -> str | None:
+    return _redis_client().get(_fallback_idem_key(route, idem_key))
+
+
+def _queue_ingress_message(job_payload: dict) -> None:
+    redis_client = _redis_client()
+    redis_client.lpush(settings.ingress_queue, json.dumps(job_payload))
+    update_queue_depth(settings.ingress_queue)
 
 
 @router.post("/users")
@@ -72,62 +114,56 @@ def create_message(
 ):
     route = f"POST:/v1/rooms/{room_id}/messages"
 
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            if x_idempotency_key:
-                cur.execute(
-                    "SELECT response_json FROM idempotency_keys WHERE route=%s AND idem_key=%s",
-                    (route, x_idempotency_key),
-                )
-                cached = cur.fetchone()
-                if cached:
-                    return cached["response_json"]
+    if x_idempotency_key:
+        existing_request_id = _get_fallback_idem(route, x_idempotency_key)
+        if existing_request_id:
+            existing_status = _load_request_status(existing_request_id)
+            if existing_status is not None:
+                return existing_status
 
-            cur.execute("SELECT id FROM rooms WHERE id=%s", (room_id,))
-            if cur.fetchone() is None:
-                raise HTTPException(status_code=404, detail="Room not found")
+    request_id = str(uuid4())
+    queued_at = None
 
-            cur.execute("SELECT id FROM users WHERE id=%s", (payload.user_id,))
-            if cur.fetchone() is None:
-                raise HTTPException(status_code=404, detail="User not found")
+    if x_idempotency_key:
+        inserted = _set_fallback_idem(route, x_idempotency_key, request_id)
+        if not inserted:
+            existing_request_id = _get_fallback_idem(route, x_idempotency_key)
+            if existing_request_id:
+                existing_status = _load_request_status(existing_request_id)
+                if existing_status is not None:
+                    return existing_status
 
-            cur.execute(
-                """
-                INSERT INTO messages (room_id, user_id, body)
-                VALUES (%s, %s, %s)
-                RETURNING id, room_id, user_id, body, created_at
-                """,
-                (room_id, payload.user_id, payload.body),
-            )
-            message = cur.fetchone()
-
-            response = {
-                "id": message["id"],
-                "room_id": message["room_id"],
-                "user_id": message["user_id"],
-                "body": message["body"],
-                "created_at": message["created_at"].isoformat(),
-            }
-
-            if x_idempotency_key:
-                cur.execute(
-                    """
-                    INSERT INTO idempotency_keys (route, idem_key, response_json)
-                    VALUES (%s, %s, %s::jsonb)
-                    """,
-                    (route, x_idempotency_key, json.dumps(response)),
-                )
-
-            conn.commit()
-
-    job_payload = {
-        "message_id": response["id"],
+    queued_at = datetime.now(timezone.utc).isoformat()
+    accepted_response = {
+        "request_id": request_id,
+        "status": "accepted",
+        "persistence": "queued",
         "room_id": room_id,
-        "body_preview": payload.body[:30],
+        "user_id": payload.user_id,
+        "body": payload.body,
+        "queued_at": queued_at,
     }
-    get_redis().lpush(settings.notification_queue, json.dumps(job_payload))
+    _store_request_status(request_id, accepted_response)
+    _queue_ingress_message(
+        {
+            "request_id": request_id,
+            "route": route,
+            "room_id": room_id,
+            "user_id": payload.user_id,
+            "body": payload.body,
+            "x_idempotency_key": x_idempotency_key,
+            "queued_at": queued_at,
+        }
+    )
+    return accepted_response
 
-    return response
+
+@router.get("/message-requests/{request_id}")
+def get_message_request_status(request_id: str):
+    status = _load_request_status(request_id)
+    if status is None:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return status
 
 
 @router.get("/rooms/{room_id}/messages")
@@ -137,7 +173,7 @@ def list_messages(
     before_id: int | None = Query(default=None),
 ):
     sql = """
-        SELECT id, room_id, user_id, body, created_at
+        SELECT id, request_id, room_id, user_id, body, created_at
         FROM messages
         WHERE room_id=%s
     """
@@ -160,6 +196,7 @@ def list_messages(
         result.append(
             {
                 "id": row["id"],
+                "request_id": row["request_id"],
                 "room_id": row["room_id"],
                 "user_id": row["user_id"],
                 "body": row["body"],

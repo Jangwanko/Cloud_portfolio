@@ -1,4 +1,4 @@
-﻿import os
+import os
 from dataclasses import dataclass
 
 
@@ -24,7 +24,9 @@ class Settings:
     startup_retry_delay: float = float(os.getenv("STARTUP_RETRY_DELAY", "2"))
 
     notification_queue: str = os.getenv("NOTIFICATION_QUEUE", "message_notifications")
+    ingress_queue: str = os.getenv("INGRESS_QUEUE", "message_ingress")
     observer_port: int = int(os.getenv("OBSERVER_PORT", "8081"))
+    worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9101"))
 
 
 settings = Settings()

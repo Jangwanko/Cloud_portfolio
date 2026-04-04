@@ -1,148 +1,732 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Messaging Portfolio UI</title>
+  <title>Messaging Systems Portfolio</title>
   <style>
-    :root { --bg:#0b1020; --card:#131a2a; --line:#243049; --text:#e6ecff; --muted:#8da1c4; }
+    :root {
+      --bg: #07111f;
+      --bg-soft: #0d1b2e;
+      --card: rgba(11, 24, 43, 0.82);
+      --line: rgba(158, 186, 228, 0.18);
+      --text: #eef4ff;
+      --muted: #9db1d0;
+      --accent: #7be0b8;
+      --accent-2: #71b7ff;
+      --accent-3: #ffd280;
+      --danger: #ff8d8d;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+
     * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; color:var(--text); background: radial-gradient(circle at top,#1a2650,#0b1020 45%); }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
-    h1 { margin: 0 0 6px; }
-    .meta { color: var(--muted); margin-bottom: 16px; }
-    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-    .card { background: var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
-    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; }
-    input, textarea, button { width:100%; border-radius:8px; border:1px solid var(--line); background:#0f1525; color:var(--text); padding:10px; }
-    textarea { min-height:80px; resize:vertical; }
-    button { cursor:pointer; background: linear-gradient(135deg,#235dff,#36d1dc); border:none; font-weight:600; }
-    button:hover { filter:brightness(1.05); }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
-    .out { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size:12px; color:#b8c4e6; background:#0b1220; border:1px solid var(--line); border-radius:8px; padding:10px; min-height:140px; }
-    .links a { color:#9bc2ff; margin-right:10px; }
-    @media (max-width:900px) { .grid { grid-template-columns: 1fr; } }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(113, 183, 255, 0.22), transparent 32%),
+        radial-gradient(circle at top right, rgba(123, 224, 184, 0.16), transparent 26%),
+        linear-gradient(180deg, #08101c 0%, #091525 40%, #06101d 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .shell {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(11, 24, 43, 0.95), rgba(8, 18, 33, 0.86)),
+        linear-gradient(120deg, rgba(113, 183, 255, 0.08), rgba(123, 224, 184, 0.05));
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -45% 45%;
+      height: 260px;
+      background: radial-gradient(circle, rgba(123, 224, 184, 0.22), transparent 60%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(123, 224, 184, 0.24);
+      color: var(--accent);
+      background: rgba(123, 224, 184, 0.08);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 22px;
+      margin-top: 18px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      max-width: 760px;
+    }
+
+    .lead {
+      margin: 18px 0 0;
+      max-width: 740px;
+      color: #d7e4fb;
+      font-size: 17px;
+      line-height: 1.75;
+    }
+
+    .hero-points {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .point {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .point strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .point span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .stats {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stat-card {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      margin-top: 10px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-copy {
+      margin-top: 8px;
+      color: #c3d4f1;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .shortcut-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .chip-link {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.04);
+      color: #d9e7ff;
+      font-size: 14px;
+    }
+
+    .chip-link:hover { border-color: rgba(113, 183, 255, 0.5); }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .card.pad { padding: 22px; }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .flow {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .badge {
+      min-width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      font-weight: 700;
+      color: #04101b;
+      background: linear-gradient(135deg, var(--accent), #dfffe6);
+    }
+
+    .flow-step strong {
+      display: block;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .flow-step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .list-item {
+      padding: 14px 16px;
+      border-left: 3px solid var(--accent-2);
+      border-radius: 0 16px 16px 0;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .list-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .list-item span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .warning { border-left-color: var(--accent-3); }
+    .danger { border-left-color: var(--danger); }
+
+    .demo-wrap {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .demo-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .demo-card h3 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(158, 186, 228, 0.18);
+      background: rgba(7, 17, 31, 0.9);
+      color: var(--text);
+      padding: 12px 14px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    button {
+      margin-top: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      border: none;
+      color: #04111d;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      transition: transform 160ms ease, box-shadow 160ms ease;
+      box-shadow: 0 16px 30px rgba(113, 183, 255, 0.18);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 34px rgba(113, 183, 255, 0.24);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .console {
+      padding: 20px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(4, 12, 22, 0.98), rgba(5, 14, 24, 0.96));
+    }
+
+    .console-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .console-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .console-hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .out {
+      min-height: 680px;
+      max-height: 680px;
+      overflow: auto;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(158, 186, 228, 0.12);
+      background:
+        linear-gradient(180deg, rgba(12, 24, 41, 0.72), rgba(5, 13, 23, 0.94));
+      color: #c9f9e6;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .section-grid,
+      .demo-wrap {
+        grid-template-columns: 1fr;
+      }
+
+      .out {
+        min-height: 360px;
+        max-height: 360px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 1200px); }
+      .hero { padding: 20px; border-radius: 24px; }
+      .hero-points,
+      .demo-grid,
+      .row {
+        grid-template-columns: 1fr;
+      }
+      h1 { font-size: 34px; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Messaging Portfolio</h1>
-    <div class="meta">메시지 API 데모 UI (면접 시나리오용)</div>
-    <div class="links meta">
-      <a href="/api/docs" target="_blank">Swagger</a>
-      <a href="/observer/" target="_blank">Observer</a>
-      <a href="/api/health/ready" target="_blank">Readiness</a>
-    </div>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Messaging Platform Portfolio</div>
+      <div class="hero-grid">
+        <div>
+          <h1>대용량 메시징 조직에 맞춘 서버 · 클라우드 · DevOps 포트폴리오</h1>
+          <p class="lead">
+            이 데모는 단순한 채팅 CRUD가 아니라, 메시지 API와 비동기 worker를 분리하고,
+            중복 방지와 운영 관측까지 함께 설명할 수 있도록 구성한 메시징 시스템 포트폴리오입니다.
+          </p>
 
-    <div class="grid">
-      <section class="card">
-        <h3>1) 사용자 생성</h3>
-        <label>username</label><input id="username" value="alice" />
-        <button onclick="createUser()">Create User</button>
-      </section>
+          <div class="hero-points">
+            <div class="point">
+              <strong>API / Worker 분리</strong>
+              <span>사용자 응답 경로와 후속 처리를 나눠 운영 확장성을 고려했습니다.</span>
+            </div>
+            <div class="point">
+              <strong>중복 요청 방지</strong>
+              <span>`X-Idempotency-Key`로 모바일 재시도 상황을 설명할 수 있습니다.</span>
+            </div>
+            <div class="point">
+              <strong>운영 시야</strong>
+              <span>Observer에서 send와 worker 처리 타임라인을 함께 볼 수 있습니다.</span>
+            </div>
+            <div class="point">
+              <strong>HA 확장 경로</strong>
+              <span>Kubernetes에서 PostgreSQL HA와 Redis Sentinel로 확장 가능합니다.</span>
+            </div>
+          </div>
 
-      <section class="card">
-        <h3>2) 방 생성</h3>
-        <label>room name</label><input id="roomname" value="general" />
-        <label>member ids (comma)</label><input id="memberids" value="1,2" />
-        <button onclick="createRoom()">Create Room</button>
-      </section>
-
-      <section class="card">
-        <h3>3) 메시지 전송</h3>
-        <div class="row">
-          <div><label>room id</label><input id="msgRoomId" value="1" /></div>
-          <div><label>user id</label><input id="msgUserId" value="1" /></div>
+          <div class="shortcut-row">
+            <a class="chip-link" href="/api/docs" target="_blank" rel="noreferrer">Swagger</a>
+            <a class="chip-link" href="/observer/" target="_blank" rel="noreferrer">Observer</a>
+            <a class="chip-link" href="/api/health/ready" target="_blank" rel="noreferrer">Readiness</a>
+          </div>
         </div>
-        <label>idempotency key</label><input id="idem" value="demo-msg-001" />
-        <label>body</label><textarea id="msgBody">안녕하세요. 실시간 메시지 전송 테스트입니다.</textarea>
-        <button onclick="sendMessage()">Send Message</button>
-      </section>
 
-      <section class="card">
-        <h3>4) 메시지 조회</h3>
-        <label>room id</label><input id="listRoomId" value="1" />
-        <button onclick="listMessages()">List Messages</button>
-      </section>
-
-      <section class="card">
-        <h3>5) 읽음 처리</h3>
-        <div class="row">
-          <div><label>message id</label><input id="readMessageId" value="1" /></div>
-          <div><label>user id</label><input id="readUserId" value="2" /></div>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Target Role</div>
+            <div class="stat-value">Backend / Cloud / DevOps</div>
+            <div class="stat-copy">메시지 흐름 구현과 운영 설계를 함께 보여주는 포트폴리오라는 점이 핵심입니다.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Core Stack</div>
+            <div class="stat-value">FastAPI + Postgres + Redis</div>
+            <div class="stat-copy">간단한 기술 나열이 아니라, 저장 경로와 비동기 처리 경계를 설명하는 데 초점을 둡니다.</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Interview Story</div>
+            <div class="stat-value">Send -> Queue -> Worker -> Observe</div>
+            <div class="stat-copy">실행 가능한 데모와 운영 시나리오를 하나의 화면에서 따라갈 수 있습니다.</div>
+          </div>
         </div>
-        <button onclick="markRead()">Mark As Read</button>
-      </section>
+      </div>
+    </section>
 
-      <section class="card">
-        <h3>6) 안 읽은 개수</h3>
-        <div class="row">
-          <div><label>room id</label><input id="unreadRoomId" value="1" /></div>
-          <div><label>user id</label><input id="unreadUserId" value="2" /></div>
+    <section class="section-grid">
+      <article class="card pad">
+        <h2 class="section-title">메시지 흐름</h2>
+        <p class="section-copy">면접 시에는 아래 순서대로 설명하면 구조적 사고가 더 잘 드러납니다.</p>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="badge">1</div>
+            <div>
+              <strong>API가 메시지를 저장합니다.</strong>
+              <span>메시지는 PostgreSQL에 기록되고, 사용자 응답 경로는 우선 빠르게 끝냅니다.</span>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">2</div>
+            <div>
+              <strong>후속 작업은 Redis queue로 분리합니다.</strong>
+              <span>알림, fan-out, 비동기 후처리는 worker로 넘겨 API와 결합도를 낮춥니다.</span>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">3</div>
+            <div>
+              <strong>Worker가 처리 이력을 남깁니다.</strong>
+              <span>`notification_attempts`에 기록해 "전송"과 "처리"를 구분해서 볼 수 있습니다.</span>
+            </div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">4</div>
+            <div>
+              <strong>Observer로 운영 흐름을 검증합니다.</strong>
+              <span>기능 구현을 넘어서 운영 관점까지 보여주는 것이 이 포트폴리오의 차별점입니다.</span>
+            </div>
+          </div>
         </div>
-        <button onclick="getUnread()">Get Unread Count</button>
-      </section>
-    </div>
+      </article>
 
-    <section class="card" style="margin-top:12px;">
-      <h3>Output</h3>
-      <div id="out" class="out"></div>
+      <article class="card pad">
+        <h2 class="section-title">현재 강점과 다음 단계</h2>
+        <p class="section-copy">좋은 포트폴리오는 완성형보다 방향성이 분명해야 합니다.</p>
+        <div class="list">
+          <div class="list-item">
+            <strong>강점: 면접 시연이 빠릅니다.</strong>
+            <span>`docker compose`로 바로 실행되고, API와 관측 화면을 함께 보여줄 수 있습니다.</span>
+          </div>
+          <div class="list-item">
+            <strong>강점: 운영 친화적인 설명이 가능합니다.</strong>
+            <span>idempotency, readiness, worker 분리, Redis Sentinel 확장 포인트를 자연스럽게 연결할 수 있습니다.</span>
+          </div>
+          <div class="list-item warning">
+            <strong>다음 단계: 메트릭과 장애 대응을 보강해야 합니다.</strong>
+            <span>처리량, queue 지연, 재시도, DLQ, 실패율이 추가되면 포트폴리오 무게감이 크게 올라갑니다.</span>
+          </div>
+          <div class="list-item danger">
+            <strong>현재 한계: 인증과 실시간 push는 아직 없습니다.</strong>
+            <span>이 부분은 숨기기보다 "왜 아직 넣지 않았고 다음에 어떻게 확장할지"를 명확히 말하는 편이 좋습니다.</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="demo-wrap">
+      <section class="card pad">
+        <h2 class="section-title">Interactive Demo</h2>
+        <p class="section-copy">아래 폼으로 실제 메시지 생성, 조회, 읽음 처리, 안 읽은 수 계산을 바로 확인할 수 있습니다.</p>
+        <div class="demo-grid">
+          <section class="demo-card">
+            <h3>1. 사용자 생성</h3>
+            <label>Username</label>
+            <input id="username" value="alice" />
+            <button onclick="createUser()">Create User</button>
+          </section>
+
+          <section class="demo-card">
+            <h3>2. 방 생성</h3>
+            <label>Room Name</label>
+            <input id="roomname" value="general" />
+            <label>Member IDs</label>
+            <input id="memberids" value="1,2" />
+            <button onclick="createRoom()">Create Room</button>
+          </section>
+
+          <section class="demo-card">
+            <h3>3. 메시지 전송</h3>
+            <div class="row">
+              <div>
+                <label>Room ID</label>
+                <input id="msgRoomId" value="1" />
+              </div>
+              <div>
+                <label>User ID</label>
+                <input id="msgUserId" value="1" />
+              </div>
+            </div>
+            <label>Idempotency Key</label>
+            <input id="idem" value="demo-msg-001" />
+            <label>Message Body</label>
+            <textarea id="msgBody">안녕하세요. 메시지 API와 비동기 worker 처리 흐름을 확인하는 데모입니다.</textarea>
+            <button onclick="sendMessage()">Send Message</button>
+          </section>
+
+          <section class="demo-card">
+            <h3>4. 메시지 조회</h3>
+            <label>Room ID</label>
+            <input id="listRoomId" value="1" />
+            <button onclick="listMessages()">List Messages</button>
+          </section>
+
+          <section class="demo-card">
+            <h3>5. 읽음 처리</h3>
+            <div class="row">
+              <div>
+                <label>Message ID</label>
+                <input id="readMessageId" value="1" />
+              </div>
+              <div>
+                <label>User ID</label>
+                <input id="readUserId" value="2" />
+              </div>
+            </div>
+            <button onclick="markRead()">Mark As Read</button>
+          </section>
+
+          <section class="demo-card">
+            <h3>6. 안 읽은 메시지 수</h3>
+            <div class="row">
+              <div>
+                <label>Room ID</label>
+                <input id="unreadRoomId" value="1" />
+              </div>
+              <div>
+                <label>User ID</label>
+                <input id="unreadUserId" value="2" />
+              </div>
+            </div>
+            <button onclick="getUnread()">Get Unread Count</button>
+          </section>
+        </div>
+      </section>
+
+      <aside class="console">
+        <div class="console-header">
+          <div>
+            <div class="console-title">Demo Console</div>
+            <div class="console-hint">API 호출 결과가 최근 순서대로 쌓입니다.</div>
+          </div>
+        </div>
+        <div id="out" class="out"></div>
+        <div class="footer-note">
+          추천 데모 순서: `Create User` 2회 -> `Create Room` -> `Send Message` -> `Observer` 확인 -> `Mark As Read` -> `Get Unread Count`
+        </div>
+      </aside>
     </section>
   </div>
 
-<script>
-const out = document.getElementById('out');
-function print(title, data) {
-  out.textContent = `[${new Date().toLocaleTimeString()}] ${title}\n` + JSON.stringify(data, null, 2) + "\n\n" + out.textContent;
-}
-async function api(path, options = {}) {
-  const res = await fetch('/api' + path, options);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw data;
-  return data;
-}
-async function createUser() {
-  try {
-    const username = document.getElementById('username').value;
-    print('create user', await api('/v1/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username }) }));
-  } catch (e) { print('error', e); }
-}
-async function createRoom() {
-  try {
-    const name = document.getElementById('roomname').value;
-    const member_ids = document.getElementById('memberids').value.split(',').map(v => Number(v.trim())).filter(Boolean);
-    print('create room', await api('/v1/rooms', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, member_ids }) }));
-  } catch (e) { print('error', e); }
-}
-async function sendMessage() {
-  try {
-    const roomId = document.getElementById('msgRoomId').value;
-    const user_id = Number(document.getElementById('msgUserId').value);
-    const body = document.getElementById('msgBody').value;
-    const key = document.getElementById('idem').value;
-    print('send message', await api(`/v1/rooms/${roomId}/messages`, { method:'POST', headers:{'Content-Type':'application/json','X-Idempotency-Key':key}, body: JSON.stringify({ user_id, body }) }));
-  } catch (e) { print('error', e); }
-}
-async function listMessages() {
-  try {
-    const roomId = document.getElementById('listRoomId').value;
-    print('list messages', await api(`/v1/rooms/${roomId}/messages`));
-  } catch (e) { print('error', e); }
-}
-async function markRead() {
-  try {
-    const mid = document.getElementById('readMessageId').value;
-    const user_id = Number(document.getElementById('readUserId').value);
-    print('mark read', await api(`/v1/messages/${mid}/read`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id }) }));
-  } catch (e) { print('error', e); }
-}
-async function getUnread() {
-  try {
-    const roomId = document.getElementById('unreadRoomId').value;
-    const userId = document.getElementById('unreadUserId').value;
-    print('unread count', await api(`/v1/rooms/${roomId}/unread-count/${userId}`));
-  } catch (e) { print('error', e); }
-}
-</script>
+  <script>
+    const out = document.getElementById("out");
+
+    function print(title, data) {
+      out.textContent = `[${new Date().toLocaleTimeString()}] ${title}\n${JSON.stringify(data, null, 2)}\n\n${out.textContent}`;
+    }
+
+    async function api(path, options = {}) {
+      const res = await fetch("/api" + path, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw data;
+      }
+      return data;
+    }
+
+    async function createUser() {
+      try {
+        const username = document.getElementById("username").value;
+        print("create user", await api("/v1/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username })
+        }));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+
+    async function createRoom() {
+      try {
+        const name = document.getElementById("roomname").value;
+        const member_ids = document.getElementById("memberids").value
+          .split(",")
+          .map((v) => Number(v.trim()))
+          .filter(Boolean);
+        print("create room", await api("/v1/rooms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, member_ids })
+        }));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+
+    async function sendMessage() {
+      try {
+        const roomId = document.getElementById("msgRoomId").value;
+        const user_id = Number(document.getElementById("msgUserId").value);
+        const body = document.getElementById("msgBody").value;
+        const key = document.getElementById("idem").value;
+        print("send message", await api(`/v1/rooms/${roomId}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": key
+          },
+          body: JSON.stringify({ user_id, body })
+        }));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+
+    async function listMessages() {
+      try {
+        const roomId = document.getElementById("listRoomId").value;
+        print("list messages", await api(`/v1/rooms/${roomId}/messages`));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+
+    async function markRead() {
+      try {
+        const mid = document.getElementById("readMessageId").value;
+        const user_id = Number(document.getElementById("readUserId").value);
+        print("mark read", await api(`/v1/messages/${mid}/read`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id })
+        }));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+
+    async function getUnread() {
+      try {
+        const roomId = document.getElementById("unreadRoomId").value;
+        const userId = document.getElementById("unreadUserId").value;
+        print("unread count", await api(`/v1/rooms/${roomId}/unread-count/${userId}`));
+      } catch (e) {
+        print("error", e);
+      }
+    }
+  </script>
 </body>
 </html>

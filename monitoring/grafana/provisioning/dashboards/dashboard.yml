@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Messaging Portfolio
+    orgId: 1
+    folder: Messaging Portfolio
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
