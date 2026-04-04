@@ -1,0 +1,148 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Messaging Portfolio UI</title>
+  <style>
+    :root { --bg:#0b1020; --card:#131a2a; --line:#243049; --text:#e6ecff; --muted:#8da1c4; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; color:var(--text); background: radial-gradient(circle at top,#1a2650,#0b1020 45%); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 6px; }
+    .meta { color: var(--muted); margin-bottom: 16px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .card { background: var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; }
+    input, textarea, button { width:100%; border-radius:8px; border:1px solid var(--line); background:#0f1525; color:var(--text); padding:10px; }
+    textarea { min-height:80px; resize:vertical; }
+    button { cursor:pointer; background: linear-gradient(135deg,#235dff,#36d1dc); border:none; font-weight:600; }
+    button:hover { filter:brightness(1.05); }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+    .out { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size:12px; color:#b8c4e6; background:#0b1220; border:1px solid var(--line); border-radius:8px; padding:10px; min-height:140px; }
+    .links a { color:#9bc2ff; margin-right:10px; }
+    @media (max-width:900px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Messaging Portfolio</h1>
+    <div class="meta">메시지 API 데모 UI (면접 시나리오용)</div>
+    <div class="links meta">
+      <a href="/api/docs" target="_blank">Swagger</a>
+      <a href="/observer/" target="_blank">Observer</a>
+      <a href="/api/health/ready" target="_blank">Readiness</a>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h3>1) 사용자 생성</h3>
+        <label>username</label><input id="username" value="alice" />
+        <button onclick="createUser()">Create User</button>
+      </section>
+
+      <section class="card">
+        <h3>2) 방 생성</h3>
+        <label>room name</label><input id="roomname" value="general" />
+        <label>member ids (comma)</label><input id="memberids" value="1,2" />
+        <button onclick="createRoom()">Create Room</button>
+      </section>
+
+      <section class="card">
+        <h3>3) 메시지 전송</h3>
+        <div class="row">
+          <div><label>room id</label><input id="msgRoomId" value="1" /></div>
+          <div><label>user id</label><input id="msgUserId" value="1" /></div>
+        </div>
+        <label>idempotency key</label><input id="idem" value="demo-msg-001" />
+        <label>body</label><textarea id="msgBody">안녕하세요. 실시간 메시지 전송 테스트입니다.</textarea>
+        <button onclick="sendMessage()">Send Message</button>
+      </section>
+
+      <section class="card">
+        <h3>4) 메시지 조회</h3>
+        <label>room id</label><input id="listRoomId" value="1" />
+        <button onclick="listMessages()">List Messages</button>
+      </section>
+
+      <section class="card">
+        <h3>5) 읽음 처리</h3>
+        <div class="row">
+          <div><label>message id</label><input id="readMessageId" value="1" /></div>
+          <div><label>user id</label><input id="readUserId" value="2" /></div>
+        </div>
+        <button onclick="markRead()">Mark As Read</button>
+      </section>
+
+      <section class="card">
+        <h3>6) 안 읽은 개수</h3>
+        <div class="row">
+          <div><label>room id</label><input id="unreadRoomId" value="1" /></div>
+          <div><label>user id</label><input id="unreadUserId" value="2" /></div>
+        </div>
+        <button onclick="getUnread()">Get Unread Count</button>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:12px;">
+      <h3>Output</h3>
+      <div id="out" class="out"></div>
+    </section>
+  </div>
+
+<script>
+const out = document.getElementById('out');
+function print(title, data) {
+  out.textContent = `[${new Date().toLocaleTimeString()}] ${title}\n` + JSON.stringify(data, null, 2) + "\n\n" + out.textContent;
+}
+async function api(path, options = {}) {
+  const res = await fetch('/api' + path, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw data;
+  return data;
+}
+async function createUser() {
+  try {
+    const username = document.getElementById('username').value;
+    print('create user', await api('/v1/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username }) }));
+  } catch (e) { print('error', e); }
+}
+async function createRoom() {
+  try {
+    const name = document.getElementById('roomname').value;
+    const member_ids = document.getElementById('memberids').value.split(',').map(v => Number(v.trim())).filter(Boolean);
+    print('create room', await api('/v1/rooms', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, member_ids }) }));
+  } catch (e) { print('error', e); }
+}
+async function sendMessage() {
+  try {
+    const roomId = document.getElementById('msgRoomId').value;
+    const user_id = Number(document.getElementById('msgUserId').value);
+    const body = document.getElementById('msgBody').value;
+    const key = document.getElementById('idem').value;
+    print('send message', await api(`/v1/rooms/${roomId}/messages`, { method:'POST', headers:{'Content-Type':'application/json','X-Idempotency-Key':key}, body: JSON.stringify({ user_id, body }) }));
+  } catch (e) { print('error', e); }
+}
+async function listMessages() {
+  try {
+    const roomId = document.getElementById('listRoomId').value;
+    print('list messages', await api(`/v1/rooms/${roomId}/messages`));
+  } catch (e) { print('error', e); }
+}
+async function markRead() {
+  try {
+    const mid = document.getElementById('readMessageId').value;
+    const user_id = Number(document.getElementById('readUserId').value);
+    print('mark read', await api(`/v1/messages/${mid}/read`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id }) }));
+  } catch (e) { print('error', e); }
+}
+async function getUnread() {
+  try {
+    const roomId = document.getElementById('unreadRoomId').value;
+    const userId = document.getElementById('unreadUserId').value;
+    print('unread count', await api(`/v1/rooms/${roomId}/unread-count/${userId}`));
+  } catch (e) { print('error', e); }
+}
+</script>
+</body>
+</html>

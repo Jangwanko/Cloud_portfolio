@@ -1,0 +1,19 @@
+﻿architecture: replication
+postgresql:
+  replicaCount: 3
+  username: portfolio
+  password: portfolio
+  database: portfolio
+  repmgrPassword: repmgr-secret
+  pgHbaTrustAll: false
+  syncReplication: true
+  numSynchronousReplicas: 1
+pgpool:
+  replicaCount: 2
+  adminUsername: admin
+  adminPassword: admin-secret
+persistence:
+  enabled: true
+  size: 8Gi
+metrics:
+  enabled: true

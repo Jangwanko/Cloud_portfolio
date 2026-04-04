@@ -1,0 +1,24 @@
+﻿auth:
+  enabled: true
+  password: redis-secret
+
+master:
+  persistence:
+    enabled: true
+    size: 4Gi
+
+replica:
+  replicaCount: 2
+  persistence:
+    enabled: true
+    size: 4Gi
+
+sentinel:
+  enabled: true
+  quorum: 2
+  downAfterMilliseconds: 60000
+  failoverTimeout: 180000
+  parallelSyncs: 1
+
+metrics:
+  enabled: true
