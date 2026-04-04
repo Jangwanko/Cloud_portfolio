@@ -1,6 +1,10 @@
-﻿architecture: replication
+architecture: replication
 postgresql:
   replicaCount: 3
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql-repmgr
+    tag: latest
   username: portfolio
   password: portfolio
   database: portfolio
@@ -9,11 +13,15 @@ postgresql:
   syncReplication: true
   numSynchronousReplicas: 1
 pgpool:
-  replicaCount: 2
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/pgpool
+    tag: latest
   adminUsername: admin
   adminPassword: admin-secret
 persistence:
   enabled: true
   size: 8Gi
 metrics:
-  enabled: true
+  enabled: false
