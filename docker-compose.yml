@@ -53,8 +53,10 @@ services:
     image: nginx:1.27-alpine
     container_name: portfolio_nginx
     depends_on:
-      - api
-      - observer
+      api:
+        condition: service_started
+      observer:
+        condition: service_started
     ports:
       - "80:80"
     volumes:
@@ -98,6 +100,7 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
     restart: unless-stopped
 
   grafana:

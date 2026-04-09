@@ -1,0 +1,10 @@
+=== k6 Load Test Summary ===
+Base URL           : http://localhost/api
+Profile            : single500
+Stage duration     : 10s (500 concurrent users)
+Total HTTP requests: 34825
+Error rate         : 95.28%
+Latency avg (ms)   : 93.63
+Latency p95 (ms)   : 91.44
+Latency p99 (ms)   : 0.00
+============================

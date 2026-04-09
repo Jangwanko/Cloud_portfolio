@@ -1,0 +1,85 @@
+groups:
+  - name: messaging-critical
+    rules:
+      - alert: MessagingRedisDown
+        expr: messaging_health_status{component="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "Redis unavailable"
+          description: "Redis health status is down for over 1 minute."
+
+      - alert: MessagingDbDown
+        expr: messaging_health_status{component="db"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "PostgreSQL unavailable"
+          description: "DB health status is down for over 1 minute."
+
+      - alert: MessagingApiHigh5xxRate
+        expr: |
+          (
+            sum(rate(messaging_api_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(messaging_api_requests_total[5m])), 1)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "High API 5xx rate"
+          description: "API 5xx ratio is above 5% for 5 minutes."
+
+  - name: messaging-warning
+    rules:
+      - alert: MessagingWorkerUnhealthy
+        expr: messaging_health_status{component="worker"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "Worker unhealthy"
+          description: "Worker health status is down for over 2 minutes."
+
+      - alert: MessagingIngressQueueBacklogHigh
+        expr: sum(messaging_queue_depth{queue=~"message_ingress:.*"}) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "Ingress queue backlog high"
+          description: "Ingress queue depth is above 1000 for 10 minutes."
+
+      - alert: MessagingDlqBacklogGrowing
+        expr: (max_over_time(messaging_queue_depth{queue="message_ingress_dlq"}[15m]) - min_over_time(messaging_queue_depth{queue="message_ingress_dlq"}[15m])) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "DLQ backlog is growing"
+          description: "DLQ depth increased by more than 100 within 15 minutes."
+
+      - alert: MessagingWorkerFailureRateHigh
+        expr: |
+          (
+            sum(rate(messaging_worker_processed_total{result="failure"}[5m]))
+            /
+            clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1)
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "Worker failure rate high"
+          description: "Worker failure ratio is above 10% for 5 minutes."
+
