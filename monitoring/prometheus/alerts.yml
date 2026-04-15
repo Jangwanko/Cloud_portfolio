@@ -36,6 +36,40 @@ groups:
           summary: "High API 5xx rate"
           description: "API 5xx ratio is above 5% for 5 minutes."
 
+      - alert: MessagingApiP95LatencyCritical
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(messaging_api_request_latency_seconds_bucket[5m]))
+          ) > 4
+        for: 5m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "API p95 latency critical"
+          description: "API p95 latency is above 4 seconds for 5 minutes."
+
+      - alert: MessagingIngressQueueBacklogCritical
+        expr: sum(messaging_queue_depth{queue=~"message_ingress:.*"}) > 5000
+        for: 5m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "Ingress queue backlog critical"
+          description: "Ingress queue depth is above 5000 for 5 minutes."
+
+      - alert: MessagingDlqBacklogCritical
+        expr: messaging_queue_depth{queue="message_ingress_dlq"} > 500
+        for: 10m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "DLQ backlog critical"
+          description: "DLQ depth is above 500 for 10 minutes."
+
   - name: messaging-warning
     rules:
       - alert: MessagingWorkerUnhealthy
@@ -83,3 +117,16 @@ groups:
           summary: "Worker failure rate high"
           description: "Worker failure ratio is above 10% for 5 minutes."
 
+      - alert: MessagingApiP95LatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(messaging_api_request_latency_seconds_bucket[5m]))
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "API p95 latency high"
+          description: "API p95 latency is above 2 seconds for 10 minutes."

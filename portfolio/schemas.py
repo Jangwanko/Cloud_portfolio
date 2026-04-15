@@ -3,6 +3,7 @@
 
 class UserCreate(BaseModel):
     username: str = Field(min_length=2, max_length=30)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class UserResponse(BaseModel):
@@ -22,7 +23,6 @@ class RoomResponse(BaseModel):
 
 
 class MessageCreate(BaseModel):
-    user_id: int
     body: str = Field(min_length=1, max_length=1000)
 
 
@@ -35,4 +35,9 @@ class MessageResponse(BaseModel):
 
 
 class ReadReceiptCreate(BaseModel):
-    user_id: int
+    pass
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=30)
+    password: str = Field(min_length=8, max_length=128)

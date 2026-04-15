@@ -34,14 +34,14 @@ def classify_db_error(exc: Exception) -> str:
 
 def _create_pool() -> SimpleConnectionPool:
     return SimpleConnectionPool(
-        minconn=1,
-        maxconn=10,
+        minconn=settings.db_pool_minconn,
+        maxconn=settings.db_pool_maxconn,
         host=settings.db_host,
         port=settings.db_port,
         dbname=settings.db_name,
         user=settings.db_user,
         password=settings.db_password,
-        connect_timeout=3,
+        connect_timeout=settings.db_connect_timeout,
     )
 
 

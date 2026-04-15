@@ -13,12 +13,20 @@ class Settings:
     db_name: str = os.getenv("DB_NAME", "portfolio")
     db_user: str = os.getenv("DB_USER", "portfolio")
     db_password: str = os.getenv("DB_PASSWORD", "portfolio")
+    db_pool_minconn: int = int(os.getenv("DB_POOL_MIN_CONN", "1"))
+    db_pool_maxconn: int = int(os.getenv("DB_POOL_MAX_CONN", "20"))
+    db_connect_timeout: int = int(os.getenv("DB_CONNECT_TIMEOUT", "3"))
 
     redis_host: str = os.getenv("REDIS_HOST", "redis")
     redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
+    redis_password: str = os.getenv("REDIS_PASSWORD", "")
     redis_sentinel_enabled: bool = os.getenv("REDIS_SENTINEL_ENABLED", "false").lower() == "true"
     redis_sentinel_master: str = os.getenv("REDIS_SENTINEL_MASTER", "mymaster")
     redis_sentinel_nodes: str = os.getenv("REDIS_SENTINEL_NODES", "")
+    redis_max_connections: int = int(os.getenv("REDIS_MAX_CONNECTIONS", "200"))
+    redis_socket_connect_timeout: float = float(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "1"))
+    redis_socket_timeout: float = float(os.getenv("REDIS_SOCKET_TIMEOUT", "1"))
+    redis_health_check_interval: int = int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "15"))
 
     startup_retries: int = int(os.getenv("STARTUP_RETRIES", "30"))
     startup_retry_delay: float = float(os.getenv("STARTUP_RETRY_DELAY", "2"))

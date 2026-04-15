@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import time
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from portfolio.api import router as api_router
 from portfolio.config import settings
@@ -85,8 +86,21 @@ def health_ready():
         update_queue_depth(settings.ingress_dlq)
         update_queue_depth(settings.notification_queue)
 
-    if not db_ok:
-        return {"status": "not_ready", "db": "down", "redis": "unknown"}
     if not redis_ok:
-        return {"status": "not_ready", "db": "up", "redis": "down"}
-    return {"status": "ready", "db": "up", "redis": "up"}
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "mode": "queue_unavailable",
+                "db": "up" if db_ok else "down",
+                "redis": "down",
+            },
+        )
+    if not db_ok:
+        return {
+            "status": "degraded",
+            "mode": "buffering_only",
+            "db": "down",
+            "redis": "up",
+        }
+    return {"status": "ready", "mode": "normal", "db": "up", "redis": "up"}

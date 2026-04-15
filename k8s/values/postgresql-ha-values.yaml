@@ -1,27 +1,32 @@
-architecture: replication
+global:
+  security:
+    allowInsecureImages: true
+
 postgresql:
   replicaCount: 3
   image:
     registry: docker.io
     repository: bitnamilegacy/postgresql-repmgr
-    tag: latest
+    tag: 17.6.0-debian-12-r2
   username: portfolio
   password: portfolio
   database: portfolio
   repmgrPassword: repmgr-secret
-  pgHbaTrustAll: false
   syncReplication: true
   numSynchronousReplicas: 1
+
 pgpool:
   replicaCount: 1
   image:
     registry: docker.io
     repository: bitnamilegacy/pgpool
-    tag: latest
+    tag: 4.6.3-debian-12-r0
   adminUsername: admin
   adminPassword: admin-secret
+
 persistence:
   enabled: true
   size: 8Gi
+
 metrics:
   enabled: false

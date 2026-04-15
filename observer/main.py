@@ -1,4 +1,5 @@
-﻿import os
+import html
+import os
 from datetime import datetime
 
 import psycopg2
@@ -45,7 +46,7 @@ def observer_home() -> str:
 </head>
 <body>
   <h1>Message Send/Receive Observer</h1>
-  <div class=\"meta\">5초마다 자동 갱신됩니다.</div>
+  <div class=\"meta\">Auto refreshes every 5 seconds.</div>
   <div class=\"card\">
     <h3>Message Timeline (send)</h3>
     <table id=\"sendTable\"><thead><tr><th>id</th><th>room</th><th>user</th><th>body</th><th>created_at</th></tr></thead><tbody></tbody></table>
@@ -67,7 +68,7 @@ async function loadData() {
 
   const recvBody = document.querySelector('#recvTable tbody');
   recvBody.innerHTML = data.attempts.map(a =>
-    `<tr><td>${a.id}</td><td>${a.message_id}</td><td>${a.room_id}</td><td>${JSON.stringify(a.payload)}</td><td>${a.processed_at}</td></tr>`
+    `<tr><td>${a.id}</td><td>${a.message_id}</td><td>${a.room_id}</td><td>${a.payload}</td><td>${a.processed_at}</td></tr>`
   ).join('');
 }
 
@@ -104,10 +105,12 @@ def events() -> dict:
             attempts = cur.fetchall()
 
     for row in messages:
+        row["body"] = html.escape(str(row["body"]))
         if isinstance(row["created_at"], datetime):
             row["created_at"] = row["created_at"].isoformat()
 
     for row in attempts:
+        row["payload"] = html.escape(str(row["payload"]))
         if isinstance(row["processed_at"], datetime):
             row["processed_at"] = row["processed_at"].isoformat()
 

@@ -17,20 +17,30 @@ def _create_client() -> redis.Redis:
             sentinels.append((host, int(port)))
         sentinel = Sentinel(
             sentinels,
-            socket_timeout=1,
-            sentinel_kwargs={"socket_timeout": 1},
+            socket_timeout=settings.redis_socket_timeout,
+            sentinel_kwargs={
+                "socket_timeout": settings.redis_socket_timeout,
+                "socket_connect_timeout": settings.redis_socket_connect_timeout,
+                "password": settings.redis_password or None,
+            },
         )
         return sentinel.master_for(
             settings.redis_sentinel_master,
-            socket_timeout=1,
-            socket_connect_timeout=1,
+            socket_timeout=settings.redis_socket_timeout,
+            socket_connect_timeout=settings.redis_socket_connect_timeout,
+            max_connections=settings.redis_max_connections,
+            health_check_interval=settings.redis_health_check_interval,
+            password=settings.redis_password or None,
             decode_responses=True,
         )
     return redis.Redis(
         host=settings.redis_host,
         port=settings.redis_port,
-        socket_connect_timeout=1,
-        socket_timeout=1,
+        password=settings.redis_password or None,
+        socket_connect_timeout=settings.redis_socket_connect_timeout,
+        socket_timeout=settings.redis_socket_timeout,
+        max_connections=settings.redis_max_connections,
+        health_check_interval=settings.redis_health_check_interval,
         decode_responses=True,
     )
 

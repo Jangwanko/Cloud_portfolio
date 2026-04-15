@@ -5,6 +5,23 @@ const BASE_URL = __ENV.BASE_URL || "http://localhost/api";
 const STAGE_DURATION = __ENV.STAGE_DURATION || "60s";
 const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
+const K6_WRITE_RESULT_FILES =
+  (__ENV.K6_WRITE_RESULT_FILES || "true").toLowerCase() !== "false";
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function buildTimestamp() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = pad2(now.getMonth() + 1);
+  const dd = pad2(now.getDate());
+  const hh = pad2(now.getHours());
+  const mi = pad2(now.getMinutes());
+  const ss = pad2(now.getSeconds());
+  return `${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
+}
 
 function secondsFromDuration(duration) {
   const unit = duration.slice(-1);
@@ -124,6 +141,8 @@ export function chatFlow(data) {
 }
 
 export function handleSummary(data) {
+  const timestamp = buildTimestamp();
+  const baseName = `k6/results/${PROFILE}-${timestamp}`;
   const totalRequests = metricValue(data, "http_reqs", "count", 0);
   const failureRate = metricValue(data, "http_req_failed", "rate", 0);
   const avgLatency = metricValue(data, "http_req_duration", "avg", 0);
@@ -144,8 +163,12 @@ export function handleSummary(data) {
   ].join("\n");
 
   return {
+    ...(K6_WRITE_RESULT_FILES
+      ? {
+          [`${baseName}.txt`]: `${summary}\n`,
+          [`${baseName}.json`]: JSON.stringify(data, null, 2),
+        }
+      : {}),
     stdout: `${summary}\n`,
-    "k6-summary.txt": `${summary}\n`,
-    "k6-summary.json": JSON.stringify(data, null, 2),
   };
 }

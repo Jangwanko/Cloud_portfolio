@@ -30,3 +30,8 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+
+# etc
+INTERVIEW_QUESTIONS.md
+k8s/.tmp_pg_ha_chart/

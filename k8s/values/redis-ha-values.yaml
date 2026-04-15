@@ -1,4 +1,6 @@
-﻿auth:
+architecture: replication
+
+auth:
   enabled: true
   password: redis-secret
 
@@ -8,17 +10,18 @@ master:
     size: 4Gi
 
 replica:
-  replicaCount: 2
+  replicaCount: 3
   persistence:
     enabled: true
     size: 4Gi
 
 sentinel:
   enabled: true
+  masterSet: mymaster
   quorum: 2
   downAfterMilliseconds: 60000
   failoverTimeout: 180000
   parallelSyncs: 1
 
 metrics:
-  enabled: true
+  enabled: false

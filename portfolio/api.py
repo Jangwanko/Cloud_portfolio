@@ -2,13 +2,15 @@ import json
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
+from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
 from portfolio.queues import ingress_partition_queue
 from portfolio.redis_client import get_redis, reconnect_redis, update_queue_depth
 from portfolio.schemas import (
+    LoginRequest,
     MessageCreate,
     ReadReceiptCreate,
     RoomCreate,
@@ -52,6 +54,52 @@ def _get_fallback_idem(route: str, idem_key: str) -> str | None:
     return _redis_client().get(_fallback_idem_key(route, idem_key))
 
 
+def _clear_fallback_idem(route: str, idem_key: str, request_id: str | None = None) -> None:
+    redis_client = _redis_client()
+    key = _fallback_idem_key(route, idem_key)
+    if request_id is None:
+        redis_client.delete(key)
+        return
+
+    if redis_client.get(key) == request_id:
+        redis_client.delete(key)
+
+
+def _delete_request_status(request_id: str) -> None:
+    _redis_client().delete(_request_status_key(request_id))
+
+
+def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict | None:
+    existing_request_id = _get_fallback_idem(route, idem_key)
+    if existing_request_id:
+        existing_status = _load_request_status(existing_request_id)
+        if existing_status is not None:
+            return existing_status
+        _clear_fallback_idem(route, idem_key, existing_request_id)
+
+    inserted = _set_fallback_idem(route, idem_key, request_id)
+    if inserted:
+        return None
+
+    existing_request_id = _get_fallback_idem(route, idem_key)
+    if existing_request_id:
+        existing_status = _load_request_status(existing_request_id)
+        if existing_status is not None:
+            return existing_status
+        _clear_fallback_idem(route, idem_key, existing_request_id)
+
+    if _set_fallback_idem(route, idem_key, request_id):
+        return None
+
+    existing_request_id = _get_fallback_idem(route, idem_key)
+    if existing_request_id:
+        existing_status = _load_request_status(existing_request_id)
+        if existing_status is not None:
+            return existing_status
+
+    raise RuntimeError("Failed to claim idempotency key")
+
+
 def _queue_ingress_message(job_payload: dict) -> None:
     redis_client = _redis_client()
     queue_name = ingress_partition_queue(int(job_payload["room_id"]))
@@ -64,14 +112,72 @@ def _next_room_seq(room_id: int) -> int:
     return int(_redis_client().incr(key))
 
 
+def _room_members_key(room_id: int) -> str:
+    return f"room_members:{room_id}"
+
+
+def _cache_room_members(room_id: int, member_ids: list[int]) -> None:
+    if not member_ids:
+        return
+    redis_client = _redis_client()
+    key = _room_members_key(room_id)
+    redis_client.delete(key)
+    redis_client.sadd(key, *[str(member_id) for member_id in member_ids])
+
+
+def _ensure_room_exists(cur, room_id: int) -> None:
+    cur.execute("SELECT id FROM rooms WHERE id=%s", (room_id,))
+    if cur.fetchone() is None:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+
+def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
+    _ensure_room_exists(cur, room_id)
+    cur.execute(
+        "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
+        (room_id, user_id),
+    )
+    if cur.fetchone() is None:
+        raise HTTPException(status_code=403, detail="Room access denied")
+
+
+def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                _ensure_room_member(cur, room_id, user_id)
+        return
+    except HTTPException:
+        raise
+    except Exception:
+        try:
+            if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
+                return
+        except Exception:
+            pass
+        raise HTTPException(status_code=503, detail="Authorization check unavailable")
+
+
+def _message_room_id(cur, message_id: int) -> int:
+    cur.execute("SELECT room_id FROM messages WHERE id=%s", (message_id,))
+    row = cur.fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Message not found")
+    return int(row["room_id"])
+
+
 @router.post("/users")
 def create_user(payload: UserCreate):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
             try:
                 cur.execute(
-                    "INSERT INTO users (username) VALUES (%s) RETURNING id, username",
-                    (payload.username,),
+                    """
+                    INSERT INTO users (username, password_hash)
+                    VALUES (%s, %s)
+                    RETURNING id, username
+                    """,
+                    (payload.username, hash_password(payload.password)),
                 )
                 row = cur.fetchone()
                 conn.commit()
@@ -81,8 +187,21 @@ def create_user(payload: UserCreate):
                 raise HTTPException(status_code=409, detail="Username already exists") from exc
 
 
+@router.post("/auth/login")
+def login(payload: LoginRequest):
+    user = authenticate_user(payload.username, payload.password)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    access_token = create_access_token(user["id"], user["username"])
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user,
+    }
+
+
 @router.post("/rooms")
-def create_room(payload: RoomCreate):
+def create_room(payload: RoomCreate, current_user: dict = Depends(get_current_user)):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
             cur.execute(
@@ -91,8 +210,10 @@ def create_room(payload: RoomCreate):
             )
             room = cur.fetchone()
 
+            requested_member_ids = set(payload.member_ids)
+            requested_member_ids.add(int(current_user["id"]))
             valid_member_ids: list[int] = []
-            for member_id in payload.member_ids:
+            for member_id in sorted(requested_member_ids):
                 cur.execute("SELECT id FROM users WHERE id=%s", (member_id,))
                 if cur.fetchone() is not None:
                     valid_member_ids.append(member_id)
@@ -106,6 +227,7 @@ def create_room(payload: RoomCreate):
                     )
 
             conn.commit()
+            _cache_room_members(int(room["id"]), valid_member_ids)
             return {
                 "id": room["id"],
                 "name": room["name"],
@@ -118,48 +240,40 @@ def create_message(
     room_id: int,
     payload: MessageCreate,
     x_idempotency_key: str | None = Header(default=None),
+    current_user: dict = Depends(get_current_user),
 ):
+    actor_user_id = int(current_user["id"])
+    _ensure_room_member_for_ingress(room_id, actor_user_id)
+
     route = f"POST:/v1/rooms/{room_id}/messages"
-
-    if x_idempotency_key:
-        try:
-            existing_request_id = _get_fallback_idem(route, x_idempotency_key)
-            if existing_request_id:
-                existing_status = _load_request_status(existing_request_id)
-                if existing_status is not None:
-                    return existing_status
-        except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=503, detail="Redis unavailable") from exc
-
     request_id = str(uuid4())
-    queued_at = None
 
     if x_idempotency_key:
         try:
-            inserted = _set_fallback_idem(route, x_idempotency_key, request_id)
-            if not inserted:
-                existing_request_id = _get_fallback_idem(route, x_idempotency_key)
-                if existing_request_id:
-                    existing_status = _load_request_status(existing_request_id)
-                    if existing_status is not None:
-                        return existing_status
+            existing_status = _claim_or_load_request(route, x_idempotency_key, request_id)
+            if existing_status is not None:
+                return existing_status
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=503, detail="Redis unavailable") from exc
 
-    queued_at = datetime.now(timezone.utc).isoformat()
-    room_seq = None
     try:
         room_seq = _next_room_seq(room_id)
     except Exception as exc:  # noqa: BLE001
+        if x_idempotency_key:
+            try:
+                _clear_fallback_idem(route, x_idempotency_key, request_id)
+            except Exception:
+                pass
         raise HTTPException(status_code=503, detail="Redis unavailable") from exc
 
+    queued_at = datetime.now(timezone.utc).isoformat()
     accepted_response = {
         "request_id": request_id,
         "status": "accepted",
         "persistence": "queued",
         "room_id": room_id,
         "room_seq": room_seq,
-        "user_id": payload.user_id,
+        "user_id": actor_user_id,
         "body": payload.body,
         "queued_at": queued_at,
     }
@@ -170,7 +284,7 @@ def create_message(
                 "request_id": request_id,
                 "route": route,
                 "room_id": room_id,
-                "user_id": payload.user_id,
+                "user_id": actor_user_id,
                 "body": payload.body,
                 "room_seq": room_seq,
                 "x_idempotency_key": x_idempotency_key,
@@ -180,20 +294,35 @@ def create_message(
             }
         )
     except Exception as exc:  # noqa: BLE001
+        if x_idempotency_key:
+            try:
+                _clear_fallback_idem(route, x_idempotency_key, request_id)
+            except Exception:
+                pass
+        try:
+            _delete_request_status(request_id)
+        except Exception:
+            pass
         raise HTTPException(status_code=503, detail="Redis unavailable") from exc
     return accepted_response
 
 
 @router.get("/message-requests/{request_id}")
-def get_message_request_status(request_id: str):
+def get_message_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
     status = _load_request_status(request_id)
     if status is None:
         raise HTTPException(status_code=404, detail="Request not found")
+    status_user_id = status.get("user_id")
+    if status_user_id is not None and int(status_user_id) != int(current_user["id"]):
+        raise HTTPException(status_code=403, detail="Request access denied")
     return status
 
 
 @router.get("/dlq/ingress")
-def get_ingress_dlq(limit: int = Query(default=20, ge=1, le=200)):
+def get_ingress_dlq(
+    limit: int = Query(default=20, ge=1, le=200),
+    current_user: dict = Depends(get_current_user),
+):
     redis_client = _redis_client()
     raw_items = redis_client.lrange(settings.ingress_dlq, 0, limit - 1)
     items = []
@@ -215,7 +344,12 @@ def list_messages(
     room_id: int,
     limit: int = Query(default=20, ge=1, le=100),
     before_id: int | None = Query(default=None),
+    current_user: dict = Depends(get_current_user),
 ):
+    with get_conn() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_room_member(cur, room_id, int(current_user["id"]))
+
     sql = """
         SELECT id, request_id, room_id, room_seq, user_id, body, created_at
         FROM messages
@@ -252,16 +386,15 @@ def list_messages(
 
 
 @router.post("/messages/{message_id}/read")
-def mark_as_read(message_id: int, payload: ReadReceiptCreate):
+def mark_as_read(
+    message_id: int,
+    payload: ReadReceiptCreate,
+    current_user: dict = Depends(get_current_user),
+):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
-            cur.execute("SELECT id FROM messages WHERE id=%s", (message_id,))
-            if cur.fetchone() is None:
-                raise HTTPException(status_code=404, detail="Message not found")
-
-            cur.execute("SELECT id FROM users WHERE id=%s", (payload.user_id,))
-            if cur.fetchone() is None:
-                raise HTTPException(status_code=404, detail="User not found")
+            room_id = _message_room_id(cur, message_id)
+            _ensure_room_member(cur, room_id, int(current_user["id"]))
 
             cur.execute(
                 """
@@ -269,17 +402,20 @@ def mark_as_read(message_id: int, payload: ReadReceiptCreate):
                 VALUES (%s, %s)
                 ON CONFLICT DO NOTHING
                 """,
-                (message_id, payload.user_id),
+                (message_id, int(current_user["id"])),
             )
             conn.commit()
 
-    return {"status": "ok", "message_id": message_id, "user_id": payload.user_id}
+    return {"status": "ok", "message_id": message_id, "user_id": int(current_user["id"])}
 
 
 @router.get("/rooms/{room_id}/unread-count/{user_id}")
-def unread_count(room_id: int, user_id: int):
+def unread_count(room_id: int, user_id: int, current_user: dict = Depends(get_current_user)):
+    if int(current_user["id"]) != user_id:
+        raise HTTPException(status_code=403, detail="Unread count access denied")
     with get_conn() as conn:
         with get_cursor(conn) as cur:
+            _ensure_room_member(cur, room_id, user_id)
             cur.execute(
                 """
                 SELECT COUNT(*) AS unread

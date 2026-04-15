@@ -1,46 +1,36 @@
 ﻿# Messaging Systems Portfolio
 
 ## Summary
-이 프로젝트는 기능 구현 자체보다, 운영 가능한 메시징 시스템을 설계하고 장애 상황에서 유지/복구하는 능력을 보여주기 위한 포트폴리오입니다.
+장애 상황에서도 요청 유실을 줄이고 복구 흐름을 유지하는 메시징 시스템을 목표로 만든 프로젝트입니다.
 
-## Key Capabilities
-- Queue 기반 비동기 처리 (DB 장애 시 요청 유실 방지)
-- DLQ + 재처리 구조
-- Prometheus / Grafana 모니터링
-- Nginx Reverse Proxy 기반 트래픽 제어
-- 장애 감지 및 자동 복구 스크립트
-- EC2 기반 배포 확장 가능
+핵심 포인트:
+- Queue 기반 비동기 처리
+- DB 장애 시 요청 보존 및 재처리
+- Redis 장애 시 상태 노출 및 복구 검증
+- DLQ + Replayer 구조
+- Prometheus / Grafana 기반 관측
+- Kubernetes(kind) 기반 HA 실험
 
----
+## Prerequisites
+필수:
+- Docker Desktop 실행 중
+- Windows PowerShell
 
-## Operational Focus
-### 장애 대응
-- Redis 장애: 요청 수락 중단 및 상태 노출
-- DB 장애: 요청 보존 후 재시도/재처리
-- Worker 장애: queue depth 기반 감지
+저장소에 포함된 도구:
+- `kind` (`tools/kind.exe`)
+- `helm` (`tools/helm/windows-amd64/helm.exe`)
 
-### 자동 복구
-- `health_check.sh`: 상태 점검
-- `restart.sh`: 비정상 서비스 재시작
-- `deploy.sh`: 재배포 자동화 (코드 업데이트 + 컨테이너 재기동)
+로컬에서 사용하는 포트:
+- `30080` for API
+- `30300` for Grafana
+- `9090` for Prometheus when alert validation is enabled
 
-### 모니터링 기반 대응
-- queue depth 증가: 처리 지연 감지
-- error rate 증가: 장애 탐지
-- latency 증가: 성능 문제 분석
+`scripts/quick_start_all.ps1`는 실행 전에 이 포트들이 비어 있는지 확인하고, 충돌이 있으면 배포 전에 중단합니다.
 
----
-
-## Architecture (Summary)
-- API: 요청 수락 및 Queue 전달
-- Queue: 요청 버퍼링
-- Worker: 비동기 처리 및 DB 반영
-- DLQ: 실패 요청 보존 및 재처리
-- Monitoring: Prometheus + Grafana
-
+## Architecture
 ```mermaid
 flowchart LR
-    C[Client] --> N[Nginx]
+    C[Client] --> N[Nginx or Ingress]
     N --> A[FastAPI API]
     A --> RQ[Redis Ingress Queue]
     RQ --> W[Worker]
@@ -53,133 +43,110 @@ flowchart LR
     M --> G[Grafana]
 ```
 
----
+요약 흐름:
+- API는 요청을 바로 DB에 쓰지 않고 Redis queue에 적재
+- Worker가 비동기로 DB에 영속화
+- 실패한 요청은 DLQ로 이동
+- DLQ Replayer가 재투입
+- Prometheus/Grafana로 상태와 지표를 관측
 
-## Request Flow
-### Normal Flow
-- API는 요청을 즉시 DB에 쓰지 않고 Queue에 적재
-- Worker가 비동기로 DB 반영
-- Client는 상태 조회로 최종 결과 확인
+## What This Project Covers
+### Normal Path
+- 메시지 요청 수락
+- 비동기 영속화
+- 읽음 처리 / unread count 조회
 
-### Failure Flow (DB Down)
-- API는 요청 수락 지속
-- Worker는 재시도 후 필요 시 DLQ 적재
-- DB 복구 후 재처리
-
----
-
-## Failure Handling
-### Redis Down
-- 신규 요청 수락 불가
-- 상태 API로 장애 노출
-- Redis 복구 후 정상화
-
-### DB Down
-- 요청은 Queue에 보존
-- Worker 재시도 수행
+### Failure Recovery
+- DB down 시 요청 수락 유지 후 복구 시 재처리
+- Redis down 시 readiness 변화 및 요청 실패 확인
 - 재시도 초과 시 DLQ 이동
 
-### Worker Crash
-- Queue 적체 증가
-- `restart.sh`로 복구
+### Operations
+- health / readiness
+- queue depth / worker 처리량 / reconnect / latency 지표
+- Alert rule
+- k8s 기반 HA 구성 및 failover 실험
 
----
+## Quick View
+기본 검증 시나리오는 아래 스크립트로 한 번에 실행할 수 있습니다.
 
-## Recovery Procedures
-1. 장애 감지 (Monitoring / Health Check)
-2. 장애 도메인 식별 (API / Redis / DB / Worker)
-3. 서비스 재시작 (`restart.sh`)
-4. 상태 재확인 (`health_check.sh`)
-5. DLQ/Queue 적체 확인
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
+```
 
----
+포함 범위:
+- 클러스터 재생성
+- `metrics-server` 설치
+- 이미지 빌드 및 kind load
+- HA PostgreSQL / Redis 배포
+- 앱 배포
+- `http://localhost:30080` readiness 확인
+- smoke test
+- DB 장애 복구 테스트
+- Redis 장애 복구 테스트
+- HPA scaling 테스트
 
-## Observability
-주요 항목:
-- API latency / request count
-- Queue depth
-- Worker 처리 성공/실패율
-- DB/Redis reconnect 횟수
+부하 테스트는 별도 유지:
 
-대표 메트릭:
-- `messaging_queue_depth`
-- `messaging_worker_processed_total`
-- `messaging_db_failure_total`
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
+```
 
----
+## Latest Changes
+최근 반영된 내용:
+- kind host port 매핑 추가 (`30080`, `30300`)
+- quick start preflight check 추가
+- tool path 해석(`kind`, `helm`) 보강
+- readiness / reset / scenario 스크립트 안정화
+- 기본 시나리오 일괄 실행 스크립트 개선
 
-## Automation Scripts
-- `health_check.sh`: 상태 점검
-- `restart.sh`: 장애 복구
-- `deploy.sh`: 배포 자동화
-- `log_cleanup.sh`: 로그 정리
+자세한 변경 이력:
+- [PATCH_NOTES.md](docs/PATCH_NOTES.md)
 
----
+## Current Limits
+- Helm chart 출력이 첫 실행에서 다소 길다
+- 외부 진입 구조는 아직 Ingress 중심으로 완전히 정리되지 않았다
+- 멀티 파드 환경에서 메시지 순서 보장 검증은 더 필요하다
+- `k6`는 실행은 정상이나 현재 latency threshold는 통과하지 못한다
 
-## Load Testing
-k6 기반 부하 테스트:
-- 100 / 500 / 1000 동시 사용자 시뮬레이션
-- latency / error rate 측정
+## Service Readiness Checklist
+실제 서비스 단계로 가기 전에 남아 있는 주요 작업입니다.
 
-### Latest k6 Run Result (2026-04-09)
-테스트 조건:
-- Base URL: `http://localhost/api`
-- Stage duration: `20s` (100 -> 500 -> 1000 concurrent users)
+1. 인증 / 인가 추가
+   - 로그인, 토큰, 사용자 권한 검증
+   - room membership 검증
+   - 운영 도구 접근 제어
+2. 외부 진입 구조를 `Ingress + TLS` 기준으로 전환
+   - `NodePort` 중심 접근 제거
+   - API / 운영 도구 공개 범위 분리
+   - 도메인 및 HTTPS 처리
+3. 운영 안정성 보강
+   - 백업 / 복구 전략
+   - 로그 수집 및 장애 대응 runbook
+   - 배포 / rollback 절차 정리
+4. 배포 체계 정리
+   - local / staging / prod 환경 분리
+   - secret 관리 고도화
+   - CI/CD 및 자동 테스트 연결
+5. 데이터 정합성 보강
+   - 멀티 파드 환경에서 메시지 순서 보장 검증
+   - retry / DLQ / replay 정책 명확화
+   - idempotency 경계 보강
+6. 성능 개선
+   - `k6` latency 병목 분석
+   - API / Worker / DB / Redis 튜닝
+   - 목표 TPS / p95 / p99 기준 정리
 
-실측 결과:
-- Total HTTP requests: `252,447`
-- Error rate: `95.57%`
-- Latency avg: `66.96ms`
-- Latency p95: `222.34ms`
-- Latency p99: `0.00ms` (실패 요청 비중이 높아 왜곡 가능)
+## Documents
+- 빠른 실행 가이드: [QUICK_START.md](docs/QUICK_START.md)
+- 구조와 장애 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 변경 이력: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
+- 저장소 구조: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
+- 테스트 결과: [TEST_RESULTS.md](docs/TEST_RESULTS.md)
 
-해석:
-- 1000 동접 구간에서 연결 거부/EOF가 다수 발생
-- 현재 로컬 단일 구성의 처리 한계를 초과
-
-### k6 Single Profile Result (500 Concurrent, 2026-04-09)
-테스트 조건:
-- Base URL: `http://localhost/api`
-- Profile: `single500` (`K6_PROFILE=single500`)
-- Stage duration: `20s` (500 concurrent users 고정)
-
-실측 결과:
-- Total HTTP requests: `68,782`
-- Error rate: `95.51%`
-- Latency avg: `94.20ms`
-- Latency p95: `95.69ms`
-- Latency p99: `0.00ms` (실패 요청 비중이 높아 왜곡 가능)
-
-해석:
-- 500 동접 단독 테스트에서도 연결 거부/EOF가 대량 발생
-- 병목 분석은 `k6-summary.txt`, `k6-summary.json`, API/Nginx 로그를 함께 확인 권장
-
----
-
-## Validation Scope
-현재 결과는 로컬 Docker 단일 노드 환경 기준입니다.
-
-AWS 실환경에서 별도 검증이 필요한 항목:
-- ALB/NLB 경로 포함 네트워크 안정성
-- 다중 API 인스턴스 수평 확장 시 처리량/지연
-- 오토스케일 및 장애 조치 포함 운영 시나리오
-
-따라서 본 문서의 k6 결과는 로컬 한계 확인용으로 해석해야 합니다.
-
----
-
-## Deployment (AWS EC2)
-- Docker Compose 기반 배포
-- Nginx -> API Reverse Proxy
-- Worker 분리 실행
-- RDS 연동 가능 구조
-
----
-
-## What This Demonstrates
-- 장애 상황에서 데이터 유실을 줄이는 설계
-- Queue 기반 아키텍처의 운영적 장점
-- 장애 탐지 및 복구 절차 정립
-- 트래픽 증가 시 병목을 확인하고 개선 포인트를 도출하는 과정
-
----
+## Suggested Reading Order
+1. 이 README에서 전체 구조와 실행 전제 파악
+2. [QUICK_START.md](docs/QUICK_START.md)로 실행 방법 확인
+3. [ARCHITECTURE.md](docs/ARCHITECTURE.md)에서 장애 흐름과 설계 상세 확인
+4. [TEST_RESULTS.md](docs/TEST_RESULTS.md)에서 현재 검증 상태 확인
+5. [PATCH_NOTES.md](docs/PATCH_NOTES.md)로 어떤 문제를 어떻게 개선했는지 확인
