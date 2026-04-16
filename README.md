@@ -21,8 +21,8 @@
 - `helm` (`tools/helm/windows-amd64/helm.exe`)
 
 로컬에서 사용하는 포트:
-- `30080` for API
-- `30300` for Grafana
+- `80` for ingress HTTP traffic
+- `443` for ingress HTTPS traffic
 - `9090` for Prometheus when alert validation is enabled
 
 `scripts/quick_start_all.ps1`는 실행 전에 이 포트들이 비어 있는지 확인하고, 충돌이 있으면 배포 전에 중단합니다.
@@ -76,11 +76,14 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 
 포함 범위:
 - 클러스터 재생성
+- `ingress-nginx` 설치
 - `metrics-server` 설치
 - 이미지 빌드 및 kind load
 - HA PostgreSQL / Redis 배포
 - 앱 배포
-- `http://localhost:30080` readiness 확인
+- `http://localhost/health/ready` readiness 확인
+- `https://localhost/health/ready` TLS readiness 확인
+- `http://localhost/prometheus/` Prometheus UI 확인
 - smoke test
 - DB 장애 복구 테스트
 - Redis 장애 복구 테스트
@@ -94,7 +97,9 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 
 ## Latest Changes
 최근 반영된 내용:
-- kind host port 매핑 추가 (`30080`, `30300`)
+- ingress host port 매핑 추가 (`80`, `443`)
+- `ingress-nginx` 기반 외부 진입 구조 적용
+- 최소 인증 / 인가 흐름 추가
 - quick start preflight check 추가
 - tool path 해석(`kind`, `helm`) 보강
 - readiness / reset / scenario 스크립트 안정화
@@ -105,21 +110,21 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 
 ## Current Limits
 - Helm chart 출력이 첫 실행에서 다소 길다
-- 외부 진입 구조는 아직 Ingress 중심으로 완전히 정리되지 않았다
+- 로컬 HTTPS는 self-signed certificate 기준이다
 - 멀티 파드 환경에서 메시지 순서 보장 검증은 더 필요하다
 - `k6`는 실행은 정상이나 현재 latency threshold는 통과하지 못한다
 
 ## Service Readiness Checklist
 실제 서비스 단계로 가기 전에 남아 있는 주요 작업입니다.
 
-1. 인증 / 인가 추가
-   - 로그인, 토큰, 사용자 권한 검증
-   - room membership 검증
+1. 인증 / 인가 고도화
+   - role 기반 권한 분리
    - 운영 도구 접근 제어
-2. 외부 진입 구조를 `Ingress + TLS` 기준으로 전환
-   - `NodePort` 중심 접근 제거
+   - 토큰 수명 / 갱신 전략 정리
+2. `Ingress + TLS` 고도화
+   - self-signed 대신 실제 인증서 연결
    - API / 운영 도구 공개 범위 분리
-   - 도메인 및 HTTPS 처리
+   - 도메인 및 보안 헤더 정리
 3. 운영 안정성 보강
    - 백업 / 복구 전략
    - 로그 수집 및 장애 대응 runbook

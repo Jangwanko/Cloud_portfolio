@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "http://localhost:30080",
+  [string]$BaseUrl = "http://localhost",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
   [string]$RedisDeployment = "messaging-redis-node",

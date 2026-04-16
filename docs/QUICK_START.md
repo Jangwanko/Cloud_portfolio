@@ -9,11 +9,11 @@
 - `tools/helm/windows-amd64/helm.exe`
 
 로컬에서 사용하는 포트:
-- `30080` for API
-- `30300` for Grafana
+- `80` for ingress HTTP
+- `443` for ingress HTTPS
 - `9090` for Prometheus when failover alert validation runs
 
-quick start script는 배포 전에 이 포트들의 충돌 여부를 먼저 확인하고, 이미 사용 중이면 초기에 중단합니다.
+`scripts/quick_start_all.ps1`는 실행 전에 이 포트 충돌을 먼저 확인하고, 이미 사용 중이면 배포 전에 중단합니다.
 
 ## One Command
 전체 로컬 검증 흐름은 아래 명령 하나로 실행할 수 있습니다.
@@ -23,20 +23,29 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
 이 흐름에는 아래 작업이 포함됩니다.
-- 로컬 kind cluster 재생성
-- Kubernetes autoscaling을 위한 `metrics-server` 설치
+- local kind cluster 재생성
+- `ingress-nginx` 설치
+- `metrics-server` 설치
 - application image build 및 kind load
 - PostgreSQL HA / Redis HA 배포
 - application stack 배포
-- API readiness 확인
+- ingress 경유 API readiness 확인
 - smoke, DB recovery, Redis recovery, HPA scaling test 실행
 
 기본 접근 URL:
-- API: `http://localhost:30080`
-- Grafana: `http://localhost:30300`
+- API: `http://localhost`
+- TLS API: `https://localhost`
+- Grafana: `http://localhost/grafana`
+- TLS Grafana: `https://localhost/grafana`
+- Prometheus: `http://localhost/prometheus/`
+- TLS Prometheus: `https://localhost/prometheus/`
+
+참고:
+- HTTPS는 local self-signed certificate를 사용합니다.
+- 브라우저에서는 최초 1회 보안 경고를 볼 수 있습니다.
 
 ## Expected Duration
-아래 시간은 최근 kind + Docker Desktop 기준 실측값에 가까운 대략치입니다. 환경에 따라 달라질 수 있습니다.
+아래 시간은 최근 kind + Docker Desktop 기준의 대략적인 실행 시간입니다. 환경에 따라 달라질 수 있습니다.
 
 | Scenario | Script | Typical duration |
 | --- | --- | --- |

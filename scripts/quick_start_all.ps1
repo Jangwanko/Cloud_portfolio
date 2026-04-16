@@ -1,7 +1,8 @@
 param(
   [string]$ClusterName = "messaging-ha",
   [string]$Namespace = "messaging-app",
-  [string]$BaseUrl = "http://localhost:30080",
+  [string]$BaseUrl = "http://localhost",
+  [string]$TlsBaseUrl = "https://localhost",
   [string]$PrometheusUrl = "http://localhost:9090",
   [switch]$IncludeFailoverAlerts,
   [switch]$KeepPortForwards
@@ -106,7 +107,7 @@ function Assert-Preflight {
 }
 
 function Assert-LocalPorts {
-  foreach ($port in @(30080, 30300)) {
+  foreach ($port in @(80, 443)) {
     if (-not (Test-PortAvailable -Port $port)) {
       Fail-Friendly "Preflight check failed: local port $port is already in use.`nFree the port and rerun this script."
     }
@@ -147,18 +148,48 @@ function Test-HttpOk([string]$Url) {
   }
 }
 
-function Wait-Deployment([string]$Name, [int]$TimeoutSec = 600) {
+function Test-HttpsReady([string]$Url) {
+  try {
+    $raw = & curl.exe -k --silent --show-error $Url
+    $res = $raw | ConvertFrom-Json
+    return ($res.status -eq "ready")
+  } catch {
+    return $false
+  }
+}
+
+function Wait-HttpsReady([string]$Url, [int]$TimeoutSec = 180) {
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
-    $resource = kubectl get "deployment/$Name" -n $Namespace --ignore-not-found -o name 2>$null
+    try {
+      $raw = & curl.exe -k --silent --show-error $Url
+      $res = $raw | ConvertFrom-Json
+      if ($res.status -eq "ready") {
+        return
+      }
+    } catch {}
+    Start-Sleep -Seconds 2
+  }
+
+  throw "Timed out waiting for ready response from $Url"
+}
+
+function Wait-Deployment([string]$Name, [int]$TimeoutSec = 600) {
+  Wait-NamespacedDeployment -Name $Name -Namespace $Namespace -TimeoutSec $TimeoutSec
+}
+
+function Wait-NamespacedDeployment([string]$Name, [string]$NamespaceToUse, [int]$TimeoutSec = 600) {
+  $deadline = (Get-Date).AddSeconds($TimeoutSec)
+  while ((Get-Date) -lt $deadline) {
+    $resource = kubectl get "deployment/$Name" -n $NamespaceToUse --ignore-not-found -o name 2>$null
     if ($resource) {
-      kubectl rollout status "deployment/$Name" -n $Namespace --timeout="$($TimeoutSec)s" | Out-Host
+      kubectl rollout status "deployment/$Name" -n $NamespaceToUse --timeout="$($TimeoutSec)s" | Out-Host
       return
     }
     Start-Sleep -Seconds 2
   }
 
-  Fail-Friendly "Timed out waiting for deployment/$Name to appear in namespace $Namespace."
+  Fail-Friendly "Timed out waiting for deployment/$Name to appear in namespace $NamespaceToUse."
 }
 
 function Wait-UrlReady([string]$Url, [int]$TimeoutSec = 180) {
@@ -240,8 +271,20 @@ try {
     }
   }
 
+  Invoke-Step "Creating application namespace" {
+    kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f - | Out-Host
+  }
+
   Invoke-Step "Installing metrics-server" {
     & "$PSScriptRoot/../k8s/scripts/install-metrics-server.ps1"
+  }
+
+  Invoke-Step "Installing ingress-nginx" {
+    & "$PSScriptRoot/../k8s/scripts/install-ingress-nginx.ps1"
+  }
+
+  Invoke-Step "Generating local TLS certificate" {
+    & "$PSScriptRoot/../k8s/scripts/install-local-tls.ps1" -Namespace $Namespace
   }
 
   Invoke-Step "Loading local image into kind" {
@@ -258,6 +301,7 @@ try {
   }
 
   Invoke-Step "Waiting for deployments" {
+    Wait-NamespacedDeployment -Name "ingress-nginx-controller" -NamespaceToUse "ingress-nginx"
     Wait-Deployment -Name "api"
     Wait-Deployment -Name "worker"
     Wait-Deployment -Name "dlq-replayer"
@@ -266,11 +310,11 @@ try {
   }
 
   Invoke-Step "Waiting for API readiness" {
-    if (-not (Test-UrlReady -Url "$BaseUrl/health/ready")) {
-      Write-Host "Direct access to $BaseUrl is not ready. Falling back to kubectl port-forward."
-      $apiPortForwardProcess = Start-PortForward -ServiceName "api" -LocalPort 30080 -RemotePort 8000
-    }
     Wait-UrlReady -Url "$BaseUrl/health/ready" -TimeoutSec 180
+  }
+
+  Invoke-Step "Verifying HTTPS ingress readiness" {
+    Wait-HttpsReady -Url "$TlsBaseUrl/health/ready" -TimeoutSec 180
   }
 
   Invoke-Step "Running smoke test" {
@@ -325,8 +369,13 @@ try {
   Write-Host ""
   Write-Host "Quick Start all-in-one run completed successfully."
   Write-Host "API URL: $BaseUrl"
+  Write-Host "TLS API URL: $TlsBaseUrl"
+  Write-Host "Grafana URL: http://localhost/grafana"
+  Write-Host "TLS Grafana URL: https://localhost/grafana"
+  Write-Host "Prometheus URL: http://localhost/prometheus"
+  Write-Host "TLS Prometheus URL: https://localhost/prometheus"
   if ($IncludeFailoverAlerts) {
-    Write-Host "Prometheus URL: $PrometheusUrl"
+    Write-Host "Prometheus alert API URL: $PrometheusUrl"
   }
   Write-Host "k6 load tests remain separate: powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1"
 }

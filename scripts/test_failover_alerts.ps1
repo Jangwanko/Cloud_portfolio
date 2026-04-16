@@ -1,5 +1,5 @@
 param(
-  [string]$BaseUrl = "http://localhost:30080",
+  [string]$BaseUrl = "http://localhost",
   [string]$PrometheusUrl = "http://localhost:9090",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",

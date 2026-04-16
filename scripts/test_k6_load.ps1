@@ -2,7 +2,7 @@ param(
   [string]$Namespace = "messaging-app",
   [string]$JobManifest = "k8s/app/k6-job.yaml",
   [string]$ScriptPath = "scripts/load_test_k6.js",
-  [string]$BaseUrl = "http://localhost:30080",
+  [string]$BaseUrl = "http://localhost",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
   [string]$RedisDeployment = "messaging-redis-node",
   [int]$TimeoutSec = 420,
