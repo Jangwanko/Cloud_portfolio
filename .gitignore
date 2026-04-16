@@ -31,6 +31,7 @@ build/
 dist/
 *.egg-info/
 backups/
+k6/results/
 
 
 # etc

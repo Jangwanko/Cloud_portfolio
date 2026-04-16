@@ -7,11 +7,8 @@
 .
 ├─ alembic/                   # DB 마이그레이션 스크립트
 ├─ docs/                      # 프로젝트 문서
-├─ frontend/                  # 프론트엔드 정적 리소스
-├─ k6/                        # 부하 테스트 시나리오 및 결과
 ├─ k8s/                       # Kubernetes 배포/검증 리소스
 ├─ monitoring/                # Prometheus/Grafana 설정
-├─ nginx/                     # Reverse proxy 설정
 ├─ observer/                  # 관측 UI/보조 서비스 코드
 ├─ portfolio/                 # FastAPI 애플리케이션 본체
 ├─ scripts/                   # 운영/테스트 자동화 스크립트
@@ -23,11 +20,9 @@
 ## 폴더 설명
 - `portfolio/`: API 엔드포인트, 설정, DB/Redis 연결, 큐 처리 로직
 - `worker/`: 큐 소비, DB 저장, 재시도, DLQ 재처리
-- `scripts/`: 상태 점검, 재시작, 장애 재현 테스트 스크립트
+- `scripts/`: quick start, 장애 재현, 성능 측정, 백업/복구 스크립트
 - `monitoring/`: Prometheus 규칙, Grafana 대시보드 설정
-- `nginx/`: API/Observer 라우팅과 진입점 제어 설정
 - `k8s/`: 배포/스케일링/검증 매니페스트
-- `k6/`: 부하 시나리오(`scenarios`)와 결과(`results`)
 - `docs/`: 실행 가이드, 아키텍처, 테스트 결과 문서
 - `alembic/`: 스키마 변경 이력과 마이그레이션 버전
 - `observer/`: 처리 상태/지표 확인용 보조 UI
