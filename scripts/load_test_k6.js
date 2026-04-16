@@ -7,6 +7,8 @@ const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
 const K6_WRITE_RESULT_FILES =
   (__ENV.K6_WRITE_RESULT_FILES || "true").toLowerCase() !== "false";
+const SETUP_RETRIES = Number(__ENV.SETUP_RETRIES || "5");
+const SETUP_RETRY_SLEEP = Number(__ENV.SETUP_RETRY_SLEEP || "1");
 
 function pad2(value) {
   return String(value).padStart(2, "0");
@@ -84,20 +86,42 @@ function metricValue(data, metricName, key, fallback = "n/a") {
   return values[key] !== undefined ? values[key] : fallback;
 }
 
+function postJsonWithRetry(url, payload, params, expectedStatus, label) {
+  let lastResponse;
+  for (let attempt = 1; attempt <= SETUP_RETRIES; attempt += 1) {
+    lastResponse = http.post(url, JSON.stringify(payload), params);
+    if (lastResponse.status === expectedStatus) {
+      return lastResponse;
+    }
+    if (attempt < SETUP_RETRIES) {
+      sleep(SETUP_RETRY_SLEEP);
+    }
+  }
+
+  check(lastResponse, {
+    [`${label} (${expectedStatus})`]: (r) => r.status === expectedStatus,
+  });
+  return lastResponse;
+}
+
 export function setup() {
   const suffix = Date.now();
   const headers = { "Content-Type": "application/json" };
   const password = "Password123!";
 
-  const u1Res = http.post(
+  const u1Res = postJsonWithRetry(
     `${BASE_URL}/v1/users`,
-    JSON.stringify({ username: `k6_user_a_${suffix}`, password }),
+    { username: `k6_user_a_${suffix}`, password },
     { headers },
+    200,
+    "create user a",
   );
-  const u2Res = http.post(
+  const u2Res = postJsonWithRetry(
     `${BASE_URL}/v1/users`,
-    JSON.stringify({ username: `k6_user_b_${suffix}`, password }),
+    { username: `k6_user_b_${suffix}`, password },
     { headers },
+    200,
+    "create user b",
   );
 
   check(u1Res, { "create user a (200)": (r) => r.status === 200 });
@@ -107,10 +131,12 @@ export function setup() {
   const u2 = JSON.parse(u2Res.body);
 
   const loginHeaders = { "Content-Type": "application/json" };
-  const u1LoginRes = http.post(
+  const u1LoginRes = postJsonWithRetry(
     `${BASE_URL}/v1/auth/login`,
-    JSON.stringify({ username: `k6_user_a_${suffix}`, password }),
+    { username: `k6_user_a_${suffix}`, password },
     { headers: loginHeaders },
+    200,
+    "login user a",
   );
   check(u1LoginRes, { "login user a (200)": (r) => r.status === 200 });
   const u1Token = JSON.parse(u1LoginRes.body).access_token;
@@ -120,10 +146,12 @@ export function setup() {
     Authorization: `Bearer ${u1Token}`,
   };
 
-  const streamRes = http.post(
+  const streamRes = postJsonWithRetry(
     `${BASE_URL}/v1/streams`,
-    JSON.stringify({ name: `k6-stream-${suffix}`, member_ids: [u1.id, u2.id] }),
+    { name: `k6-stream-${suffix}`, member_ids: [u1.id, u2.id] },
     { headers: authHeaders },
+    200,
+    "create stream",
   );
   check(streamRes, { "create stream (200)": (r) => r.status === 200 });
   const stream = JSON.parse(streamRes.body);

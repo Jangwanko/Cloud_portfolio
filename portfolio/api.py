@@ -8,7 +8,7 @@ from portfolio.auth import authenticate_user, create_access_token, get_current_u
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
 from portfolio.queues import ingress_partition_queue
-from portfolio.redis_client import get_redis, reconnect_redis, update_queue_depth
+from portfolio.redis_client import get_redis, reconnect_redis
 from portfolio.schemas import (
     EventCreate,
     LoginRequest,
@@ -81,15 +81,9 @@ def _delete_request_status(request_id: str) -> None:
 
 
 def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict | None:
-    existing_request_id = _get_fallback_idem(route, idem_key)
-    if existing_request_id:
-        existing_status = _load_request_status(existing_request_id)
-        if existing_status is not None:
-            return _externalize_request_status(existing_status)
-        _clear_fallback_idem(route, idem_key, existing_request_id)
-
-    inserted = _set_fallback_idem(route, idem_key, request_id)
-    if inserted:
+    # The common path is a new idempotency key, so claim first and only
+    # do extra lookups when the key already exists.
+    if _set_fallback_idem(route, idem_key, request_id):
         return None
 
     existing_request_id = _get_fallback_idem(route, idem_key)
@@ -111,11 +105,13 @@ def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict |
     raise RuntimeError("Failed to claim idempotency key")
 
 
-def _queue_ingress_message(job_payload: dict) -> None:
+def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
     redis_client = _redis_client()
     queue_name = ingress_partition_queue(int(job_payload["room_id"]))
-    redis_client.lpush(queue_name, json.dumps(job_payload))
-    update_queue_depth(queue_name)
+    with redis_client.pipeline() as pipe:
+        pipe.set(_request_status_key(request_id), json.dumps(request_payload))
+        pipe.lpush(queue_name, json.dumps(job_payload))
+        pipe.execute()
 
 
 def _next_room_seq(room_id: int) -> int:
@@ -154,18 +150,20 @@ def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
 
 def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
     try:
+        if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
+            return
+    except Exception:
+        pass
+
+    try:
         with get_conn() as conn:
             with get_cursor(conn) as cur:
                 _ensure_room_member(cur, room_id, user_id)
+                _cache_room_members(room_id, [user_id])
         return
     except HTTPException:
         raise
     except Exception:
-        try:
-            if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
-                return
-        except Exception:
-            pass
         raise HTTPException(status_code=503, detail="Authorization check unavailable")
 
 
@@ -289,8 +287,9 @@ def create_event(
         "queued_at": queued_at,
     }
     try:
-        _store_request_status(request_id, accepted_response)
-        _queue_ingress_message(
+        _store_request_and_queue_job(
+            request_id,
+            accepted_response,
             {
                 "request_id": request_id,
                 "route": route,
@@ -302,7 +301,7 @@ def create_event(
                 "queued_at": queued_at,
                 "retry_count": 0,
                 "next_retry_at": None,
-            }
+            },
         )
     except Exception as exc:  # noqa: BLE001
         if x_idempotency_key:
