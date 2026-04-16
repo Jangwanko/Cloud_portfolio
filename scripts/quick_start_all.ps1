@@ -275,6 +275,10 @@ try {
     kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f - | Out-Host
   }
 
+  Invoke-Step "Installing runtime secrets" {
+    & "$PSScriptRoot/../k8s/scripts/install-runtime-secrets.ps1" -Namespace $Namespace
+  }
+
   Invoke-Step "Installing metrics-server" {
     & "$PSScriptRoot/../k8s/scripts/install-metrics-server.ps1"
   }

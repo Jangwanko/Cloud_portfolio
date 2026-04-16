@@ -2,7 +2,7 @@
 
 ## 구성 요소
 - API (`FastAPI`)
-  - 트랜잭션 요청 수락
+  - transaction 요청 수락
   - Redis ingress queue 적재
   - health / readiness / metrics 노출
 - Worker
@@ -23,11 +23,16 @@
 - metrics-server
   - HPA용 resource metrics 제공
 - ingress-nginx
-  - 로컬 kind 환경의 HTTP ingress 진입점
-  - self-signed certificate 기반 HTTPS termination
+  - 로컬 kind 환경의 HTTP / HTTPS ingress 진입
+- Runtime Secrets
+  - auth key와 운영 credential 분리
+- PostgreSQL Backup / Restore
+  - 수동 logical backup
+  - backup본 기반 restore
+  - 주 1회 backup `CronJob`
 
 ## 외부 진입
-현재 로컬 검증 기준 외부 진입은 아래와 같습니다.
+현재 로컬 검증 기준의 기본 진입점은 아래와 같습니다.
 
 - API: `http://localhost`
 - TLS API: `https://localhost`
@@ -36,18 +41,18 @@
 - Prometheus: `http://localhost/prometheus/`
 - TLS Prometheus: `https://localhost/prometheus/`
 
-즉 Service는 `ClusterIP`로 내부에 두고, 외부 접근은 `ingress-nginx`가 받아서 각 서비스로 라우팅합니다. 로컬 HTTPS는 self-signed certificate로 종료합니다.
+Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각 서비스로 라우팅합니다. 로컬 HTTPS는 self-signed certificate 기반으로 종료합니다.
 
 ## 요청 처리 흐름
-1. 클라이언트가 API로 트랜잭션 요청을 보냅니다.
+1. 클라이언트가 API로 transaction 요청을 보냅니다.
 2. API는 요청을 바로 DB에 쓰지 않고 Redis ingress queue에 적재합니다.
 3. Worker가 queue에서 요청을 가져와 PostgreSQL에 영속화합니다.
 4. 실패하면 retry를 수행합니다.
 5. retry 한도를 넘기면 DLQ로 이동합니다.
-6. DLQ Replayer가 복구 후 조건이 맞으면 다시 ingress queue로 재투입합니다.
+6. DLQ Replayer가 복구 조건이 맞으면 다시 ingress queue로 재투입합니다.
 
 ## 인증 / 인가
-현재 최소 범위의 인증 / 인가가 들어가 있습니다.
+현재 최소 범위의 인증 / 인가가 적용되어 있습니다.
 
 - 사용자 생성 시 `password_hash` 저장
 - `/v1/auth/login`으로 bearer token 발급
@@ -55,26 +60,26 @@
 - room membership 검증 적용
 
 중요한 점:
-- 인증은 token payload를 기준으로 처리해서 DB down 중에도 인증 때문에 요청이 막히지 않도록 구성했습니다.
-- DB down 수락 경로를 유지하기 위해 room membership는 Redis에도 캐시합니다.
+- 인증은 token payload 기준으로 처리해서 DB down 중에도 인증 경로 자체 때문에 요청이 막히지 않도록 했습니다.
+- DB down 수락 경로를 유지하기 위해 room membership 일부를 Redis에 캐시합니다.
 
 ## 장애 시나리오별 동작
 
 ### DB down
 - API는 Redis queue로 요청을 계속 수락할 수 있습니다.
 - Worker는 DB 쓰기 실패 시 retry를 수행합니다.
-- retry 초과 시 DLQ로 이동합니다.
-- DB recovery 후 pgpool-backed DB query가 안정화되면 worker와 replayer가 다시 영속화를 진행합니다.
+- retry 한도를 넘긴 요청은 DLQ로 이동합니다.
+- DB recovery 후 pgpool-backed query가 안정화되면 worker와 replayer가 다시 영속화를 진행합니다.
 
 ### Redis down
 - API는 queue 적재를 할 수 없어 요청 실패가 증가합니다.
-- readiness는 `not_ready`로 바뀝니다.
+- readiness는 `not_ready`로 내려갑니다.
 - Worker는 queue 소비를 중단합니다.
 - Redis recovery 후 queue 처리와 readiness가 정상화됩니다.
 
 ### Worker backlog
-- API는 요청을 계속 수락할 수 있지만 queue depth가 증가합니다.
-- Worker replica를 늘리거나 부하가 줄면 backlog가 다시 감소합니다.
+- API는 요청을 계속 수락하지만 queue depth가 증가합니다.
+- Worker replica 증가 또는 부하 감소 시 backlog가 다시 줄어듭니다.
 
 ## Autoscaling
 현재 autoscaling은 CPU 기반 HPA로 구성되어 있습니다.
@@ -91,7 +96,7 @@
 최근 검증에서는 API replica가 `3 -> 5`, `3 -> 6`으로 scale-up 되는 것을 확인했습니다.
 
 ## Observability
-현재 관측 항목:
+현재 관측 가능한 항목:
 - API request count / latency
 - worker processing count / latency
 - queue depth
@@ -103,7 +108,25 @@
 - Redis outage alert
 - recovery 후 alert resolution
 
+## Backup and Restore
+현재 PostgreSQL 운영 보강은 아래처럼 구성되어 있습니다.
+
+- 수동 backup
+  - `scripts/backup_postgres_k8s.ps1`
+  - `pgpool` 경유 `pg_dump`
+  - 결과는 로컬 `backups/`에 저장
+- restore
+  - `scripts/restore_postgres_k8s.ps1`
+  - 기존 backup SQL을 다시 적용
+  - `-Force` 필수
+  - 필요 시 `-ResetSchema` 지원
+- 주기 backup
+  - HA 매니페스트에 `postgres-weekly-backup` `CronJob`
+  - 스케줄: `0 3 * * 0`
+  - cluster PVC `postgres-backups` 사용
+
 ## 현재 한계
-- HTTPS는 local self-signed certificate 기준이라 브라우저 신뢰 경고가 발생할 수 있습니다.
-- `k6`는 실행은 정상이나 latency threshold는 아직 실패합니다.
-- 멀티 파드 환경에서 요청 순서 보장 검증은 더 필요합니다.
+- HTTPS는 local self-signed certificate 기반이라 브라우저 경고가 발생할 수 있습니다.
+- `k6`는 실행 자체는 정상이지만 latency threshold는 아직 미통과입니다.
+- 멀티 파드 환경에서 메시지 순서 보장 검증은 추가 작업이 필요합니다.
+- 운영 UI는 면접용 데모 흐름을 위해 비교적 열려 있는 상태입니다.

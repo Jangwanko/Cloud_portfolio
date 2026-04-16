@@ -48,3 +48,4 @@
 - 빠른 실행: [QUICK_START.md](QUICK_START.md)
 - 아키텍처: [ARCHITECTURE.md](ARCHITECTURE.md)
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
+- 운영 정리: [OPERATIONS.md](OPERATIONS.md)

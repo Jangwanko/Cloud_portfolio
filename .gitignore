@@ -30,6 +30,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+backups/
 
 
 # etc

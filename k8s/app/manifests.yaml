@@ -205,7 +205,9 @@ spec:
           envFrom:
             - secretRef:
                 name: messaging-env
-          resources:
+            - secretRef:
+                name: messaging-runtime-secrets
+            resources:
             requests:
               cpu: "300m"
               memory: "384Mi"
@@ -286,7 +288,9 @@ spec:
           envFrom:
             - secretRef:
                 name: messaging-env
-          resources:
+            - secretRef:
+                name: messaging-runtime-secrets
+            resources:
             requests:
               cpu: "200m"
               memory: "256Mi"
@@ -330,7 +334,9 @@ spec:
           envFrom:
             - secretRef:
                 name: messaging-env
-          resources:
+            - secretRef:
+                name: messaging-runtime-secrets
+            resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
@@ -549,9 +555,15 @@ spec:
             - containerPort: 3000
           env:
             - name: GF_SECURITY_ADMIN_USER
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-runtime-secrets
+                  key: GRAFANA_ADMIN_USER
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: admin
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-runtime-secrets
+                  key: GRAFANA_ADMIN_PASSWORD
             - name: GF_SERVER_ROOT_URL
               value: "%(protocol)s://%(domain)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH

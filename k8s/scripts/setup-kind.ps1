@@ -26,6 +26,7 @@ if (Test-Path $kindConfig) {
 
 kubectl cluster-info
 kubectl create namespace messaging-app --dry-run=client -o yaml | kubectl apply -f -
+& "$PSScriptRoot/install-runtime-secrets.ps1" -Namespace "messaging-app"
 & "$PSScriptRoot/install-ingress-nginx.ps1"
 & "$PSScriptRoot/install-metrics-server.ps1"
 & "$PSScriptRoot/install-local-tls.ps1" -Namespace "messaging-app"
