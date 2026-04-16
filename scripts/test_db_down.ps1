@@ -98,7 +98,7 @@ $password = "Password123!"
 $u1 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)
 $u2 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "application/json" -Body (@{ username = $u2Name; password = $password } | ConvertTo-Json)
 $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)).access_token
-$room = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/rooms" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "dbtest-room-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
+$stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "dbtest-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
 
 try {
   $dbRef = Get-WorkloadRef $DbDeployment
@@ -110,7 +110,7 @@ try {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 
-  $accept = Invoke-RestMethod -Method Post -Uri ("$BaseUrl/v1/rooms/{0}/messages" -f $room.id) -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="db-down-$suffix"} -ContentType "application/json" -Body (@{ body = "message while db down" } | ConvertTo-Json)
+  $accept = Invoke-RestMethod -Method Post -Uri ("$BaseUrl/v1/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="db-down-$suffix"} -ContentType "application/json" -Body (@{ body = "event while db down" } | ConvertTo-Json)
   if ($accept.status -ne "accepted") {
     throw "Expected accepted while db down, got: $($accept | ConvertTo-Json -Compress)"
   }
@@ -133,7 +133,7 @@ try {
   $persisted = $false
   $deadline = (Get-Date).AddSeconds(300)
   while ((Get-Date) -lt $deadline) {
-    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri ("$BaseUrl/v1/message-requests/{0}" -f $requestId)
+    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri ("$BaseUrl/v1/event-requests/{0}" -f $requestId)
     if ($status.status -eq "persisted") {
       $persisted = $true
       break
@@ -142,7 +142,7 @@ try {
   }
 
   if (-not $persisted) {
-    throw "Message request did not become persisted in time"
+    throw "Event request did not become persisted in time"
   }
 
   Write-Host "DB outage test passed (k8s): accepted during DB down and persisted after recovery"

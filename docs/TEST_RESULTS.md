@@ -8,7 +8,8 @@
 | --- | --- | --- | --- |
 | Smoke test | `scripts/smoke_test.ps1` | Pass | 요청 생성, 영속화, 읽음 처리, unread count 확인 |
 | DB outage and recovery | `scripts/test_db_down.ps1` | Pass | DB down 중 `accepted`, 복구 후 `persisted` 확인 |
-| Redis outage and recovery | `scripts/test_redis_down.ps1` | Pass | Redis down 중 API 실패, 복구 후 정상 처리 확인 |
+| Redis complete outage and recovery | `scripts/test_redis_down.ps1` | Pass | 전체 Redis 접근 불가 시 event intake 실패, 복구 후 다시 `accepted` 확인 |
+| Redis single-node failover | `scripts/test_redis_failover.ps1` | Pass | Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 확인 |
 | DLQ flow | `scripts/test_dlq_flow.ps1` | Pass | 실패 요청의 DLQ 적재와 재처리 흐름 확인 |
 | Failover and alert validation | `scripts/test_failover_alerts.ps1` | Pass | Prometheus alert firing / resolution 확인 |
 | HPA scaling | `scripts/test_hpa_scaling.ps1` | Pass | API replica scale-up 확인 |
@@ -22,6 +23,15 @@
 - DB outage + recovery time: about `102s`
 - Redis outage + recovery time: about `114s`
 
+### Redis Scenario Split
+- complete outage:
+  - `scripts/test_redis_down.ps1`
+  - readiness가 `not_ready`로 내려가면 같이 확인
+  - 핵심 기준은 event intake 실패와 복구 후 재수락
+- single-node failover:
+  - `scripts/test_redis_failover.ps1`
+  - Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 확인
+
 ### HPA Scaling
 - API HPA scale-up observed:
   - `initial_replicas=3 -> max_replicas=5`, `cpu_target=88`
@@ -32,7 +42,7 @@
 - `scripts/quick_start_all.ps1` recent successful run:
   - smoke test: pass
   - DB recovery test: pass
-  - Redis recovery test: pass
+  - Redis complete outage test: pass
   - HPA scaling test: pass
   - ingress readiness at `http://localhost/health/ready`: pass
   - TLS readiness at `https://localhost/health/ready`: pass
@@ -92,4 +102,5 @@
 - autoscaling(HPA)은 metrics-server 추가 후 실제 동작을 확인했습니다.
 - ingress 기반 외부 진입은 `http://localhost`와 `https://localhost` 기준으로 검증했습니다.
 - backup / restore도 수동 운영 경로 기준으로 실제 검증했습니다.
+- Redis는 complete outage와 HA failover를 별도 시나리오로 분리해 검증합니다.
 - 현재 가장 큰 남은 과제는 `k6` latency 개선과 운영 정책 고도화입니다.

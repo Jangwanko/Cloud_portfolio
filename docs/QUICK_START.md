@@ -52,7 +52,8 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 | Full quick start | `scripts/quick_start_all.ps1` | about 12-18 min |
 | Smoke test | `scripts/smoke_test.ps1` | about 15-30 sec |
 | DB recovery test | `scripts/test_db_down.ps1` | about 1-2 min |
-| Redis recovery test | `scripts/test_redis_down.ps1` | about 1-2 min |
+| Redis outage test | `scripts/test_redis_down.ps1` | about 2-3 min |
+| Redis failover test | `scripts/test_redis_failover.ps1` | about 2-3 min |
 | HPA scaling test | `scripts/test_hpa_scaling.ps1` | about 30-45 sec |
 | DLQ flow test | `scripts/test_dlq_flow.ps1` | about 1-2 min |
 | Failover + alert test | `scripts/test_failover_alerts.ps1` | about 4-5 min |
@@ -94,10 +95,16 @@ DB outage and recovery:
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1
 ```
 
-Redis outage and recovery:
+Redis complete outage and recovery:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_redis_down.ps1
+```
+
+Redis single-node failover:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_redis_failover.ps1
 ```
 
 Kubernetes autoscaling:

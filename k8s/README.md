@@ -51,7 +51,7 @@ Prometheus + Grafana로 아래 항목을 관측합니다.
 - API: request rate, latency p50/p95/p99, error rate, readiness 실패 횟수
 - PostgreSQL: up/down, active connections, replication lag, transaction rate, failover event
 - Redis: memory usage, queue length, ops/sec, connected clients, reconnect event
-- Worker: message processed count, success/failure rate, processing latency, retry count, queue lag
+- Worker: event processed count, success/failure rate, processing latency, retry count, queue lag
 - Kubernetes: pod restart count, CPU/memory, node disk usage, network I/O
 
 ## 참고

@@ -1,7 +1,7 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 
-const BASE_URL = __ENV.BASE_URL || "http://localhost/api";
+const BASE_URL = __ENV.BASE_URL || "http://localhost";
 const STAGE_DURATION = __ENV.STAGE_DURATION || "60s";
 const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
@@ -40,7 +40,7 @@ function buildScenarios() {
         executor: "constant-vus",
         vus: 500,
         duration: STAGE_DURATION,
-        exec: "chatFlow",
+        exec: "eventFlow",
         startTime: "0s",
       },
     };
@@ -50,21 +50,21 @@ function buildScenarios() {
       executor: "constant-vus",
       vus: 100,
       duration: STAGE_DURATION,
-      exec: "chatFlow",
+        exec: "eventFlow",
       startTime: "0s",
     },
     users_500: {
       executor: "constant-vus",
       vus: 500,
       duration: STAGE_DURATION,
-      exec: "chatFlow",
+        exec: "eventFlow",
       startTime: `${stageSeconds}s`,
     },
     users_1000: {
       executor: "constant-vus",
       vus: 1000,
       duration: STAGE_DURATION,
-      exec: "chatFlow",
+        exec: "eventFlow",
       startTime: `${stageSeconds * 2}s`,
     },
   };
@@ -87,15 +87,16 @@ function metricValue(data, metricName, key, fallback = "n/a") {
 export function setup() {
   const suffix = Date.now();
   const headers = { "Content-Type": "application/json" };
+  const password = "Password123!";
 
   const u1Res = http.post(
     `${BASE_URL}/v1/users`,
-    JSON.stringify({ username: `k6_user_a_${suffix}` }),
+    JSON.stringify({ username: `k6_user_a_${suffix}`, password }),
     { headers },
   );
   const u2Res = http.post(
     `${BASE_URL}/v1/users`,
-    JSON.stringify({ username: `k6_user_b_${suffix}` }),
+    JSON.stringify({ username: `k6_user_b_${suffix}`, password }),
     { headers },
   );
 
@@ -105,36 +106,50 @@ export function setup() {
   const u1 = JSON.parse(u1Res.body);
   const u2 = JSON.parse(u2Res.body);
 
-  const roomRes = http.post(
-    `${BASE_URL}/v1/rooms`,
-    JSON.stringify({ name: `k6-room-${suffix}`, member_ids: [u1.id, u2.id] }),
-    { headers },
+  const loginHeaders = { "Content-Type": "application/json" };
+  const u1LoginRes = http.post(
+    `${BASE_URL}/v1/auth/login`,
+    JSON.stringify({ username: `k6_user_a_${suffix}`, password }),
+    { headers: loginHeaders },
   );
-  check(roomRes, { "create room (200)": (r) => r.status === 200 });
-  const room = JSON.parse(roomRes.body);
+  check(u1LoginRes, { "login user a (200)": (r) => r.status === 200 });
+  const u1Token = JSON.parse(u1LoginRes.body).access_token;
 
-  return { roomId: room.id, userId: u1.id };
+  const authHeaders = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${u1Token}`,
+  };
+
+  const streamRes = http.post(
+    `${BASE_URL}/v1/streams`,
+    JSON.stringify({ name: `k6-stream-${suffix}`, member_ids: [u1.id, u2.id] }),
+    { headers: authHeaders },
+  );
+  check(streamRes, { "create stream (200)": (r) => r.status === 200 });
+  const stream = JSON.parse(streamRes.body);
+
+  return { streamId: stream.id, token: u1Token };
 }
 
-export function chatFlow(data) {
+export function eventFlow(data) {
   const headers = {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${data.token}`,
     "X-Idempotency-Key": `${__VU}-${__ITER}-${Date.now()}`,
   };
 
   const payload = JSON.stringify({
-    user_id: data.userId,
-    body: `k6 chat vu=${__VU} iter=${__ITER}`,
+    body: `k6 event vu=${__VU} iter=${__ITER}`,
   });
 
   const res = http.post(
-    `${BASE_URL}/v1/rooms/${data.roomId}/messages`,
+    `${BASE_URL}/v1/streams/${data.streamId}/events`,
     payload,
     { headers },
   );
 
   check(res, {
-    "chat request accepted (200)": (r) => r.status === 200,
+    "event request accepted (200)": (r) => r.status === 200,
   });
 
   sleep(THINK_TIME);

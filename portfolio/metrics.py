@@ -72,7 +72,7 @@ queue_depth = Gauge(
 
 worker_processed_total = Counter(
     "messaging_worker_processed_total",
-    "Worker processed messages",
+    "Worker processed events",
     ["result"],
     registry=registry,
 )

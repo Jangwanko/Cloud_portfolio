@@ -115,7 +115,7 @@
 추가된 범위:
 - `/v1/auth/login`
 - bearer token 기반 인증
-- room membership 기반 최소 인가
+- stream membership 기반 최소 인가
 - `ingress-nginx`
 - `ClusterIP + Ingress` 기반 외부 진입
 
@@ -164,10 +164,40 @@
 - runtime secret가 별도 관리되며, 수동 backup과 restore가 실제로 동작하는 상태가 됐습니다.
 - HA 배포에는 주 1회 logical backup 설정이 포함되며, 운영 보강 흐름을 문서로 설명할 수 있게 됐습니다.
 
+## v0.13 Redis Scenario Split
+추가된 범위:
+- `scripts/test_redis_down.ps1` 의미 재정의
+- `scripts/test_redis_failover.ps1` 추가
+
+배경:
+- 기존 Redis 테스트는 "complete outage"와 "HA failover"가 하나의 시나리오에 섞여 있어, 무엇을 검증하는지 설명하기가 어려웠습니다.
+- 특히 Redis HA + Sentinel 환경에서는 일부 노드 중단이 곧바로 전체 Redis down과 같지 않았습니다.
+
+영향:
+- `test_redis_down.ps1`는 이제 전체 Redis 접근 불가 시 event intake 실패와 복구 후 재수락을 검증합니다.
+- `test_redis_failover.ps1`는 단일 Redis pod 재시작 후 HA가 복구되고 event intake가 계속 가능한지 검증합니다.
+- Redis 장애와 Redis failover를 별도 운영 시나리오로 설명할 수 있게 됐습니다.
+
+## v0.14 Stream and Event Refactor
+추가된 범위:
+- 외부 API 경로를 `stream / event` 기준으로 재정의
+- 외부 응답 키를 `stream_id`, `stream_seq`, `event_id` 기준으로 변경
+- smoke / DB down / Redis down / DLQ / k6 스크립트의 외부 경로 반영
+- Observer UI와 주요 문서 표현 정리
+
+배경:
+- 프로젝트 해석은 점점 일반 transaction pipeline 쪽으로 넓어졌지만, 외부에 보이는 용어는 여전히 `room / message`에 묶여 있었습니다.
+- 코드와 문서의 해석 범위를 넓히기 위해, DB 내부 테이블은 유지하되 외부 인터페이스는 더 일반적인 용어로 정리할 필요가 있었습니다.
+
+영향:
+- 외부 API는 이제 `stream`과 `event` 기준으로 읽히며, 채팅 전용 구조보다 범용 event pipeline에 가까운 표현을 갖게 됐습니다.
+- DB 내부 스키마를 전면 변경하지 않고도, 면접관이 보게 되는 주요 표면 레이어의 용어를 일관되게 정리했습니다.
+- 기본 검증 경로에서는 새 `stream / event` 경로로 smoke와 DB recovery가 다시 통과하는 것을 확인했습니다.
+
 ## Current Known Gaps
 - HTTPS는 local self-signed certificate 기반입니다.
 - `k6`는 실행되지만 현재 latency threshold를 통과하지 못합니다.
-- 멀티 파드 환경에서 메시지 순서 보장 검증은 추가 작업이 필요합니다.
+- 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 추가 작업이 필요합니다.
 - 운영 UI 접근 제한은 아직 데모 친화적인 수준으로 유지하고 있습니다.
 
 ## Next Changes

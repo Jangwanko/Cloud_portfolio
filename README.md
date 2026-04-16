@@ -1,12 +1,12 @@
-﻿# Messaging Systems Portfolio
+# Event Stream Systems Portfolio
 
 ## Summary
-장애 상황에서도 요청 유실을 줄이고 복구 흐름을 유지하는 메시징 시스템을 목표로 만든 프로젝트입니다.
+장애 상황에서도 요청 유실을 줄이고 복구 흐름을 유지하는 event stream processing system을 목표로 만든 프로젝트입니다.
 
 핵심 포인트:
 - Queue 기반 비동기 처리
 - DB 장애 시 요청 보존 및 재처리
-- Redis 장애 시 상태 노출 및 복구 검증
+- Redis complete outage / failover 분리 검증
 - DLQ + Replayer 구조
 - Prometheus / Grafana 기반 관측
 - Kubernetes(kind) 기반 HA 실험
@@ -52,13 +52,14 @@ flowchart LR
 
 ## What This Project Covers
 ### Normal Path
-- 메시지 요청 수락
+- event 요청 수락
 - 비동기 영속화
 - 읽음 처리 / unread count 조회
 
 ### Failure Recovery
 - DB down 시 요청 수락 유지 후 복구 시 재처리
-- Redis down 시 readiness 변화 및 요청 실패 확인
+- Redis complete outage 시 event intake 실패 확인
+- Redis single-node failover 후 event intake 복구 확인
 - 재시도 초과 시 DLQ 이동
 
 ### Operations
@@ -86,7 +87,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 - `http://localhost/prometheus/` Prometheus UI 확인
 - smoke test
 - DB 장애 복구 테스트
-- Redis 장애 복구 테스트
+- Redis complete outage 테스트
 - HPA scaling 테스트
 
 부하 테스트는 별도 유지:
@@ -100,10 +101,11 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 - ingress host port 매핑 추가 (`80`, `443`)
 - `ingress-nginx` 기반 외부 진입 구조 적용
 - 최소 인증 / 인가 흐름 추가
+- `stream / event` 기준 외부 API 리팩토링
+- Redis outage / failover 시나리오 분리
 - quick start preflight check 추가
 - tool path 해석(`kind`, `helm`) 보강
 - readiness / reset / scenario 스크립트 안정화
-- 기본 시나리오 일괄 실행 스크립트 개선
 
 자세한 변경 이력:
 - [PATCH_NOTES.md](docs/PATCH_NOTES.md)
@@ -111,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 ## Current Limits
 - Helm chart 출력이 첫 실행에서 다소 길다
 - 로컬 HTTPS는 self-signed certificate 기준이다
-- 멀티 파드 환경에서 메시지 순서 보장 검증은 더 필요하다
+- 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 더 필요하다
 - `k6`는 실행은 정상이나 현재 latency threshold는 통과하지 못한다
 
 ## Service Readiness Checklist
@@ -134,7 +136,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
    - secret 관리 고도화
    - CI/CD 및 자동 테스트 연결
 5. 데이터 정합성 보강
-   - 멀티 파드 환경에서 메시지 순서 보장 검증
+   - 멀티 파드 환경에서 stream 단위 event 순서 보장 검증
    - retry / DLQ / replay 정책 명확화
    - idempotency 경계 보강
 6. 성능 개선
@@ -145,6 +147,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 ## Documents
 - 빠른 실행 가이드: [QUICK_START.md](docs/QUICK_START.md)
 - 구조와 장애 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 운영 가이드: [OPERATIONS.md](docs/OPERATIONS.md)
 - 변경 이력: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
 - 저장소 구조: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
 - 테스트 결과: [TEST_RESULTS.md](docs/TEST_RESULTS.md)

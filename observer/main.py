@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from psycopg2.extras import RealDictCursor
 
-app = FastAPI(title="Message Observer", version="1.0.0")
+app = FastAPI(title="Event Observer", version="1.0.0")
 
 DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = int(os.getenv("DB_PORT", "5432"))
@@ -45,15 +45,15 @@ def observer_home() -> str:
   </style>
 </head>
 <body>
-  <h1>Message Send/Receive Observer</h1>
+  <h1>Event Send/Receive Observer</h1>
   <div class=\"meta\">Auto refreshes every 5 seconds.</div>
   <div class=\"card\">
-    <h3>Message Timeline (send)</h3>
-    <table id=\"sendTable\"><thead><tr><th>id</th><th>room</th><th>user</th><th>body</th><th>created_at</th></tr></thead><tbody></tbody></table>
+    <h3>Event Timeline (send)</h3>
+    <table id=\"sendTable\"><thead><tr><th>id</th><th>stream</th><th>user</th><th>body</th><th>created_at</th></tr></thead><tbody></tbody></table>
   </div>
   <div class=\"card\">
     <h3>Notification Timeline (receive by worker)</h3>
-    <table id=\"recvTable\"><thead><tr><th>id</th><th>message_id</th><th>room</th><th>payload</th><th>processed_at</th></tr></thead><tbody></tbody></table>
+    <table id=\"recvTable\"><thead><tr><th>id</th><th>event_id</th><th>stream</th><th>payload</th><th>processed_at</th></tr></thead><tbody></tbody></table>
   </div>
 
 <script>
@@ -62,13 +62,13 @@ async function loadData() {
   const data = await res.json();
 
   const sendBody = document.querySelector('#sendTable tbody');
-  sendBody.innerHTML = data.messages.map(m =>
-    `<tr><td>${m.id}</td><td>${m.room_id}</td><td>${m.user_id}</td><td>${m.body}</td><td>${m.created_at}</td></tr>`
+  sendBody.innerHTML = data.events.map(m =>
+    `<tr><td>${m.id}</td><td>${m.stream_id}</td><td>${m.user_id}</td><td>${m.body}</td><td>${m.created_at}</td></tr>`
   ).join('');
 
   const recvBody = document.querySelector('#recvTable tbody');
   recvBody.innerHTML = data.attempts.map(a =>
-    `<tr><td>${a.id}</td><td>${a.message_id}</td><td>${a.room_id}</td><td>${a.payload}</td><td>${a.processed_at}</td></tr>`
+    `<tr><td>${a.id}</td><td>${a.event_id}</td><td>${a.stream_id}</td><td>${a.payload}</td><td>${a.processed_at}</td></tr>`
   ).join('');
 }
 
@@ -114,4 +114,25 @@ def events() -> dict:
         if isinstance(row["processed_at"], datetime):
             row["processed_at"] = row["processed_at"].isoformat()
 
-    return {"messages": messages, "attempts": attempts}
+    return {
+        "events": [
+            {
+                "id": row["id"],
+                "stream_id": row["room_id"],
+                "user_id": row["user_id"],
+                "body": row["body"],
+                "created_at": row["created_at"],
+            }
+            for row in messages
+        ],
+        "attempts": [
+            {
+                "id": row["id"],
+                "event_id": row["message_id"],
+                "stream_id": row["room_id"],
+                "payload": row["payload"],
+                "processed_at": row["processed_at"],
+            }
+            for row in attempts
+        ],
+    }

@@ -10,14 +10,14 @@ from portfolio.db import get_conn, get_cursor
 from portfolio.queues import ingress_partition_queue
 from portfolio.redis_client import get_redis, reconnect_redis, update_queue_depth
 from portfolio.schemas import (
+    EventCreate,
     LoginRequest,
-    MessageCreate,
     ReadReceiptCreate,
-    RoomCreate,
+    StreamCreate,
     UserCreate,
 )
 
-router = APIRouter(prefix="/v1", tags=["messaging"])
+router = APIRouter(prefix="/v1", tags=["events"])
 
 
 def _request_status_key(request_id: str) -> str:
@@ -44,6 +44,17 @@ def _load_request_status(request_id: str) -> dict | None:
     if not raw:
         return None
     return json.loads(raw)
+
+
+def _externalize_request_status(payload: dict) -> dict:
+    status = dict(payload)
+    if "message_id" in status:
+        status["event_id"] = status.pop("message_id")
+    if "room_id" in status:
+        status["stream_id"] = status.pop("room_id")
+    if "room_seq" in status:
+        status["stream_seq"] = status.pop("room_seq")
+    return status
 
 
 def _set_fallback_idem(route: str, idem_key: str, request_id: str) -> bool:
@@ -74,7 +85,7 @@ def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict |
     if existing_request_id:
         existing_status = _load_request_status(existing_request_id)
         if existing_status is not None:
-            return existing_status
+            return _externalize_request_status(existing_status)
         _clear_fallback_idem(route, idem_key, existing_request_id)
 
     inserted = _set_fallback_idem(route, idem_key, request_id)
@@ -85,7 +96,7 @@ def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict |
     if existing_request_id:
         existing_status = _load_request_status(existing_request_id)
         if existing_status is not None:
-            return existing_status
+            return _externalize_request_status(existing_status)
         _clear_fallback_idem(route, idem_key, existing_request_id)
 
     if _set_fallback_idem(route, idem_key, request_id):
@@ -95,7 +106,7 @@ def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict |
     if existing_request_id:
         existing_status = _load_request_status(existing_request_id)
         if existing_status is not None:
-            return existing_status
+            return _externalize_request_status(existing_status)
 
     raise RuntimeError("Failed to claim idempotency key")
 
@@ -128,7 +139,7 @@ def _cache_room_members(room_id: int, member_ids: list[int]) -> None:
 def _ensure_room_exists(cur, room_id: int) -> None:
     cur.execute("SELECT id FROM rooms WHERE id=%s", (room_id,))
     if cur.fetchone() is None:
-        raise HTTPException(status_code=404, detail="Room not found")
+        raise HTTPException(status_code=404, detail="Stream not found")
 
 
 def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
@@ -138,7 +149,7 @@ def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
         (room_id, user_id),
     )
     if cur.fetchone() is None:
-        raise HTTPException(status_code=403, detail="Room access denied")
+        raise HTTPException(status_code=403, detail="Stream access denied")
 
 
 def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
@@ -162,7 +173,7 @@ def _message_room_id(cur, message_id: int) -> int:
     cur.execute("SELECT room_id FROM messages WHERE id=%s", (message_id,))
     row = cur.fetchone()
     if row is None:
-        raise HTTPException(status_code=404, detail="Message not found")
+        raise HTTPException(status_code=404, detail="Event not found")
     return int(row["room_id"])
 
 
@@ -200,8 +211,8 @@ def login(payload: LoginRequest):
     }
 
 
-@router.post("/rooms")
-def create_room(payload: RoomCreate, current_user: dict = Depends(get_current_user)):
+@router.post("/streams")
+def create_stream(payload: StreamCreate, current_user: dict = Depends(get_current_user)):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
             cur.execute(
@@ -235,17 +246,17 @@ def create_room(payload: RoomCreate, current_user: dict = Depends(get_current_us
             }
 
 
-@router.post("/rooms/{room_id}/messages")
-def create_message(
-    room_id: int,
-    payload: MessageCreate,
+@router.post("/streams/{stream_id}/events")
+def create_event(
+    stream_id: int,
+    payload: EventCreate,
     x_idempotency_key: str | None = Header(default=None),
     current_user: dict = Depends(get_current_user),
 ):
     actor_user_id = int(current_user["id"])
-    _ensure_room_member_for_ingress(room_id, actor_user_id)
+    _ensure_room_member_for_ingress(stream_id, actor_user_id)
 
-    route = f"POST:/v1/rooms/{room_id}/messages"
+    route = f"POST:/v1/streams/{stream_id}/events"
     request_id = str(uuid4())
 
     if x_idempotency_key:
@@ -257,7 +268,7 @@ def create_message(
             raise HTTPException(status_code=503, detail="Redis unavailable") from exc
 
     try:
-        room_seq = _next_room_seq(room_id)
+        room_seq = _next_room_seq(stream_id)
     except Exception as exc:  # noqa: BLE001
         if x_idempotency_key:
             try:
@@ -271,8 +282,8 @@ def create_message(
         "request_id": request_id,
         "status": "accepted",
         "persistence": "queued",
-        "room_id": room_id,
-        "room_seq": room_seq,
+        "stream_id": stream_id,
+        "stream_seq": room_seq,
         "user_id": actor_user_id,
         "body": payload.body,
         "queued_at": queued_at,
@@ -283,7 +294,7 @@ def create_message(
             {
                 "request_id": request_id,
                 "route": route,
-                "room_id": room_id,
+                "room_id": stream_id,
                 "user_id": actor_user_id,
                 "body": payload.body,
                 "room_seq": room_seq,
@@ -307,15 +318,15 @@ def create_message(
     return accepted_response
 
 
-@router.get("/message-requests/{request_id}")
-def get_message_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
+@router.get("/event-requests/{request_id}")
+def get_event_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
     status = _load_request_status(request_id)
     if status is None:
         raise HTTPException(status_code=404, detail="Request not found")
     status_user_id = status.get("user_id")
     if status_user_id is not None and int(status_user_id) != int(current_user["id"]):
         raise HTTPException(status_code=403, detail="Request access denied")
-    return status
+    return _externalize_request_status(status)
 
 
 @router.get("/dlq/ingress")
@@ -339,23 +350,23 @@ def get_ingress_dlq(
     }
 
 
-@router.get("/rooms/{room_id}/messages")
-def list_messages(
-    room_id: int,
+@router.get("/streams/{stream_id}/events")
+def list_events(
+    stream_id: int,
     limit: int = Query(default=20, ge=1, le=100),
     before_id: int | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
-            _ensure_room_member(cur, room_id, int(current_user["id"]))
+            _ensure_room_member(cur, stream_id, int(current_user["id"]))
 
     sql = """
         SELECT id, request_id, room_id, room_seq, user_id, body, created_at
         FROM messages
         WHERE room_id=%s
     """
-    params: list[int] = [room_id]
+    params: list[int] = [stream_id]
 
     if before_id is not None:
         sql += " AND id < %s"
@@ -375,8 +386,8 @@ def list_messages(
             {
                 "id": row["id"],
                 "request_id": row["request_id"],
-                "room_id": row["room_id"],
-                "room_seq": row["room_seq"],
+                "stream_id": row["room_id"],
+                "stream_seq": row["room_seq"],
                 "user_id": row["user_id"],
                 "body": row["body"],
                 "created_at": row["created_at"].isoformat(),
@@ -385,15 +396,15 @@ def list_messages(
     return result
 
 
-@router.post("/messages/{message_id}/read")
+@router.post("/events/{event_id}/read")
 def mark_as_read(
-    message_id: int,
+    event_id: int,
     payload: ReadReceiptCreate,
     current_user: dict = Depends(get_current_user),
 ):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
-            room_id = _message_room_id(cur, message_id)
+            room_id = _message_room_id(cur, event_id)
             _ensure_room_member(cur, room_id, int(current_user["id"]))
 
             cur.execute(
@@ -402,20 +413,20 @@ def mark_as_read(
                 VALUES (%s, %s)
                 ON CONFLICT DO NOTHING
                 """,
-                (message_id, int(current_user["id"])),
+                (event_id, int(current_user["id"])),
             )
             conn.commit()
 
-    return {"status": "ok", "message_id": message_id, "user_id": int(current_user["id"])}
+    return {"status": "ok", "event_id": event_id, "user_id": int(current_user["id"])}
 
 
-@router.get("/rooms/{room_id}/unread-count/{user_id}")
-def unread_count(room_id: int, user_id: int, current_user: dict = Depends(get_current_user)):
+@router.get("/streams/{stream_id}/unread-count/{user_id}")
+def unread_count(stream_id: int, user_id: int, current_user: dict = Depends(get_current_user)):
     if int(current_user["id"]) != user_id:
         raise HTTPException(status_code=403, detail="Unread count access denied")
     with get_conn() as conn:
         with get_cursor(conn) as cur:
-            _ensure_room_member(cur, room_id, user_id)
+            _ensure_room_member(cur, stream_id, user_id)
             cur.execute(
                 """
                 SELECT COUNT(*) AS unread
@@ -428,7 +439,7 @@ def unread_count(room_id: int, user_id: int, current_user: dict = Depends(get_cu
                     AND rr.user_id = %s
                 )
                 """,
-                (room_id, user_id),
+                (stream_id, user_id),
             )
             row = cur.fetchone()
-    return {"room_id": room_id, "user_id": user_id, "unread": int(row["unread"])}
+    return {"stream_id": stream_id, "user_id": user_id, "unread": int(row["unread"])}

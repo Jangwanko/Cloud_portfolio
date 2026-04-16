@@ -31,34 +31,39 @@ $u2 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "appl
 $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u1Name; password = $u1Password } | ConvertTo-Json)).access_token
 $u2Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u2Name; password = $u2Password } | ConvertTo-Json)).access_token
 
-$roomBody = @{ name = "smoke-room-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json
-$room = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/rooms" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body $roomBody
+$streamBody = @{ name = "smoke-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json
+$stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body $streamBody
 
 $msgBody = @{ body = "hello smoke" } | ConvertTo-Json
-$accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/rooms/$($room.id)/messages" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-msg-$suffix"} -ContentType "application/json" -Body $msgBody
+$accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-event-$suffix"} -ContentType "application/json" -Body $msgBody
 
 $requestId = $accepted.request_id
-$messageId = $null
+$eventId = $null
 $deadline = (Get-Date).AddSeconds(90)
 while ((Get-Date) -lt $deadline) {
-  $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/message-requests/$requestId"
-  if ($status.status -eq "persisted" -and $status.message_id) {
-    $messageId = $status.message_id
-    break
+  try {
+    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/event-requests/$requestId"
+    if ($status.status -eq "persisted" -and $status.event_id) {
+      $eventId = $status.event_id
+      break
+    }
+  } catch {
+    Start-Sleep -Milliseconds 500
+    continue
   }
   Start-Sleep -Milliseconds 500
 }
-if ($null -eq $messageId) {
-  throw "Message was not persisted in time"
+if ($null -eq $eventId) {
+  throw "Event was not persisted in time"
 }
 
-$messages = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/rooms/$($room.id)/messages"
+$events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/events"
 
-Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/messages/$messageId/read" -Headers @{ Authorization = "Bearer $u2Token" } -ContentType "application/json" -Body "{}" | Out-Null
+Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/events/$eventId/read" -Headers @{ Authorization = "Bearer $u2Token" } -ContentType "application/json" -Body "{}" | Out-Null
 
-$unread = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u2Token" } -Uri "$BaseUrl/v1/rooms/$($room.id)/unread-count/$($u2.id)"
+$unread = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u2Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/unread-count/$($u2.id)"
 
-Write-Host "health=$($health.status) message_count=$($messages.Count) unread=$($unread.unread)"
+Write-Host "health=$($health.status) event_count=$($events.Count) unread=$($unread.unread)"
 }
 finally {
   if (-not $SkipReset) {

@@ -54,7 +54,7 @@ async def collect_http_metrics(request: Request, call_next):
 @app.get("/")
 def root():
     return {
-        "project": "messaging-portfolio",
+        "project": "event-stream-portfolio",
         "docs": "/docs",
         "health": "/health/ready",
         "metrics": "/metrics",

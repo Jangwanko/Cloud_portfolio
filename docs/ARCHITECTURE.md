@@ -57,11 +57,11 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 - 사용자 생성 시 `password_hash` 저장
 - `/v1/auth/login`으로 bearer token 발급
 - 주요 API는 로그인 사용자 기준으로 처리
-- room membership 검증 적용
+- stream membership 검증 적용
 
 중요한 점:
 - 인증은 token payload 기준으로 처리해서 DB down 중에도 인증 경로 자체 때문에 요청이 막히지 않도록 했습니다.
-- DB down 수락 경로를 유지하기 위해 room membership 일부를 Redis에 캐시합니다.
+- DB down 수락 경로를 유지하기 위해 stream membership 일부를 Redis에 캐시합니다.
 
 ## 장애 시나리오별 동작
 
@@ -72,10 +72,15 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 - DB recovery 후 pgpool-backed query가 안정화되면 worker와 replayer가 다시 영속화를 진행합니다.
 
 ### Redis down
-- API는 queue 적재를 할 수 없어 요청 실패가 증가합니다.
-- readiness는 `not_ready`로 내려갑니다.
+- complete outage 기준에서는 API가 queue 적재를 할 수 없어 event intake 실패가 증가합니다.
+- readiness는 `not_ready`로 내려갈 수 있습니다.
 - Worker는 queue 소비를 중단합니다.
 - Redis recovery 후 queue 처리와 readiness가 정상화됩니다.
+
+### Redis failover
+- Redis pod 하나가 재시작되더라도 Sentinel과 replica 구성이 살아 있으면 전체 outage와는 다른 시나리오로 봅니다.
+- 이 경우 핵심 검증 포인트는 "일시 흔들림 이후 readiness와 event intake가 계속 복구되는가"입니다.
+- 현재는 `scripts/test_redis_failover.ps1`로 단일 pod 재시작 기준 failover 흐름을 별도로 검증합니다.
 
 ### Worker backlog
 - API는 요청을 계속 수락하지만 queue depth가 증가합니다.
@@ -128,5 +133,5 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 ## 현재 한계
 - HTTPS는 local self-signed certificate 기반이라 브라우저 경고가 발생할 수 있습니다.
 - `k6`는 실행 자체는 정상이지만 latency threshold는 아직 미통과입니다.
-- 멀티 파드 환경에서 메시지 순서 보장 검증은 추가 작업이 필요합니다.
+- 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 추가 작업이 필요합니다.
 - 운영 UI는 면접용 데모 흐름을 위해 비교적 열려 있는 상태입니다.
