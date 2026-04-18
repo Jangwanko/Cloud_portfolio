@@ -1,0 +1,8 @@
+aws_region                = "ap-northeast-2"
+project_name              = "cloud-portfolio"
+environment               = "dev"
+route53_zone_name         = "example.com"
+domain_name               = "portfolio.example.com"
+grafana_admin_user        = "admin"
+grafana_admin_password    = "change-me"
+jwt_secret_override       = "replace-this-in-real-env"

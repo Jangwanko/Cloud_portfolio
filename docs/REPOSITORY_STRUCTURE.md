@@ -7,6 +7,7 @@
 .
 ├─ alembic/                   # DB 마이그레이션 스크립트
 ├─ docs/                      # 프로젝트 문서
+├─ infra/                     # AWS IaC(Terraform) 코드
 ├─ k8s/                       # Kubernetes 배포/검증 리소스
 ├─ monitoring/                # Prometheus/Grafana 설정
 ├─ observer/                  # 관측 UI/보조 서비스 코드
@@ -21,6 +22,7 @@
 - `portfolio/`: API 엔드포인트, 설정, DB/Redis 연결, 큐 처리 로직
 - `worker/`: 큐 소비, DB 저장, 재시도, DLQ 재처리
 - `scripts/`: quick start, 장애 재현, 성능 측정, 백업/복구 스크립트
+- `infra/`: AWS 배포용 Terraform 환경/모듈
 - `monitoring/`: Prometheus 규칙, Grafana 대시보드 설정
 - `k8s/`: 배포/스케일링/검증 매니페스트
 - `docs/`: 실행 가이드, 아키텍처, 테스트 결과 문서
@@ -38,9 +40,11 @@
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
 - `monitoring/prometheus/alerts.yml`: 장애 감지 임계치 알람 규칙
+- `infra/terraform/envs/dev/main.tf`: AWS dev 환경 진입점
 
 ## 문서 연결
 - 빠른 실행: [QUICK_START.md](QUICK_START.md)
 - 아키텍처: [ARCHITECTURE.md](ARCHITECTURE.md)
+- AWS IaC 설계: [AWS_IAC_PLAN.md](AWS_IAC_PLAN.md)
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
 - 운영 정리: [OPERATIONS.md](OPERATIONS.md)
