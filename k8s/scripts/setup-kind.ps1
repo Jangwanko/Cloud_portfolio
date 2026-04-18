@@ -1,8 +1,8 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [string]$ClusterName = "messaging-ha"
 )
+
+$ErrorActionPreference = "Stop"
 
 function Resolve-KindPath {
   $cmd = Get-Command kind -ErrorAction SilentlyContinue
