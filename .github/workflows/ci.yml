@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - ops
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Python Compile Check
+        run: |
+          python -m compileall portfolio worker observer
+
+      - name: Build Docker Image
+        run: |
+          docker build -t messaging-portfolio:ci .
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.32.0"
+
+      - name: Render GitOps Manifests
+        run: |
+          kubectl kustomize k8s/gitops/overlays/local-ha > /tmp/gitops-rendered.yaml
+
+      - name: Check Render Output
+        run: |
+          test -s /tmp/gitops-rendered.yaml

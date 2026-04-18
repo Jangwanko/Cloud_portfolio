@@ -1,11 +1,11 @@
-﻿# Kubernetes HA Design (Local Practice)
+# Kubernetes HA Design (Local Practice)
 
-이 폴더는 DB 자동 페일오버와 쿼럼 구조를 로컬에서 실습하기 위한 설정입니다.
+이 폴더는 DB 자동 failover 와 quorum 구조를 로컬에서 실습하기 위한 설정입니다.
 
 ## 목표
 - PostgreSQL: `primary 1 + replicas 2` 기반 자동 failover
 - Redis: `master 1 + replicas 2` + Sentinel quorum 기반 자동 failover
-- App은 PostgreSQL/Redis를 동시에 사용
+- App 은 PostgreSQL / Redis 를 동시에 사용
 
 ## 구성
 - PostgreSQL HA: `bitnami/postgresql-ha` chart + `bitnamilegacy/*` runtime images
@@ -17,7 +17,7 @@
 - Redis HA: `bitnami/redis`
   - master 1 + replicas 2
   - sentinel 3
-  - quorum 2 (3개 중 2개 동의 시 master 승격)
+  - quorum 2
 
 ## 1) kind 클러스터 생성
 ```powershell
@@ -42,11 +42,11 @@ kubectl apply -f k8s/app/manifests-ha.yaml
 ```
 
 ## 4) 페일오버 테스트
-- PostgreSQL primary pod 강제 삭제 -> quorum 충족 replica가 새 primary로 승격
-- Redis master pod 강제 삭제 -> sentinel quorum으로 replica 승격
+- PostgreSQL primary pod 강제 삭제 -> quorum 충족 replica 가 새 primary 로 승격
+- Redis master pod 강제 삭제 -> sentinel quorum 으로 replica 승격
 
 ## 5) 관측 스택
-Prometheus + Grafana로 아래 항목을 관측합니다.
+Prometheus + Grafana 로 아래 항목을 관측합니다.
 
 - API: request rate, latency p50/p95/p99, error rate, readiness 실패 횟수
 - PostgreSQL: up/down, active connections, replication lag, transaction rate, failover event
@@ -54,12 +54,8 @@ Prometheus + Grafana로 아래 항목을 관측합니다.
 - Worker: event processed count, success/failure rate, processing latency, retry count, queue lag
 - Kubernetes: pod restart count, CPU/memory, node disk usage, network I/O
 
-## 참고
-- 기본 실행 구성은 단일 DB/Redis입니다.
-- HA 실습은 quorum 기반 확장 시나리오 검증에 초점을 둡니다.
-
-## 6) GitOps / Argo CD
-이 저장소는 기존 `kubectl apply -f k8s/app/manifests-ha.yaml` 경로 외에 Argo CD로 관리할 수 있는 GitOps 경로도 포함합니다.
+## GitOps / Argo CD
+이 저장소는 기존 `kubectl apply -f k8s/app/manifests-ha.yaml` 경로 외에 Argo CD 로 관리할 수 있는 GitOps 경로도 포함합니다.
 
 - GitOps sync path: `k8s/gitops/overlays/local-ha`
 - Argo CD project manifest: `k8s/argocd/project-messaging-portfolio.yaml`
@@ -75,8 +71,14 @@ Argo CD application bootstrap:
 ```powershell
 powershell -ExecutionPolicy Bypass -File k8s/scripts/bootstrap-argocd-app.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
-  -Revision main
+  -Revision ops
 ```
 
 부트스트랩 단계에서는 여전히 cluster, ingress, metrics-server, TLS, HA data store 설치를 먼저 해야 합니다.
 그 이후 앱 매니페스트 반영은 Argo CD가 Git 원하는 상태(`desired state`) 기준으로 동기화합니다.
+
+로컬 검증 기준 브랜치는 현재 `ops` 로 두고 있으며, 이후 실제 운영 배포 기준 브랜치는 `main` 으로 연결할 수 있습니다.
+
+## 참고
+- 기본 실행 구성은 단일 DB / Redis 입니다
+- HA 실습은 quorum 기반 확장 시나리오 검증에 초점을 둡니다
