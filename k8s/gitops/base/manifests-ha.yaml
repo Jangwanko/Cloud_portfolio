@@ -453,7 +453,7 @@ metadata:
   name: grafana
   namespace: messaging-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: grafana
