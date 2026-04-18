@@ -13,16 +13,16 @@
 - `443` for ingress HTTPS
 - `9090` for Prometheus when failover alert validation runs
 
-`scripts/quick_start_all.ps1`는 실행 전에 포트 충돌을 확인하고, 충돌이 있으면 배포 전에 중단합니다.
+`scripts/quick_start_all.ps1` 실행 전에 포트 충돌을 확인하고, 충돌이 있으면 배포 전에 중단합니다.
 
 ## One Command
-전체 로컬 검증은 아래 명령 하나로 실행합니다.
+전체 로컬 검증은 아래 명령 하나로 실행할 수 있습니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-이 흐름에는 아래 작업이 포함됩니다.
+이 스크립트는 아래 작업을 포함합니다.
 - kind cluster 생성
 - `ingress-nginx` 설치
 - `metrics-server` 설치
@@ -41,11 +41,11 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 - TLS Prometheus: `https://localhost/prometheus/`
 
 참고:
-- HTTPS는 local self-signed certificate 기반입니다
-- 브라우저에서는 처음 한 번 보안 경고가 날 수 있습니다
+- HTTPS 는 local self-signed certificate 기반입니다
+- 브라우저에서는 처음 접속 시 보안 경고가 표시될 수 있습니다
 
 ## Expected Duration
-아래 시간은 최근 kind + Docker Desktop 기준의 대략적인 실행 시간입니다.
+아래 시간은 최근 kind + Docker Desktop 기준 대략적인 실행 시간입니다.
 
 | Scenario | Script | Typical duration |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 | k6 load test | `scripts/test_k6_load.ps1` | about 1 min |
 
 ## Optional
-failover alert validation까지 포함해서 실행하려면:
+failover alert validation 까지 포함해서 실행하려면:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1 -IncludeFailoverAlerts
@@ -72,15 +72,15 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1 -IncludeFai
 - alert resolution after recovery
 
 ## Separate Load Test
-k6 performance test는 별도로 실행합니다.
+k6 performance test 는 별도로 실행합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 ```
 
 참고:
-- 이 테스트는 health check가 아니라 performance test입니다
-- 현재 저장소 상태에서는 실행은 정상이나 latency threshold는 아직 미통과입니다
+- 이 테스트는 health check 가 아니라 performance test 입니다
+- 현재 저장소 상태에서는 실행은 되지만 latency threshold 는 아직 통과하지 못합니다
 
 ## Individual Scenarios
 Smoke test:
@@ -124,3 +124,25 @@ Failover and alert validation:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_failover_alerts.ps1
 ```
+
+## GitOps Quick Start
+Argo CD 요구사항을 보여주기 위한 GitOps bootstrap 스크립트도 포함되어 있습니다.
+
+전제:
+- 이 저장소가 클러스터에서 접근 가능한 Git remote 에 push 되어 있어야 합니다
+- local `kind` 데모에서는 앱 이미지 `messaging-portfolio:local` 를 먼저 build 하고 kind 에 load 합니다
+
+실행:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
+  -RepoUrl https://github.com/<your-account>/<your-repo>.git `
+  -Revision ops
+```
+
+이 흐름은 아래를 수행합니다.
+- local cluster bootstrap
+- HA PostgreSQL / Redis 설치
+- Argo CD 설치
+- `k8s/gitops/overlays/local-ha` 를 가리키는 `Application` 생성
+- readiness 확인과 smoke test 실행

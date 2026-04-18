@@ -1,3 +1,7 @@
+param(
+  [string]$ClusterName = "messaging-ha"
+)
+
 $ErrorActionPreference = "Stop"
 
 function Resolve-KindPath {
@@ -19,9 +23,9 @@ $kind = Resolve-KindPath
 $kindConfig = Join-Path $PSScriptRoot "..\kind-config.yaml"
 
 if (Test-Path $kindConfig) {
-  & $kind create cluster --name messaging-ha --config $kindConfig
+  & $kind create cluster --name $ClusterName --config $kindConfig
 } else {
-  & $kind create cluster --name messaging-ha
+  & $kind create cluster --name $ClusterName
 }
 
 kubectl cluster-info
