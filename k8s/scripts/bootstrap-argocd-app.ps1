@@ -1,5 +1,3 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [Parameter(Mandatory = $true)]
   [string]$RepoUrl,
@@ -10,6 +8,8 @@ param(
   [string]$ProjectFile = "k8s/argocd/project-messaging-portfolio.yaml",
   [string]$ManifestPath = "k8s/gitops/overlays/local-ha"
 )
+
+$ErrorActionPreference = "Stop"
 
 kubectl apply -f $ProjectFile
 

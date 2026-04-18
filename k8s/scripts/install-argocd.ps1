@@ -1,8 +1,8 @@
-$ErrorActionPreference = "Stop"
-
 param(
   [string]$Namespace = "argocd"
 )
+
+$ErrorActionPreference = "Stop"
 
 function Wait-Deployment([string]$Name, [string]$NamespaceToUse, [int]$TimeoutSec = 600) {
   kubectl rollout status "deployment/$Name" -n $NamespaceToUse --timeout="$($TimeoutSec)s"
