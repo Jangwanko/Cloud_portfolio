@@ -154,6 +154,19 @@ Grafana / Prometheus에서는 아래 신호를 확인할 수 있습니다.
 - stream 단위 event ordering guarantee는 추가 검증 과제가 남아 있습니다
 - 운영 UI는 데모 확인을 위해 비교적 쉽게 열어 둔 상태이며 production access control까지는 구현하지 않았습니다
 
+## GitOps / Argo CD
+- GitOps sync path: `k8s/gitops/overlays/local-ha`
+- Argo CD bootstrap 스크립트:
+  - `k8s/scripts/install-argocd.ps1`
+  - `k8s/scripts/bootstrap-argocd-app.ps1`
+- 로컬 GitOps quick start:
+  - `powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 -RepoUrl https://github.com/<your-account>/<your-repo>.git`
+- 가이드 문서:
+  - [GITOPS.md](docs/GITOPS.md)
+
+초기 cluster / controller bootstrap 은 여전히 `kubectl` 과 helper script 로 1회 수행합니다.
+그 이후 애플리케이션 매니페스트 반영은 Argo CD가 Git 원하는 상태(`desired state`) 기준으로 동기화할 수 있습니다.
+
 ## Documents
 - 실행 가이드: [QUICK_START.md](docs/QUICK_START.md)
 - 구조와 장애 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)

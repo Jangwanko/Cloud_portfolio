@@ -57,3 +57,26 @@ Prometheus + Grafana로 아래 항목을 관측합니다.
 ## 참고
 - 기본 실행 구성은 단일 DB/Redis입니다.
 - HA 실습은 quorum 기반 확장 시나리오 검증에 초점을 둡니다.
+
+## 6) GitOps / Argo CD
+이 저장소는 기존 `kubectl apply -f k8s/app/manifests-ha.yaml` 경로 외에 Argo CD로 관리할 수 있는 GitOps 경로도 포함합니다.
+
+- GitOps sync path: `k8s/gitops/overlays/local-ha`
+- Argo CD project manifest: `k8s/argocd/project-messaging-portfolio.yaml`
+
+Argo CD 설치:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File k8s/scripts/install-argocd.ps1
+```
+
+Argo CD application bootstrap:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File k8s/scripts/bootstrap-argocd-app.ps1 `
+  -RepoUrl https://github.com/<your-account>/<your-repo>.git `
+  -Revision main
+```
+
+부트스트랩 단계에서는 여전히 cluster, ingress, metrics-server, TLS, HA data store 설치를 먼저 해야 합니다.
+그 이후 앱 매니페스트 반영은 Argo CD가 Git 원하는 상태(`desired state`) 기준으로 동기화합니다.

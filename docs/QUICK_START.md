@@ -124,3 +124,25 @@ Failover and alert validation:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_failover_alerts.ps1
 ```
+
+## GitOps Quick Start
+Argo CD 요구사항을 보여주기 위한 GitOps 부트스트랩 스크립트도 포함되어 있습니다.
+
+전제:
+- 이 저장소가 클러스터에서 접근 가능한 Git remote에 push되어 있어야 합니다.
+- local kind 데모에서는 앱 이미지 `messaging-portfolio:local` 를 먼저 build하고 kind에 load합니다.
+
+실행:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
+  -RepoUrl https://github.com/<your-account>/<your-repo>.git `
+  -Revision main
+```
+
+이 흐름은 아래를 수행합니다.
+- local cluster bootstrap
+- HA PostgreSQL / Redis 설치
+- Argo CD 설치
+- `k8s/gitops/overlays/local-ha` 를 가리키는 Application 생성
+- readiness 확인과 smoke test 실행
