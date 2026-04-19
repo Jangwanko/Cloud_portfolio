@@ -1,66 +1,66 @@
 # Kubernetes HA Design (Local Practice)
 
-이 폴더는 DB 자동 failover 와 quorum 구조를 로컬에서 실습하기 위한 설정입니다.
+ì´ í´ëë DB ìë failover ì quorum êµ¬ì¡°ë¥¼ ë¡ì»¬ìì ì¤ìµíê¸° ìí ì¤ì ìëë¤.
 
-## 목표
-- PostgreSQL: `primary 1 + replicas 2` 기반 자동 failover
-- Redis: `master 1 + replicas 2` + Sentinel quorum 기반 자동 failover
-- App 은 PostgreSQL / Redis 를 동시에 사용
+## ëª©í
+- PostgreSQL: `primary 1 + replicas 2` ê¸°ë° ìë failover
+- Redis: `master 1 + replicas 2` + Sentinel quorum ê¸°ë° ìë failover
+- App ì PostgreSQL / Redis ë¥¼ ëìì ì¬ì©
 
-## 구성
+## êµ¬ì±
 - PostgreSQL HA: `bitnami/postgresql-ha` chart + `bitnamilegacy/*` runtime images
   - total postgres nodes: 3
   - topology: primary 1 + replicas 2
   - pgpool enabled
   - `synchronousCommit` + `numSynchronousReplicas: 1`
-  - 3노드 중 과반 생존을 기준으로 새 primary 승격 판단
+  - 3ë¸ë ì¤ ê³¼ë° ìì¡´ì ê¸°ì¤ì¼ë¡ ì primary ì¹ê²© íë¨
 - Redis HA: `bitnami/redis`
   - master 1 + replicas 2
   - sentinel 3
   - quorum 2
 
-## 1) kind 클러스터 생성
+## 1) kind í´ë¬ì¤í° ìì±
 ```powershell
 powershell -ExecutionPolicy Bypass -File k8s/scripts/setup-kind.ps1
 ```
 
-## 2) HA 스택 설치
+## 2) HA ì¤í ì¤ì¹
 ```powershell
 powershell -ExecutionPolicy Bypass -File k8s/scripts/install-ha.ps1 -Namespace messaging-app
 ```
 
-## 3) 앱 연결 포인트
+## 3) ì± ì°ê²° í¬ì¸í¸
 - PostgreSQL endpoint: `messaging-postgresql-ha-pgpool.messaging-app.svc.cluster.local:5432`
 - Redis endpoint (sentinel):
   - `messaging-redis-node-0.messaging-redis-headless.messaging-app.svc.cluster.local:26379`
   - `messaging-redis-node-1.messaging-redis-headless.messaging-app.svc.cluster.local:26379`
   - `messaging-redis-node-2.messaging-redis-headless.messaging-app.svc.cluster.local:26379`
 
-앱 배포:
+ì± ë°°í¬:
 ```powershell
 kubectl apply -f k8s/app/manifests-ha.yaml
 ```
 
-## 4) 페일오버 테스트
-- PostgreSQL primary pod 강제 삭제 -> quorum 충족 replica 가 새 primary 로 승격
-- Redis master pod 강제 삭제 -> sentinel quorum 으로 replica 승격
+## 4) íì¼ì¤ë² íì¤í¸
+- PostgreSQL primary pod ê°ì  ì­ì  -> quorum ì¶©ì¡± replica ê° ì primary ë¡ ì¹ê²©
+- Redis master pod ê°ì  ì­ì  -> sentinel quorum ì¼ë¡ replica ì¹ê²©
 
-## 5) 관측 스택
-Prometheus + Grafana 로 아래 항목을 관측합니다.
+## 5) ê´ì¸¡ ì¤í
+Prometheus + Grafana ë¡ ìë í­ëª©ì ê´ì¸¡í©ëë¤.
 
-- API: request rate, latency p50/p95/p99, error rate, readiness 실패 횟수
+- API: request rate, latency p50/p95/p99, error rate, readiness ì¤í¨ íì
 - PostgreSQL: up/down, active connections, replication lag, transaction rate, failover event
 - Redis: memory usage, queue length, ops/sec, connected clients, reconnect event
 - Worker: event processed count, success/failure rate, processing latency, retry count, queue lag
 - Kubernetes: pod restart count, CPU/memory, node disk usage, network I/O
 
 ## GitOps / Argo CD
-이 저장소는 기존 `kubectl apply -f k8s/app/manifests-ha.yaml` 경로 외에 Argo CD 로 관리할 수 있는 GitOps 경로도 포함합니다.
+ì´ ì ì¥ìë ê¸°ì¡´ `kubectl apply -f k8s/app/manifests-ha.yaml` ê²½ë¡ ì¸ì Argo CD ë¡ ê´ë¦¬í  ì ìë GitOps ê²½ë¡ë í¬í¨í©ëë¤.
 
 - GitOps sync path: `k8s/gitops/overlays/local-ha`
 - Argo CD project manifest: `k8s/argocd/project-messaging-portfolio.yaml`
 
-Argo CD 설치:
+Argo CD ì¤ì¹:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File k8s/scripts/install-argocd.ps1
@@ -74,11 +74,11 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/bootstrap-argocd-app.ps1 `
   -Revision ops
 ```
 
-부트스트랩 단계에서는 여전히 cluster, ingress, metrics-server, TLS, HA data store 설치를 먼저 해야 합니다.
-그 이후 앱 매니페스트 반영은 Argo CD가 Git 원하는 상태(`desired state`) 기준으로 동기화합니다.
+ë¶í¸ì¤í¸ë© ë¨ê³ììë ì¬ì í cluster, ingress, metrics-server, TLS, HA data store ì¤ì¹ë¥¼ ë¨¼ì  í´ì¼ í©ëë¤.
+ê·¸ ì´í ì± ë§¤ëíì¤í¸ ë°ìì Argo CDê° Git ìíë ìí(`desired state`) ê¸°ì¤ì¼ë¡ ëê¸°íí©ëë¤.
 
-로컬 검증 기준 브랜치는 현재 `ops` 로 두고 있으며, 이후 실제 운영 배포 기준 브랜치는 `main` 으로 연결할 수 있습니다.
+ë¡ì»¬ ê²ì¦ ê¸°ì¤ ë¸ëì¹ë íì¬ `ops` ë¡ ëê³  ìì¼ë©°, ì´í ì¤ì  ì´ì ë°°í¬ ê¸°ì¤ ë¸ëì¹ë `master` ì¼ë¡ ì°ê²°í  ì ììµëë¤.
 
-## 참고
-- 기본 실행 구성은 단일 DB / Redis 입니다
-- HA 실습은 quorum 기반 확장 시나리오 검증에 초점을 둡니다
+## ì°¸ê³ 
+- ê¸°ë³¸ ì¤í êµ¬ì±ì ë¨ì¼ DB / Redis ìëë¤
+- HA ì¤ìµì quorum ê¸°ë° íì¥ ìëë¦¬ì¤ ê²ì¦ì ì´ì ì ë¡ëë¤
