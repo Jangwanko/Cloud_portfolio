@@ -1,8 +1,8 @@
 # Event Stream Systems Portfolio
 
-이 저장소는 채팅형 이벤트 흐름을 단순 CRUD 로 끝내지 않고, 장애 상황에서도 요청을 최대한 빠르게 받아들이고 이후에 복구 처리할 수 있는 `event stream processing system` 형태로 구성한 포트폴리오입니다.
+ì´ ì ì¥ìë ì±íí ì´ë²¤í¸ íë¦ì ë¨ì CRUD ë¡ ëë´ì§ ìê³ , ì¥ì  ìí©ììë ìì²­ì ìµëí ë¹ ë¥´ê² ë°ìë¤ì´ê³  ì´íì ë³µêµ¬ ì²ë¦¬í  ì ìë `event stream processing system` ííë¡ êµ¬ì±í í¬í¸í´ë¦¬ì¤ìëë¤.
 
-핵심 목표는 아래와 같습니다.
+íµì¬ ëª©íë ìëì ê°ìµëë¤.
 - `queue-backed async processing`
 - `HA`
 - `autoscaling`
@@ -11,14 +11,14 @@
 - `Ingress + TLS`
 - `GitOps / Argo CD`
 
-현재 저장소는 로컬 `kind` 환경에서 위 시나리오를 재현할 수 있도록 구성되어 있으며, 이후 AWS `EKS` 같은 외부 클러스터로 확장할 수 있는 방향도 함께 담고 있습니다.
+íì¬ ì ì¥ìë ë¡ì»¬ `kind` íê²½ìì ì ìëë¦¬ì¤ë¥¼ ì¬íí  ì ìëë¡ êµ¬ì±ëì´ ìì¼ë©°, ì´í AWS `EKS` ê°ì ì¸ë¶ í´ë¬ì¤í°ë¡ íì¥í  ì ìë ë°©í¥ë í¨ê» ë´ê³  ììµëë¤.
 
 ## Summary
-- API 는 요청을 바로 DB 에 쓰지 않고 Redis ingress queue 에 적재합니다.
-- Worker 는 queue 를 소비하면서 PostgreSQL 에 비동기 영속화합니다.
-- 장애 상황에서는 retry, DLQ, replayer 로 복구 경로를 제공합니다.
-- Kubernetes 환경에서는 PostgreSQL HA, Redis HA, HPA, Prometheus, Grafana 를 함께 검증합니다.
-- GitOps 경로에서는 Argo CD 가 Git 의 원하는 상태(`desired state`)를 기준으로 애플리케이션 매니페스트를 동기화합니다.
+- API ë ìì²­ì ë°ë¡ DB ì ì°ì§ ìê³  Redis ingress queue ì ì ì¬í©ëë¤.
+- Worker ë queue ë¥¼ ìë¹íë©´ì PostgreSQL ì ë¹ëê¸° ììíí©ëë¤.
+- ì¥ì  ìí©ììë retry, DLQ, replayer ë¡ ë³µêµ¬ ê²½ë¡ë¥¼ ì ê³µí©ëë¤.
+- Kubernetes íê²½ììë PostgreSQL HA, Redis HA, HPA, Prometheus, Grafana ë¥¼ í¨ê» ê²ì¦í©ëë¤.
+- GitOps ê²½ë¡ììë Argo CD ê° Git ì ìíë ìí(`desired state`)ë¥¼ ê¸°ì¤ì¼ë¡ ì íë¦¬ì¼ì´ì ë§¤ëíì¤í¸ë¥¼ ëê¸°íí©ëë¤.
 
 ## Architecture
 ```mermaid
@@ -42,12 +42,12 @@ flowchart LR
     Prom --> Grafana[Grafana]
 ```
 
-처리 흐름:
-- API 는 요청을 `accepted` 상태로 받고 Redis queue 에 적재합니다.
-- Worker 는 queue 의 이벤트를 PostgreSQL 에 기록합니다.
-- 실패한 요청은 DLQ 로 이동하고, replayer 가 다시 queue 로 재주입합니다.
-- 사용자는 이후 요청 상태, 이벤트 목록, unread count 를 API 로 조회합니다.
-- Prometheus / Grafana 로 API latency, worker 처리 시간, queue depth, DB / Redis 상태를 관측합니다.
+ì²ë¦¬ íë¦:
+- API ë ìì²­ì `accepted` ìíë¡ ë°ê³  Redis queue ì ì ì¬í©ëë¤.
+- Worker ë queue ì ì´ë²¤í¸ë¥¼ PostgreSQL ì ê¸°ë¡í©ëë¤.
+- ì¤í¨í ìì²­ì DLQ ë¡ ì´ëíê³ , replayer ê° ë¤ì queue ë¡ ì¬ì£¼ìí©ëë¤.
+- ì¬ì©ìë ì´í ìì²­ ìí, ì´ë²¤í¸ ëª©ë¡, unread count ë¥¼ API ë¡ ì¡°íí©ëë¤.
+- Prometheus / Grafana ë¡ API latency, worker ì²ë¦¬ ìê°, queue depth, DB / Redis ìíë¥¼ ê´ì¸¡í©ëë¤.
 
 ## What This Project Covers
 ### Normal Path
@@ -69,37 +69,55 @@ flowchart LR
 - GitOps / Argo CD sync
 
 ## Prerequisites
-필수:
+íì:
 - Docker Desktop
 - Windows PowerShell
 
-저장소에 포함된 도구:
-- `tools/kind.exe`
-- `tools/helm/windows-amd64/helm.exe`
+도구 설치 방법:
 
-로컬에서 사용하는 포트:
+**Windows (chocolatey)**
+```powershell
+choco install kind kubernetes-helm
+```
+
+**macOS (homebrew)**
+```bash
+brew install kind helm
+```
+
+**Linux**
+```bash
+# kind
+curl -Lo kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+chmod +x kind && sudo mv kind /usr/local/bin/
+
+# helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+ë¡ì»¬ìì ì¬ì©íë í¬í¸:
 - `80` for ingress HTTP
 - `443` for ingress HTTPS
 - `9090` for Prometheus alert validation fallback
 
 ## Quick Start
-전체 로컬 검증은 아래 명령으로 실행할 수 있습니다.
+ì ì²´ ë¡ì»¬ ê²ì¦ì ìë ëªë ¹ì¼ë¡ ì¤íí  ì ììµëë¤.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-이 스크립트는 아래 작업을 수행합니다.
-- kind cluster 생성
-- `ingress-nginx` 설치
-- `metrics-server` 설치
+ì´ ì¤í¬ë¦½í¸ë ìë ììì ìíí©ëë¤.
+- kind cluster ìì±
+- `ingress-nginx` ì¤ì¹
+- `metrics-server` ì¤ì¹
 - application image build and load
-- PostgreSQL HA / Redis HA 배포
-- application stack 배포
-- ingress readiness 확인
-- smoke / DB recovery / Redis recovery / HPA scaling test 실행
+- PostgreSQL HA / Redis HA ë°°í¬
+- application stack ë°°í¬
+- ingress readiness íì¸
+- smoke / DB recovery / Redis recovery / HPA scaling test ì¤í
 
-기본 접근 경로:
+ê¸°ë³¸ ì ê·¼ ê²½ë¡:
 - API: `http://localhost`
 - TLS API: `https://localhost`
 - Grafana: `http://localhost/grafana`
@@ -118,10 +136,10 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 - PostgreSQL backup / restore
 - GitOps / Argo CD sync
 
-상세 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md) 에 정리했습니다.
+ìì¸ ê²°ê³¼ë [TEST_RESULTS.md](docs/TEST_RESULTS.md) ì ì ë¦¬íìµëë¤.
 
 ## Observability
-Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
+Grafana / Prometheus ìì ìë í­ëª©ì íì¸í  ì ììµëë¤.
 - API request count / latency
 - worker processed count / processing latency
 - queue depth
@@ -131,80 +149,80 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - alert firing / resolution
 
 ## Performance
-`k6` 부하 테스트 자체는 동작하지만, 현재 latency threshold 는 아직 통과하지 못하고 있습니다.
+`k6` ë¶í íì¤í¸ ìì²´ë ëìíì§ë§, íì¬ latency threshold ë ìì§ íµê³¼íì§ ëª»íê³  ììµëë¤.
 
-최근 측정 예시:
-- 초기 기준: `5434 req`, avg `3660ms`, p95 `8175ms`
-- 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
-- 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
-- pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+ìµê·¼ ì¸¡ì  ìì:
+- ì´ê¸° ê¸°ì¤: `5434 req`, avg `3660ms`, p95 `8175ms`
+- 1ì°¨ ê°ì  í: `7966 req`, avg `2285ms`, p95 `4936ms`
+- 2ì°¨ ê°ì  í: `9102 req`, avg `1934ms`, p95 `3851ms`
+- pgpool / DB pool ì¡°ì  í: `11314 req`, avg `1519ms`, p95 `3333ms`
 
 ## Backup and Restore
-현재 운영 보강 범위:
+íì¬ ì´ì ë³´ê° ë²ì:
 - manual backup: `scripts/backup_postgres_k8s.ps1`
 - manual restore: `scripts/restore_postgres_k8s.ps1`
 - weekly PostgreSQL backup `CronJob`
 
-관련 운영 지침은 [OPERATIONS.md](docs/OPERATIONS.md) 에 정리했습니다.
+ê´ë ¨ ì´ì ì§ì¹¨ì [OPERATIONS.md](docs/OPERATIONS.md) ì ì ë¦¬íìµëë¤.
 
 ## GitOps / Argo CD
-현재 저장소에는 Argo CD 기반 GitOps 경로가 추가되어 있습니다.
+íì¬ ì ì¥ììë Argo CD ê¸°ë° GitOps ê²½ë¡ê° ì¶ê°ëì´ ììµëë¤.
 
 - GitOps sync path: `k8s/gitops/overlays/local-ha`
-- Argo CD bootstrap 스크립트:
+- Argo CD bootstrap ì¤í¬ë¦½í¸:
   - `k8s/scripts/install-argocd.ps1`
   - `k8s/scripts/bootstrap-argocd-app.ps1`
-- 로컬 GitOps quick start:
+- ë¡ì»¬ GitOps quick start:
   - `powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 -RepoUrl https://github.com/<your-account>/<your-repo>.git -Revision ops`
 
-현재 검증 기준은 아래와 같습니다.
-- 로컬 `kind` 클러스터에서 Argo CD 설치
-- `ops` 브랜치를 바라보는 `Application` 생성
-- commit / push 후 Argo CD 가 새 revision 을 읽고 배포 리소스를 갱신하는 것까지 확인
+íì¬ ê²ì¦ ê¸°ì¤ì ìëì ê°ìµëë¤.
+- ë¡ì»¬ `kind` í´ë¬ì¤í°ìì Argo CD ì¤ì¹
+- `ops` ë¸ëì¹ë¥¼ ë°ë¼ë³´ë `Application` ìì±
+- commit / push í Argo CD ê° ì revision ì ì½ê³  ë°°í¬ ë¦¬ìì¤ë¥¼ ê°±ì íë ê²ê¹ì§ íì¸
 
-즉 이 프로젝트는 문서상으로만 GitOps 를 설명하는 것이 아니라, 로컬 Kubernetes 환경에서 실제 sync 동작까지 검증한 상태입니다.
+ì¦ ì´ íë¡ì í¸ë ë¬¸ììì¼ë¡ë§ GitOps ë¥¼ ì¤ëªíë ê²ì´ ìëë¼, ë¡ì»¬ Kubernetes íê²½ìì ì¤ì  sync ëìê¹ì§ ê²ì¦í ìíìëë¤.
 
 ## Branch Strategy
-- `main`
-  - 실제 배포 기준 브랜치입니다.
-  - 이후 EKS 와 연결할 때 운영 배포 기준점으로 사용할 수 있습니다.
+- `master`
+  - ì¤ì  ë°°í¬ ê¸°ì¤ ë¸ëì¹ìëë¤.
+  - ì´í EKS ì ì°ê²°í  ë ì´ì ë°°í¬ ê¸°ì¤ì ì¼ë¡ ì¬ì©í  ì ììµëë¤.
 - `dev`
-  - 개발 통합용 브랜치입니다.
-  - 기능 개발을 모으고 정리하는 용도로 사용합니다.
+  - ê°ë° íµí©ì© ë¸ëì¹ìëë¤.
+  - ê¸°ë¥ ê°ë°ì ëª¨ì¼ê³  ì ë¦¬íë ì©ëë¡ ì¬ì©í©ëë¤.
 - `ops`
-  - 로컬 `kind` + Argo CD 검증용 브랜치입니다.
-  - GitOps 흐름과 운영 절차를 실험하고 확인하는 용도로 사용합니다.
+  - ë¡ì»¬ `kind` + Argo CD ê²ì¦ì© ë¸ëì¹ìëë¤.
+  - GitOps íë¦ê³¼ ì´ì ì ì°¨ë¥¼ ì¤ííê³  íì¸íë ì©ëë¡ ì¬ì©í©ëë¤.
 
-현재 로컬 GitOps 검증은 `ops` 브랜치 기준으로 수행했습니다.
+íì¬ ë¡ì»¬ GitOps ê²ì¦ì `ops` ë¸ëì¹ ê¸°ì¤ì¼ë¡ ìííìµëë¤.
 
 ## CI
-현재 저장소에는 기본 `GitHub Actions` CI 구성을 추가했습니다.
+íì¬ ì ì¥ììë ê¸°ë³¸ `GitHub Actions` CI êµ¬ì±ì ì¶ê°íìµëë¤.
 
-- Python 문법 검증
-- Docker image build 확인
-- Kustomize manifest render 확인
+- Python ë¬¸ë² ê²ì¦
+- Docker image build íì¸
+- Kustomize manifest render íì¸
 
-이 단계는 아직 EKS 직접 배포와 연결되어 있지는 않지만, 코드 변경이 최소한 배포 가능한 형태인지 빠르게 확인하는 역할을 합니다.
+ì´ ë¨ê³ë ìì§ EKS ì§ì  ë°°í¬ì ì°ê²°ëì´ ìì§ë ìì§ë§, ì½ë ë³ê²½ì´ ìµìí ë°°í¬ ê°ë¥í ííì¸ì§ ë¹ ë¥´ê² íì¸íë ì­í ì í©ëë¤.
 
 ## Current Limits
 - HTTPS is local self-signed TLS, not production-issued certificates
 - `k6` latency threshold is still failing
-- stream 단위 event ordering guarantee 는 추가 검증 과제가 남아 있습니다
-- 운영 UI 는 데모와 검증 목적에 맞춰 노출 범위를 열어둔 상태이며, production access control 까지는 구현하지 않았습니다
-- EKS / ECR / external secret manager 연동은 아직 로컬 중심 검증 단계입니다
+- stream ë¨ì event ordering guarantee ë ì¶ê° ê²ì¦ ê³¼ì ê° ë¨ì ììµëë¤
+- ì´ì UI ë ë°ëª¨ì ê²ì¦ ëª©ì ì ë§ì¶° ë¸ì¶ ë²ìë¥¼ ì´ì´ë ìíì´ë©°, production access control ê¹ì§ë êµ¬ííì§ ìììµëë¤
+- EKS / ECR / external secret manager ì°ëì ìì§ ë¡ì»¬ ì¤ì¬ ê²ì¦ ë¨ê³ìëë¤
 
 ## Documents
-- 실행 가이드: [QUICK_START.md](docs/QUICK_START.md)
-- 구조와 처리 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- 운영 지침: [OPERATIONS.md](docs/OPERATIONS.md)
+- ì¤í ê°ì´ë: [QUICK_START.md](docs/QUICK_START.md)
+- êµ¬ì¡°ì ì²ë¦¬ íë¦: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- ì´ì ì§ì¹¨: [OPERATIONS.md](docs/OPERATIONS.md)
 - GitOps / Argo CD: [GITOPS.md](docs/GITOPS.md)
-- 검증 결과: [TEST_RESULTS.md](docs/TEST_RESULTS.md)
-- 변경 이력: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
-- 저장소 구조: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
+- ê²ì¦ ê²°ê³¼: [TEST_RESULTS.md](docs/TEST_RESULTS.md)
+- ë³ê²½ ì´ë ¥: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
+- ì ì¥ì êµ¬ì¡°: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
 
 ## Suggested Reading Order
-1. README 에서 전체 구조와 현재 상태 파악
-2. [QUICK_START.md](docs/QUICK_START.md) 로 실행 방법 확인
-3. [ARCHITECTURE.md](docs/ARCHITECTURE.md) 로 구성과 처리 흐름 확인
-4. [GITOPS.md](docs/GITOPS.md) 로 GitOps / Argo CD 구성 확인
-5. [TEST_RESULTS.md](docs/TEST_RESULTS.md) 로 실제 검증 상태 확인
+1. README ìì ì ì²´ êµ¬ì¡°ì íì¬ ìí íì
+2. [QUICK_START.md](docs/QUICK_START.md) ë¡ ì¤í ë°©ë² íì¸
+3. [ARCHITECTURE.md](docs/ARCHITECTURE.md) ë¡ êµ¬ì±ê³¼ ì²ë¦¬ íë¦ íì¸
+4. [GITOPS.md](docs/GITOPS.md) ë¡ GitOps / Argo CD êµ¬ì± íì¸
+5. [TEST_RESULTS.md](docs/TEST_RESULTS.md) ë¡ ì¤ì  ê²ì¦ ìí íì¸
