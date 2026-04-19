@@ -195,27 +195,27 @@
 - 기본 검증 경로에서는 새 `stream / event` 경로로 smoke와 DB recovery가 다시 통과하는 것을 확인했습니다.
 
 ## v0.15 k6 Performance Tuning
-異붽???踰붿쐞:
-- `scripts/test_event_persist_latency.ps1` 異붽?
-- event intake 寃쎈줈???덈씪?대뱶 Redis hot path 珥덉젙
-- `scripts/load_test_k6.js` setup retry 異붽?
-- HA ?섍꼍??DB pool / pgpool ?ㅼ젙 蹂닿컯
+추가된 범위:
+- `scripts/test_event_persist_latency.ps1` 추가
+- event intake 경로에서 Redis hot path 최적화
+- `scripts/load_test_k6.js` setup retry 추가
+- HA 환경의 DB pool / pgpool 설정 변경
 
-諛곌꼍:
-- `k6`???ㅽ뻾?섏?留?latency threshold瑜?겕寃??덇꼬 ?덉뻽?듬땲??
-- `k6` 寃곌낵留뚯쑝濡쒕뒗 accept 寃쎈줈? persisted 寃쎈줈 以묒뿉 ?댁꽌 媛 ?ㅼ젣 蹂묐ぉ?몄? 遺꾨━?섍린 ?대젮?좎뒿?덈떎.
-- ?ㅼ젣 移≪젙 怨쇱젙?먯꽌 API 肄붾뱶?쇰쭔 ?꾨땲??`pgpool` connection ?쒗븳怨?硫붾え由?遺議깊룄 ?좏븿猿?蹂묐ぉ?쇰줈 ?쒕윭?ν뒿?덈떎.
+배경:
+- `k6` 테스트 실행 자체는 되지만 latency threshold를 통과하지 못했습니다.
+- accept 경로와 persisted 경로 사이에서 실제 병목이 어디인지 추적이 필요했습니다.
+- 실제 측정 과정에서 API 파드뿐 아니라 `pgpool` connection 한계와 DB 리소스 설정도 함께 영향을 준다는 것을 확인했습니다.
 
-?곹뼢:
-- accept latency??persisted latency瑜?遺꾨━??蹂닿린 ?꾪븳 蹂댁“ ?깅뒫 寃利?寃쎈줈媛 異붽??섏뿀?듬땲??
-- event intake 寃쎈줈?먯꽌 stream membership cache, request status ???щ? push pipeline, idempotency hot path ?⑥냼?붿솕媛 諛섏쁺?섏뿀?듬땲??
-- `pgpool`??먮뒗 `too many clients`? OOM ?ъ떆?쒖옉??愿痢?섏뼱, DB pool ?ш린??pgpool connection / resource ?ㅼ젙???⑥쾶 議곗젙?섏뿀?듬땲??
-- 理쒓렐 ?ъ측痢?湲곗??`k6` 寃곌낵?뒗 ?ㅼ쓬怨??숈씠 媛쒖꽑?섏뿀?듬땲??
-  - 珥덇린 湲곗?? `5434 req`, avg `3660ms`, p95 `8175ms`
-  - 1李?媛쒖꽑 ??? `7966 req`, avg `2285ms`, p95 `4936ms`
-  - 2李?媛쒖꽑 ??? `9102 req`, avg `1934ms`, p95 `3851ms`
-  - pgpool / DB pool 議곗젙 ??? `11314 req`, avg `1519ms`, p95 `3333ms`
-- threshold?뒗 ?꾩쭅 誘몄쭊?낅땲留? ?꾩옱 蹂묐ぉ?먭큵 ?⑥닚 ?꾨옉?ㅻ━耳댁씠???쇱쭊蹂대떎 HA DB 吏꾩엯?먯꽌怨?connection policy?먯??곕슧 媛源깆떎?붾뒗 ?먯쓣 ?뺤씤?섏뿀?듬땲??
+영향:
+- accept latency와 persisted latency를 분리해 측정하는 별도 검증 경로가 추가됐습니다.
+- event intake 경로에서 stream membership cache, request status 및 push pipeline, idempotency hot path 최적화가 적용됐습니다.
+- `pgpool`에서 too many clients 및 OOM 발생 가능성을 인지하여, DB pool 크기와 pgpool connection 및 리소스 설정을 단계적으로 조정했습니다.
+- 최근 측정 결과 `k6` 결과는 아래와 같이 개선됐습니다:
+  - 초기 기준: `5434 req`, avg `3660ms`, p95 `8175ms`
+  - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
+  - 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
+  - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+- threshold는 아직 미통과이지만, 현재 병목은 순수 accept 경로보다 HA DB 환경에서의 connection 정책에서 더 크다는 점을 확인했습니다.
 
 ## Current Known Gaps
 - HTTPS는 local self-signed certificate 기반입니다.
