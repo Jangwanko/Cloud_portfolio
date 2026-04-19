@@ -165,7 +165,7 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 즉 이 프로젝트는 문서상으로만 GitOps 를 설명하는 것이 아니라, 로컬 Kubernetes 환경에서 실제 sync 동작까지 검증한 상태입니다.
 
 ## Branch Strategy
-- `main`
+- `master`
   - 실제 배포 기준 브랜치입니다.
   - 이후 EKS 와 연결할 때 운영 배포 기준점으로 사용할 수 있습니다.
 - `dev`

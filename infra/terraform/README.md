@@ -35,3 +35,7 @@ terraform plan -var-file=terraform.tfvars
 ```
 
 `terraform.tfvars.example`를 복사해 `terraform.tfvars`로 사용하면 됩니다.
+
+## 실행 결과
+로컬 테스트 목적으로 `terraform plan` 검증 완료.
+실제 AWS 리소스 생성은 비용 절감을 위해 plan 단계까지만 포함.
