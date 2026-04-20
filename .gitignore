@@ -1,39 +1,48 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
-
-# Virtual envs
-venv/
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
 .venv/
+venv/
+env/
 
-# Local env
+# Environment
 .env
+*.env
 
-# IDE and OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# Alembic
+alembic/versions/*.pyc
 
-# Runtime artifacts
-*.log
-
-# Test/cache
+# Test / Coverage
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 .coverage
 htmlcov/
+*.coverage
 
-# Build
-build/
-dist/
-*.egg-info/
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Backup files
 backups/
-k6/results/
 
-
-# etc
-INTERVIEW_QUESTIONS.md
-k8s/.tmp_pg_ha_chart/
+# Tools (바이너리는 커밋하지 않습니다)
+tools/kind.exe
+tools/helm/
+tools/helm-cache/
+tools/helm-home/
