@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$RepoUrl,
-  [string]$Revision = "main",
+  [string]$Revision = "master",
   [string]$ClusterName = "messaging-ha",
   [string]$Namespace = "messaging-app",
   [string]$BaseUrl = "http://localhost"

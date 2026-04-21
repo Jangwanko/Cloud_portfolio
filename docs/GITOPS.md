@@ -1,4 +1,4 @@
-# GitOps / Argo CD
+﻿# GitOps / Argo CD
 
 이 문서는 이 저장소에 추가한 `GitOps` / `Argo CD` 경로를 정리한 문서입니다.
 현재 프로젝트는 기존 `kubectl apply` 기반 실행 경로를 유지하면서도, 면접에서 `GitOps` 요구사항을 설명할 수 있도록 별도 Git 기반 동기화 경로를 함께 제공합니다.

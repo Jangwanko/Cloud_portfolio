@@ -41,7 +41,7 @@ logs/
 # Backup files
 backups/
 
-# Tools (바이너리는 커밋하지 않습니다)
+# Tools
 tools/kind.exe
 tools/helm/
 tools/helm-cache/

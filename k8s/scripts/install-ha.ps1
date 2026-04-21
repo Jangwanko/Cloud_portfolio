@@ -54,6 +54,32 @@ function Ensure-ImagePresent([string]$image) {
   }
 }
 
+function Decode-Base64([string]$value) {
+  return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($value))
+}
+
+function Grant-PostgresMonitorRole([string]$Namespace) {
+  $encodedPassword = kubectl -n $Namespace get secret messaging-postgresql-ha-postgresql -o jsonpath='{.data.postgres-password}'
+  if (-not $encodedPassword) {
+    Write-Warning "Unable to read postgres-password. Skipping pg_monitor grant for portfolio."
+    return
+  }
+
+  $postgresPassword = Decode-Base64 $encodedPassword
+  $pods = kubectl -n $Namespace get pods -l app.kubernetes.io/component=postgresql -o jsonpath='{.items[*].metadata.name}'
+  foreach ($pod in ($pods -split " ")) {
+    if (-not $pod) { continue }
+    $isPrimary = kubectl -n $Namespace exec $pod -- bash -lc "PGPASSWORD='$postgresPassword' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -At -c 'SELECT NOT pg_is_in_recovery();'" 2>$null
+    if ($LASTEXITCODE -eq 0 -and ($isPrimary | Select-Object -First 1) -eq "t") {
+      kubectl -n $Namespace exec $pod -- bash -lc "PGPASSWORD='$postgresPassword' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -c 'GRANT pg_monitor TO portfolio;'" | Out-Host
+      Write-Host "Granted pg_monitor to portfolio on primary pod: $pod"
+      return
+    }
+  }
+
+  Write-Warning "Unable to find PostgreSQL primary pod. Skipping pg_monitor grant for portfolio."
+}
+
 $repoCache = Join-Path $PSScriptRoot "..\..\tools\helm-cache\repository"
 $pgHaChart = Get-ChildItem -Path $repoCache -Filter "postgresql-ha-*.tgz" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
 $redisChart = Get-ChildItem -Path $repoCache -Filter "redis-*.tgz" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
@@ -95,6 +121,8 @@ $redisSource = if ($redisChart) { $redisChart.FullName } else { "bitnami/redis" 
   -n $Namespace `
   -f k8s/values/postgresql-ha-values.yaml `
   --wait --timeout 15m
+
+Grant-PostgresMonitorRole -Namespace $Namespace
 
 & $helm upgrade --install messaging-redis $redisSource `
   -n $Namespace `

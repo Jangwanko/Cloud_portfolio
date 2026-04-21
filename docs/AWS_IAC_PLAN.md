@@ -1,4 +1,4 @@
-# AWS IaC Plan
+﻿# AWS IaC Plan
 
 현재 로컬 `kind + Kubernetes` 검증 환경을 AWS 상의 `production-like` 환경으로 옮길 때의 기준 문서입니다.  
 목표는 단순히 "AWS에 올린다"가 아니라, 지금 프로젝트가 가진 강점인 `async intake`, `failure recovery`, `autoscaling`, `observability`, `backup / restore`를 AWS에서도 자연스럽게 이어 가는 것입니다.

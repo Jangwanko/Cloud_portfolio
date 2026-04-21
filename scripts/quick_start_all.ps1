@@ -373,11 +373,10 @@ try {
   Write-Host ""
   Write-Host "Quick Start all-in-one run completed successfully."
   Write-Host "API URL: $BaseUrl"
-  Write-Host "TLS API URL: $TlsBaseUrl"
   Write-Host "Grafana URL: http://localhost/grafana"
-  Write-Host "TLS Grafana URL: https://localhost/grafana"
+  Write-Host "Grafana login: admin / 1q2w3e4r"
   Write-Host "Prometheus URL: http://localhost/prometheus"
-  Write-Host "TLS Prometheus URL: https://localhost/prometheus"
+  Write-Host "TLS ingress is also available from $TlsBaseUrl for the same paths."
   if ($IncludeFailoverAlerts) {
     Write-Host "Prometheus alert API URL: $PrometheusUrl"
   }

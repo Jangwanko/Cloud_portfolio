@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$RepoUrl,
-  [string]$Revision = "main",
+  [string]$Revision = "master",
   [string]$Namespace = "argocd",
   [string]$AppName = "messaging-portfolio-local-ha",
   [string]$ProjectName = "messaging-portfolio",

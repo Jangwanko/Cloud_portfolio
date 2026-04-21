@@ -115,11 +115,16 @@ function Wait-NotReadyDb([int]$TimeoutSec = 120) {
   while ((Get-Date) -lt $deadline) {
     try {
       $health = Get-HealthState
-      if ($health.db -eq "down") { return $true }
+      $reasons = @($health.reason)
+      if (
+        $health.status -eq "degraded" `
+          -and $reasons -contains "postgres_primary_unreachable" `
+          -and $health.postgres.primary_reachable -eq $false
+      ) { return $true }
     } catch {}
     Start-Sleep -Seconds 2
   }
-  throw "Timed out waiting for db=down health state"
+  throw "Timed out waiting for postgres_primary_unreachable degraded readiness"
 }
 
 function Wait-NotReadyRedis([int]$TimeoutSec = 120) {
@@ -127,11 +132,16 @@ function Wait-NotReadyRedis([int]$TimeoutSec = 120) {
   while ((Get-Date) -lt $deadline) {
     try {
       $health = Get-HealthState
-      if ($health.status -eq "not_ready" -and $health.redis -eq "down") { return $true }
+      $reasons = @($health.reason)
+      if (
+        $health.status -eq "not_ready" `
+          -and $reasons -contains "redis_master_unreachable" `
+          -and $health.redis.master_reachable -eq $false
+      ) { return $true }
     } catch {}
     Start-Sleep -Seconds 2
   }
-  throw "Timed out waiting for redis=down readiness"
+  throw "Timed out waiting for redis_master_unreachable readiness"
 }
 
 function Test-AlertFiring([string]$AlertName) {

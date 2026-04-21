@@ -45,6 +45,8 @@
 ## 문서 연결
 - 빠른 실행: [QUICK_START.md](QUICK_START.md)
 - 아키텍처: [ARCHITECTURE.md](ARCHITECTURE.md)
+- 신뢰성 정책: [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)
+- 관측 지표 안내: [OBSERVABILITY.md](OBSERVABILITY.md)
 - AWS IaC 설계: [AWS_IAC_PLAN.md](AWS_IAC_PLAN.md)
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
 - 운영 정리: [OPERATIONS.md](OPERATIONS.md)

@@ -106,7 +106,13 @@ try {
   Start-Sleep -Seconds 4
 
   $healthDown = Get-HealthState
-  if ($healthDown.status -ne "degraded" -or $healthDown.db -ne "down" -or $healthDown.redis -ne "up") {
+  $reasons = @($healthDown.reason)
+  if (
+    $healthDown.status -ne "degraded" `
+      -or $reasons -notcontains "postgres_primary_unreachable" `
+      -or $healthDown.postgres.primary_reachable -ne $false `
+      -or $healthDown.redis.master_reachable -ne $true
+  ) {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 

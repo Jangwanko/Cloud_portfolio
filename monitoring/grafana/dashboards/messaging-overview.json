@@ -15,7 +15,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -33,7 +32,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 6,
         "x": 0,
         "y": 0
@@ -55,7 +54,7 @@
       },
       "targets": [
         {
-          "expr": "messaging_health_status{component=\"db\"}",
+          "expr": "messaging_health_status{job=\"api\",component=\"db\"}",
           "refId": "A"
         }
       ],
@@ -72,7 +71,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -90,7 +88,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 6,
         "x": 6,
         "y": 0
@@ -129,7 +127,6 @@
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -147,7 +144,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 6,
         "x": 12,
         "y": 0
@@ -169,11 +166,11 @@
       },
       "targets": [
         {
-          "expr": "messaging_health_status{component=\"worker\"}",
+          "expr": "messaging_redis_connected_replicas{job=\"api\"}",
           "refId": "A"
         }
       ],
-      "title": "Worker Health",
+      "title": "Redis Connected Replicas",
       "type": "stat"
     },
     {
@@ -184,15 +181,22 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 2
               }
             ]
           }
@@ -200,7 +204,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 6,
         "w": 6,
         "x": 18,
         "y": 0
@@ -208,7 +212,7 @@
       "id": 4,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -222,11 +226,11 @@
       },
       "targets": [
         {
-          "expr": "messaging_queue_depth{queue=\"message_notifications\"}",
+          "expr": "messaging_postgres_standby_count{job=\"api\"}",
           "refId": "A"
         }
       ],
-      "title": "Queue Depth",
+      "title": "PostgreSQL Standbys",
       "type": "stat"
     },
     {
@@ -238,36 +242,15 @@
         "defaults": {
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "showPoints": "never"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 6
       },
       "id": 5,
       "targets": [
@@ -289,36 +272,15 @@
         "defaults": {
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "showPoints": "never"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 6
       },
       "id": 6,
       "targets": [
@@ -345,38 +307,18 @@
         "defaults": {
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "showPoints": "never"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 17
+        "y": 14
       },
       "id": 7,
+      "description": "Per-second rate of events consumed and processed by workers. If no events were produced recently, this panel can show No data during normal idle periods.",
       "targets": [
         {
           "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
@@ -384,7 +326,7 @@
           "refId": "A"
         }
       ],
-      "title": "Worker Throughput",
+      "title": "Worker Throughput (events only)",
       "type": "timeseries"
     },
     {
@@ -396,51 +338,25 @@
         "defaults": {
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "showPoints": "never"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 12,
-        "y": 17
+        "y": 14
       },
       "id": 8,
       "targets": [
         {
-          "expr": "rate(messaging_db_reconnect_total[5m])",
-          "legendFormat": "db reconnect",
+          "expr": "sum by (queue) (messaging_queue_depth)",
+          "legendFormat": "{{queue}}",
           "refId": "A"
-        },
-        {
-          "expr": "rate(messaging_redis_reconnect_total[5m])",
-          "legendFormat": "redis reconnect",
-          "refId": "B"
         }
       ],
-      "title": "Reconnect Events",
+      "title": "Queue Depth By Queue",
       "type": "timeseries"
     },
     {
@@ -452,38 +368,187 @@
         "defaults": {
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "drawStyle": "bars",
-            "fillOpacity": 50,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "showPoints": "never"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
-        "y": 26
+        "y": 22
       },
       "id": 9,
+      "targets": [
+        {
+          "expr": "messaging_redis_connected_replicas{job=\"api\"}",
+          "legendFormat": "connected_replicas",
+          "refId": "A"
+        },
+        {
+          "expr": "messaging_redis_sentinel_master_ok{job=\"api\"}",
+          "legendFormat": "sentinel_master_ok",
+          "refId": "B"
+        },
+        {
+          "expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}",
+          "legendFormat": "sentinel_quorum_ok",
+          "refId": "C"
+        }
+      ],
+      "title": "Redis Topology Signals",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "messaging_redis_master_link_status{job=\"api\"}",
+          "legendFormat": "{{replica}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Redis Replica Link Status",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 11,
+      "targets": [
+        {
+          "expr": "messaging_postgres_standby_count{job=\"api\"}",
+          "legendFormat": "standby_count",
+          "refId": "A"
+        },
+        {
+          "expr": "messaging_postgres_sync_standby_count{job=\"api\"}",
+          "legendFormat": "sync_standby_count",
+          "refId": "B"
+        },
+        {
+          "expr": "messaging_postgres_is_primary{job=\"api\"}",
+          "legendFormat": "primary_reachable",
+          "refId": "C"
+        }
+      ],
+      "title": "PostgreSQL Replication Capacity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 12,
+      "targets": [
+        {
+          "expr": "messaging_postgres_replication_delay_bytes_max{job=\"api\"}",
+          "legendFormat": "delay_bytes_max",
+          "refId": "A"
+        }
+      ],
+      "title": "PostgreSQL Replication Delay",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "id": 13,
+      "targets": [
+        {
+          "expr": "messaging_postgres_replication_state_count{job=\"api\"}",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "title": "PostgreSQL Replication States",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      },
+      "id": 14,
       "targets": [
         {
           "expr": "sum by (reason) (increase(messaging_db_failure_total[15m]))",
@@ -493,79 +558,24 @@
       ],
       "title": "DB Failure Reasons (15m)",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 26
-      },
-      "id": 10,
-      "options": {
-        "showHeader": true
-      },
-      "targets": [
-        {
-          "expr": "sum by (reason) (messaging_db_failure_total)",
-          "format": "table",
-          "instant": true,
-          "legendFormat": "{{reason}}",
-          "refId": "A"
-        }
-      ],
-      "title": "DB Failure Totals",
-      "transformations": [
-        {
-          "id": "labelsToFields",
-          "options": {
-            "mode": "columns"
-          }
-        }
-      ],
-      "type": "table"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 39,
-  "style": "dark",
   "tags": [
     "messaging",
-    "portfolio"
+    "portfolio",
+    "observability"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-30m",
     "to": "now"
   },
-  "timepicker": {},
   "timezone": "browser",
   "title": "Messaging Portfolio Overview",
   "uid": "messaging-portfolio-overview",
-  "version": 2,
-  "weekStart": ""
+  "version": 2
 }

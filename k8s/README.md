@@ -1,4 +1,4 @@
-# Kubernetes HA Design (Local Practice)
+﻿# Kubernetes HA Design (Local Practice)
 
 이 폴더는 DB 자동 failover 와 quorum 구조를 로컬에서 실습하기 위한 설정입니다.
 
@@ -12,7 +12,7 @@
   - total postgres nodes: 3
   - topology: primary 1 + replicas 2
   - pgpool enabled
-  - `synchronousCommit` + `numSynchronousReplicas: 1`
+  - 로컬 데모 readiness는 async streaming standby를 정상으로 해석
   - 3노드 중 과반 생존을 기준으로 새 primary 승격 판단
 - Redis HA: `bitnami/redis`
   - master 1 + replicas 2
@@ -49,8 +49,8 @@ kubectl apply -f k8s/app/manifests-ha.yaml
 Prometheus + Grafana 로 아래 항목을 관측합니다.
 
 - API: request rate, latency p50/p95/p99, error rate, readiness 실패 횟수
-- PostgreSQL: up/down, active connections, replication lag, transaction rate, failover event
-- Redis: memory usage, queue length, ops/sec, connected clients, reconnect event
+- PostgreSQL: primary reachability, standby count, sync standby count, replication state, replication lag
+- Redis: role, connected replicas, replica link, Sentinel master/quorum, queue length, reconnect event
 - Worker: event processed count, success/failure rate, processing latency, retry count, queue lag
 - Kubernetes: pod restart count, CPU/memory, node disk usage, network I/O
 
@@ -77,7 +77,7 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/bootstrap-argocd-app.ps1 `
 부트스트랩 단계에서는 여전히 cluster, ingress, metrics-server, TLS, HA data store 설치를 먼저 해야 합니다.
 그 이후 앱 매니페스트 반영은 Argo CD가 Git 원하는 상태(`desired state`) 기준으로 동기화합니다.
 
-로컬 검증 기준 브랜치는 현재 `ops` 로 두고 있으며, 이후 실제 운영 배포 기준 브랜치는 `main` 으로 연결할 수 있습니다.
+로컬 검증 기준 브랜치는 현재 `ops` 로 두고 있으며, 이후 실제 운영 배포 기준 브랜치는 `master` 로 연결할 수 있습니다.
 
 ## 참고
 - 기본 실행 구성은 단일 DB / Redis 입니다
