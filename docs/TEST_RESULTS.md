@@ -99,15 +99,35 @@
 ## k6 Load Test
 `scripts/test_k6_load.ps1`는 현재 실행 경로 자체는 정상입니다. 다만 성능 threshold는 아직 통과하지 못합니다.
 
-최근 확인 결과:
+최근 기준 결과:
 - total requests: `7435`
 - error rate: `0.00%`
 - average latency: `2459.75ms`
 - p95 latency: `5092.95ms`
 
+Redis hot path 실험 A 결과:
+- change: `get_redis()`의 per-call `PING` 제거, `UVICORN_WORKERS=1` 유지
+- image: `messaging-portfolio:exp-a-redis-no-ping`
+- total requests: `16024`
+- error rate: `0.00%`
+- average latency: `1011.08ms`
+- p95 latency: `2219.59ms`
+- result: threshold failed, but throughput and latency improved materially
+
+API worker 실험 B 결과:
+- change: 실험 A 유지 + `UVICORN_WORKERS=2`
+- image: `messaging-portfolio:exp-b-redis-no-ping-workers2`
+- total requests: `20055`
+- error rate: `5.82%`
+- average latency: `797.81ms`
+- p95 latency: `3088.99ms`
+- result: throughput and average latency improved, but error rate and p95 latency regressed
+
 현재 해석:
 - 실행 오류가 아니라 성능 미달입니다.
 - 즉 load test infrastructure는 동작하지만 latency tuning이 아직 필요합니다.
+- Redis command hot path의 불필요한 round-trip 제거는 효과가 있었고, 다음 실험은 API worker 병렬성 증가 효과를 분리해서 확인하는 것이 맞습니다.
+- `UVICORN_WORKERS=2`는 로컬 kind HA 환경에서 tail latency와 error rate를 악화시켜 채택하지 않았고, 최종 코드는 실험 A 상태로 되돌렸습니다.
 
 ## Current Interpretation
 - 기능 검증 경로는 현재 저장소 상태에서 다시 재현 가능합니다.

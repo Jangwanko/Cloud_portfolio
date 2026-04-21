@@ -144,6 +144,9 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
 - 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
 - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+- Redis per-call `PING` 제거 후: `16024 req`, avg `1011ms`, p95 `2220ms`
+
+추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 더 좋아졌지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
 
 ## Backup and Restore
 현재 운영 보강 범위:

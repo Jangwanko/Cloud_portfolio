@@ -216,7 +216,11 @@
   - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
   - 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
   - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+  - Redis per-call `PING` 제거 실험 A: `16024 req`, avg `1011ms`, p95 `2220ms`
+  - 실험 B(A + `UVICORN_WORKERS=2`): `20055 req`, error `5.82%`, avg `798ms`, p95 `3089ms`
 - threshold는 아직 미통과이지만, 현재 병목은 순수 accept 경로보다 HA DB 환경에서의 connection 정책에서 더 크다는 점을 확인했습니다.
+- 실험 B는 throughput과 average latency는 더 좋아졌지만, tail latency와 error rate가 악화되어 채택하지 않았습니다.
+- 최종 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path의 per-call `PING` 제거만 반영하는 실험 A 상태로 되돌렸습니다.
 
 ## v0.16 Redis / PostgreSQL 신뢰성 정책 정리
 추가 범위:

@@ -124,11 +124,6 @@ def get_redis() -> redis.Redis:
     if _redis_client is None:
         raise RuntimeError("Redis is not initialized")
 
-    try:
-        _redis_client.ping()
-    except Exception:
-        return reconnect_redis()
-    health_status.labels(component="redis").set(1)
     return _redis_client
 
 
