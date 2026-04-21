@@ -1,4 +1,4 @@
-# Patch Notes
+﻿# Patch Notes
 
 프로젝트를 만들고 검증 범위를 넓혀 오는 과정에서 어떤 변경이 있었는지 단계별로 정리한 문서입니다.
 
@@ -18,7 +18,7 @@
 
 ## v0.2 Failure Recovery and DLQ
 추가된 범위:
-- DB 장애 중 요청 수락
+- DB 장애 중 Redis queue 기반 복구 경로
 - retry 로직
 - DLQ
 - DLQ replayer
@@ -27,7 +27,8 @@
 - 정상 경로만으로는 복구 전략과 장애 대응 흐름을 설명하기 어려웠습니다.
 
 영향:
-- DB 장애 중에도 요청을 Redis에 보존하고, 복구 후 재처리하는 경로가 생겼습니다.
+- DB write 실패 시 retry / DLQ / replayer로 복구하는 경로가 생겼습니다.
+- 이후 v0.16 readiness 정책에서는 Redis enqueue 가능 여부를 API readiness의 핵심 기준으로 삼고, PostgreSQL writable primary loss는 `degraded`와 critical alert로 분리했습니다.
 
 ## v0.3 Observability
 추가된 범위:
@@ -146,7 +147,7 @@
 - Grafana뿐 아니라 raw metrics와 alert 상태도 같은 진입점 아래에서 보여줄 필요가 있었습니다.
 
 영향:
-- Prometheus UI를 `http://localhost/prometheus/`와 `https://localhost/prometheus/`에서 확인할 수 있게 됐습니다.
+- Prometheus UI를 기본 `http://localhost/prometheus/` 경로에서 확인할 수 있게 됐고, HTTPS는 TLS 검증용 보조 경로로 유지했습니다.
 
 ## v0.12 Operations Hardening
 추가된 범위:
@@ -215,7 +216,30 @@
   - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
   - 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
   - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+  - Redis per-call `PING` 제거 실험 A: `16024 req`, avg `1011ms`, p95 `2220ms`
+  - 실험 B(A + `UVICORN_WORKERS=2`): `20055 req`, error `5.82%`, avg `798ms`, p95 `3089ms`
 - threshold는 아직 미통과이지만, 현재 병목은 순수 accept 경로보다 HA DB 환경에서의 connection 정책에서 더 크다는 점을 확인했습니다.
+- 실험 B는 throughput과 average latency는 더 좋아졌지만, tail latency와 error rate가 악화되어 채택하지 않았습니다.
+- 최종 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path의 per-call `PING` 제거만 반영하는 실험 A 상태로 되돌렸습니다.
+
+## v0.16 Redis / PostgreSQL 신뢰성 정책 정리
+추가 범위:
+- Redis persistence 정책을 `AOF everysec` + `RDB snapshot` 기준으로 명문화
+- Redis role, replica link, replica count, Sentinel master health 메트릭 추가
+- PostgreSQL primary reachability, standby count, sync standby count, replication state, replication delay 메트릭 추가
+- `ready`, `degraded`, `not_ready`를 구분하는 역할 기반 readiness 응답 추가
+- Redis / PostgreSQL topology degraded 상태에 대한 `30초` alert 승격 유예 추가
+- 신뢰성 정책 문서 추가: [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)
+
+배경:
+- Redis는 accepted write를 잠시 받는 intake buffer이므로, complete outage를 단순 cache miss가 아니라 즉시 write-path failure로 다뤄야 했습니다.
+- 기존 health 모델은 component up/down은 보여줬지만, total outage와 degraded failover topology를 명확히 구분하지 못했습니다.
+
+영향:
+- readiness가 현재 사실을 즉시 반영하고, Redis / PostgreSQL 요약 필드와 reason을 함께 반환하도록 정리됐습니다.
+- Redis total outage는 즉시 critical로 유지하고, replica / link / replication state / lag 기반 degraded 상태는 `30초` warning window를 거쳐 승격하도록 정리됐습니다.
+- 로컬 데모에서는 PostgreSQL standby가 async라도 `streaming`이고 lag가 정상이면 `ready`로 해석하도록 정리했습니다.
+- durability, fail-fast, topology health에 대한 운영 기준이 문서와 코드에 함께 남도록 정리됐습니다.
 
 ## Current Known Gaps
 - HTTPS는 local self-signed certificate 기반입니다.

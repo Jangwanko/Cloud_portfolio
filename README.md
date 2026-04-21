@@ -1,4 +1,4 @@
-# Event Stream Systems Portfolio
+﻿# Event Stream Systems Portfolio
 
 이 저장소는 채팅형 이벤트 흐름을 단순 CRUD 로 끝내지 않고, 장애 상황에서도 요청을 최대한 빠르게 받아들이고 이후에 복구 처리할 수 있는 `event stream processing system` 형태로 구성한 포트폴리오입니다.
 
@@ -79,7 +79,7 @@ flowchart LR
 
 로컬에서 사용하는 포트:
 - `80` for ingress HTTP
-- `443` for ingress HTTPS
+- `443` for optional local TLS validation
 - `9090` for Prometheus alert validation fallback
 
 ## Quick Start
@@ -101,11 +101,11 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 
 기본 접근 경로:
 - API: `http://localhost`
-- TLS API: `https://localhost`
 - Grafana: `http://localhost/grafana`
-- TLS Grafana: `https://localhost/grafana`
+- Grafana login: `ID admin` / `Password 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
-- TLS Prometheus: `https://localhost/prometheus/`
+
+기본 문서 경로는 `http://localhost` 기준입니다. HTTPS ingress도 구성되어 있지만, 이는 local self-signed TLS 검증용 보조 경로로만 봅니다.
 
 ## Verified Scenarios
 - smoke
@@ -127,8 +127,14 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - queue depth
 - DB pool usage / reconnect / failure
 - Redis reconnect state
+- Redis role / replica count / replica link / Sentinel master 상태
+- PostgreSQL primary reachability / standby count / sync standby count / replication state / replication delay
+- 로컬 데모 기준 async streaming standby ready 해석
 - component health status
+- `ready` / `degraded` / `not_ready` 기준의 readiness 상태 해석
 - alert firing / resolution
+
+관련 메트릭 설명과 해석 기준은 [OBSERVABILITY.md](docs/OBSERVABILITY.md) 에 정리했습니다.
 
 ## Performance
 `k6` 부하 테스트 자체는 동작하지만, 현재 latency threshold 는 아직 통과하지 못하고 있습니다.
@@ -138,6 +144,9 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
 - 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
 - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
+- Redis per-call `PING` 제거 후: `16024 req`, avg `1011ms`, p95 `2220ms`
+
+추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 더 좋아졌지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
 
 ## Backup and Restore
 현재 운영 보강 범위:
@@ -198,6 +207,8 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - 구조와 처리 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - 운영 지침: [OPERATIONS.md](docs/OPERATIONS.md)
 - GitOps / Argo CD: [GITOPS.md](docs/GITOPS.md)
+- 신뢰성 정책: [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md)
+- 관측 지표 안내: [OBSERVABILITY.md](docs/OBSERVABILITY.md)
 - 검증 결과: [TEST_RESULTS.md](docs/TEST_RESULTS.md)
 - 변경 이력: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
 - 저장소 구조: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)

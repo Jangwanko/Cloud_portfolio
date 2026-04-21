@@ -1,13 +1,23 @@
-# Test Results
+﻿# Test Results
 
-현재 저장소 상태에서 최근 다시 확인한 검증 결과를 정리한 문서입니다.
+현재 저장소 상태에서 검증한 결과와 신뢰성 정책 기준 해석을 함께 정리한 문서입니다.
+
+## Current Live Check
+
+최근 라이브 클러스터에서 다시 확인한 현재 상태:
+- `/health/ready`: `ready`
+- Redis: writable master reachable, replica `2`, Sentinel master resolved
+- PostgreSQL: writable primary reachable, standby `2`, sync standby `0`
+- 로컬 데모 정책: async streaming standby는 `ready`로 해석
+- Prometheus active alerts: 없음
+- Grafana datasource: Prometheus 연결 정상
 
 ## Verified Scenarios
 
 | Scenario | Script | Result | Notes |
 | --- | --- | --- | --- |
 | Smoke test | `scripts/smoke_test.ps1` | Pass | 요청 생성, 영속화, 읽음 처리, unread count 확인 |
-| DB outage and recovery | `scripts/test_db_down.ps1` | Pass | DB down 중 `accepted`, 복구 후 `persisted` 확인 |
+| DB outage and recovery | `scripts/test_db_down.ps1` | Pass | PostgreSQL primary loss 중 Redis enqueue 가능 시 `degraded`로 수락하고, 복구 후 `persisted` 확인 |
 | Redis complete outage and recovery | `scripts/test_redis_down.ps1` | Pass | 전체 Redis 접근 불가 시 event intake 실패, 복구 후 다시 `accepted` 확인 |
 | Redis single-node failover | `scripts/test_redis_failover.ps1` | Pass | Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 확인 |
 | DLQ flow | `scripts/test_dlq_flow.ps1` | Pass | 실패 요청의 DLQ 적재와 재처리 흐름 확인 |
@@ -45,15 +55,17 @@
   - Redis complete outage test: pass
   - HPA scaling test: pass
   - ingress readiness at `http://localhost/health/ready`: pass
-  - TLS readiness at `https://localhost/health/ready`: pass
+  - TLS readiness at `https://localhost/health/ready`: pass, TLS 보조 검증
 
 ### Ingress UI Endpoints
 - Grafana UI:
   - `http://localhost/grafana`
-  - `https://localhost/grafana`
 - Prometheus UI:
   - `http://localhost/prometheus/`
-  - `https://localhost/prometheus/`
+
+참고:
+- 문서와 데모의 기본 경로는 HTTP입니다.
+- HTTPS는 local self-signed TLS 검증용 보조 경로입니다.
 
 ## Backup and Restore Verification
 
@@ -87,20 +99,51 @@
 ## k6 Load Test
 `scripts/test_k6_load.ps1`는 현재 실행 경로 자체는 정상입니다. 다만 성능 threshold는 아직 통과하지 못합니다.
 
-최근 확인 결과:
+최근 기준 결과:
 - total requests: `7435`
 - error rate: `0.00%`
 - average latency: `2459.75ms`
 - p95 latency: `5092.95ms`
 
+Redis hot path 실험 A 결과:
+- change: `get_redis()`의 per-call `PING` 제거, `UVICORN_WORKERS=1` 유지
+- image: `messaging-portfolio:exp-a-redis-no-ping`
+- total requests: `16024`
+- error rate: `0.00%`
+- average latency: `1011.08ms`
+- p95 latency: `2219.59ms`
+- result: threshold failed, but throughput and latency improved materially
+
+API worker 실험 B 결과:
+- change: 실험 A 유지 + `UVICORN_WORKERS=2`
+- image: `messaging-portfolio:exp-b-redis-no-ping-workers2`
+- total requests: `20055`
+- error rate: `5.82%`
+- average latency: `797.81ms`
+- p95 latency: `3088.99ms`
+- result: throughput and average latency improved, but error rate and p95 latency regressed
+
 현재 해석:
 - 실행 오류가 아니라 성능 미달입니다.
 - 즉 load test infrastructure는 동작하지만 latency tuning이 아직 필요합니다.
+- Redis command hot path의 불필요한 round-trip 제거는 효과가 있었고, 다음 실험은 API worker 병렬성 증가 효과를 분리해서 확인하는 것이 맞습니다.
+- `UVICORN_WORKERS=2`는 로컬 kind HA 환경에서 tail latency와 error rate를 악화시켜 채택하지 않았고, 최종 코드는 실험 A 상태로 되돌렸습니다.
 
 ## Current Interpretation
 - 기능 검증 경로는 현재 저장소 상태에서 다시 재현 가능합니다.
 - autoscaling(HPA)은 metrics-server 추가 후 실제 동작을 확인했습니다.
-- ingress 기반 외부 진입은 `http://localhost`와 `https://localhost` 기준으로 검증했습니다.
+- ingress 기반 외부 진입은 기본적으로 `http://localhost` 기준으로 검증합니다.
 - backup / restore도 수동 운영 경로 기준으로 실제 검증했습니다.
 - Redis는 complete outage와 HA failover를 별도 시나리오로 분리해 검증합니다.
 - 현재 가장 큰 남은 과제는 `k6` latency 개선과 운영 정책 고도화입니다.
+
+## 신뢰성 정책 기준 해석
+- Redis complete outage 시 기대 상태는 `not_ready`입니다.
+- Redis single-node failover 시 기대 상태는 곧바로 `not_ready`로 고정되는 것이 아니라, writable master가 유지되면 `degraded`를 거쳐 회복하는 흐름입니다.
+- PostgreSQL primary가 write 불가 상태가 되어도 Redis enqueue가 가능하면 기대 상태는 `degraded`입니다.
+- 이 경우 API는 새 요청을 `accepted` 하고, PostgreSQL 복구 후 worker가 영속화하는 것이 이 프로젝트의 핵심 설계입니다.
+- Redis replica 부족, Redis link 불안정, PostgreSQL standby 부족, PostgreSQL replication state 이상은 `degraded` 기준으로 해석합니다.
+- 로컬 데모에서는 async streaming standby를 정상 ready 상태로 봅니다.
+- `30초`는 readiness 유예가 아니라 alert 승격 유예로 해석합니다.
+
+즉, 이후 검증에서는 단순 성공 / 실패뿐 아니라 `ready / degraded / not_ready` 전환이 정책대로 나타나는지도 함께 보는 것이 맞습니다.

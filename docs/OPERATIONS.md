@@ -1,4 +1,4 @@
-# Operations
+﻿# Operations
 
 운영 관점에서 필요한 secret, backup, restore, 운영 UI 경로를 정리한 문서입니다.
 
@@ -21,6 +21,11 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/install-runtime-secrets.ps1
 - `scripts/quick_start_all.ps1`와 `k8s/scripts/setup-kind.ps1`에서 자동 실행됩니다.
 - Grafana 자격증명은 더 이상 매니페스트에 하드코딩하지 않습니다.
 - API / Worker / DLQ replayer가 동일 secret를 받아 인증 관련 값을 사용합니다.
+
+## PostgreSQL Monitoring Role
+PostgreSQL HA 설치 후 `k8s/scripts/install-ha.ps1`는 `portfolio` 사용자에게 `pg_monitor` 역할을 부여합니다.
+
+이 권한은 `pg_stat_replication`을 읽기 위한 PostgreSQL 내장 읽기 전용 모니터링 역할입니다. API는 이 정보를 사용해 standby의 `state`, `sync_state`, replication lag를 Prometheus metric으로 노출합니다.
 
 ## PostgreSQL Backup
 로컬 HA PostgreSQL에 대해 logical backup을 생성할 수 있습니다.
@@ -82,13 +87,12 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 ## Demo Access
 로컬 데모 기준 운영 UI 경로:
 - Grafana: `http://localhost/grafana`
+- Grafana login: `ID admin` / `Password 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
-- TLS Grafana: `https://localhost/grafana`
-- TLS Prometheus: `https://localhost/prometheus/`
 
 참고:
-- HTTPS는 local self-signed certificate를 사용합니다.
-- 브라우저에서는 보안 경고가 처음 한 번 표시될 수 있습니다.
+- 기본 운영 문서와 데모 경로는 `http://localhost` 기준입니다.
+- HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 처음 한 번 표시될 수 있습니다.
 
 ## Access Policy
 현재 운영 경로는 일반 서비스 경로와 구분하되, 포트폴리오 데모 기준으로 쉽게 접근할 수 있게 유지합니다.
@@ -132,8 +136,8 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 현재 ingress TLS는 local self-signed certificate 기반입니다.
 
 현재 목적:
-- 로컬에서도 HTTPS 진입과 TLS termination 구조를 보여줍니다.
-- API / Grafana / Prometheus가 같은 ingress 아래에서 HTTPS로 열리는 구성을 검증합니다.
+- 로컬에서도 TLS termination 구조를 확인할 수 있게 합니다.
+- API / Grafana / Prometheus가 같은 ingress 아래에서 열리는 구성을 HTTP 기준으로 운영하고, 필요할 때만 HTTPS로 TLS 동작을 검증합니다.
 
 운영 확장 방향:
 - local: self-signed certificate
@@ -168,3 +172,26 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 운영 UI 접근 정책 정리
 - secret 외부화 방향 정리
 - alert / incident runbook 보강
+## Redis persistence 정책
+- Redis는 accepted write를 잠시 받는 `intake buffer` 역할을 합니다.
+- 최종 영속 저장소는 PostgreSQL입니다.
+- Redis는 `AOF everysec`과 `RDB snapshot`을 함께 사용합니다.
+- 이 정책은 성능과 내구성 사이의 균형을 위한 선택이며, PostgreSQL 영속화 이전 구간에서 최악의 경우 약 1초 내외 손실 가능성을 허용합니다.
+
+## Redis fail-fast 정책
+- writable master unreachable이면 Redis total outage로 봅니다.
+- Sentinel이 master를 결정하지 못하면 Redis total outage로 봅니다.
+- Redis total outage 동안에는 API가 새 write request를 계속 받지 않고 fail-fast로 전환합니다.
+- 즉, enqueue 불가 상태를 soft failure가 아니라 write path failure로 취급합니다.
+
+## readiness / alert 운영 기준
+- readiness는 `ready`, `degraded`, `not_ready`를 즉시 반영합니다.
+- replica count와 standby count는 degraded 판단 기준으로 사용합니다.
+- Redis degraded는 replica 부족, replica link 불안정, Sentinel quorum 불안정을 포함합니다.
+- PostgreSQL degraded는 primary write 불가, standby 부족, replication state 불안정, replication lag 상승을 포함합니다.
+- Redis enqueue가 가능하면 PostgreSQL primary loss 중에도 API readiness는 `not_ready`가 아니라 `degraded`입니다.
+- 로컬 데모에서는 async streaming standby를 정상 ready 상태로 봅니다.
+- `30초`는 alert 승격 유예이며 readiness 지연에는 사용하지 않습니다.
+- Redis total outage와 PostgreSQL primary loss는 즉시 critical로 봅니다.
+
+자세한 상태 모델과 응답 예시는 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)에서 함께 관리합니다.

@@ -31,6 +31,11 @@ stringData:
   REDIS_SOCKET_CONNECT_TIMEOUT: "1"
   REDIS_SOCKET_TIMEOUT: "1"
   REDIS_HEALTH_CHECK_INTERVAL: "15"
+  REDIS_MIN_READY_REPLICAS: "2"
+  READINESS_DEGRADED_GRACE_SECONDS: "30"
+  POSTGRES_MIN_READY_STANDBYS: "2"
+  POSTGRES_MIN_SYNC_STANDBYS: "0"
+  POSTGRES_REPLICATION_DELAY_DEGRADED_BYTES: "1048576"
   UVICORN_WORKERS: "1"
 ---
 apiVersion: apps/v1
@@ -306,16 +311,41 @@ data:
       - name: messaging-critical
         rules:
           - alert: MessagingRedisDown
-            expr: messaging_health_status{component="redis"} == 0
-            for: 1m
+            expr: messaging_health_status{job="api",component="redis"} == 0
             labels:
               severity: critical
               service: messaging
           - alert: MessagingDbDown
-            expr: messaging_health_status{component="db"} == 0
-            for: 1m
+            expr: messaging_health_status{job="api",component="db"} == 0
             labels:
               severity: critical
+              service: messaging
+      - name: messaging-warning
+        rules:
+          - alert: MessagingRedisDegraded
+            expr: |
+              (
+                messaging_redis_connected_replicas{job="api"} <= 1
+                or min(messaging_redis_master_link_status{job="api"}) < 1
+                or (
+                  messaging_redis_sentinel_quorum_ok{job="api"} == 0
+                  and messaging_redis_sentinel_master_ok{job="api"} == 1
+                )
+              )
+            for: 30s
+            labels:
+              severity: warning
+              service: messaging
+          - alert: MessagingPostgresDegraded
+            expr: |
+              (
+                messaging_postgres_standby_count{job="api"} <= 1
+                or sum(messaging_postgres_replication_state_count{job="api",state!="streaming"}) > 0
+                or messaging_postgres_replication_delay_bytes_max{job="api"} > 1048576
+              )
+            for: 30s
+            labels:
+              severity: warning
               service: messaging
 ---
 apiVersion: apps/v1
@@ -400,9 +430,10 @@ data:
     apiVersion: 1
     datasources:
       - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
-        url: http://prometheus:9090
+        url: http://prometheus:9090/prometheus
         isDefault: true
         editable: false
   dashboard.yml: |
@@ -427,22 +458,125 @@ data:
     {
       "uid": "messaging-portfolio-overview",
       "title": "Messaging Portfolio Overview",
+      "tags": ["messaging", "portfolio", "observability"],
+      "timezone": "browser",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
+      "refresh": "5s",
       "panels": [
         {
           "id": 1,
-          "type": "timeseries",
-          "title": "API Request Rate",
-          "gridPos": {"x": 0, "y": 0, "w": 12, "h": 9},
-          "targets": [{"expr": "sum(rate(messaging_api_requests_total[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A"}]
+          "type": "stat",
+          "title": "DB Health",
+          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
+          "targets": [{"expr": "messaging_health_status{job=\"api\",component=\"db\"}", "refId": "A"}]
         },
         {
           "id": 2,
+          "type": "stat",
+          "title": "Redis Health",
+          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
+          "targets": [{"expr": "messaging_health_status{component=\"redis\"}", "refId": "A"}]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Redis Connected Replicas",
+          "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6},
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
+          "targets": [{"expr": "messaging_redis_connected_replicas{job=\"api\"}", "refId": "A"}]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "PostgreSQL Standbys",
+          "gridPos": {"x": 18, "y": 0, "w": 6, "h": 6},
+          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
+          "targets": [{"expr": "messaging_postgres_standby_count{job=\"api\"}", "refId": "A"}]
+        },
+        {
+          "id": 5,
           "type": "timeseries",
-          "title": "API p95 Latency",
-          "gridPos": {"x": 12, "y": 0, "w": 12, "h": 9},
-          "targets": [{"expr": "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))", "legendFormat": "p95", "refId": "A"}]
+          "title": "API Request Rate",
+          "gridPos": {"x": 0, "y": 6, "w": 12, "h": 8},
+          "targets": [{"expr": "sum(rate(messaging_api_requests_total[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A"}]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "API Latency",
+          "gridPos": {"x": 12, "y": 6, "w": 12, "h": 8},
+          "targets": [
+            {"expr": "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))", "legendFormat": "p95", "refId": "A"},
+            {"expr": "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))", "legendFormat": "p99", "refId": "B"}
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "description": "Per-second rate of events consumed and processed by workers. If no events were produced recently, this panel can show No data during normal idle periods.",
+          "title": "Worker Throughput (events only)",
+          "gridPos": {"x": 0, "y": 14, "w": 12, "h": 8},
+          "targets": [{"expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)", "legendFormat": "{{result}}", "refId": "A"}]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Queue Depth By Queue",
+          "gridPos": {"x": 12, "y": 14, "w": 12, "h": 8},
+          "targets": [{"expr": "sum by (queue) (messaging_queue_depth)", "legendFormat": "{{queue}}", "refId": "A"}]
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "Redis Topology Signals",
+          "gridPos": {"x": 0, "y": 22, "w": 12, "h": 8},
+          "targets": [
+            {"expr": "messaging_redis_connected_replicas{job=\"api\"}", "legendFormat": "connected_replicas", "refId": "A"},
+            {"expr": "messaging_redis_sentinel_master_ok{job=\"api\"}", "legendFormat": "sentinel_master_ok", "refId": "B"},
+            {"expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}", "legendFormat": "sentinel_quorum_ok", "refId": "C"}
+          ]
+        },
+        {
+          "id": 10,
+          "type": "timeseries",
+          "title": "Redis Replica Link Status",
+          "gridPos": {"x": 12, "y": 22, "w": 12, "h": 8},
+          "targets": [{"expr": "messaging_redis_master_link_status{job=\"api\"}", "legendFormat": "{{replica}}", "refId": "A"}]
+        },
+        {
+          "id": 11,
+          "type": "timeseries",
+          "title": "PostgreSQL Replication Capacity",
+          "gridPos": {"x": 0, "y": 30, "w": 12, "h": 8},
+          "targets": [
+            {"expr": "messaging_postgres_standby_count{job=\"api\"}", "legendFormat": "standby_count", "refId": "A"},
+            {"expr": "messaging_postgres_sync_standby_count{job=\"api\"}", "legendFormat": "sync_standby_count", "refId": "B"},
+            {"expr": "messaging_postgres_is_primary{job=\"api\"}", "legendFormat": "primary_reachable", "refId": "C"}
+          ]
+        },
+        {
+          "id": 12,
+          "type": "timeseries",
+          "title": "PostgreSQL Replication Delay",
+          "gridPos": {"x": 12, "y": 30, "w": 12, "h": 8},
+          "targets": [{"expr": "messaging_postgres_replication_delay_bytes_max{job=\"api\"}", "legendFormat": "delay_bytes_max", "refId": "A"}]
+        },
+        {
+          "id": 13,
+          "type": "timeseries",
+          "title": "PostgreSQL Replication States",
+          "gridPos": {"x": 0, "y": 38, "w": 12, "h": 8},
+          "targets": [{"expr": "messaging_postgres_replication_state_count{job=\"api\"}", "legendFormat": "{{state}}", "refId": "A"}]
+        },
+        {
+          "id": 14,
+          "type": "timeseries",
+          "title": "DB Failure Reasons (15m)",
+          "gridPos": {"x": 12, "y": 38, "w": 12, "h": 8},
+          "targets": [{"expr": "sum by (reason) (increase(messaging_db_failure_total[15m]))", "legendFormat": "{{reason}}", "refId": "A"}]
         }
       ]
     }

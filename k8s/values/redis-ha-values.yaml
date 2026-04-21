@@ -1,5 +1,12 @@
 architecture: replication
 
+commonConfiguration: |-
+  appendonly yes
+  appendfsync everysec
+  save 900 1
+  save 300 10
+  save 60 10000
+
 auth:
   enabled: true
   password: redis-secret

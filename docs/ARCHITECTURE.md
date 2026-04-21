@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 ## 구성 요소
 - API (`FastAPI`)
@@ -23,7 +23,7 @@
 - metrics-server
   - HPA용 resource metrics 제공
 - ingress-nginx
-  - 로컬 kind 환경의 HTTP / HTTPS ingress 진입
+  - 로컬 kind 환경의 ingress 진입
 - Runtime Secrets
   - auth key와 운영 credential 분리
 - PostgreSQL Backup / Restore
@@ -35,13 +35,10 @@
 현재 로컬 검증 기준의 기본 진입점은 아래와 같습니다.
 
 - API: `http://localhost`
-- TLS API: `https://localhost`
 - Grafana: `http://localhost/grafana`
-- TLS Grafana: `https://localhost/grafana`
 - Prometheus: `http://localhost/prometheus/`
-- TLS Prometheus: `https://localhost/prometheus/`
 
-Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각 서비스로 라우팅합니다. 로컬 HTTPS는 self-signed certificate 기반으로 종료합니다.
+Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각 서비스로 라우팅합니다. 기본 문서와 데모 경로는 HTTP 기준이며, HTTPS는 self-signed certificate 기반 TLS 종료를 확인하는 보조 경로입니다.
 
 ## 요청 처리 흐름
 1. 클라이언트가 API로 transaction 요청을 보냅니다.
@@ -66,7 +63,10 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 ## 장애 시나리오별 동작
 
 ### DB down
-- API는 Redis queue로 요청을 계속 수락할 수 있습니다.
+- Redis queue 기반 구조라 API 프로세스 내부의 enqueue 경로는 DB write와 분리되어 있습니다.
+- PostgreSQL writable primary가 없더라도 Redis enqueue가 가능하면 API readiness는 `degraded`로 유지합니다.
+- 이때 서비스는 새 요청을 `accepted` 할 수 있고, worker는 DB 복구 후 밀린 요청을 영속화합니다.
+- persistence path가 막힌 상태이므로 운영 alert에서는 critical로 다룹니다.
 - Worker는 DB 쓰기 실패 시 retry를 수행합니다.
 - retry 한도를 넘긴 요청은 DLQ로 이동합니다.
 - DB recovery 후 pgpool-backed query가 안정화되면 worker와 replayer가 다시 영속화를 진행합니다.
@@ -105,6 +105,8 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 - API request count / latency
 - worker processing count / latency
 - queue depth
+- Redis role / replica count / replica link / Sentinel master 상태
+- PostgreSQL primary / standby / replication state / replication delay
 - DB / Redis / Worker health
 - Prometheus alert firing / resolution
 
@@ -131,7 +133,39 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
   - cluster PVC `postgres-backups` 사용
 
 ## 현재 한계
-- HTTPS는 local self-signed certificate 기반이라 브라우저 경고가 발생할 수 있습니다.
+- HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로입니다.
 - `k6`는 실행 자체는 정상이지만 latency threshold는 아직 미통과입니다.
 - 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 추가 작업이 필요합니다.
 - 운영 UI는 면접용 데모 흐름을 위해 비교적 열려 있는 상태입니다.
+## 신뢰성 상태 모델
+이번 기준에서 readiness는 단순 up/down이 아니라 실제 역할과 topology 상태를 함께 반영합니다.
+
+### `ready`
+- Redis writable master reachable
+- Redis Sentinel master resolved
+- Redis replica count `2+`
+- Redis replica link 정상
+- PostgreSQL writable primary reachable
+- PostgreSQL standby count `2+`
+- PostgreSQL standby replication state `streaming`
+- PostgreSQL replication lag 정상
+
+### `degraded`
+- Redis master는 writable이지만 replica count가 `1` 이하
+- Redis replica 중 `master_link_status`가 비정상
+- Sentinel은 master를 찾았지만 quorum 또는 topology가 불안정
+- Redis enqueue는 가능하지만 PostgreSQL writable primary가 일시적으로 unavailable
+- PostgreSQL primary는 writable이지만 standby count가 `1` 이하
+- PostgreSQL replication state가 불안정
+- PostgreSQL replication lag가 임계치 초과
+
+### `not_ready`
+- Redis writable master unreachable
+- Redis Sentinel master unresolved
+- Redis 인증 / 연결 실패로 enqueue 불가
+
+## readiness와 alert 해석
+- readiness는 현재 사실을 즉시 반영합니다.
+- `30초`는 readiness 유예가 아니라 alert 승격 유예입니다.
+- 짧은 failover 흔들림 동안에는 `degraded`를 바로 노출하되, warning을 `30초` 유지한 뒤 필요 시 승격합니다.
+- Redis total outage는 intake write path 중단이므로 즉시 critical로 해석합니다.

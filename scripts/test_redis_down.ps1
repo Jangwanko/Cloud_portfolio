@@ -65,7 +65,13 @@ function Wait-RedisNotReady([int]$TimeoutSec = 60) {
   while ((Get-Date) -lt $deadline) {
     try {
       $candidate = Get-HealthState
-      if ($candidate.status -eq "not_ready" -and $candidate.db -eq "up" -and $candidate.redis -eq "down") {
+      $reasons = @($candidate.reason)
+      if (
+        $candidate.status -eq "not_ready" `
+          -and $reasons -contains "redis_master_unreachable" `
+          -and $candidate.postgres.primary_reachable -eq $true `
+          -and $candidate.redis.master_reachable -eq $false
+      ) {
         return $candidate
       }
     } catch {}

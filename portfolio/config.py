@@ -27,9 +27,13 @@ class Settings:
     redis_socket_connect_timeout: float = float(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "1"))
     redis_socket_timeout: float = float(os.getenv("REDIS_SOCKET_TIMEOUT", "1"))
     redis_health_check_interval: int = int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "15"))
+    redis_min_ready_replicas: int = int(os.getenv("REDIS_MIN_READY_REPLICAS", "2"))
 
     startup_retries: int = int(os.getenv("STARTUP_RETRIES", "30"))
     startup_retry_delay: float = float(os.getenv("STARTUP_RETRY_DELAY", "2"))
+    readiness_degraded_grace_seconds: int = int(
+        os.getenv("READINESS_DEGRADED_GRACE_SECONDS", "30")
+    )
 
     notification_queue: str = os.getenv("NOTIFICATION_QUEUE", "message_notifications")
     ingress_queue: str = os.getenv("INGRESS_QUEUE", "message_ingress")
@@ -45,6 +49,11 @@ class Settings:
     dlq_replay_batch_size: int = int(os.getenv("DLQ_REPLAY_BATCH_SIZE", "5"))
     observer_port: int = int(os.getenv("OBSERVER_PORT", "8081"))
     worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9101"))
+    postgres_min_ready_standbys: int = int(os.getenv("POSTGRES_MIN_READY_STANDBYS", "2"))
+    postgres_min_sync_standbys: int = int(os.getenv("POSTGRES_MIN_SYNC_STANDBYS", "0"))
+    postgres_replication_delay_degraded_bytes: int = int(
+        os.getenv("POSTGRES_REPLICATION_DELAY_DEGRADED_BYTES", "1048576")
+    )
 
 
 settings = Settings()

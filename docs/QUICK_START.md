@@ -1,4 +1,4 @@
-# Quick Start
+﻿# Quick Start
 
 ## Before You Run
 - Docker Desktop must be running
@@ -10,7 +10,7 @@
 
 로컬에서 사용하는 포트:
 - `80` for ingress HTTP
-- `443` for ingress HTTPS
+- `443` for optional local TLS validation
 - `9090` for Prometheus when failover alert validation runs
 
 `scripts/quick_start_all.ps1` 실행 전에 포트 충돌을 확인하고, 충돌이 있으면 배포 전에 중단합니다.
@@ -34,15 +34,13 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 
 기본 접근 URL:
 - API: `http://localhost`
-- TLS API: `https://localhost`
 - Grafana: `http://localhost/grafana`
-- TLS Grafana: `https://localhost/grafana`
+- Grafana login: `ID admin` / `Password 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
-- TLS Prometheus: `https://localhost/prometheus/`
 
 참고:
-- HTTPS 는 local self-signed certificate 기반입니다
-- 브라우저에서는 처음 접속 시 보안 경고가 표시될 수 있습니다
+- 기본 실행과 문서는 `http://localhost` 기준으로 봅니다.
+- HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 표시될 수 있습니다.
 
 ## Expected Duration
 아래 시간은 최근 kind + Docker Desktop 기준 대략적인 실행 시간입니다.

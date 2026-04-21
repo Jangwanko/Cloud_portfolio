@@ -63,6 +63,38 @@ redis_reconnect_total = Counter(
     registry=registry,
 )
 
+redis_role = Gauge(
+    "messaging_redis_role",
+    "Current Redis role visibility from the API connection",
+    ["role"],
+    registry=registry,
+)
+
+redis_master_link_status = Gauge(
+    "messaging_redis_master_link_status",
+    "Redis replica master link status where 1 means healthy and 0 means unhealthy",
+    ["replica"],
+    registry=registry,
+)
+
+redis_connected_replicas = Gauge(
+    "messaging_redis_connected_replicas",
+    "Number of Redis replicas currently connected to the writable master",
+    registry=registry,
+)
+
+redis_sentinel_master_ok = Gauge(
+    "messaging_redis_sentinel_master_ok",
+    "Whether Sentinel can currently identify a writable master",
+    registry=registry,
+)
+
+redis_sentinel_quorum_ok = Gauge(
+    "messaging_redis_sentinel_quorum_ok",
+    "Whether known Sentinel peers still satisfy the configured quorum",
+    registry=registry,
+)
+
 queue_depth = Gauge(
     "messaging_queue_depth",
     "Current queue depth",
@@ -93,6 +125,44 @@ worker_last_success_timestamp = Gauge(
 worker_failures_total = Counter(
     "messaging_worker_failures_total",
     "Worker failures",
+    registry=registry,
+)
+
+postgres_is_primary = Gauge(
+    "messaging_postgres_is_primary",
+    "Whether PostgreSQL primary is reachable through pgpool",
+    registry=registry,
+)
+
+postgres_standby_count = Gauge(
+    "messaging_postgres_standby_count",
+    "Number of PostgreSQL standby nodes reported as up by pgpool",
+    registry=registry,
+)
+
+postgres_sync_standby_count = Gauge(
+    "messaging_postgres_sync_standby_count",
+    "Number of PostgreSQL standbys currently reported as sync or quorum",
+    registry=registry,
+)
+
+postgres_replication_state_count = Gauge(
+    "messaging_postgres_replication_state_count",
+    "Count of PostgreSQL standbys by replication state",
+    ["state"],
+    registry=registry,
+)
+
+postgres_replication_sync_state_count = Gauge(
+    "messaging_postgres_replication_sync_state_count",
+    "Count of PostgreSQL standbys by replication sync state",
+    ["sync_state"],
+    registry=registry,
+)
+
+postgres_replication_delay_bytes_max = Gauge(
+    "messaging_postgres_replication_delay_bytes_max",
+    "Maximum PostgreSQL replication delay reported by pgpool in bytes",
     registry=registry,
 )
 
