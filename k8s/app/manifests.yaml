@@ -33,7 +33,7 @@ stringData:
   POSTGRES_MIN_READY_STANDBYS: "2"
   POSTGRES_MIN_SYNC_STANDBYS: "0"
   POSTGRES_REPLICATION_DELAY_DEGRADED_BYTES: "1048576"
-  UVICORN_WORKERS: "3"
+  UVICORN_WORKERS: "1"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -212,7 +212,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "300m"
               memory: "384Mi"
@@ -295,7 +295,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "200m"
               memory: "256Mi"
@@ -341,7 +341,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
@@ -389,7 +389,7 @@ data:
               service: messaging
             annotations:
               summary: "PostgreSQL primary unavailable"
-              description: "Writable PostgreSQL primary is unavailable, so the system is not ready for normal operation."
+              description: "Writable PostgreSQL primary is unavailable. Redis intake may continue in degraded mode, but persistence is blocked until PostgreSQL recovers."
       - name: messaging-warning
         rules:
           - alert: MessagingRedisDegraded
@@ -554,7 +554,7 @@ data:
           "title": "Redis Health",
           "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
           "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_health_status{component=\"redis\"}", "refId": "A"}]
+          "targets": [{"expr": "messaging_health_status{job=\"api\",component=\"redis\"}", "refId": "A"}]
         },
         {
           "id": 3,

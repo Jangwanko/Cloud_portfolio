@@ -134,9 +134,10 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 
 ## 현재 한계
 - HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로입니다.
-- `k6`는 실행 자체는 정상이지만 latency threshold는 아직 미통과입니다.
+- `k6`는 실행 경로와 측정 체계를 갖추었고, latency threshold는 성능 개선 과제로 추적합니다.
 - 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 추가 작업이 필요합니다.
-- 운영 UI는 면접용 데모 흐름을 위해 비교적 열려 있는 상태입니다.
+- 운영 UI는 로컬 포트폴리오 검증을 위해 접근 가능하게 구성되어 있으며, 실제 운영에서는 접근 제한이 필요합니다.
+
 ## 신뢰성 상태 모델
 이번 기준에서 readiness는 단순 up/down이 아니라 실제 역할과 topology 상태를 함께 반영합니다.
 

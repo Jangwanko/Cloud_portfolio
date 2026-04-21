@@ -97,35 +97,26 @@
   - restore 완료 후 API readiness 정상 응답
 
 ## k6 Load Test
-`scripts/test_k6_load.ps1`는 현재 실행 경로 자체는 정상입니다. 다만 성능 threshold는 아직 통과하지 못합니다.
+`scripts/test_k6_load.ps1`는 현재 실행 경로 자체는 정상입니다. latency threshold는 성능 개선 과제로 추적합니다.
 
-최근 기준 결과:
-- total requests: `7435`
-- error rate: `0.00%`
-- average latency: `2459.75ms`
-- p95 latency: `5092.95ms`
+성능 개선 이력:
 
-Redis hot path 실험 A 결과:
-- change: `get_redis()`의 per-call `PING` 제거, `UVICORN_WORKERS=1` 유지
-- image: `messaging-portfolio:exp-a-redis-no-ping`
-- total requests: `16024`
-- error rate: `0.00%`
-- average latency: `1011.08ms`
-- p95 latency: `2219.59ms`
-- result: threshold failed, but throughput and latency improved materially
+| 단계 | 처리 요청 수 | 평균 응답시간 | p95 응답시간 | Error Rate | 반영 여부 | 변경사항 |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| 초기 기준 | `5,434 req` | `3,660 ms` | `8,175 ms` | - | 기준선 | HA kind 환경에서 k6 성능 기준선을 측정했습니다. |
+| 1차 개선 | `7,966 req` | `2,285 ms` | `4,936 ms` | - | 반영 | event intake 전 stream membership 확인을 Redis cache 우선으로 바꿔 DB 조회 round-trip을 줄였습니다. |
+| 2차 개선 | `9,102 req` | `1,934 ms` | `3,851 ms` | - | 반영 | request status 저장과 queue push를 Redis pipeline으로 묶고, idempotency hot path에서 불필요한 추가 조회를 줄였습니다. |
+| pgpool / DB pool 조정 | `11,314 req` | `1,519 ms` | `3,333 ms` | - | 반영 | API DB pool 크기와 pgpool connection / resource 설정을 조정해 connection 병목, `too many clients`, OOM 가능성을 완화했습니다. |
+| Redis hot path 실험 A | `16,024 req` | `1,011.08 ms` | `2,219.59 ms` | `0.00%` | 현재 최종 | 요청마다 `get_redis()`가 수행하던 확인용 `PING` round-trip을 제거하고, 실패 시 reconnect하는 방식으로 변경했습니다. |
+| API worker 실험 B | `20,055 req` | `797.81 ms` | `3,088.99 ms` | `5.82%` | 미채택 | 실험 A에 `UVICORN_WORKERS=2`를 추가했습니다. 처리량과 평균 응답시간은 개선됐지만 error rate와 p95가 악화되어 최종 반영하지 않았습니다. |
 
-API worker 실험 B 결과:
-- change: 실험 A 유지 + `UVICORN_WORKERS=2`
-- image: `messaging-portfolio:exp-b-redis-no-ping-workers2`
-- total requests: `20055`
-- error rate: `5.82%`
-- average latency: `797.81ms`
-- p95 latency: `3088.99ms`
-- result: throughput and average latency improved, but error rate and p95 latency regressed
+참고:
+- `7435 req`, avg `2459.75ms`, p95 `5092.95ms` 결과는 `5461b2f` 시점의 과거 단일 k6 확인 결과입니다.
+- 위 성능 개선 표의 기준선과 차수 실험은 이후 `093317e`, `5e6ba0a` 기준으로 정리했습니다.
 
 현재 해석:
-- 실행 오류가 아니라 성능 미달입니다.
-- 즉 load test infrastructure는 동작하지만 latency tuning이 아직 필요합니다.
+- 실행 오류가 아니라 성능 튜닝 대상입니다.
+- 즉 load test infrastructure는 동작하며, latency tuning은 후속 개선 과제로 남아 있습니다.
 - Redis command hot path의 불필요한 round-trip 제거는 효과가 있었고, 다음 실험은 API worker 병렬성 증가 효과를 분리해서 확인하는 것이 맞습니다.
 - `UVICORN_WORKERS=2`는 로컬 kind HA 환경에서 tail latency와 error rate를 악화시켜 채택하지 않았고, 최종 코드는 실험 A 상태로 되돌렸습니다.
 

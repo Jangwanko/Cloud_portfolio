@@ -1,6 +1,6 @@
 ﻿# Event Stream Systems Portfolio
 
-이 저장소는 채팅형 이벤트 흐름을 단순 CRUD 로 끝내지 않고, 장애 상황에서도 요청을 최대한 빠르게 받아들이고 이후에 복구 처리할 수 있는 `event stream processing system` 형태로 구성한 포트폴리오입니다.
+이 저장소는 이벤트 요청을 단순 CRUD로 처리하지 않고, 장애 상황에서도 요청을 빠르게 수락한 뒤 복구 가능한 비동기 파이프라인으로 처리하는 `event stream processing system` 포트폴리오입니다.
 
 핵심 목표는 아래와 같습니다.
 - `queue-backed async processing`
@@ -70,12 +70,19 @@ flowchart LR
 
 ## Prerequisites
 필수:
-- Docker Desktop
-- Windows PowerShell
+- Docker Desktop 또는 Docker Engine
+- Windows PowerShell 또는 Linux bash
 
 저장소에 포함된 도구:
 - `tools/kind.exe`
 - `tools/helm/windows-amd64/helm.exe`
+
+Linux 에서는 `docker`, `kind`, `kubectl`, `helm`, `curl`, `python3`가 PATH 에 있어야 합니다.
+Ubuntu / Debian 계열 Linux 에서는 아래 명령으로 기본 도구 설치를 시작할 수 있습니다.
+
+```bash
+bash scripts/install_linux_prereqs.sh
+```
 
 로컬에서 사용하는 포트:
 - `80` for ingress HTTP
@@ -89,6 +96,12 @@ flowchart LR
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
+Linux:
+
+```bash
+bash scripts/quick_start_all.sh
+```
+
 이 스크립트는 아래 작업을 수행합니다.
 - kind cluster 생성
 - `ingress-nginx` 설치
@@ -97,7 +110,14 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 - PostgreSQL HA / Redis HA 배포
 - application stack 배포
 - ingress readiness 확인
-- smoke / DB recovery / Redis recovery / HPA scaling test 실행
+- Windows PowerShell 기본 실행에서는 smoke / DB recovery / Redis recovery / HPA scaling test 실행
+- Linux bash 기본 실행에서는 smoke test 실행
+
+Linux 에서 DB / Redis 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
+
+```bash
+RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
+```
 
 기본 접근 경로:
 - API: `http://localhost`
@@ -137,7 +157,7 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 관련 메트릭 설명과 해석 기준은 [OBSERVABILITY.md](docs/OBSERVABILITY.md) 에 정리했습니다.
 
 ## Performance
-`k6` 부하 테스트 자체는 동작하지만, 현재 latency threshold 는 아직 통과하지 못하고 있습니다.
+`k6` 부하 테스트는 실행 경로와 측정 체계를 갖추고 있으며, 현재는 latency threshold를 개선 대상으로 추적합니다.
 
 최근 측정 예시:
 - 초기 기준: `5434 req`, avg `3660ms`, p95 `8175ms`
@@ -146,7 +166,8 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
 - Redis per-call `PING` 제거 후: `16024 req`, avg `1011ms`, p95 `2220ms`
 
-추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 더 좋아졌지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
+추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 개선됐지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
+상세 실험 이력은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)의 `k6 Load Test` 섹션에 정리했습니다.
 
 ## Backup and Restore
 현재 운영 보강 범위:
@@ -197,7 +218,7 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 
 ## Current Limits
 - HTTPS is local self-signed TLS, not production-issued certificates
-- `k6` latency threshold is still failing
+- `k6` latency threshold tuning remains as a performance follow-up
 - stream 단위 event ordering guarantee 는 추가 검증 과제가 남아 있습니다
 - 운영 UI 는 데모와 검증 목적에 맞춰 노출 범위를 열어둔 상태이며, production access control 까지는 구현하지 않았습니다
 - EKS / ECR / external secret manager 연동은 아직 로컬 중심 검증 단계입니다

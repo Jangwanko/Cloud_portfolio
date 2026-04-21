@@ -110,7 +110,7 @@
       },
       "targets": [
         {
-          "expr": "messaging_health_status{component=\"redis\"}",
+          "expr": "messaging_health_status{job=\"api\",component=\"redis\"}",
           "refId": "A"
         }
       ],

@@ -1,12 +1,26 @@
 ﻿# Quick Start
 
 ## Before You Run
-- Docker Desktop must be running
-- Windows PowerShell 기준으로 실행합니다
+- Docker Desktop 또는 Docker Engine 이 실행 중이어야 합니다
+- Windows PowerShell 또는 Linux bash 기준으로 실행합니다
 
 저장소에 포함된 도구:
 - `tools/kind.exe`
 - `tools/helm/windows-amd64/helm.exe`
+
+Linux 에서는 아래 도구가 PATH 에 있어야 합니다.
+- `docker`
+- `kind`
+- `kubectl`
+- `helm`
+- `curl`
+- `python3`
+
+Ubuntu / Debian 계열 Linux 에서는 아래 명령으로 기본 도구를 설치할 수 있습니다.
+
+```bash
+bash scripts/install_linux_prereqs.sh
+```
 
 로컬에서 사용하는 포트:
 - `80` for ingress HTTP
@@ -22,6 +36,12 @@
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
+Linux:
+
+```bash
+bash scripts/quick_start_all.sh
+```
+
 이 스크립트는 아래 작업을 포함합니다.
 - kind cluster 생성
 - `ingress-nginx` 설치
@@ -30,7 +50,14 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 - PostgreSQL HA / Redis HA 배포
 - application stack 배포
 - ingress readiness 확인
-- smoke, DB recovery, Redis recovery, HPA scaling test 실행
+- Windows PowerShell 기본 실행에서는 smoke, DB recovery, Redis recovery, HPA scaling test 실행
+- Linux bash 기본 실행에서는 smoke test 실행
+
+DB / Redis 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
+
+```bash
+RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
+```
 
 기본 접근 URL:
 - API: `http://localhost`
@@ -48,9 +75,13 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 | Scenario | Script | Typical duration |
 | --- | --- | --- |
 | Full quick start | `scripts/quick_start_all.ps1` | about 12-18 min |
+| Linux quick start | `scripts/quick_start_all.sh` | about 12-18 min |
 | Smoke test | `scripts/smoke_test.ps1` | about 15-30 sec |
+| Linux smoke test | `scripts/smoke_test.sh` | about 15-30 sec |
 | DB recovery test | `scripts/test_db_down.ps1` | about 1-2 min |
+| Linux DB recovery test | `scripts/test_db_down.sh` | about 1-2 min |
 | Redis complete outage test | `scripts/test_redis_down.ps1` | about 2-3 min |
+| Linux Redis complete outage test | `scripts/test_redis_down.sh` | about 2-3 min |
 | Redis single-node failover test | `scripts/test_redis_failover.ps1` | about 2-3 min |
 | HPA scaling test | `scripts/test_hpa_scaling.ps1` | about 30-45 sec |
 | DLQ flow test | `scripts/test_dlq_flow.ps1` | about 1-2 min |
@@ -78,7 +109,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 
 참고:
 - 이 테스트는 health check 가 아니라 performance test 입니다
-- 현재 저장소 상태에서는 실행은 되지만 latency threshold 는 아직 통과하지 못합니다
+- 현재 저장소 상태에서는 실행 경로가 정상이며, latency threshold는 성능 개선 과제로 추적합니다
 
 ## Individual Scenarios
 Smoke test:

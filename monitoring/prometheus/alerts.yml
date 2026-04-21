@@ -17,7 +17,7 @@ groups:
           service: messaging
         annotations:
           summary: "PostgreSQL primary unavailable"
-          description: "Writable PostgreSQL primary is unavailable, so the system is not ready for normal operation."
+          description: "Writable PostgreSQL primary is unavailable. Redis intake may continue in degraded mode, but persistence is blocked until PostgreSQL recovers."
 
       - alert: MessagingApiHigh5xxRate
         expr: |

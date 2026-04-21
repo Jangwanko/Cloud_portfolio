@@ -478,7 +478,7 @@ data:
           "title": "Redis Health",
           "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
           "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_health_status{component=\"redis\"}", "refId": "A"}]
+          "targets": [{"expr": "messaging_health_status{job=\"api\",component=\"redis\"}", "refId": "A"}]
         },
         {
           "id": 3,

@@ -152,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 수동 PostgreSQL backup: 구현 및 검증 완료
 - backup 기반 restore: 구현 및 검증 완료
 - 주 1회 backup `CronJob`: HA 매니페스트에 포함 및 클러스터 적용 완료
-- 운영 UI 접근 제한: 데모 친화적 수준으로 유지
+- 운영 UI 접근 제한: 로컬 검증 기준으로 접근 가능하게 유지
 
 ## Redis Operational Scenarios
 현재 Redis 관련 운영 검증은 두 가지로 나눠서 봅니다.
@@ -168,10 +168,6 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - Redis HA + Sentinel 환경에서는 단일 pod 중단이 곧바로 전체 Redis down과 같지 않습니다.
 - 따라서 outage와 failover를 별도 운영 시나리오로 보는 편이 더 정확합니다.
 
-## Next Operational Steps
-- 운영 UI 접근 정책 정리
-- secret 외부화 방향 정리
-- alert / incident runbook 보강
 ## Redis persistence 정책
 - Redis는 accepted write를 잠시 받는 `intake buffer` 역할을 합니다.
 - 최종 영속 저장소는 PostgreSQL입니다.
@@ -195,3 +191,8 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - Redis total outage와 PostgreSQL primary loss는 즉시 critical로 봅니다.
 
 자세한 상태 모델과 응답 예시는 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)에서 함께 관리합니다.
+
+## 운영 확장 과제
+- 운영 UI 접근 정책 강화
+- secret 외부화 방향 정리
+- alert / incident runbook 보강

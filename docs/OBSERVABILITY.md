@@ -164,7 +164,6 @@ intake write path가 실제로 막힌 상태입니다.
 - Redis 인증 / 연결 실패로 enqueue 불가
 
 PostgreSQL writable primary unreachable은 API readiness에서는 `degraded`로 봅니다. Redis intake buffer가 요청을 받을 수 있다면 API는 새 요청을 `accepted` 하고, PostgreSQL 복구 후 worker가 영속화를 이어갈 수 있기 때문입니다. 단, persistence path가 막힌 상태이므로 alert에서는 critical로 봅니다.
-- DB 연결 또는 write query 실패
 
 ## Alert 해석
 

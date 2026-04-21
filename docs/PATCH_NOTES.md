@@ -218,7 +218,7 @@
   - pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
   - Redis per-call `PING` 제거 실험 A: `16024 req`, avg `1011ms`, p95 `2220ms`
   - 실험 B(A + `UVICORN_WORKERS=2`): `20055 req`, error `5.82%`, avg `798ms`, p95 `3089ms`
-- threshold는 아직 미통과이지만, 현재 병목은 순수 accept 경로보다 HA DB 환경에서의 connection 정책에서 더 크다는 점을 확인했습니다.
+- latency threshold는 성능 개선 과제로 남아 있으며, 현재 병목은 순수 accept 경로보다 HA DB 환경의 connection 정책에 더 가깝다는 점을 확인했습니다.
 - 실험 B는 throughput과 average latency는 더 좋아졌지만, tail latency와 error rate가 악화되어 채택하지 않았습니다.
 - 최종 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path의 per-call `PING` 제거만 반영하는 실험 A 상태로 되돌렸습니다.
 
@@ -245,7 +245,7 @@
 - HTTPS는 local self-signed certificate 기반입니다.
 - `k6`는 실행되지만 현재 latency threshold를 통과하지 못합니다.
 - 멀티 파드 환경에서 stream 단위 event 순서 보장 검증은 추가 작업이 필요합니다.
-- 운영 UI 접근 제한은 아직 데모 친화적인 수준으로 유지하고 있습니다.
+- 운영 UI 접근 제한은 로컬 검증 기준으로 접근 가능하게 유지하고 있습니다.
 
 ## Next Changes
 1. 운영 UI 접근 정책과 secret 외부화 방향 정리
