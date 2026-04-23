@@ -241,6 +241,42 @@
 - 로컬 데모에서는 PostgreSQL standby가 async라도 `streaming`이고 lag가 정상이면 `ready`로 해석하도록 정리했습니다.
 - durability, fail-fast, topology health에 대한 운영 기준이 문서와 코드에 함께 남도록 정리됐습니다.
 
+## v0.17 Observability Expansion and Queue-Depth Scaling
+추가 범위:
+- API stage latency 메트릭 추가
+- Worker stage latency 메트릭 추가
+- accepted-to-persisted lag 메트릭 추가
+- Redis queue wait time 메트릭 추가
+- kube-state-metrics 설치 경로 추가
+- Grafana `Worker Replicas` 패널 추가
+- Worker autoscaling을 CPU HPA에서 KEDA queue depth scaling으로 전환
+- Windows / Linux quick start와 GitOps bootstrap 경로에 KEDA / kube-state-metrics 설치 반영
+
+배경:
+- 기존 관측만으로는 API가 느린지, Redis enqueue가 느린지, Worker가 backlog를 못 따라가는지, PostgreSQL persistence가 느린지를 구간별로 분리해 설명하기 어려웠습니다.
+- Worker는 이미 autoscaling이 있었지만 CPU 기준이라 queue backlog, DB lock 대기, persistence 지연 같은 실제 병목에 충분히 반응하지 못했습니다.
+- 또한 Grafana에서 worker replica 변화 자체를 직접 보이지 못해, scale-out을 `kubectl`에 의존해 확인해야 했습니다.
+
+영향:
+- 이제 Grafana / Prometheus에서 아래 구간을 직접 볼 수 있게 됐습니다:
+  - API hot path stage latency
+  - Worker stage latency
+  - Redis queue wait time
+  - accepted-to-persisted async end-to-end lag
+- Worker autoscaling 기준이 CPU에서 queue depth로 바뀌었습니다.
+  - query: `sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))`
+  - threshold: `400`
+  - min replicas: `2`
+  - max replicas: `8`
+- kube-state-metrics를 통해 worker의 desired / available replica 수를 Grafana `Worker Replicas` 패널에서 바로 확인할 수 있게 됐습니다.
+- 실제 라이브 `k6` 부하 검증에서 worker replica가 `2 -> 4 -> 6 -> 8`로 scale-out 되는 것을 확인했습니다.
+- 최근 측정 예시는 아래와 같습니다:
+  - `19,528 req`
+  - avg `811.01 ms`
+  - p95 `1,953.64 ms`
+  - error `0.00%`
+- latency threshold 초과는 여전히 남아 있지만, 이제는 “어느 구간이 느린지”와 “autoscaling이 backlog에 실제 반응하는지”를 운영 관점에서 설명할 수 있게 됐습니다.
+
 ## Current Known Gaps
 - HTTPS는 local self-signed certificate 기반입니다.
 - `k6`는 실행되지만 현재 latency threshold를 통과하지 못합니다.

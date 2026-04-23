@@ -29,6 +29,14 @@ api_request_latency_seconds = Histogram(
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5),
 )
 
+api_stage_latency_seconds = Histogram(
+    "messaging_api_stage_latency_seconds",
+    "API stage latency in seconds",
+    ["stage"],
+    registry=registry,
+    buckets=(0.001, 0.003, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2),
+)
+
 health_status = Gauge(
     "messaging_health_status",
     "Component health status",
@@ -116,6 +124,28 @@ worker_processing_seconds = Histogram(
     buckets=(0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5),
 )
 
+worker_stage_latency_seconds = Histogram(
+    "messaging_worker_stage_latency_seconds",
+    "Worker stage latency in seconds",
+    ["stage"],
+    registry=registry,
+    buckets=(0.001, 0.003, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5),
+)
+
+event_persist_lag_seconds = Histogram(
+    "messaging_event_persist_lag_seconds",
+    "Time from API acceptance to PostgreSQL persistence in seconds",
+    registry=registry,
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60),
+)
+
+queue_wait_seconds = Histogram(
+    "messaging_queue_wait_seconds",
+    "Time from Redis enqueue to worker dequeue in seconds",
+    registry=registry,
+    buckets=(0.001, 0.003, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30),
+)
+
 worker_last_success_timestamp = Gauge(
     "messaging_worker_last_success_timestamp",
     "Unix timestamp of the last successful worker job",
@@ -169,6 +199,24 @@ postgres_replication_delay_bytes_max = Gauge(
 
 def metrics_response() -> Response:
     return Response(generate_latest(registry), media_type=CONTENT_TYPE_LATEST)
+
+
+@contextmanager
+def observe_api_stage(stage: str):
+    started_at = time.perf_counter()
+    try:
+        yield
+    finally:
+        api_stage_latency_seconds.labels(stage=stage).observe(time.perf_counter() - started_at)
+
+
+@contextmanager
+def observe_worker_stage(stage: str):
+    started_at = time.perf_counter()
+    try:
+        yield
+    finally:
+        worker_stage_latency_seconds.labels(stage=stage).observe(time.perf_counter() - started_at)
 
 
 @contextmanager

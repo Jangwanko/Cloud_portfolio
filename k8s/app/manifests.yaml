@@ -33,7 +33,7 @@ stringData:
   POSTGRES_MIN_READY_STANDBYS: "2"
   POSTGRES_MIN_SYNC_STANDBYS: "0"
   POSTGRES_REPLICATION_DELAY_DEGRADED_BYTES: "1048576"
-  UVICORN_WORKERS: "3"
+  UVICORN_WORKERS: "1"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -212,7 +212,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "300m"
               memory: "384Mi"
@@ -295,7 +295,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "200m"
               memory: "256Mi"
@@ -341,7 +341,7 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-            resources:
+          resources:
             requests:
               cpu: "100m"
               memory: "128Mi"
@@ -370,6 +370,10 @@ data:
         metrics_path: /metrics
         static_configs:
           - targets: ["worker:9101"]
+      - job_name: kube-state-metrics
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["kube-state-metrics:8080"]
   alerts.yml: |
     groups:
       - name: messaging-critical
@@ -389,7 +393,7 @@ data:
               service: messaging
             annotations:
               summary: "PostgreSQL primary unavailable"
-              description: "Writable PostgreSQL primary is unavailable, so the system is not ready for normal operation."
+              description: "Writable PostgreSQL primary is unavailable. Redis intake may continue in degraded mode, but persistence is blocked until PostgreSQL recovers."
       - name: messaging-warning
         rules:
           - alert: MessagingRedisDegraded
@@ -532,129 +536,764 @@ metadata:
 data:
   messaging-overview.json: |
     {
-      "uid": "messaging-portfolio-overview",
-      "title": "Messaging Portfolio Overview",
-      "tags": ["messaging", "portfolio", "observability"],
-      "timezone": "browser",
-      "schemaVersion": 39,
-      "version": 2,
-      "refresh": "5s",
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "graphTooltip": 0,
       "panels": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 0,
+            "y": 0
+          },
           "id": 1,
-          "type": "stat",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "messaging_health_status{job=\"api\",component=\"db\"}",
+              "refId": "A"
+            }
+          ],
           "title": "DB Health",
-          "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6},
-          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_health_status{job=\"api\",component=\"db\"}", "refId": "A"}]
+          "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 6,
+            "y": 0
+          },
           "id": 2,
-          "type": "stat",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "messaging_health_status{job=\"api\",component=\"redis\"}",
+              "refId": "A"
+            }
+          ],
           "title": "Redis Health",
-          "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6},
-          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_health_status{component=\"redis\"}", "refId": "A"}]
+          "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 12,
+            "y": 0
+          },
           "id": 3,
-          "type": "stat",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "messaging_redis_connected_replicas{job=\"api\"}",
+              "refId": "A"
+            }
+          ],
           "title": "Redis Connected Replicas",
-          "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6},
-          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_redis_connected_replicas{job=\"api\"}", "refId": "A"}]
+          "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "green",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 18,
+            "y": 0
+          },
           "id": 4,
-          "type": "stat",
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "value"
+          },
+          "targets": [
+            {
+              "expr": "messaging_postgres_standby_count{job=\"api\"}",
+              "refId": "A"
+            }
+          ],
           "title": "PostgreSQL Standbys",
-          "gridPos": {"x": 18, "y": 0, "w": 6, "h": 6},
-          "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "colorMode": "value", "graphMode": "none", "textMode": "value"},
-          "targets": [{"expr": "messaging_postgres_standby_count{job=\"api\"}", "refId": "A"}]
+          "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 6
+          },
           "id": 5,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum(rate(messaging_api_requests_total[1m])) by (status)",
+              "legendFormat": "{{status}}",
+              "refId": "A"
+            }
+          ],
           "title": "API Request Rate",
-          "gridPos": {"x": 0, "y": 6, "w": 12, "h": 8},
-          "targets": [{"expr": "sum(rate(messaging_api_requests_total[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A"}]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
           "id": 6,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+              "legendFormat": "p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+              "legendFormat": "p99",
+              "refId": "B"
+            }
+          ],
           "title": "API Latency",
-          "gridPos": {"x": 12, "y": 6, "w": 12, "h": 8},
-          "targets": [
-            {"expr": "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))", "legendFormat": "p95", "refId": "A"},
-            {"expr": "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))", "legendFormat": "p99", "refId": "B"}
-          ]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 14
+          },
           "id": 7,
-          "type": "timeseries",
           "description": "Per-second rate of events consumed and processed by workers. If no events were produced recently, this panel can show No data during normal idle periods.",
+          "targets": [
+            {
+              "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
+              "legendFormat": "{{result}}",
+              "refId": "A"
+            }
+          ],
           "title": "Worker Throughput (events only)",
-          "gridPos": {"x": 0, "y": 14, "w": 12, "h": 8},
-          "targets": [{"expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)", "legendFormat": "{{result}}", "refId": "A"}]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 14
+          },
           "id": 8,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum by (queue) (messaging_queue_depth)",
+              "legendFormat": "{{queue}}",
+              "refId": "A"
+            }
+          ],
           "title": "Queue Depth By Queue",
-          "gridPos": {"x": 12, "y": 14, "w": 12, "h": 8},
-          "targets": [{"expr": "sum by (queue) (messaging_queue_depth)", "legendFormat": "{{queue}}", "refId": "A"}]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 22
+          },
           "id": 9,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "messaging_redis_connected_replicas{job=\"api\"}",
+              "legendFormat": "connected_replicas",
+              "refId": "A"
+            },
+            {
+              "expr": "messaging_redis_sentinel_master_ok{job=\"api\"}",
+              "legendFormat": "sentinel_master_ok",
+              "refId": "B"
+            },
+            {
+              "expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}",
+              "legendFormat": "sentinel_quorum_ok",
+              "refId": "C"
+            }
+          ],
           "title": "Redis Topology Signals",
-          "gridPos": {"x": 0, "y": 22, "w": 12, "h": 8},
-          "targets": [
-            {"expr": "messaging_redis_connected_replicas{job=\"api\"}", "legendFormat": "connected_replicas", "refId": "A"},
-            {"expr": "messaging_redis_sentinel_master_ok{job=\"api\"}", "legendFormat": "sentinel_master_ok", "refId": "B"},
-            {"expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}", "legendFormat": "sentinel_quorum_ok", "refId": "C"}
-          ]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 22
+          },
           "id": 10,
-          "type": "timeseries",
-          "title": "Redis Replica Link Status",
-          "gridPos": {"x": 12, "y": 22, "w": 12, "h": 8},
-          "targets": [{"expr": "messaging_redis_master_link_status{job=\"api\"}", "legendFormat": "{{replica}}", "refId": "A"}]
-        },
-        {
-          "id": 11,
-          "type": "timeseries",
-          "title": "PostgreSQL Replication Capacity",
-          "gridPos": {"x": 0, "y": 30, "w": 12, "h": 8},
           "targets": [
-            {"expr": "messaging_postgres_standby_count{job=\"api\"}", "legendFormat": "standby_count", "refId": "A"},
-            {"expr": "messaging_postgres_sync_standby_count{job=\"api\"}", "legendFormat": "sync_standby_count", "refId": "B"},
-            {"expr": "messaging_postgres_is_primary{job=\"api\"}", "legendFormat": "primary_reachable", "refId": "C"}
-          ]
+            {
+              "expr": "messaging_redis_master_link_status{job=\"api\"}",
+              "legendFormat": "{{replica}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Redis Replica Link Status",
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 30
+          },
+          "id": 11,
+          "targets": [
+            {
+              "expr": "messaging_postgres_standby_count{job=\"api\"}",
+              "legendFormat": "standby_count",
+              "refId": "A"
+            },
+            {
+              "expr": "messaging_postgres_sync_standby_count{job=\"api\"}",
+              "legendFormat": "sync_standby_count",
+              "refId": "B"
+            },
+            {
+              "expr": "messaging_postgres_is_primary{job=\"api\"}",
+              "legendFormat": "primary_reachable",
+              "refId": "C"
+            }
+          ],
+          "title": "PostgreSQL Replication Capacity",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 30
+          },
           "id": 12,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "messaging_postgres_replication_delay_bytes_max{job=\"api\"}",
+              "legendFormat": "delay_bytes_max",
+              "refId": "A"
+            }
+          ],
           "title": "PostgreSQL Replication Delay",
-          "gridPos": {"x": 12, "y": 30, "w": 12, "h": 8},
-          "targets": [{"expr": "messaging_postgres_replication_delay_bytes_max{job=\"api\"}", "legendFormat": "delay_bytes_max", "refId": "A"}]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 38
+          },
           "id": 13,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "messaging_postgres_replication_state_count{job=\"api\"}",
+              "legendFormat": "{{state}}",
+              "refId": "A"
+            }
+          ],
           "title": "PostgreSQL Replication States",
-          "gridPos": {"x": 0, "y": 38, "w": 12, "h": 8},
-          "targets": [{"expr": "messaging_postgres_replication_state_count{job=\"api\"}", "legendFormat": "{{state}}", "refId": "A"}]
+          "type": "timeseries"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 38
+          },
           "id": 14,
-          "type": "timeseries",
+          "targets": [
+            {
+              "expr": "sum by (reason) (increase(messaging_db_failure_total[15m]))",
+              "legendFormat": "{{reason}}",
+              "refId": "A"
+            }
+          ],
           "title": "DB Failure Reasons (15m)",
-          "gridPos": {"x": 12, "y": 38, "w": 12, "h": 8},
-          "targets": [{"expr": "sum by (reason) (increase(messaging_db_failure_total[15m]))", "legendFormat": "{{reason}}", "refId": "A"}]
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Redis enqueue.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 46
+          },
+          "id": 15,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+              "legendFormat": "{{stage}} p95",
+              "refId": "A"
+            }
+          ],
+          "title": "API Stage Latency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "p95 latency for worker stages: DB persist, request status update, notification enqueue, and notification DB insert.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 46
+          },
+          "id": 16,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))",
+              "legendFormat": "{{stage}} p95",
+              "refId": "A"
+            }
+          ],
+          "title": "Worker Stage Latency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "End-to-end async processing lag from API accepted response to PostgreSQL persisted state.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 54
+          },
+          "id": 17,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+              "legendFormat": "accepted_to_persisted p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+              "legendFormat": "accepted_to_persisted p99",
+              "refId": "B"
+            }
+          ],
+          "title": "Accepted To Persisted Lag",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Time spent waiting in Redis queue before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 54
+          },
+          "id": 18,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+              "legendFormat": "queue_wait p95",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+              "legendFormat": "queue_wait p99",
+              "refId": "B"
+            }
+          ],
+          "title": "Redis Queue Wait Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "description": "Desired and available worker replicas from kube-state-metrics and the KEDA-managed HPA.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 62
+          },
+          "id": 19,
+          "targets": [
+            {
+              "expr": "kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}",
+              "legendFormat": "deployment_spec",
+              "refId": "A"
+            },
+            {
+              "expr": "kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}",
+              "legendFormat": "available",
+              "refId": "B"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"messaging-app\",horizontalpodautoscaler=\"worker-keda-hpa\"}",
+              "legendFormat": "hpa_desired",
+              "refId": "C"
+            }
+          ],
+          "title": "Worker Replicas",
+          "type": "timeseries"
         }
-      ]
+      ],
+      "refresh": "5s",
+      "schemaVersion": 39,
+      "tags": [
+        "messaging",
+        "portfolio",
+        "observability"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timezone": "browser",
+      "title": "Messaging Portfolio Overview",
+      "uid": "messaging-portfolio-overview",
+      "version": 4
     }
 ---
 apiVersion: apps/v1
@@ -775,22 +1414,38 @@ spec:
           type: Utilization
           averageUtilization: 65
 ---
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
 metadata:
-  name: worker-hpa
+  name: worker-keda
   namespace: messaging-app
 spec:
   scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
     name: worker
-  minReplicas: 2
-  maxReplicas: 4
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
+  pollingInterval: 5
+  cooldownPeriod: 120
+  minReplicaCount: 2
+  maxReplicaCount: 8
+  advanced:
+    horizontalPodAutoscalerConfig:
+      name: worker-keda-hpa
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Pods
+              value: 2
+              periodSeconds: 30
+        scaleDown:
+          stabilizationWindowSeconds: 120
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 60
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.messaging-app.svc.cluster.local:9090/prometheus
+        metricName: messaging_ingress_queue_depth_total
+        query: sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))
+        threshold: "400"

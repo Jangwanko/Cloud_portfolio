@@ -64,6 +64,8 @@ Write-Host ""
 Write-Host "==> Bootstrapping local cluster and shared runtime components"
 & "$PSScriptRoot/../k8s/scripts/setup-kind.ps1" -ClusterName $ClusterName
 & "$PSScriptRoot/../k8s/scripts/install-ha.ps1" -Namespace $Namespace
+& "$PSScriptRoot/../k8s/scripts/install-kube-state-metrics.ps1" -Namespace $Namespace
+& "$PSScriptRoot/../k8s/scripts/install-keda.ps1"
 
 Write-Host ""
 Write-Host "==> Loading application image into kind"
