@@ -1,302 +1,177 @@
-﻿# 관측 지표 안내
-
-이 문서는 Grafana / Prometheus에서 확인할 수 있는 주요 지표와 해석 기준을 정리합니다.
-
-## 목적
-
-이 프로젝트의 관측 목표는 단순히 Pod가 살아 있는지 확인하는 데서 끝나지 않습니다.
-
-- API / Worker 처리량과 지연 시간을 확인합니다.
-- Redis queue depth와 Redis HA topology를 확인합니다.
-- PostgreSQL primary / standby / replication 상태를 확인합니다.
-- `ready`, `degraded`, `not_ready` 상태를 운영자가 빠르게 해석할 수 있게 합니다.
-
-## 대시보드 구성
-
-Grafana의 `Messaging Portfolio Overview` 대시보드는 아래 묶음으로 구성됩니다.
-
-- API request rate / latency
-- Worker throughput
-- Queue depth
-- Redis health / role / replica / Sentinel 상태
-- PostgreSQL primary / standby / sync / replication 상태
-- Worker replica count and KEDA desired replicas
-- DB failure reason
-
-## 공통 지표
-
-### `messaging_health_status`
-
-component별 health 신호입니다.
-
-- `component="redis"`: Redis writable master와 Sentinel master 확인 기준
-- `component="db"`: PostgreSQL writable primary 확인 기준
-- `component="worker"`: Worker 처리 루프 상태
-
-이 값은 전체 장애 판단에는 유용하지만, replica 부족이나 sync mismatch 같은 `degraded` 원인을 모두 설명하지는 않습니다.
-
-## Worker 지표
-
-### `messaging_worker_processed_total`
-
-Worker가 Redis ingress queue에서 이벤트를 꺼내 처리한 누적 건수입니다. Grafana의 `Worker Throughput` 패널은 이 counter를 기반으로 최근 처리량을 계산합니다.
-
-```promql
-sum(rate(messaging_worker_processed_total[1m])) by (result)
-```
-
-이 패널은 아래 상황을 확인할 때 사용합니다.
-
-- Worker가 queue를 실제로 소비하는지 확인
-- 처리 결과가 `success`인지 `failure`인지 확인
-- DB 장애 복구 후 backlog가 다시 처리되는지 확인
-- 부하 테스트 중 Worker 처리량이 증가하는지 확인
-
-주의할 점은 idle 상태입니다. 새 이벤트가 들어오지 않았거나 Worker가 아직 한 번도 이벤트를 처리하지 않았다면 counter 자체가 생성되지 않아 Grafana에서 `No data`로 보일 수 있습니다. 이 경우는 장애가 아니라 “처리할 이벤트가 없는 상태”일 수 있습니다.
-
-값을 확인하려면 smoke test 또는 API 요청으로 이벤트를 생성한 뒤, Grafana 시간 범위를 `Last 15 minutes` 정도로 넓혀 확인합니다.
-
-## 구간별 지연 시간 지표
-
-### `messaging_api_stage_latency_seconds`
-
-API event intake 내부 구간별 latency입니다. 전체 API latency가 상승했을 때 Redis / membership / enqueue 중 어느 구간이 느려졌는지 분리해서 봅니다.
-
-- `stage="membership_check"`: stream membership 확인 시간입니다. Redis cache miss 시 DB 조회까지 포함될 수 있습니다.
-- `stage="redis_idempotency"`: idempotency key claim / 기존 요청 상태 조회 시간입니다.
-- `stage="redis_sequence"`: stream sequence 발급을 위한 Redis `INCR` 시간입니다.
-- `stage="redis_enqueue"`: request status 저장과 ingress queue push pipeline 시간입니다.
-
-대표 쿼리:
-
-```promql
-histogram_quantile(
-  0.95,
-  sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage)
-)
-```
-
-### `messaging_worker_stage_latency_seconds`
-
-Worker 내부 구간별 latency입니다. queue 소비 후 PostgreSQL 영속화, Redis status update, notification enqueue 중 어디가 병목인지 확인합니다.
-
-- `stage="db_persist"`: PostgreSQL transaction으로 message를 영속화하는 시간입니다. room sequence row lock 대기와 insert / update 시간이 포함됩니다.
-- `stage="request_status_update"`: request status를 Redis에 `persisted` 또는 실패 상태로 갱신하는 시간입니다.
-- `stage="notification_enqueue"`: notification queue에 후속 작업을 넣는 시간입니다.
-- `stage="notification_db_insert"`: notification 처리 결과를 PostgreSQL에 기록하는 시간입니다.
-
-대표 쿼리:
-
-```promql
-histogram_quantile(
-  0.95,
-  sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage)
-)
-```
-
-### `messaging_event_persist_lag_seconds`
-
-API가 요청을 `accepted` 한 시점부터 Worker가 PostgreSQL에 `persisted` 할 때까지 걸린 end-to-end 지연 시간입니다.
-
-이 값은 비동기 구조에서 가장 중요한 운영 지표입니다. API 응답이 빠르더라도 이 값이 계속 증가하면 Redis queue 뒤쪽이나 PostgreSQL persistence path가 밀리고 있다는 뜻입니다.
-
-대표 쿼리:
-
-```promql
-histogram_quantile(
-  0.95,
-  sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le)
-)
-```
-
-운영 해석:
-
-- API stage latency만 상승하면 intake hot path 문제를 의심합니다.
-- Worker `db_persist`가 상승하면 PostgreSQL, pgpool, room sequence lock, disk I/O를 확인합니다.
-- Queue depth와 `event_persist_lag`가 함께 상승하면 worker 처리량 부족 또는 DB persistence 병목으로 봅니다.
-- Queue depth는 낮은데 API latency가 높으면 Redis enqueue 전 단계 또는 API replica / CPU 병목을 봅니다.
-
-### `messaging_queue_wait_seconds`
-
-Redis queue에 들어간 뒤 Worker가 해당 job을 꺼내기까지 걸린 대기 시간입니다.
-
-이 값은 `event_persist_lag`를 해석할 때 특히 중요합니다. `queue_wait`가 커지면 요청은 Redis에 정상 적재되고 있지만 Worker 처리량 또는 PostgreSQL persistence path가 backlog를 따라가지 못하고 있다는 뜻입니다.
-
-대표 쿼리:
-
-```promql
-histogram_quantile(
-  0.95,
-  sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le)
-)
-```
-
-운영 해석:
-
-- `queue_wait` 상승 + queue depth 상승: Worker scale-out, DB write latency, room sequence lock을 확인합니다.
-- `queue_wait` 낮음 + `db_persist` 상승: queue backlog보다는 PostgreSQL write path 자체가 느린 상태로 봅니다.
-- `queue_wait` 낮음 + API stage latency 상승: intake 단계의 Redis / API CPU / auth path를 확인합니다.
-
-## Worker autoscaling
-
-Worker autoscaling은 CPU 기반 HPA가 아니라 KEDA 기반 queue depth scaling을 사용합니다.
-
-- scale target: `Deployment/worker`
-- min replica: `2`
-- max replica: `8`
-- polling interval: `5s`
-- cooldown: `120s`
-
-KEDA trigger query:
-
-```promql
-sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))
-```
-
-threshold는 `400`입니다. 즉 전체 ingress partition queue backlog 합이 400을 넘기면 Worker replica를 더 늘리도록 설계했습니다.
-
-여기서 `max by (queue)`를 사용하는 이유는 같은 queue depth가 여러 scrape target에서 보일 수 있기 때문입니다. 먼저 queue별 대표값으로 정리한 뒤 합산해야 backlog가 이중 집계되지 않습니다.
-
-KEDA operator는 `keda` namespace에서 동작하므로 Prometheus 연결 주소는 `prometheus.messaging-app.svc.cluster.local` 같은 service FQDN을 사용합니다.
-
-## Kubernetes replica 지표
-
-Worker replica 수는 애플리케이션 자체 메트릭이 아니라 `kube-state-metrics`를 통해 수집합니다.
-
-- `kube_deployment_spec_replicas{namespace="messaging-app",deployment="worker"}`: deployment가 원하는 replica 수입니다.
-- `kube_deployment_status_replicas_available{namespace="messaging-app",deployment="worker"}`: 실제 available 상태인 worker replica 수입니다.
-- `kube_horizontalpodautoscaler_status_desired_replicas{namespace="messaging-app",horizontalpodautoscaler="worker-keda-hpa"}`: KEDA가 생성한 HPA가 현재 원하는 replica 수입니다.
-
-Grafana의 `Worker Replicas` 패널은 이 세 지표를 함께 보여줍니다. 따라서 “KEDA가 몇 개까지 올리려고 했는지”와 “실제로 몇 개가 떠서 available 상태가 되었는지”를 바로 비교할 수 있습니다.
-
-## Redis 지표
-
-### `messaging_redis_role`
-
-API가 연결한 Redis 노드의 role을 보여줍니다. 정상 기준에서는 `role="master"` 값이 `1`로 관측됩니다.
-
-### `messaging_redis_connected_replicas`
-
-writable master에 연결된 Redis replica 수입니다.
-
-- `2+`: ready 기준
-- `1 이하`: degraded 기준
-
-### `messaging_redis_master_link_status`
-
-각 Redis replica의 master link 상태입니다.
-
-- `1`: 정상
-- `0`: 비정상
-
-일부 replica link가 내려가면 master가 살아 있어도 topology는 `degraded`로 해석합니다.
-
-### `messaging_redis_sentinel_master_ok`
-
-Sentinel이 writable master를 식별할 수 있는지 나타냅니다.
-
-- `1`: master 식별 가능
-- `0`: Sentinel master 미결정 또는 master 상태 이상
-
-이 값이 `0`이면 Redis total outage에 가까운 상태로 보고 즉시 확인해야 합니다.
-
-### `messaging_redis_sentinel_quorum_ok`
-
-Sentinel quorum이 유지되는지 나타냅니다. master는 살아 있지만 quorum이 깨지면 failover 여력이 낮아진 상태이므로 `degraded`로 해석합니다.
-
-## PostgreSQL 지표
-
-### `messaging_postgres_is_primary`
-
-pgpool 경유로 writable primary가 reachable한지 나타냅니다.
-
-- `1`: primary reachable
-- `0`: write path unavailable
-
-### `messaging_postgres_standby_count`
-
-pgpool이 up 상태로 보고하는 standby 수입니다.
-
-- `2+`: ready 기준
-- `1 이하`: degraded 기준
-
-### `messaging_postgres_sync_standby_count`
-
-sync 또는 quorum 기준을 만족하는 standby 수입니다.
-
-- 로컬 데모에서는 `0`이어도 standby가 `streaming`이고 lag가 정상이라면 `ready`로 봅니다.
-- 이 값은 “현재 복제가 async인지 sync인지”를 설명하는 보조 지표입니다.
-- 따라서 이 값만 단독으로 alert critical 기준으로 사용하지 않습니다.
-
-### `messaging_postgres_replication_state_count`
-
-replication state별 standby 수입니다. 정상 기준에서는 standby가 `streaming`으로 관측되는 것이 기대값입니다.
-
-이 값은 pgpool의 `SHOW pool_nodes`가 비워 두는 경우가 있어, API는 `pg_stat_replication`을 보조 소스로 사용합니다. 이를 위해 로컬 HA 설치 스크립트는 `portfolio` 사용자에게 읽기 전용 모니터링 역할인 `pg_monitor`를 부여합니다.
-
-### `messaging_postgres_replication_sync_state_count`
-
-sync state별 standby 수입니다. `sync`, `quorum`, `async` 분포를 보고 복제 안정성을 판단합니다.
-
-로컬 kind 데모에서는 `async` standby도 정상 운영 상태로 취급합니다. 이 프로젝트의 로컬 ready 기준은 sync standby 보유 여부보다 `streaming` 상태, standby 수, replication lag 정상 여부에 둡니다.
-
-### `messaging_postgres_replication_delay_bytes_max`
-
-가장 큰 replication delay를 byte 기준으로 보여줍니다. 임계치를 넘으면 replication lag 상승으로 보고 `degraded`로 해석합니다.
-
-## 상태 해석
-
-### `ready`
-
-- Redis writable master 정상
-- Redis replica 2개 이상
-- Redis replica link 정상
-- Sentinel master 식별 가능
-- PostgreSQL writable primary 정상
-- PostgreSQL standby 2개 이상
-- PostgreSQL standby가 `streaming` 상태
-- PostgreSQL replication lag 정상
-
-### `degraded`
-
-서비스 연결 자체는 가능하지만 HA 여력 또는 replication 안정성이 낮아진 상태입니다.
-
-- Redis replica 부족
-- Redis replica link 불안정
-- Sentinel quorum 저하
-- Redis enqueue는 가능하지만 PostgreSQL writable primary가 일시적으로 unavailable
-- PostgreSQL standby 부족
-- PostgreSQL replication state 불안정
-- PostgreSQL replication lag 상승
-
-### `not_ready`
-
-intake write path가 실제로 막힌 상태입니다.
-
-- Redis writable master unreachable
-- Sentinel master 미결정
-- Redis 인증 / 연결 실패로 enqueue 불가
-
-PostgreSQL writable primary unreachable은 API readiness에서는 `degraded`로 봅니다. Redis intake buffer가 요청을 받을 수 있다면 API는 새 요청을 `accepted` 하고, PostgreSQL 복구 후 worker가 영속화를 이어갈 수 있기 때문입니다. 단, persistence path가 막힌 상태이므로 alert에서는 critical로 봅니다.
-
-## Alert 해석
-
-- readiness는 현재 상태를 즉시 반영합니다.
-- 30초는 readiness 유예가 아니라 alert 승격 유예입니다.
-- Redis total outage와 PostgreSQL primary loss는 즉시 critical입니다.
-- degraded warning은 failover 직후 일시적인 흔들림을 줄이기 위해 30초 지속 후 발생합니다.
+# 관측 지표 안내
+
+이 문서는 Grafana / Prometheus에서 async processing pipeline의 상태를 어떻게 읽는지 정리합니다.
+
+관측 목표는 단순히 Pod가 살아 있는지 확인하는 것이 아니라, 아래 질문에 답하는 것입니다.
+
+- API가 요청을 정상적으로 수락하는가?
+- Redis ingress queue backlog가 쌓이는가?
+- Worker가 backlog를 따라잡는가?
+- `accepted` 된 요청이 PostgreSQL에 늦지 않게 `persisted` 되는가?
+- Redis / PostgreSQL HA topology가 degraded 되었는가?
+- KEDA가 Worker replica를 실제로 늘렸는가?
+
+## Grafana 패널 기준
+
+`Messaging Portfolio Overview` 대시보드의 패널은 아래 지표를 기준으로 봅니다.
+
+| Panel | PromQL / Metric | 해석 |
+| --- | --- | --- |
+| `DB Health` | `messaging_health_status{job="api",component="db"}` | API가 보는 PostgreSQL writable primary 상태 |
+| `Redis Health` | `messaging_health_status{job="api",component="redis"}` | API가 보는 Redis writable master / Sentinel 상태 |
+| `Redis Connected Replicas` | `messaging_redis_connected_replicas{job="api"}` | writable master에 연결된 Redis replica 수 |
+| `PostgreSQL Standbys` | `messaging_postgres_standby_count{job="api"}` | pgpool / replication 기준 standby 수 |
+| `API Request Rate` | `sum(rate(messaging_api_requests_total[1m])) by (status)` | HTTP status별 API request rate |
+| `API Latency` | `messaging_api_request_latency_seconds_bucket` | API 전체 request latency p95 / p99 |
+| `Worker Throughput (events only)` | `sum(rate(messaging_worker_processed_total[1m])) by (result)` | Worker event 처리량과 성공 / 실패 비율 |
+| `Queue Depth By Queue` | `sum by (queue) (messaging_queue_depth)` | Redis queue별 backlog |
+| `Redis Topology Signals` | `messaging_redis_connected_replicas`, `messaging_redis_sentinel_master_ok`, `messaging_redis_sentinel_quorum_ok` | Redis replica / Sentinel 상태 |
+| `Redis Replica Link Status` | `messaging_redis_master_link_status{job="api"}` | replica별 master link 상태 |
+| `PostgreSQL Replication Capacity` | `messaging_postgres_standby_count`, `messaging_postgres_sync_standby_count`, `messaging_postgres_is_primary` | primary reachability와 standby capacity |
+| `PostgreSQL Replication Delay` | `messaging_postgres_replication_delay_bytes_max{job="api"}` | standby replay 지연 최대값 |
+| `PostgreSQL Replication States` | `messaging_postgres_replication_state_count{job="api"}` | standby replication state 분포 |
+| `DB Failure Reasons (15m)` | `sum by (reason) (increase(messaging_db_failure_total[15m]))` | 최근 15분 DB failure reason별 증가량 |
+| `API Stage Latency` | `messaging_api_stage_latency_seconds_bucket` | API hot path 단계별 p95 latency |
+| `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket` | Worker 내부 단계별 p95 latency |
+| `Accepted To Persisted Lag` | `messaging_event_persist_lag_seconds_bucket` | API accepted부터 PostgreSQL persisted까지의 p95 / p99 lag |
+| `Redis Queue Wait Time` | `messaging_queue_wait_seconds_bucket` | Redis enqueue부터 Worker dequeue까지의 p95 / p99 wait time |
+| `Worker Replicas` | `kube_deployment_spec_replicas`, `kube_deployment_status_replicas_available`, `kube_horizontalpodautoscaler_status_desired_replicas` | Worker desired / available / KEDA HPA desired replica 비교 |
+
+## Key Interpretation
+
+- `queue_depth` 증가: ingress rate가 Worker 처리량보다 높거나 downstream persistence path가 막힌 상태입니다.
+- `queue_wait` 증가: job이 Redis queue에서 오래 대기하는 상태로, Worker 처리량 부족 또는 DB persistence 병목을 의심합니다.
+- `accepted_to_persisted_lag` 증가: API는 요청을 수락하지만 PostgreSQL 영속화가 늦어지는 상태입니다. `Queue Wait`, `Worker Stage Latency`, `DB Failure Reasons`를 함께 봅니다.
+- `api_latency` 증가: request intake path 병목입니다. `API Stage Latency`에서 membership check, Redis sequence, Redis enqueue 중 어느 단계가 느린지 확인합니다.
+- `worker_stage_latency{stage="db_persist"}` 증가: PostgreSQL / pgpool / room sequence lock / disk I/O 병목 가능성이 큽니다.
+- Worker replica 증가 후에도 queue가 줄지 않음: 단순 Worker 수 부족보다 DB persistence path 병목일 가능성이 큽니다.
+
+## 장애별 확인 순서
+
+### API latency 상승
+
+확인 순서:
+1. `API Latency`
+2. `API Stage Latency`
+3. `Queue Depth By Queue`
+4. API HPA / replica 상태
+
+해석:
+- `API Stage Latency`의 `membership_check`, `redis_sequence`, `redis_enqueue` 중 어느 stage가 느린지 확인합니다.
+- queue depth가 낮은데 API latency만 높으면 API hot path, Redis round-trip, API CPU 쪽을 먼저 봅니다.
+- queue depth도 함께 증가하면 Worker 또는 PostgreSQL persistence path 병목일 수 있습니다.
+
+### Queue backlog 증가
+
+확인 순서:
+1. `Queue Depth By Queue`
+2. `Worker Throughput (events only)`
+3. `Worker Replicas`
+4. `Redis Queue Wait Time`
+5. `Worker Stage Latency`
+
+해석:
+- `message_ingress:p.*` queue가 증가하면 API intake 속도가 Worker 처리 속도보다 빠른 상태입니다.
+- Worker replica가 증가하지 않으면 KEDA trigger, Prometheus scrape, `worker-keda-hpa` 상태를 확인합니다.
+- Worker replica가 증가했는데도 backlog가 줄지 않으면 PostgreSQL write path나 Worker `db_persist` 병목을 봅니다.
+
+### Accepted to persisted lag 증가
+
+확인 순서:
+1. `Accepted To Persisted Lag`
+2. `Redis Queue Wait Time`
+3. `Worker Stage Latency`
+4. `PostgreSQL Replication Capacity`
+5. `DB Failure Reasons (15m)`
+
+해석:
+- `queue_wait`가 함께 증가하면 Worker가 queue를 따라잡지 못하는 상태입니다.
+- `queue_wait`는 낮고 `db_persist`가 높으면 PostgreSQL / pgpool / row lock / disk I/O 쪽 병목일 가능성이 큽니다.
+- API latency가 낮아도 이 lag가 증가하면 사용자에게는 요청이 수락됐지만 실제 영속화가 늦어지는 상태입니다.
+
+### DB 장애 또는 degraded
+
+확인 순서:
+1. `DB Health`
+2. `DB Failure Reasons (15m)`
+3. `PostgreSQL Replication Capacity`
+4. `PostgreSQL Replication Delay`
+5. `PostgreSQL Replication States`
+
+해석:
+- PostgreSQL primary가 write 불가여도 Redis enqueue가 가능하면 API readiness는 `degraded`로 볼 수 있습니다.
+- 이 경우 API는 요청을 `accepted` 할 수 있고, Worker는 DB 복구 후 persistence를 재개합니다.
+- DB failure reason이 recovery 후에도 증가하면 pgpool endpoint, credential, pool, PostgreSQL pod 상태를 확인합니다.
+
+### Redis 장애 또는 degraded
+
+확인 순서:
+1. `Redis Health`
+2. `Redis Topology Signals`
+3. `Redis Replica Link Status`
+4. `Redis Connected Replicas`
+5. `Queue Depth By Queue`
+
+해석:
+- Redis writable master 또는 Sentinel master resolution이 깨지면 intake write path가 막힐 수 있습니다.
+- replica count 부족, replica link 이상, Sentinel quorum 저하는 degraded로 해석합니다.
+- Redis complete outage와 single-node failover는 별도 시나리오로 봅니다.
+
+### Worker scaling 확인
+
+확인 순서:
+1. `Queue Depth By Queue`
+2. `Worker Replicas`
+3. `Worker Throughput (events only)`
+4. `Redis Queue Wait Time`
+
+해석:
+- Worker는 CPU HPA가 아니라 KEDA + Prometheus queue depth 기준으로 scale-out합니다.
+- KEDA trigger query는 전체 ingress partition backlog를 합산합니다.
+- desired replica가 증가했는데 available replica가 따라오지 않으면 Pod scheduling, image, resource, readiness 문제를 봅니다.
+
+## 핵심 Metric Notes
+
+### API
+
+- `messaging_api_requests_total`: HTTP status별 API request counter입니다. 5xx 증가 시 Redis enqueue 실패, DB / Redis health check 실패, API 내부 오류를 확인합니다.
+- `messaging_api_request_latency_seconds`: API 전체 request latency입니다. Worker가 PostgreSQL에 persisted할 때까지의 비동기 lag는 포함하지 않습니다.
+- `messaging_api_stage_latency_seconds`: API hot path를 stage별로 나눠 봅니다. 주요 stage는 `membership_check`, `redis_idempotency`, `redis_sequence`, `redis_enqueue`입니다.
+
+### Queue / Worker
+
+- `messaging_queue_depth`: Redis queue별 backlog입니다. KEDA Worker scaling의 핵심 입력입니다.
+- `messaging_queue_wait_seconds`: Redis queue에 들어간 뒤 Worker가 꺼내기까지의 대기 시간입니다.
+- `messaging_worker_processed_total`: Worker가 처리한 event 수입니다. idle 상태에서는 `No data`로 보일 수 있습니다.
+- `messaging_worker_stage_latency_seconds`: Worker 내부 병목을 봅니다. 주요 stage는 `db_persist`, `request_status_update`, `notification_enqueue`, `notification_db_insert`입니다.
+- `messaging_event_persist_lag_seconds`: API accepted부터 PostgreSQL persisted까지의 end-to-end async lag입니다.
+
+### Redis
+
+- `messaging_redis_connected_replicas`: writable master에 붙은 replica 수입니다. 로컬 ready 기준은 `2+`입니다.
+- `messaging_redis_master_link_status`: replica별 master link 상태입니다.
+- `messaging_redis_sentinel_master_ok`: Sentinel이 writable master를 식별하는지 봅니다.
+- `messaging_redis_sentinel_quorum_ok`: Sentinel quorum이 유지되는지 봅니다.
+
+### PostgreSQL
+
+- `messaging_postgres_is_primary`: pgpool 경유 writable primary reachability입니다.
+- `messaging_postgres_standby_count`: standby 수입니다. 로컬 ready 기준은 `2+`입니다.
+- `messaging_postgres_sync_standby_count`: sync 또는 quorum standby 수입니다. 로컬 데모에서는 async streaming standby도 ready로 해석합니다.
+- `messaging_postgres_replication_state_count`: standby replication state 분포입니다.
+- `messaging_postgres_replication_delay_bytes_max`: 가장 큰 replication delay입니다.
+- `messaging_db_failure_total`: DB failure reason별 counter입니다. DB health가 내려갔을 때 원인을 좁히는 데 사용합니다.
+
+### Kubernetes / KEDA
+
+- `kube_deployment_spec_replicas`: Deployment가 원하는 Worker replica 수입니다.
+- `kube_deployment_status_replicas_available`: 실제 available Worker replica 수입니다.
+- `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA가 생성한 HPA의 desired replica 수입니다.
 
 ## Prometheus Query 기준
 
-Redis topology와 PostgreSQL replication 지표는 현재 API job이 채웁니다.
+Redis topology와 PostgreSQL replication 지표는 현재 API job이 채웁니다. 따라서 Redis / PostgreSQL 운영 해석에서는 `job="api"` 시계열을 기준으로 봅니다.
 
-따라서 Grafana dashboard와 Redis / PostgreSQL alert에서는 아래처럼 `job="api"` 기준으로 조회합니다.
+Worker도 같은 metric name을 노출할 수 있지만 topology 판정은 API가 수행합니다. Worker 자체 이상 여부는 `component="worker"`, Worker throughput, Worker stage latency, Worker replica 지표로 봅니다.
 
-```promql
-messaging_health_status{job="api",component="redis"}
-messaging_health_status{job="api",component="db"}
-messaging_redis_connected_replicas{job="api"}
-messaging_postgres_standby_count{job="api"}
-```
-
-Worker도 같은 metric name을 노출할 수 있지만 topology 판정은 API가 수행하므로, Redis / PostgreSQL 운영 해석에서는 `job="api"` 시계열을 기준으로 봅니다. Worker 자체 이상 여부는 `component="worker"` 또는 worker 전용 처리량 / 실패율 지표로 봅니다.
+자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md)에 보존했습니다. readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리했습니다.

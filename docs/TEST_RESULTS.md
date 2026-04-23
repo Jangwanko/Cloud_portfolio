@@ -22,7 +22,7 @@
 | Redis single-node failover | `scripts/test_redis_failover.ps1` | Pass | Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 확인 |
 | DLQ flow | `scripts/test_dlq_flow.ps1` | Pass | 실패 요청의 DLQ 적재와 재처리 흐름 확인 |
 | Failover and alert validation | `scripts/test_failover_alerts.ps1` | Pass | Prometheus alert firing / resolution 확인 |
-| HPA scaling | `scripts/test_hpa_scaling.ps1` | Pass | API replica scale-up 확인 |
+| API HPA scaling | `scripts/test_hpa_scaling.ps1` | Pass | metrics-server 기반 API CPU HPA replica scale-up 확인 |
 | KEDA worker scaling | live `k6` + `worker-keda-hpa` observation | Pass | Worker replica `2 -> 4 -> 6 -> 8` scale-out 확인 |
 | Full quick start | `scripts/quick_start_all.ps1` | Pass | fresh kind cluster 기준 smoke, DB, Redis, API HPA, Worker KEDA 포함 |
 | PostgreSQL backup | `scripts/backup_postgres_k8s.ps1` | Pass | SQL dump 파일 생성 확인 |
@@ -43,7 +43,7 @@
   - `scripts/test_redis_failover.ps1`
   - Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 확인
 
-### HPA Scaling
+### API HPA Scaling
 - API HPA scale-up observed:
   - `initial_replicas=3 -> max_replicas=5`, `cpu_target=88`
   - `initial_replicas=3 -> max_replicas=6`, `cpu_target=138`
@@ -64,6 +64,7 @@
   - DB recovery test: pass
   - Redis complete outage test: pass
   - API HPA scaling test: pass
+  - Worker KEDA queue-depth scaling: pass
   - ingress readiness at `http://localhost/health/ready`: pass
   - TLS readiness at `https://localhost/health/ready`: pass, TLS 보조 검증
 
@@ -135,7 +136,7 @@
 
 ## Current Interpretation
 - 기능 검증 경로는 현재 저장소 상태에서 다시 재현 가능합니다.
-- autoscaling은 API는 CPU HPA, Worker는 KEDA queue depth scaling으로 실제 동작을 확인했습니다.
+- API HPA는 metrics-server 기반으로 동작을 확인했고, Worker autoscaling은 KEDA + Prometheus queue depth 기준으로 `2 -> 8` replica scale-out을 확인했습니다.
 - ingress 기반 외부 진입은 기본적으로 `http://localhost` 기준으로 검증합니다.
 - backup / restore도 수동 운영 경로 기준으로 실제 검증했습니다.
 - Redis는 complete outage와 HA failover를 별도 시나리오로 분리해 검증합니다.

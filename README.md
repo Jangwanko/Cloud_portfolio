@@ -1,96 +1,94 @@
 ﻿# Event Stream Systems Portfolio
 
-이 저장소는 이벤트 요청을 단순 CRUD로 처리하지 않고, 장애 상황에서도 요청을 빠르게 수락한 뒤 복구 가능한 비동기 파이프라인으로 처리하는 `event stream processing system` 포트폴리오입니다.
+DB 중심의 동기 처리 구조에서 장애가 API까지 전파되고 쓰기 요청을 수락하지 못하는 문제를 줄이기 위해,
+request intake와 persistence를 분리한 queue-backed async processing pipeline을 설계하고 검증한 포트폴리오입니다.
 
-핵심 목표는 아래와 같습니다.
-- `queue-backed async processing`
-- `HA`
-- `autoscaling`
-- `observability`
-- `backup / restore`
-- `Ingress + TLS`
-- `GitOps / Argo CD`
-
-현재 저장소는 로컬 `kind` 환경에서 위 시나리오를 재현할 수 있도록 구성되어 있으며, 이후 AWS `EKS` 같은 외부 클러스터로 확장할 수 있는 방향도 함께 담고 있습니다.
-
-## Summary
-- API 는 요청을 바로 DB 에 쓰지 않고 Redis ingress queue 에 적재합니다.
-- Worker 는 queue 를 소비하면서 PostgreSQL 에 비동기 영속화합니다.
-- 장애 상황에서는 retry, DLQ, replayer 로 복구 경로를 제공합니다.
-- Kubernetes 환경에서는 PostgreSQL HA, Redis HA, HPA, Prometheus, Grafana 를 함께 검증합니다.
-- GitOps 경로에서는 Argo CD 가 Git 의 원하는 상태(`desired state`)를 기준으로 애플리케이션 매니페스트를 동기화합니다.
+API는 event request를 즉시 PostgreSQL에 쓰지 않고 Redis ingress queue에 적재한 뒤 `202 Accepted`를 반환하며, Worker가 queue를 소비해 PostgreSQL HA에 비동기 영속화합니다.
 
 ## Architecture
 ```mermaid
 flowchart LR
-    Client[Client] --> Ingress[Ingress + TLS]
+    Client[Client] --> Ingress[Ingress nginx]
     Ingress --> API[FastAPI API]
     API -->|202 Accepted| Client
-    Client -->|status / read / query| Ingress
-    API --> Queue[Redis Ingress Queue]
+    API --> Queue[Redis partitioned ingress queue]
     Queue --> Worker[Worker]
-    Queue --> DLQ[Ingress DLQ]
+    Worker --> Pgpool[Pgpool]
+    Pgpool --> DB[(PostgreSQL HA)]
+
+    Worker --> DLQ[DLQ]
     DLQ --> Replayer[DLQ Replayer]
     Replayer --> Queue
-    API --> Pgpool[Pgpool]
-    Worker --> Pgpool
-    Pgpool --> DB[(PostgreSQL HA)]
-    API --> Metrics[Prometheus Metrics]
+
+    API --> Metrics[Metrics]
     Worker --> Metrics
-    Queue --> Metrics
-    Metrics --> Prom[Prometheus]
-    Prom --> Grafana[Grafana]
+    Metrics --> Prometheus[Prometheus]
+    Prometheus --> Grafana[Grafana]
+    Prometheus --> KEDA[KEDA]
+    KEDA --> Worker
+
+    GitHub[GitHub Actions] --> Argo[Argo CD GitOps path]
+    Argo --> K8s[Kubernetes sync]
 ```
 
 처리 흐름:
-- API 는 요청을 `accepted` 상태로 받고 Redis queue 에 적재합니다.
-- Worker 는 queue 의 이벤트를 PostgreSQL 에 기록합니다.
-- 실패한 요청은 DLQ 로 이동하고, replayer 가 다시 queue 로 재주입합니다.
-- 사용자는 이후 요청 상태, 이벤트 목록, unread count 를 API 로 조회합니다.
-- Prometheus / Grafana 로 API latency, worker 처리 시간, queue depth, DB / Redis 상태를 관측합니다.
+- API는 event request를 PostgreSQL에 바로 쓰지 않고 Redis ingress queue에 적재한 뒤 `202 Accepted`를 반환합니다.
+- Worker는 queue를 소비해 PostgreSQL HA에 비동기 영속화합니다.
+- 실패한 job은 retry 후 DLQ로 이동하고, DLQ Replayer가 복구 조건에서 다시 ingress queue로 재주입합니다.
+- Prometheus는 API / Worker metrics를 수집하고, Grafana는 latency, queue depth, replica 변화를 보여줍니다.
+- Worker는 CPU가 아니라 KEDA + Prometheus queue depth 기준으로 scale-out합니다.
 
-## What This Project Covers
-### Normal Path
-- event request intake
-- async persistence
-- read receipt / unread count
+Design choice: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Redis queue와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 retry / DLQ / replay 기반 복구 경로를 확보합니다.
 
-### Failure Recovery
-- DB down during intake, then persistence after recovery
-- Redis complete outage detection
-- Redis single-node failover recovery
-- retry exhaustion to DLQ
+## Key Features
+- Queue-backed async event intake
+- Redis partitioned ingress queue
+- PostgreSQL HA + Pgpool
+- Redis HA + Sentinel
+- Retry / DLQ / DLQ Replayer
+- API CPU HPA
+- Worker KEDA queue-depth autoscaling
+- Prometheus / Grafana observability
+- PostgreSQL backup / restore
+- Ingress nginx + local self-signed TLS
+- Argo CD GitOps sync path
+- AWS Terraform IaC extension path
 
-### Operations
-- health / readiness / metrics
-- HPA autoscaling
-- backup / restore
-- ingress + local TLS
-- GitOps / Argo CD sync
+## Verified Scenarios
+현재 로컬 `kind` 환경에서 아래 시나리오를 검증했습니다.
 
-## Prerequisites
-필수:
-- Docker Desktop 또는 Docker Engine
-- Windows PowerShell 또는 Linux bash
+- Smoke test
+- DB outage and recovery
+- Redis complete outage and recovery
+- Redis single-node failover
+- DLQ flow
+- Prometheus alert firing / resolution
+- API HPA scaling
+- Worker KEDA scaling
+- PostgreSQL backup / restore
+- Argo CD GitOps sync
 
-저장소에 포함된 도구:
-- `tools/kind.exe`
-- `tools/helm/windows-amd64/helm.exe`
+상세 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 정리했습니다.
 
-Linux 에서는 `docker`, `kind`, `kubectl`, `helm`, `curl`, `python3`가 PATH 에 있어야 합니다.
-Ubuntu / Debian 계열 Linux 에서는 아래 명령으로 기본 도구 설치를 시작할 수 있습니다.
+## Performance Summary
+`k6` 기준 최근 측정 요약입니다.
 
-```bash
-bash scripts/install_linux_prereqs.sh
-```
+| 기준 | Accepted requests | API intake avg latency | API intake p95 latency |
+| --- | ---: | ---: | ---: |
+| Initial | `5434` | `3660ms` | `8175ms` |
+| Current | `19528` | `811ms` | `1954ms` |
 
-로컬에서 사용하는 포트:
-- `80` for ingress HTTP
-- `443` for optional local TLS validation
-- `9090` for Prometheus alert validation fallback
+Latency는 k6 `http_req_duration` 기준으로, event request가 Redis ingress queue에 적재되고 API 응답을 받을 때까지의 intake latency입니다. PostgreSQL persisted 완료까지의 lag는 `messaging_event_persist_lag_seconds`로 별도 관측합니다.
+
+초기 기준 대비:
+- 처리 요청 수 약 `259%` 증가
+- 평균 응답 시간 약 `78%` 감소
+- p95 응답 시간 약 `76%` 감소
+
+중간 개선 과정과 실험별 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)의 `k6 Load Test` 섹션에 정리했습니다.
 
 ## Quick Start
-전체 로컬 검증은 아래 명령으로 실행할 수 있습니다.
+Windows PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
@@ -102,18 +100,7 @@ Linux:
 bash scripts/quick_start_all.sh
 ```
 
-이 스크립트는 아래 작업을 수행합니다.
-- kind cluster 생성
-- `ingress-nginx` 설치
-- `metrics-server` 설치
-- application image build and load
-- PostgreSQL HA / Redis HA 배포
-- application stack 배포
-- ingress readiness 확인
-- Windows PowerShell 기본 실행에서는 smoke / DB recovery / Redis recovery / HPA scaling test 실행
-- Linux bash 기본 실행에서는 smoke test 실행
-
-Linux 에서 DB / Redis 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
+Linux에서 DB / Redis 장애 테스트까지 포함하려면:
 
 ```bash
 RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
@@ -122,137 +109,57 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 기본 접근 경로:
 - API: `http://localhost`
 - Grafana: `http://localhost/grafana`
-- Grafana login: `ID admin` / `Password 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
 
-기본 문서 경로는 `http://localhost` 기준입니다. HTTPS ingress도 구성되어 있지만, 이는 local self-signed TLS 검증용 보조 경로로만 봅니다.
+Grafana 기본 계정:
+- ID: `admin`
+- Password: `1q2w3e4r`
 
-## Verified Scenarios
-- smoke
-- DB recovery
-- Redis complete outage
-- Redis single-node failover
-- DLQ flow
-- failover alerts
-- HPA scaling
-- PostgreSQL backup / restore
-- GitOps / Argo CD sync
+자세한 실행 방법은 [QUICK_START.md](docs/QUICK_START.md)를 참고합니다.
 
-상세 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md) 에 정리했습니다.
-
-## Observability
-Grafana / Prometheus 에서 직접 보이는 항목:
-- API request count / latency
-- API stage latency: membership check, idempotency, Redis sequence, Redis enqueue
-- worker processed count / processing latency
-- Worker stage latency: DB persist, request status update, notification enqueue
-- queue depth
-- Redis queue wait time
-- accepted-to-persisted processing lag
-- Worker autoscaling by KEDA on total Redis ingress queue depth
-- Worker replica count and KEDA desired replica count
-- DB pool usage / reconnect / failure
-- Redis reconnect state
-- Redis role / replica count / replica link / Sentinel master 상태
-- PostgreSQL primary reachability / standby count / sync standby count / replication state / replication delay
-- component health status
-- alert firing / resolution
-
-위 지표를 바탕으로 문서에서 해석하는 운영 상태:
-- 로컬 데모 기준 async streaming standby ready 해석
-- `ready` / `degraded` / `not_ready` 기준의 readiness 상태 해석
-
-관련 메트릭 설명과 해석 기준은 [OBSERVABILITY.md](docs/OBSERVABILITY.md) 에 정리했습니다.
-
-## Performance
-`k6` 부하 테스트는 실행 경로와 측정 체계를 갖추고 있으며, 현재는 latency threshold를 개선 대상으로 추적합니다.
-
-권장 테스트 순서는 correctness / 장애 검증을 먼저 수행하고, reset 후 k6 부하 테스트를 마지막에 실행하는 방식입니다.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
-```
-
-최근 측정 예시:
-- 초기 기준: `5434 req`, avg `3660ms`, p95 `8175ms`
-- 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
-- 2차 개선 후: `9102 req`, avg `1934ms`, p95 `3851ms`
-- pgpool / DB pool 조정 후: `11314 req`, avg `1519ms`, p95 `3333ms`
-- Redis per-call `PING` 제거 후: `16024 req`, avg `1011ms`, p95 `2220ms`
-
-추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 개선됐지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
-상세 실험 이력은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)의 `k6 Load Test` 섹션에 정리했습니다.
-
-Worker autoscaling은 CPU HPA가 아니라 KEDA 기반 queue depth scaling을 사용합니다. 기준은 `sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))` 이며, 전체 ingress backlog가 `400`을 넘기면 Worker replica를 `2`에서 최대 `8`까지 늘립니다.
-
-## Backup and Restore
-현재 운영 보강 범위:
-- manual backup: `scripts/backup_postgres_k8s.ps1`
-- manual restore: `scripts/restore_postgres_k8s.ps1`
-- weekly PostgreSQL backup `CronJob`
-
-관련 운영 지침은 [OPERATIONS.md](docs/OPERATIONS.md) 에 정리했습니다.
-
-## GitOps / Argo CD
-현재 저장소에는 Argo CD 기반 GitOps 경로가 추가되어 있습니다.
+## GitOps / CI
+이 저장소는 기존 `kubectl apply` 실행 경로 외에 Argo CD 기반 GitOps 경로를 포함합니다.
 
 - GitOps sync path: `k8s/gitops/overlays/local-ha`
-- Argo CD bootstrap 스크립트:
+- Argo CD bootstrap scripts:
   - `k8s/scripts/install-argocd.ps1`
   - `k8s/scripts/bootstrap-argocd-app.ps1`
-- 로컬 GitOps quick start:
-  - `powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 -RepoUrl https://github.com/<your-account>/<your-repo>.git -Revision ops`
+- GitHub Actions CI:
+  - Python compile check
+  - Docker image build check
+  - Kustomize manifest render check
 
-현재 검증 기준은 아래와 같습니다.
-- 로컬 `kind` 클러스터에서 Argo CD 설치
-- `ops` 브랜치를 바라보는 `Application` 생성
-- commit / push 후 Argo CD 가 새 revision 을 읽고 배포 리소스를 갱신하는 것까지 확인
+자세한 내용은 [GITOPS.md](docs/GITOPS.md)에 정리했습니다.
 
-즉 이 프로젝트는 문서상으로만 GitOps 를 설명하는 것이 아니라, 로컬 Kubernetes 환경에서 실제 sync 동작까지 검증한 상태입니다.
+## AWS IaC Path
+현재 로컬 검증 구조를 AWS로 확장하기 위한 Terraform 골격도 포함되어 있습니다.
 
-## Branch Strategy
-- `master`
-  - 실제 배포 기준 브랜치입니다.
-  - 이후 EKS 와 연결할 때 운영 배포 기준점으로 사용할 수 있습니다.
-- `dev`
-  - 개발 통합용 브랜치입니다.
-  - 기능 개발을 모으고 정리하는 용도로 사용합니다.
-- `ops`
-  - 로컬 `kind` + Argo CD 검증용 브랜치입니다.
-  - GitOps 흐름과 운영 절차를 실험하고 확인하는 용도로 사용합니다.
+포함된 AWS 구성:
+- VPC
+- EKS
+- ECR
+- RDS PostgreSQL
+- ElastiCache Redis
+- Secrets Manager
+- optional Route 53 + ACM
 
-현재 로컬 GitOps 검증은 `ops` 브랜치 기준으로 수행했습니다.
-
-## CI
-현재 저장소에는 기본 `GitHub Actions` CI 구성을 추가했습니다.
-
-- Python 문법 검증
-- Docker image build 확인
-- Kustomize manifest render 확인
-
-이 단계는 아직 EKS 직접 배포와 연결되어 있지는 않지만, 코드 변경이 최소한 배포 가능한 형태인지 빠르게 확인하는 역할을 합니다.
+현재 AWS IaC는 실제 리소스 운영 배포가 아니라 `terraform plan` 검증 단계입니다. 설계 의도와 구성은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 정리했습니다.
 
 ## Current Limits
-- HTTPS is local self-signed TLS, not production-issued certificates
-- `k6` latency threshold tuning remains as a performance follow-up
-- stream 단위 event ordering guarantee 는 추가 검증 과제가 남아 있습니다
-- 운영 UI 는 데모와 검증 목적에 맞춰 노출 범위를 열어둔 상태이며, production access control 까지는 구현하지 않았습니다
-- EKS / ECR / external secret manager 연동은 아직 로컬 중심 검증 단계입니다
+- HTTPS는 production certificate가 아니라 local self-signed TLS 검증용입니다.
+- k6 latency threshold tuning은 계속 개선 과제로 남아 있습니다.
+- 멀티 파드 환경에서 stream 단위 event ordering guarantee는 추가 검증 과제입니다.
+- Grafana / Prometheus는 데모 확인을 위해 노출되어 있으며 production access control은 별도 과제입니다.
+- AWS IaC는 plan 검증 단계이며 실제 EKS 운영 배포까지 검증한 상태는 아닙니다.
 
-## Documents
-- 실행 가이드: [QUICK_START.md](docs/QUICK_START.md)
-- 구조와 처리 흐름: [ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- 운영 지침: [OPERATIONS.md](docs/OPERATIONS.md)
-- GitOps / Argo CD: [GITOPS.md](docs/GITOPS.md)
-- 신뢰성 정책: [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md)
-- 관측 지표 안내: [OBSERVABILITY.md](docs/OBSERVABILITY.md)
-- 검증 결과: [TEST_RESULTS.md](docs/TEST_RESULTS.md)
-- 변경 이력: [PATCH_NOTES.md](docs/PATCH_NOTES.md)
-- 저장소 구조: [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md)
-
-## Suggested Reading Order
-1. README 에서 전체 구조와 현재 상태 파악
-2. [QUICK_START.md](docs/QUICK_START.md) 로 실행 방법 확인
-3. [ARCHITECTURE.md](docs/ARCHITECTURE.md) 로 구성과 처리 흐름 확인
-4. [GITOPS.md](docs/GITOPS.md) 로 GitOps / Argo CD 구성 확인
-5. [TEST_RESULTS.md](docs/TEST_RESULTS.md) 로 실제 검증 상태 확인
+## Documentation
+- [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): 구조와 처리 흐름
+- [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침
+- [OBSERVABILITY.md](docs/OBSERVABILITY.md): 지표, 대시보드, 병목 해석
+- [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md): readiness / degraded / not_ready 정책
+- [TEST_RESULTS.md](docs/TEST_RESULTS.md): 검증 결과
+- [GITOPS.md](docs/GITOPS.md): Argo CD GitOps
+- [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md): AWS 확장 설계
+- [PATCH_NOTES.md](docs/PATCH_NOTES.md): 변경 이력
+- [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md): 저장소 구조
