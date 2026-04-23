@@ -18,8 +18,9 @@
   - replica + Sentinel 구성
 - Prometheus / Grafana
   - metrics 수집, alert, dashboard
-- Kubernetes HPA
-  - API / Worker CPU 기반 autoscaling
+- Kubernetes autoscaling
+  - API CPU 기반 HPA
+  - Worker KEDA queue depth scaling
 - metrics-server
   - HPA용 resource metrics 제공
 - ingress-nginx
@@ -87,24 +88,32 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 - Worker replica 증가 또는 부하 감소 시 backlog가 다시 줄어듭니다.
 
 ## Autoscaling
-현재 autoscaling은 CPU 기반 HPA로 구성되어 있습니다.
+현재 autoscaling은 API와 Worker가 서로 다른 기준을 사용합니다.
 
 - API HPA
   - min replicas: `3`
   - max replicas: `8`
   - target CPU: `65%`
-- Worker HPA
+- Worker KEDA
   - min replicas: `2`
-  - max replicas: `4`
-  - target CPU: `70%`
+  - max replicas: `8`
+  - trigger: total Redis ingress queue depth
+  - query: `sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))`
+  - threshold: `400`
 
-최근 검증에서는 API replica가 `3 -> 5`, `3 -> 6`으로 scale-up 되는 것을 확인했습니다.
+최근 검증에서는 아래를 확인했습니다.
+
+- API replica: `3 -> 5`, `3 -> 6`
+- Worker replica: `2 -> 4 -> 6 -> 8`
+
+Worker를 CPU가 아니라 queue depth 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 Redis backlog와 PostgreSQL persistence 대기에서 먼저 드러나기 때문입니다.
 
 ## Observability
 현재 관측 가능한 항목:
 - API request count / latency
 - worker processing count / latency
 - queue depth
+- worker replica count / KEDA desired replicas
 - Redis role / replica count / replica link / Sentinel master 상태
 - PostgreSQL primary / standby / replication state / replication delay
 - DB / Redis / Worker health

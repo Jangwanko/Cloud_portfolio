@@ -558,6 +558,185 @@
       ],
       "title": "DB Failure Reasons (15m)",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Redis enqueue.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 46
+      },
+      "id": 15,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+          "legendFormat": "{{stage}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "API Stage Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "p95 latency for worker stages: DB persist, request status update, notification enqueue, and notification DB insert.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 46
+      },
+      "id": 16,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))",
+          "legendFormat": "{{stage}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Worker Stage Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "End-to-end async processing lag from API accepted response to PostgreSQL persisted state.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 54
+      },
+      "id": 17,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+          "legendFormat": "accepted_to_persisted p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+          "legendFormat": "accepted_to_persisted p99",
+          "refId": "B"
+        }
+      ],
+      "title": "Accepted To Persisted Lag",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Time spent waiting in Redis queue before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 54
+      },
+      "id": 18,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+          "legendFormat": "queue_wait p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+          "legendFormat": "queue_wait p99",
+          "refId": "B"
+        }
+      ],
+      "title": "Redis Queue Wait Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Desired and available worker replicas from kube-state-metrics and the KEDA-managed HPA.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 62
+      },
+      "id": 19,
+      "targets": [
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}",
+          "legendFormat": "deployment_spec",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}",
+          "legendFormat": "available",
+          "refId": "B"
+        },
+        {
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"messaging-app\",horizontalpodautoscaler=\"worker-keda-hpa\"}",
+          "legendFormat": "hpa_desired",
+          "refId": "C"
+        }
+      ],
+      "title": "Worker Replicas",
+      "type": "timeseries"
     }
   ],
   "refresh": "5s",
@@ -577,5 +756,5 @@
   "timezone": "browser",
   "title": "Messaging Portfolio Overview",
   "uid": "messaging-portfolio-overview",
-  "version": 2
+  "version": 4
 }

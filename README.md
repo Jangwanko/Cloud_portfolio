@@ -143,8 +143,14 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 ## Observability
 Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - API request count / latency
+- API stage latency: membership check, idempotency, Redis sequence, Redis enqueue
 - worker processed count / processing latency
+- Worker stage latency: DB persist, request status update, notification enqueue
 - queue depth
+- Redis queue wait time
+- accepted-to-persisted processing lag
+- Worker autoscaling by KEDA on total Redis ingress queue depth
+- Worker replica count and KEDA desired replica count
 - DB pool usage / reconnect / failure
 - Redis reconnect state
 - Redis role / replica count / replica link / Sentinel master 상태
@@ -159,6 +165,12 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 ## Performance
 `k6` 부하 테스트는 실행 경로와 측정 체계를 갖추고 있으며, 현재는 latency threshold를 개선 대상으로 추적합니다.
 
+권장 테스트 순서는 correctness / 장애 검증을 먼저 수행하고, reset 후 k6 부하 테스트를 마지막에 실행하는 방식입니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
+```
+
 최근 측정 예시:
 - 초기 기준: `5434 req`, avg `3660ms`, p95 `8175ms`
 - 1차 개선 후: `7966 req`, avg `2285ms`, p95 `4936ms`
@@ -168,6 +180,8 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 
 추가로 `UVICORN_WORKERS=2` 실험에서는 total request와 average latency는 개선됐지만 error rate와 p95가 악화되어 채택하지 않았습니다. 현재 코드는 `UVICORN_WORKERS=1`을 유지하고 Redis hot path 최적화만 반영합니다.
 상세 실험 이력은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)의 `k6 Load Test` 섹션에 정리했습니다.
+
+Worker autoscaling은 CPU HPA가 아니라 KEDA 기반 queue depth scaling을 사용합니다. 기준은 `sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))` 이며, 전체 ingress backlog가 `400`을 넘기면 Worker replica를 `2`에서 최대 `8`까지 늘립니다.
 
 ## Backup and Restore
 현재 운영 보강 범위:

@@ -23,6 +23,7 @@
 | DLQ flow | `scripts/test_dlq_flow.ps1` | Pass | 실패 요청의 DLQ 적재와 재처리 흐름 확인 |
 | Failover and alert validation | `scripts/test_failover_alerts.ps1` | Pass | Prometheus alert firing / resolution 확인 |
 | HPA scaling | `scripts/test_hpa_scaling.ps1` | Pass | API replica scale-up 확인 |
+| KEDA worker scaling | live `k6` + `worker-keda-hpa` observation | Pass | Worker replica `2 -> 4 -> 6 -> 8` scale-out 확인 |
 | Full quick start | `scripts/quick_start_all.ps1` | Pass | fresh kind cluster 기준 smoke, DB, Redis, HPA 포함 |
 | PostgreSQL backup | `scripts/backup_postgres_k8s.ps1` | Pass | SQL dump 파일 생성 확인 |
 | PostgreSQL restore | `scripts/restore_postgres_k8s.ps1` | Pass | backup SQL 적용 후 readiness 정상 확인 |
@@ -47,6 +48,15 @@
   - `initial_replicas=3 -> max_replicas=5`, `cpu_target=88`
   - `initial_replicas=3 -> max_replicas=6`, `cpu_target=138`
   - recent quick start run: `initial_replicas=3 -> max_replicas=6`, `cpu_target=241`
+
+### KEDA Worker Scaling
+- Worker KEDA scale-up observed during live `k6` load:
+  - `02:08:39`: `worker=2`, `hpa=2`, queue depth signal `0`
+  - `02:09:10`: `worker=4`, `hpa_desired=4`
+  - `02:09:42`: `worker=6`, `hpa_desired=6`
+  - `02:10:13`: `worker=8`, `hpa_desired=8`
+- Grafana `Worker Replicas` 패널과 `kubectl get hpa worker-keda-hpa -n messaging-app` 결과가 같은 흐름을 보였습니다.
+- 이번 검증으로 Worker autoscaling은 CPU HPA가 아니라 queue depth 기반 KEDA 경로가 실제로 동작함을 확인했습니다.
 
 ### Quick Start
 - `scripts/quick_start_all.ps1` recent successful run:
@@ -109,6 +119,7 @@
 | pgpool / DB pool 조정 | `11,314 req` | `1,519 ms` | `3,333 ms` | - | 반영 | API DB pool 크기와 pgpool connection / resource 설정을 조정해 connection 병목, `too many clients`, OOM 가능성을 완화했습니다. |
 | Redis hot path 실험 A | `16,024 req` | `1,011.08 ms` | `2,219.59 ms` | `0.00%` | 현재 최종 | 요청마다 `get_redis()`가 수행하던 확인용 `PING` round-trip을 제거하고, 실패 시 reconnect하는 방식으로 변경했습니다. |
 | API worker 실험 B | `20,055 req` | `797.81 ms` | `3,088.99 ms` | `5.82%` | 미채택 | 실험 A에 `UVICORN_WORKERS=2`를 추가했습니다. 처리량과 평균 응답시간은 개선됐지만 error rate와 p95가 악화되어 최종 반영하지 않았습니다. |
+| KEDA worker scaling 적용 후 | `19,528 req` | `811.01 ms` | `1,953.64 ms` | `0.00%` | 현재 운영 기준 | Worker autoscaling을 CPU HPA에서 KEDA queue depth scaling으로 전환했습니다. live load 중 worker replica가 `2 -> 4 -> 6 -> 8`까지 올라갔고, Grafana `Worker Replicas` 패널에서도 desired / available 흐름을 직접 확인할 수 있습니다. |
 
 참고:
 - `7435 req`, avg `2459.75ms`, p95 `5092.95ms` 결과는 `5461b2f` 시점의 과거 단일 k6 확인 결과입니다.
@@ -119,14 +130,16 @@
 - 즉 load test infrastructure는 동작하며, latency tuning은 후속 개선 과제로 남아 있습니다.
 - Redis command hot path의 불필요한 round-trip 제거는 효과가 있었고, 다음 실험은 API worker 병렬성 증가 효과를 분리해서 확인하는 것이 맞습니다.
 - `UVICORN_WORKERS=2`는 로컬 kind HA 환경에서 tail latency와 error rate를 악화시켜 채택하지 않았고, 최종 코드는 실험 A 상태로 되돌렸습니다.
+- Worker autoscaling을 queue depth 기반 KEDA로 전환한 뒤에는, 같은 로컬 kind 환경에서도 worker replica가 실제 backlog에 반응해 `8`개까지 scale-out 되는 것을 확인했습니다.
+- 다만 latency threshold 초과가 완전히 사라진 것은 아닙니다. 현재 임계 초과는 설계 실패라기보다 local kind 환경에서 HA, async buffering, ordering, PostgreSQL persistence 비용이 함께 드러나는 상태로 해석하는 것이 맞습니다.
 
 ## Current Interpretation
 - 기능 검증 경로는 현재 저장소 상태에서 다시 재현 가능합니다.
-- autoscaling(HPA)은 metrics-server 추가 후 실제 동작을 확인했습니다.
+- autoscaling은 API는 CPU HPA, Worker는 KEDA queue depth scaling으로 실제 동작을 확인했습니다.
 - ingress 기반 외부 진입은 기본적으로 `http://localhost` 기준으로 검증합니다.
 - backup / restore도 수동 운영 경로 기준으로 실제 검증했습니다.
 - Redis는 complete outage와 HA failover를 별도 시나리오로 분리해 검증합니다.
-- 현재 가장 큰 남은 과제는 `k6` latency 개선과 운영 정책 고도화입니다.
+- 현재 가장 큰 남은 과제는 `k6` latency threshold 추가 개선과 운영 정책 고도화입니다.
 
 ## 신뢰성 정책 기준 해석
 - Redis complete outage 시 기대 상태는 `not_ready`입니다.

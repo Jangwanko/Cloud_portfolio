@@ -243,6 +243,23 @@ helm upgrade --install messaging-redis "$REDIS_CHART" \
   -f "$REDIS_VALUES" \
   --wait --timeout 15m
 
+log "Installing kube-state-metrics"
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
+helm repo update
+helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics \
+  -n "$NAMESPACE" \
+  --wait --timeout 10m
+wait_deployment kube-state-metrics
+
+log "Installing KEDA"
+helm repo add kedacore https://kedacore.github.io/charts >/dev/null 2>&1 || true
+helm repo update
+kubectl create namespace keda --dry-run=client -o yaml | kubectl apply -f -
+helm upgrade --install keda kedacore/keda \
+  -n keda \
+  --wait --timeout 10m
+wait_deployment keda-operator keda
+
 log "Applying application manifests"
 kubectl apply -f "$APP_MANIFEST"
 

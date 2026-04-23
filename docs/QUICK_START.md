@@ -48,6 +48,8 @@ bash scripts/quick_start_all.sh
 - `metrics-server` 설치
 - application image build and kind load
 - PostgreSQL HA / Redis HA 배포
+- `kube-state-metrics` 설치
+- KEDA 설치
 - application stack 배포
 - ingress readiness 확인
 - Windows PowerShell 기본 실행에서는 smoke, DB recovery, Redis recovery, HPA scaling test 실행
@@ -110,6 +112,32 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 참고:
 - 이 테스트는 health check 가 아니라 performance test 입니다
 - 현재 저장소 상태에서는 실행 경로가 정상이며, latency threshold는 성능 개선 과제로 추적합니다
+- k6는 backlog와 latency spike를 만들 수 있으므로 장애 검증 뒤, reset 후 마지막에 실행합니다.
+
+## Recommended Test Order
+전체 검증을 순서대로 실행하려면 아래 스크립트를 사용합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
+```
+
+이 순서는 아래 원칙을 따릅니다.
+
+- correctness / 장애 정책 검증을 먼저 수행합니다.
+- k6 부하 테스트는 reset 후 맨 마지막에 수행합니다.
+- k6 이후 final reset을 수행해 queue / Redis key / DB 상태를 정리합니다.
+
+수동 실행 순서:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
+powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/test_redis_down.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
+powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
+powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
+```
 
 ## Individual Scenarios
 Smoke test:
@@ -141,6 +169,10 @@ Kubernetes autoscaling:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_hpa_scaling.ps1
 ```
+
+참고:
+- API는 CPU HPA를 사용합니다.
+- Worker는 KEDA queue depth scaling을 사용합니다.
 
 DLQ flow:
 

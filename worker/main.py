@@ -9,7 +9,10 @@ from psycopg2 import InterfaceError, OperationalError
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
 from portfolio.metrics import (
+    event_persist_lag_seconds,
     health_status,
+    observe_worker_stage,
+    queue_wait_seconds,
     registry,
     worker_failures_total,
     worker_last_success_timestamp,
@@ -177,22 +180,24 @@ def persist_message(job_payload: dict) -> dict:
 
 
 def queue_notification(message_response: dict) -> None:
-    redis_client = get_redis()
-    redis_client.lpush(
-        settings.notification_queue,
-        json.dumps(
-            {
-                "message_id": message_response["id"],
-                "room_id": message_response["room_id"],
-                "body_preview": message_response["body"][:30],
-            }
-        ),
-    )
-    update_queue_depth(settings.notification_queue)
+    with observe_worker_stage("notification_enqueue"):
+        redis_client = get_redis()
+        redis_client.lpush(
+            settings.notification_queue,
+            json.dumps(
+                {
+                    "message_id": message_response["id"],
+                    "room_id": message_response["room_id"],
+                    "body_preview": message_response["body"][:30],
+                }
+            ),
+        )
+        update_queue_depth(settings.notification_queue)
 
 
 def update_request_status(request_id: str, payload: dict) -> None:
-    get_redis().set(request_status_key(request_id), json.dumps(payload))
+    with observe_worker_stage("request_status_update"):
+        get_redis().set(request_status_key(request_id), json.dumps(payload))
 
 
 def move_to_dlq(job_payload: dict, reason: str) -> None:
@@ -241,16 +246,17 @@ def store_attempt(payload: dict) -> None:
     last_error = None
     for attempt in range(2):
         try:
-            with get_conn() as conn:
-                with get_cursor(conn) as cur:
-                    cur.execute(
-                        """
-                        INSERT INTO notification_attempts (message_id, room_id, payload)
-                        VALUES (%s, %s, %s::jsonb)
-                        """,
-                        (payload["message_id"], payload["room_id"], json.dumps(payload)),
-                    )
-                conn.commit()
+            with observe_worker_stage("notification_db_insert"):
+                with get_conn() as conn:
+                    with get_cursor(conn) as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO notification_attempts (message_id, room_id, payload)
+                            VALUES (%s, %s, %s::jsonb)
+                            """,
+                            (payload["message_id"], payload["room_id"], json.dumps(payload)),
+                        )
+                    conn.commit()
             return
         except Exception as exc:  # noqa: BLE001
             last_error = exc
@@ -265,6 +271,14 @@ def handle_ingress_job(raw: str) -> None:
     job_payload = json.loads(raw)
     request_id = job_payload["request_id"]
     next_retry_at = job_payload.get("next_retry_at")
+    queued_at = job_payload.get("queued_at")
+
+    if queued_at:
+        try:
+            enqueued_at = datetime.fromisoformat(str(queued_at)).timestamp()
+            queue_wait_seconds.observe(max(0, time.time() - enqueued_at))
+        except Exception:  # noqa: BLE001
+            pass
 
     if next_retry_at is not None and float(next_retry_at) > time.time():
         # Not ready for retry yet; move to tail and process other jobs first.
@@ -274,7 +288,14 @@ def handle_ingress_job(raw: str) -> None:
         return
 
     try:
-        response = persist_message(job_payload)
+        with observe_worker_stage("db_persist"):
+            response = persist_message(job_payload)
+        if queued_at:
+            try:
+                accepted_at = datetime.fromisoformat(str(queued_at)).timestamp()
+                event_persist_lag_seconds.observe(max(0, time.time() - accepted_at))
+            except Exception:  # noqa: BLE001
+                pass
         update_request_status(
             request_id,
             {

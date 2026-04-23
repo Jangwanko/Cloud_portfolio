@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
+from portfolio.metrics import observe_api_stage
 from portfolio.queues import ingress_partition_queue
 from portfolio.redis_client import get_redis, reconnect_redis
 from portfolio.schemas import (
@@ -81,42 +82,45 @@ def _delete_request_status(request_id: str) -> None:
 
 
 def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict | None:
-    # The common path is a new idempotency key, so claim first and only
-    # do extra lookups when the key already exists.
-    if _set_fallback_idem(route, idem_key, request_id):
-        return None
+    with observe_api_stage("redis_idempotency"):
+        # The common path is a new idempotency key, so claim first and only
+        # do extra lookups when the key already exists.
+        if _set_fallback_idem(route, idem_key, request_id):
+            return None
 
-    existing_request_id = _get_fallback_idem(route, idem_key)
-    if existing_request_id:
-        existing_status = _load_request_status(existing_request_id)
-        if existing_status is not None:
-            return _externalize_request_status(existing_status)
-        _clear_fallback_idem(route, idem_key, existing_request_id)
+        existing_request_id = _get_fallback_idem(route, idem_key)
+        if existing_request_id:
+            existing_status = _load_request_status(existing_request_id)
+            if existing_status is not None:
+                return _externalize_request_status(existing_status)
+            _clear_fallback_idem(route, idem_key, existing_request_id)
 
-    if _set_fallback_idem(route, idem_key, request_id):
-        return None
+        if _set_fallback_idem(route, idem_key, request_id):
+            return None
 
-    existing_request_id = _get_fallback_idem(route, idem_key)
-    if existing_request_id:
-        existing_status = _load_request_status(existing_request_id)
-        if existing_status is not None:
-            return _externalize_request_status(existing_status)
+        existing_request_id = _get_fallback_idem(route, idem_key)
+        if existing_request_id:
+            existing_status = _load_request_status(existing_request_id)
+            if existing_status is not None:
+                return _externalize_request_status(existing_status)
 
     raise RuntimeError("Failed to claim idempotency key")
 
 
 def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
-    redis_client = _redis_client()
-    queue_name = ingress_partition_queue(int(job_payload["room_id"]))
-    with redis_client.pipeline() as pipe:
-        pipe.set(_request_status_key(request_id), json.dumps(request_payload))
-        pipe.lpush(queue_name, json.dumps(job_payload))
-        pipe.execute()
+    with observe_api_stage("redis_enqueue"):
+        redis_client = _redis_client()
+        queue_name = ingress_partition_queue(int(job_payload["room_id"]))
+        with redis_client.pipeline() as pipe:
+            pipe.set(_request_status_key(request_id), json.dumps(request_payload))
+            pipe.lpush(queue_name, json.dumps(job_payload))
+            pipe.execute()
 
 
 def _next_room_seq(room_id: int) -> int:
-    key = f"{settings.room_seq_key_prefix}:{room_id}"
-    return int(_redis_client().incr(key))
+    with observe_api_stage("redis_sequence"):
+        key = f"{settings.room_seq_key_prefix}:{room_id}"
+        return int(_redis_client().incr(key))
 
 
 def _room_members_key(room_id: int) -> str:
@@ -149,22 +153,23 @@ def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
 
 
 def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
-    try:
-        if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
-            return
-    except Exception:
-        pass
+    with observe_api_stage("membership_check"):
+        try:
+            if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
+                return
+        except Exception:
+            pass
 
-    try:
-        with get_conn() as conn:
-            with get_cursor(conn) as cur:
-                _ensure_room_member(cur, room_id, user_id)
-                _cache_room_members(room_id, [user_id])
-        return
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=503, detail="Authorization check unavailable")
+        try:
+            with get_conn() as conn:
+                with get_cursor(conn) as cur:
+                    _ensure_room_member(cur, room_id, user_id)
+                    _cache_room_members(room_id, [user_id])
+            return
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=503, detail="Authorization check unavailable")
 
 
 def _message_room_id(cur, message_id: int) -> int:

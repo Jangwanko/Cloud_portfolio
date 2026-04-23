@@ -300,12 +300,22 @@ try {
     & "$PSScriptRoot/../k8s/scripts/install-ha.ps1" -Namespace $Namespace
   }
 
+  Invoke-Step "Installing kube-state-metrics" {
+    & "$PSScriptRoot/../k8s/scripts/install-kube-state-metrics.ps1" -Namespace $Namespace
+  }
+
+  Invoke-Step "Installing KEDA" {
+    & "$PSScriptRoot/../k8s/scripts/install-keda.ps1"
+  }
+
   Invoke-Step "Applying application manifests" {
     kubectl apply -f k8s/app/manifests-ha.yaml | Out-Host
   }
 
   Invoke-Step "Waiting for deployments" {
     Wait-NamespacedDeployment -Name "ingress-nginx-controller" -NamespaceToUse "ingress-nginx"
+    Wait-Deployment -Name "kube-state-metrics"
+    Wait-NamespacedDeployment -Name "keda-operator" -NamespaceToUse "keda"
     Wait-Deployment -Name "api"
     Wait-Deployment -Name "worker"
     Wait-Deployment -Name "dlq-replayer"
