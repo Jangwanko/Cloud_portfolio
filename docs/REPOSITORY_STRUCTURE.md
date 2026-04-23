@@ -32,7 +32,8 @@
 
 ## 주요 파일 설명
 - `Dockerfile`: Kubernetes에서 실행할 애플리케이션 이미지 빌드 기준
-- `k8s/app/manifests.yaml`: 앱 배포, 서비스, HPA 매니페스트
+- `k8s/app/manifests.yaml`: 앱 배포, 서비스, API HPA, Worker KEDA, Prometheus, Grafana 매니페스트
+- `k8s/app/manifests-ha.yaml`: 로컬 HA 검증용 통합 매니페스트
 - `k8s/app/k6-job.yaml`: 클러스터 내부 부하 테스트 Job
 - `requirements.txt`: Python 패키지 의존성 목록
 - `alembic.ini`: Alembic 실행 설정
@@ -41,6 +42,11 @@
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
 - `monitoring/prometheus/alerts.yml`: 장애 감지 임계치 알람 규칙
 - `infra/terraform/envs/dev/main.tf`: AWS dev 환경 진입점
+- `k8s/scripts/install-keda.ps1`: Worker queue-depth autoscaling용 KEDA 설치
+- `k8s/scripts/install-kube-state-metrics.ps1`: Grafana replica 관측용 kube-state-metrics 설치
+- `scripts/quick_start_all.sh`: Linux quick start
+- `scripts/install_linux_prereqs.sh`: Ubuntu / Debian 계열 Linux 사전 도구 설치
+- `scripts/run_recommended_tests.ps1`: 권장 테스트 순서 일괄 실행
 
 ## 문서 연결
 - 빠른 실행: [QUICK_START.md](QUICK_START.md)

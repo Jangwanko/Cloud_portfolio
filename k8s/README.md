@@ -29,6 +29,13 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/setup-kind.ps1
 powershell -ExecutionPolicy Bypass -File k8s/scripts/install-ha.ps1 -Namespace messaging-app
 ```
 
+추가 운영 컴포넌트:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File k8s/scripts/install-kube-state-metrics.ps1 -Namespace messaging-app
+powershell -ExecutionPolicy Bypass -File k8s/scripts/install-keda.ps1
+```
+
 ## 3) 앱 연결 포인트
 - PostgreSQL endpoint: `messaging-postgresql-ha-pgpool.messaging-app.svc.cluster.local:5432`
 - Redis endpoint (sentinel):
@@ -48,11 +55,15 @@ kubectl apply -f k8s/app/manifests-ha.yaml
 ## 5) 관측 스택
 Prometheus + Grafana 로 아래 항목을 관측합니다.
 
-- API: request rate, latency p50/p95/p99, error rate, readiness 실패 횟수
+- API: request rate, latency p95/p99, stage latency, readiness 실패 횟수
 - PostgreSQL: primary reachability, standby count, sync standby count, replication state, replication lag
-- Redis: role, connected replicas, replica link, Sentinel master/quorum, queue length, reconnect event
-- Worker: event processed count, success/failure rate, processing latency, retry count, queue lag
-- Kubernetes: pod restart count, CPU/memory, node disk usage, network I/O
+- Redis: role, connected replicas, replica link, Sentinel master/quorum, queue depth, queue wait, reconnect event
+- Worker: event processed count, success/failure rate, processing latency, stage latency, accepted-to-persisted lag
+- Kubernetes: worker replica count, KEDA desired replicas, pod restart count, CPU/memory, node disk usage, network I/O
+
+autoscaling 기준:
+- API: CPU HPA
+- Worker: KEDA queue depth scaling
 
 ## GitOps / Argo CD
 이 저장소는 기존 `kubectl apply -f k8s/app/manifests-ha.yaml` 경로 외에 Argo CD 로 관리할 수 있는 GitOps 경로도 포함합니다.
@@ -80,5 +91,5 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/bootstrap-argocd-app.ps1 `
 로컬 검증 기준 브랜치는 현재 `ops` 로 두고 있으며, 이후 실제 운영 배포 기준 브랜치는 `master` 로 연결할 수 있습니다.
 
 ## 참고
-- 기본 실행 구성은 단일 DB / Redis 입니다
-- HA 실습은 quorum 기반 확장 시나리오 검증에 초점을 둡니다
+- 기본 앱 실행은 `k8s/app/manifests-ha.yaml` 기준이며, PostgreSQL / Redis 는 HA 구성을 전제로 합니다.
+- HA 실습은 quorum 기반 failover, queue buffering, queue-depth autoscaling 검증에 초점을 둡니다.

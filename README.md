@@ -141,7 +141,7 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 상세 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md) 에 정리했습니다.
 
 ## Observability
-Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
+Grafana / Prometheus 에서 직접 보이는 항목:
 - API request count / latency
 - API stage latency: membership check, idempotency, Redis sequence, Redis enqueue
 - worker processed count / processing latency
@@ -155,10 +155,12 @@ Grafana / Prometheus 에서 아래 항목을 확인할 수 있습니다.
 - Redis reconnect state
 - Redis role / replica count / replica link / Sentinel master 상태
 - PostgreSQL primary reachability / standby count / sync standby count / replication state / replication delay
-- 로컬 데모 기준 async streaming standby ready 해석
 - component health status
-- `ready` / `degraded` / `not_ready` 기준의 readiness 상태 해석
 - alert firing / resolution
+
+위 지표를 바탕으로 문서에서 해석하는 운영 상태:
+- 로컬 데모 기준 async streaming standby ready 해석
+- `ready` / `degraded` / `not_ready` 기준의 readiness 상태 해석
 
 관련 메트릭 설명과 해석 기준은 [OBSERVABILITY.md](docs/OBSERVABILITY.md) 에 정리했습니다.
 

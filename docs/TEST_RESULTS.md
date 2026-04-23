@@ -24,7 +24,7 @@
 | Failover and alert validation | `scripts/test_failover_alerts.ps1` | Pass | Prometheus alert firing / resolution 확인 |
 | HPA scaling | `scripts/test_hpa_scaling.ps1` | Pass | API replica scale-up 확인 |
 | KEDA worker scaling | live `k6` + `worker-keda-hpa` observation | Pass | Worker replica `2 -> 4 -> 6 -> 8` scale-out 확인 |
-| Full quick start | `scripts/quick_start_all.ps1` | Pass | fresh kind cluster 기준 smoke, DB, Redis, HPA 포함 |
+| Full quick start | `scripts/quick_start_all.ps1` | Pass | fresh kind cluster 기준 smoke, DB, Redis, API HPA, Worker KEDA 포함 |
 | PostgreSQL backup | `scripts/backup_postgres_k8s.ps1` | Pass | SQL dump 파일 생성 확인 |
 | PostgreSQL restore | `scripts/restore_postgres_k8s.ps1` | Pass | backup SQL 적용 후 readiness 정상 확인 |
 
@@ -63,7 +63,7 @@
   - smoke test: pass
   - DB recovery test: pass
   - Redis complete outage test: pass
-  - HPA scaling test: pass
+  - API HPA scaling test: pass
   - ingress readiness at `http://localhost/health/ready`: pass
   - TLS readiness at `https://localhost/health/ready`: pass, TLS 보조 검증
 
