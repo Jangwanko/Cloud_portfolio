@@ -34,6 +34,8 @@ htmlcov/
 # Logs
 *.log
 logs/
+results/
+k6/results/
 
 # Docker
 .dockerignore

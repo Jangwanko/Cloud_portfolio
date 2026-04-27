@@ -15,11 +15,17 @@ spec:
           env:
             - name: BASE_URL
               value: http://api.messaging-app.svc.cluster.local:8000
+            - name: K6_PROFILE
+              value: "single500"
+            - name: K6_SINGLE_VUS
+              value: "100"
             - name: STAGE_DURATION
               value: "10s"
             - name: THINK_TIME
               value: "0.05"
             - name: K6_WRITE_RESULT_FILES
+              value: "false"
+            - name: SEND_IDEMPOTENCY_KEY
               value: "false"
           command:
             - k6

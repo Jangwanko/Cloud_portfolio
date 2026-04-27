@@ -64,52 +64,6 @@ db_failure_total = Counter(
     registry=registry,
 )
 
-redis_reconnect_total = Counter(
-    "messaging_redis_reconnect_total",
-    "Redis reconnection attempts",
-    ["result"],
-    registry=registry,
-)
-
-redis_role = Gauge(
-    "messaging_redis_role",
-    "Current Redis role visibility from the API connection",
-    ["role"],
-    registry=registry,
-)
-
-redis_master_link_status = Gauge(
-    "messaging_redis_master_link_status",
-    "Redis replica master link status where 1 means healthy and 0 means unhealthy",
-    ["replica"],
-    registry=registry,
-)
-
-redis_connected_replicas = Gauge(
-    "messaging_redis_connected_replicas",
-    "Number of Redis replicas currently connected to the writable master",
-    registry=registry,
-)
-
-redis_sentinel_master_ok = Gauge(
-    "messaging_redis_sentinel_master_ok",
-    "Whether Sentinel can currently identify a writable master",
-    registry=registry,
-)
-
-redis_sentinel_quorum_ok = Gauge(
-    "messaging_redis_sentinel_quorum_ok",
-    "Whether known Sentinel peers still satisfy the configured quorum",
-    registry=registry,
-)
-
-queue_depth = Gauge(
-    "messaging_queue_depth",
-    "Current queue depth",
-    ["queue"],
-    registry=registry,
-)
-
 worker_processed_total = Counter(
     "messaging_worker_processed_total",
     "Worker processed events",
@@ -141,7 +95,7 @@ event_persist_lag_seconds = Histogram(
 
 queue_wait_seconds = Histogram(
     "messaging_queue_wait_seconds",
-    "Time from Redis enqueue to worker dequeue in seconds",
+    "Time from Kafka append to worker consume in seconds",
     registry=registry,
     buckets=(0.001, 0.003, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30),
 )

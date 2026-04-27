@@ -82,9 +82,8 @@ function Grant-PostgresMonitorRole([string]$Namespace) {
 
 $repoCache = Join-Path $PSScriptRoot "..\..\tools\helm-cache\repository"
 $pgHaChart = Get-ChildItem -Path $repoCache -Filter "postgresql-ha-*.tgz" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-$redisChart = Get-ChildItem -Path $repoCache -Filter "redis-*.tgz" -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
 
-if (-not $pgHaChart -or -not $redisChart) {
+if (-not $pgHaChart) {
   & $helm repo add bitnami https://charts.bitnami.com/bitnami
   & $helm repo update
 }
@@ -115,7 +114,6 @@ if ($PrepareImages) {
 }
 
 $pgHaSource = if ($pgHaChart) { $pgHaChart.FullName } else { "bitnami/postgresql-ha" }
-$redisSource = if ($redisChart) { $redisChart.FullName } else { "bitnami/redis" }
 
 & $helm upgrade --install messaging-postgresql-ha $pgHaSource `
   -n $Namespace `
@@ -123,10 +121,5 @@ $redisSource = if ($redisChart) { $redisChart.FullName } else { "bitnami/redis" 
   --wait --timeout 15m
 
 Grant-PostgresMonitorRole -Namespace $Namespace
-
-& $helm upgrade --install messaging-redis $redisSource `
-  -n $Namespace `
-  -f k8s/values/redis-ha-values.yaml `
-  --wait --timeout 15m
 
 kubectl get pods -n $Namespace

@@ -4,22 +4,45 @@ param(
   [string]$ScriptPath = "scripts/load_test_k6.js",
   [string]$BaseUrl = "http://localhost",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
-  [string]$RedisDeployment = "messaging-redis-node",
+  [string]$K6Profile = "single500",
+  [int]$K6SingleVus = 100,
+  [string]$StageDuration = "10s",
+  [double]$ThinkTime = 0.05,
   [int]$TimeoutSec = 420,
+  [switch]$AllowThresholdFailure,
   [switch]$SkipReset
 )
 
 $ErrorActionPreference = "Stop"
 
-if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+function Set-JobEnvValue([string]$Yaml, [string]$Name, [string]$Value) {
+  $pattern = "(?m)(\s*-\s+name:\s+$([regex]::Escape($Name))\s*\r?\n\s*value:\s*)`"[^`"]*`""
+  $replacement = "`${1}`"$Value`""
+  return [regex]::Replace($Yaml, $pattern, $replacement)
 }
+
+if (-not $SkipReset) {
+  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
+}
+
+$effectiveManifest = $null
 
 try {
   kubectl -n $Namespace delete job k6-load-test --ignore-not-found | Out-Null
   kubectl -n $Namespace delete configmap k6-script --ignore-not-found | Out-Null
   kubectl -n $Namespace create configmap k6-script --from-file=load_test_k6.js=$ScriptPath | Out-Null
-  kubectl apply -f $JobManifest | Out-Null
+
+  $manifestText = Get-Content $JobManifest -Raw
+  $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "K6_PROFILE" -Value $K6Profile
+  $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "K6_SINGLE_VUS" -Value ([string]$K6SingleVus)
+  $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "STAGE_DURATION" -Value $StageDuration
+  $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "THINK_TIME" -Value ([string]$ThinkTime)
+
+  $effectiveManifest = Join-Path ([System.IO.Path]::GetTempPath()) ("k6-load-test-{0}.yaml" -f ([guid]::NewGuid().ToString("N")))
+  Set-Content -Path $effectiveManifest -Value $manifestText -Encoding UTF8
+
+  Write-Host ("Running k6 load test: profile={0}, vus={1}, duration={2}, think_time={3}" -f $K6Profile, $K6SingleVus, $StageDuration, $ThinkTime)
+  kubectl apply -f $effectiveManifest | Out-Null
 
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
@@ -75,17 +98,25 @@ try {
     throw "k6 container did not start in time"
   }
 
-  kubectl -n $Namespace logs job/k6-load-test | Out-Host
+  kubectl -n $Namespace logs job/k6-load-test
 
   $failedFinal = kubectl -n $Namespace get job k6-load-test -o jsonpath="{.status.failed}" 2>$null
   $failedFinalCount = 0
   [void][int]::TryParse(($failedFinal | Out-String).Trim(), [ref]$failedFinalCount)
-  if ($failedFinalCount -ge 1) {
+  if ($failedFinalCount -ge 1 -and -not $AllowThresholdFailure) {
     throw "k6 job finished as Failed (likely threshold exceeded)"
+  }
+  if ($failedFinalCount -ge 1) {
+    Write-Warning "k6 job finished as Failed (likely threshold exceeded); continuing because AllowThresholdFailure is set."
   }
 }
 finally {
+  kubectl -n $Namespace delete job k6-load-test --ignore-not-found | Out-Null
+  kubectl -n $Namespace delete configmap k6-script --ignore-not-found | Out-Null
+  if ($effectiveManifest -and (Test-Path $effectiveManifest)) {
+    Remove-Item -LiteralPath $effectiveManifest -Force
+  }
   if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
   }
 }

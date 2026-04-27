@@ -90,8 +90,7 @@ Write-Host "==> Running smoke test"
 & "$PSScriptRoot/smoke_test.ps1" `
   -BaseUrl $BaseUrl `
   -Namespace $Namespace `
-  -DbDeployment "messaging-postgresql-ha-postgresql" `
-  -RedisDeployment "messaging-redis-node"
+  -DbDeployment "messaging-postgresql-ha-postgresql"
 
 Write-Host ""
 Write-Host "GitOps quick start completed successfully."

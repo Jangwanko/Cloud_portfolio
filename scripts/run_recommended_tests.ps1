@@ -2,7 +2,6 @@ param(
   [string]$BaseUrl = "http://localhost",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
-  [string]$RedisDeployment = "messaging-redis-node",
   [switch]$SkipK6
 )
 
@@ -24,8 +23,7 @@ function Reset-State() {
   & "$PSScriptRoot/reset_k8s_state.ps1" `
     -BaseUrl $BaseUrl `
     -Namespace $Namespace `
-    -DbDeployment $DbDeployment `
-    -RedisDeployment $RedisDeployment
+    -DbDeployment $DbDeployment
 }
 
 $k6Failed = $false
@@ -39,7 +37,6 @@ Invoke-Step "Smoke test" {
     -BaseUrl $BaseUrl `
     -Namespace $Namespace `
     -DbDeployment $DbDeployment `
-    -RedisDeployment $RedisDeployment `
     -SkipReset
 }
 
@@ -49,16 +46,6 @@ Invoke-Step "DB outage and recovery test" {
     -Namespace $Namespace `
     -ApiDeployment "api" `
     -DbDeployment $DbDeployment `
-    -RedisDeployment $RedisDeployment `
-    -SkipReset
-}
-
-Invoke-Step "Redis total outage and recovery test" {
-  & "$PSScriptRoot/test_redis_down.ps1" `
-    -BaseUrl $BaseUrl `
-    -Namespace $Namespace `
-    -DbDeployment $DbDeployment `
-    -RedisDeployment $RedisDeployment `
     -SkipReset
 }
 
@@ -72,8 +59,7 @@ if (-not $SkipK6) {
       & "$PSScriptRoot/test_k6_load.ps1" `
         -BaseUrl $BaseUrl `
         -Namespace $Namespace `
-        -DbDeployment $DbDeployment `
-        -RedisDeployment $RedisDeployment
+        -DbDeployment $DbDeployment
     } catch {
       $script:k6Failed = $true
       Write-Warning $_.Exception.Message

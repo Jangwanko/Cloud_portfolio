@@ -16,22 +16,15 @@ stringData:
   DB_NAME: "portfolio"
   DB_USER: "portfolio"
   DB_PASSWORD: "portfolio"
-  REDIS_HOST: "messaging-redis.messaging-app.svc.cluster.local"
-  REDIS_PORT: "6379"
-  REDIS_SENTINEL_ENABLED: "true"
-  REDIS_SENTINEL_MASTER: "mymaster"
-  REDIS_SENTINEL_NODES: "messaging-redis-node-0.messaging-redis-headless.messaging-app.svc.cluster.local:26379,messaging-redis-node-1.messaging-redis-headless.messaging-app.svc.cluster.local:26379,messaging-redis-node-2.messaging-redis-headless.messaging-app.svc.cluster.local:26379"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.messaging-app.svc.cluster.local:9092"
+  KAFKA_INGRESS_TOPIC: "message-ingress"
+  KAFKA_DLQ_TOPIC: "message-ingress-dlq"
+  KAFKA_CONSUMER_GROUP: "message-worker"
   STARTUP_RETRIES: "30"
   STARTUP_RETRY_DELAY: "2"
-  INGRESS_PARTITIONS: "8"
   DB_POOL_MIN_CONN: "1"
   DB_POOL_MAX_CONN: "8"
   DB_CONNECT_TIMEOUT: "3"
-  REDIS_MAX_CONNECTIONS: "400"
-  REDIS_SOCKET_CONNECT_TIMEOUT: "1"
-  REDIS_SOCKET_TIMEOUT: "1"
-  REDIS_HEALTH_CHECK_INTERVAL: "15"
-  REDIS_MIN_READY_REPLICAS: "2"
   READINESS_DEGRADED_GRACE_SECONDS: "30"
   POSTGRES_MIN_READY_STANDBYS: "2"
   POSTGRES_MIN_SYNC_STANDBYS: "0"
@@ -68,12 +61,6 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: messaging-redis
-                  key: redis-password
           resources:
             requests:
               cpu: "300m"
@@ -86,12 +73,14 @@ spec:
               path: /health/ready
               port: 8000
             initialDelaySeconds: 10
+            timeoutSeconds: 5
             periodSeconds: 5
           startupProbe:
             httpGet:
               path: /health/live
               port: 8000
             initialDelaySeconds: 10
+            timeoutSeconds: 5
             periodSeconds: 5
             failureThreshold: 60
           livenessProbe:
@@ -99,6 +88,7 @@ spec:
               path: /health/live
               port: 8000
             initialDelaySeconds: 60
+            timeoutSeconds: 5
             periodSeconds: 10
 ---
 apiVersion: v1
@@ -164,12 +154,6 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: messaging-redis
-                  key: redis-password
           resources:
             requests:
               cpu: "200m"
@@ -271,12 +255,6 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
-          env:
-            - name: REDIS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: messaging-redis
-                  key: redis-password
           resources:
             requests:
               cpu: "100m"
@@ -314,8 +292,8 @@ data:
     groups:
       - name: messaging-critical
         rules:
-          - alert: MessagingRedisDown
-            expr: messaging_health_status{job="api",component="redis"} == 0
+          - alert: MessagingKafkaDown
+            expr: messaging_health_status{job="api",component="kafka"} == 0
             labels:
               severity: critical
               service: messaging
@@ -326,20 +304,6 @@ data:
               service: messaging
       - name: messaging-warning
         rules:
-          - alert: MessagingRedisDegraded
-            expr: |
-              (
-                messaging_redis_connected_replicas{job="api"} <= 1
-                or min(messaging_redis_master_link_status{job="api"}) < 1
-                or (
-                  messaging_redis_sentinel_quorum_ok{job="api"} == 0
-                  and messaging_redis_sentinel_master_ok{job="api"} == 1
-                )
-              )
-            for: 30s
-            labels:
-              severity: warning
-              service: messaging
           - alert: MessagingPostgresDegraded
             expr: |
               (
@@ -571,11 +535,11 @@ data:
           },
           "targets": [
             {
-              "expr": "messaging_health_status{job=\"api\",component=\"redis\"}",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
               "refId": "A"
             }
           ],
-          "title": "Redis Health",
+          "title": "Kafka Health",
           "type": "stat"
         },
         {
@@ -627,11 +591,11 @@ data:
           },
           "targets": [
             {
-              "expr": "messaging_redis_connected_replicas{job=\"api\"}",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
               "refId": "A"
             }
           ],
-          "title": "Redis Connected Replicas",
+          "title": "Kafka Bootstrap Health",
           "type": "stat"
         },
         {
@@ -812,12 +776,12 @@ data:
           "id": 8,
           "targets": [
             {
-              "expr": "sum by (queue) (messaging_queue_depth)",
+              "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
               "legendFormat": "{{queue}}",
               "refId": "A"
             }
           ],
-          "title": "Queue Depth By Queue",
+          "title": "Worker Throughput By Result",
           "type": "timeseries"
         },
         {
@@ -842,22 +806,22 @@ data:
           "id": 9,
           "targets": [
             {
-              "expr": "messaging_redis_connected_replicas{job=\"api\"}",
-              "legendFormat": "connected_replicas",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+              "legendFormat": "bootstrap_available",
               "refId": "A"
             },
             {
-              "expr": "messaging_redis_sentinel_master_ok{job=\"api\"}",
-              "legendFormat": "sentinel_master_ok",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+              "legendFormat": "producer_append_path",
               "refId": "B"
             },
             {
-              "expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}",
-              "legendFormat": "sentinel_quorum_ok",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+              "legendFormat": "consumer_read_path",
               "refId": "C"
             }
           ],
-          "title": "Redis Topology Signals",
+          "title": "Kafka Health Signals",
           "type": "timeseries"
         },
         {
@@ -882,12 +846,12 @@ data:
           "id": 10,
           "targets": [
             {
-              "expr": "messaging_redis_master_link_status{job=\"api\"}",
-              "legendFormat": "{{replica}}",
+              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+              "legendFormat": "worker_consumer_group",
               "refId": "A"
             }
           ],
-          "title": "Redis Replica Link Status",
+          "title": "Kafka Worker Signal",
           "type": "timeseries"
         },
         {
@@ -1025,7 +989,7 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Redis enqueue.",
+          "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Kafka publish.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1126,7 +1090,7 @@ data:
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "description": "Time spent waiting in Redis queue before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
+          "description": "Time spent waiting in Kafka topic before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1155,7 +1119,7 @@ data:
               "refId": "B"
             }
           ],
-          "title": "Redis Queue Wait Time",
+          "title": "Kafka topic Wait Time",
           "type": "timeseries"
         },
         {
@@ -1367,9 +1331,10 @@ spec:
               value: 100
               periodSeconds: 60
   triggers:
-    - type: prometheus
+    - type: kafka
       metadata:
-        serverAddress: http://prometheus.messaging-app.svc.cluster.local:9090/prometheus
-        metricName: messaging_ingress_queue_depth_total
-        query: sum(max by (queue) (messaging_queue_depth{job="api",queue=~"message_ingress:p.*"}))
-        threshold: "400"
+        bootstrapServers: kafka.messaging-app.svc.cluster.local:9092
+        consumerGroup: message-worker
+        topic: message-ingress
+        lagThreshold: "400"
+        offsetResetPolicy: earliest

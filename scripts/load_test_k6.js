@@ -1,14 +1,27 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
+import { Counter } from "k6/metrics";
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost";
 const STAGE_DURATION = __ENV.STAGE_DURATION || "60s";
 const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
+const SINGLE_VUS = Number(__ENV.K6_SINGLE_VUS || "500");
 const K6_WRITE_RESULT_FILES =
   (__ENV.K6_WRITE_RESULT_FILES || "true").toLowerCase() !== "false";
 const SETUP_RETRIES = Number(__ENV.SETUP_RETRIES || "5");
 const SETUP_RETRY_SLEEP = Number(__ENV.SETUP_RETRY_SLEEP || "1");
+const SEND_IDEMPOTENCY_KEY =
+  (__ENV.SEND_IDEMPOTENCY_KEY || "false").toLowerCase() === "true";
+
+const eventStatus200 = new Counter("event_status_200");
+const eventStatus401 = new Counter("event_status_401");
+const eventStatus403 = new Counter("event_status_403");
+const eventStatus404 = new Counter("event_status_404");
+const eventStatus409 = new Counter("event_status_409");
+const eventStatus500 = new Counter("event_status_500");
+const eventStatus503 = new Counter("event_status_503");
+const eventStatusOther = new Counter("event_status_other");
 
 function pad2(value) {
   return String(value).padStart(2, "0");
@@ -40,7 +53,7 @@ function buildScenarios() {
     return {
       users_500: {
         executor: "constant-vus",
-        vus: 500,
+        vus: SINGLE_VUS,
         duration: STAGE_DURATION,
         exec: "eventFlow",
         startTime: "0s",
@@ -163,8 +176,10 @@ export function eventFlow(data) {
   const headers = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${data.token}`,
-    "X-Idempotency-Key": `${__VU}-${__ITER}-${Date.now()}`,
   };
+  if (SEND_IDEMPOTENCY_KEY) {
+    headers["X-Idempotency-Key"] = `${__VU}-${__ITER}-${Date.now()}`;
+  }
 
   const payload = JSON.stringify({
     body: `k6 event vu=${__VU} iter=${__ITER}`,
@@ -175,6 +190,14 @@ export function eventFlow(data) {
     payload,
     { headers },
   );
+  if (res.status === 200) eventStatus200.add(1);
+  else if (res.status === 401) eventStatus401.add(1);
+  else if (res.status === 403) eventStatus403.add(1);
+  else if (res.status === 404) eventStatus404.add(1);
+  else if (res.status === 409) eventStatus409.add(1);
+  else if (res.status === 500) eventStatus500.add(1);
+  else if (res.status === 503) eventStatus503.add(1);
+  else eventStatusOther.add(1);
 
   check(res, {
     "event request accepted (200)": (r) => r.status === 200,
@@ -191,17 +214,33 @@ export function handleSummary(data) {
   const avgLatency = metricValue(data, "http_req_duration", "avg", 0);
   const p95Latency = metricValue(data, "http_req_duration", "p(95)", 0);
   const p99Latency = metricValue(data, "http_req_duration", "p(99)", 0);
+  const eventStatusLines = [
+    ["200", "event_status_200"],
+    ["401", "event_status_401"],
+    ["403", "event_status_403"],
+    ["404", "event_status_404"],
+    ["409", "event_status_409"],
+    ["500", "event_status_500"],
+    ["503", "event_status_503"],
+    ["other", "event_status_other"],
+  ]
+    .map(([label, metricName]) => {
+      const count = data.metrics?.[metricName]?.values?.count || 0;
+      return `Event status ${label.padEnd(5)}: ${count}`;
+    });
 
   const summary = [
     "=== k6 Load Test Summary ===",
     `Base URL           : ${BASE_URL}`,
     `Profile            : ${PROFILE}`,
-    `Stage duration     : ${STAGE_DURATION}${PROFILE === "single500" ? " (500 concurrent users)" : " (100 -> 500 -> 1000 concurrent users)"}`,
+    `Stage duration     : ${STAGE_DURATION}${PROFILE === "single500" ? ` (${SINGLE_VUS} concurrent users)` : " (100 -> 500 -> 1000 concurrent users)"}`,
+    `Idempotency header  : ${SEND_IDEMPOTENCY_KEY ? "enabled" : "disabled"}`,
     `Total HTTP requests: ${totalRequests}`,
     `Error rate         : ${(failureRate * 100).toFixed(2)}%`,
     `Latency avg (ms)   : ${Number(avgLatency).toFixed(2)}`,
     `Latency p95 (ms)   : ${Number(p95Latency).toFixed(2)}`,
     `Latency p99 (ms)   : ${Number(p99Latency).toFixed(2)}`,
+    ...eventStatusLines,
     "============================",
   ].join("\n");
 

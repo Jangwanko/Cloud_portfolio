@@ -8,6 +8,7 @@ from psycopg2 import InterfaceError, OperationalError
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
+from portfolio.kafka_client import build_ingress_consumer, publish_dlq_job, publish_ingress_job
 from portfolio.metrics import (
     event_persist_lag_seconds,
     health_status,
@@ -19,8 +20,7 @@ from portfolio.metrics import (
     worker_processed_total,
     worker_processing_seconds,
 )
-from portfolio.redis_client import get_redis, init_redis_with_retry, reconnect_redis, update_queue_depth
-from portfolio.queues import ingress_partition_queue, ingress_partition_queues
+from portfolio.state_store import store_request_status
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -105,6 +105,10 @@ def persist_message(job_payload: dict) -> dict:
             seq_row = cur.fetchone()
             last_seq = int(seq_row["last_seq"])
 
+            expected_seq = last_seq + 1
+            if room_seq is None:
+                room_seq = expected_seq
+
             if room_seq <= last_seq:
                 cur.execute(
                     """
@@ -127,9 +131,6 @@ def persist_message(job_payload: dict) -> dict:
                         "created_at": duplicate["created_at"].isoformat(),
                     }
 
-            expected_seq = last_seq + 1
-            if room_seq is None:
-                room_seq = expected_seq
             if room_seq > expected_seq:
                 raise RoomSequenceGapError(
                     f"Room sequence gap detected expected={expected_seq} got={room_seq}"
@@ -181,32 +182,24 @@ def persist_message(job_payload: dict) -> dict:
 
 def queue_notification(message_response: dict) -> None:
     with observe_worker_stage("notification_enqueue"):
-        redis_client = get_redis()
-        redis_client.lpush(
-            settings.notification_queue,
-            json.dumps(
-                {
-                    "message_id": message_response["id"],
-                    "room_id": message_response["room_id"],
-                    "body_preview": message_response["body"][:30],
-                }
-            ),
-        )
-        update_queue_depth(settings.notification_queue)
+        payload = {
+            "message_id": message_response["id"],
+            "room_id": message_response["room_id"],
+            "body_preview": message_response["body"][:30],
+        }
+        store_attempt(payload)
 
 
 def update_request_status(request_id: str, payload: dict) -> None:
     with observe_worker_stage("request_status_update"):
-        get_redis().set(request_status_key(request_id), json.dumps(payload))
+        store_request_status(request_id, payload)
 
 
 def move_to_dlq(job_payload: dict, reason: str) -> None:
-    redis_client = get_redis()
     request_id = job_payload["request_id"]
     job_payload["failed_reason"] = reason
     job_payload["failed_at"] = now_iso()
-    redis_client.lpush(settings.ingress_dlq, json.dumps(job_payload))
-    update_queue_depth(settings.ingress_dlq)
+    publish_dlq_job(job_payload["room_id"], job_payload)
     update_request_status(
         request_id,
         {
@@ -220,14 +213,11 @@ def move_to_dlq(job_payload: dict, reason: str) -> None:
 
 
 def requeue_with_backoff(job_payload: dict) -> None:
-    redis_client = get_redis()
     retry_count = int(job_payload.get("retry_count", 0)) + 1
     delay = settings.ingress_retry_base_delay_seconds * (2 ** (retry_count - 1))
     job_payload["retry_count"] = retry_count
     job_payload["next_retry_at"] = time.time() + delay
-    queue_name = ingress_partition_queue(int(job_payload["room_id"]))
-    redis_client.rpush(queue_name, json.dumps(job_payload))
-    update_queue_depth(queue_name)
+    publish_ingress_job(job_payload["room_id"], job_payload)
     update_request_status(
         job_payload["request_id"],
         {
@@ -268,7 +258,7 @@ def store_attempt(payload: dict) -> None:
 
 
 def handle_ingress_job(raw: str) -> None:
-    job_payload = json.loads(raw)
+    job_payload = raw if isinstance(raw, dict) else json.loads(raw)
     request_id = job_payload["request_id"]
     next_retry_at = job_payload.get("next_retry_at")
     queued_at = job_payload.get("queued_at")
@@ -282,9 +272,8 @@ def handle_ingress_job(raw: str) -> None:
 
     if next_retry_at is not None and float(next_retry_at) > time.time():
         # Not ready for retry yet; move to tail and process other jobs first.
-        queue_name = ingress_partition_queue(int(job_payload["room_id"]))
-        get_redis().rpush(queue_name, raw)
-        update_queue_depth(queue_name)
+        time.sleep(min(1, max(0, float(next_retry_at) - time.time())))
+        publish_ingress_job(job_payload["room_id"], job_payload)
         return
 
     try:
@@ -350,68 +339,64 @@ def handle_notification_job(raw: str) -> None:
     store_attempt(payload)
 
 
-def main() -> None:
-    init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
-    init_redis_with_retry(settings.startup_retries, settings.startup_retry_delay)
-    start_http_server(settings.worker_metrics_port, registry=registry)
-
-    redis_client = get_redis()
+def run_kafka_worker_loop() -> None:
     health_status.labels(component="worker").set(1)
     logging.info(
-        "Worker started. ingress_queue=%s partitions=%s ingress_dlq=%s notification_queue=%s metrics_port=%s",
-        settings.ingress_queue,
-        settings.ingress_partitions,
-        settings.ingress_dlq,
-        settings.notification_queue,
+        "Worker started with Kafka ingress. topic=%s group=%s dlq_topic=%s metrics_port=%s",
+        settings.kafka_ingress_topic,
+        settings.kafka_consumer_group,
+        settings.kafka_dlq_topic,
         settings.worker_metrics_port,
     )
 
     while True:
-        ingress_queues = ingress_partition_queues()
         try:
-            queue_name, raw = redis_client.brpop(
-                ingress_queues + [settings.notification_queue],
-                timeout=5,
-            ) or (None, None)
-        except Exception:
-            health_status.labels(component="redis").set(0)
-            worker_failures_total.inc()
-            time.sleep(1)
-            try:
-                redis_client = reconnect_redis()
-            except Exception:  # noqa: BLE001
-                time.sleep(1)
-            continue
-
-        for queue in ingress_queues:
-            update_queue_depth(queue)
-        update_queue_depth(settings.ingress_dlq)
-        update_queue_depth(settings.notification_queue)
-
-        if not raw or not queue_name:
-            continue
-
-        started_at = time.perf_counter()
-        try:
-            if queue_name in ingress_queues:
-                handle_ingress_job(raw)
-            else:
-                handle_notification_job(raw)
-            worker_processed_total.labels(result="success").inc()
-            worker_last_success_timestamp.set(time.time())
-            health_status.labels(component="worker").set(1)
+            consumer = build_ingress_consumer()
         except Exception as exc:  # noqa: BLE001
-            worker_processed_total.labels(result="failure").inc()
             worker_failures_total.inc()
             health_status.labels(component="worker").set(0)
-            logging.exception("Worker failed: %s", exc)
-            time.sleep(1)
-        finally:
-            worker_processing_seconds.observe(time.perf_counter() - started_at)
-            for queue in ingress_queues:
-                update_queue_depth(queue)
-            update_queue_depth(settings.ingress_dlq)
-            update_queue_depth(settings.notification_queue)
+            logging.exception("Kafka consumer init failed: %s", exc)
+            time.sleep(2)
+            continue
+
+        try:
+            while True:
+                records = consumer.poll(timeout_ms=1000, max_records=20)
+                if not records:
+                    continue
+
+                for messages in records.values():
+                    for message in messages:
+                        started_at = time.perf_counter()
+                        try:
+                            handle_ingress_job(message.value)
+                            consumer.commit()
+                            worker_processed_total.labels(result="success").inc()
+                            worker_last_success_timestamp.set(time.time())
+                            health_status.labels(component="worker").set(1)
+                        except Exception as exc:  # noqa: BLE001
+                            worker_processed_total.labels(result="failure").inc()
+                            worker_failures_total.inc()
+                            health_status.labels(component="worker").set(0)
+                            logging.exception("Kafka worker failed: %s", exc)
+                            time.sleep(1)
+                        finally:
+                            worker_processing_seconds.observe(time.perf_counter() - started_at)
+        except Exception as exc:  # noqa: BLE001
+            worker_failures_total.inc()
+            health_status.labels(component="worker").set(0)
+            logging.exception("Kafka consumer loop failed: %s", exc)
+            try:
+                consumer.close()
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(2)
+
+
+def main() -> None:
+    init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
+    start_http_server(settings.worker_metrics_port, registry=registry)
+    run_kafka_worker_loop()
 
 
 if __name__ == "__main__":

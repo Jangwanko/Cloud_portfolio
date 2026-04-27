@@ -2,7 +2,6 @@ param(
   [string]$BaseUrl = "http://localhost",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
-  [string]$RedisDeployment = "messaging-redis-node",
   [int]$EventCount = 20,
   [int]$PersistTimeoutSec = 90,
   [switch]$SkipReset
@@ -17,17 +16,6 @@ function Get-MetricLines([string]$MetricName) {
   } catch {
     return @()
   }
-}
-
-function Get-QueueDepthSnapshot() {
-  $lines = Get-MetricLines -MetricName "messaging_queue_depth"
-  $result = @{}
-  foreach ($line in $lines) {
-    if ($line -match 'queue="([^"]+)".*}\s+([0-9\.]+)$') {
-      $result[$matches[1]] = [double]$matches[2]
-    }
-  }
-  return $result
 }
 
 function Add-StatSample([System.Collections.Generic.List[double]]$List, [double]$Value) {
@@ -59,7 +47,7 @@ function Get-Stats([System.Collections.Generic.List[double]]$Values) {
 }
 
 if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
 
 try {
@@ -77,7 +65,6 @@ try {
   $acceptLatencies = [System.Collections.Generic.List[double]]::new()
   $persistLatencies = [System.Collections.Generic.List[double]]::new()
   $pollCounts = [System.Collections.Generic.List[double]]::new()
-  $queueBefore = Get-QueueDepthSnapshot
 
   for ($i = 1; $i -le $EventCount; $i++) {
     $body = @{ body = "latency event $i" } | ConvertTo-Json
@@ -94,7 +81,17 @@ try {
     $persisted = $null
     while ((Get-Date) -lt $deadline) {
       $pollCount += 1
-      $status = Invoke-RestMethod -Method Get -Uri "$BaseUrl/v1/event-requests/$($accepted.request_id)" -Headers @{ Authorization = "Bearer $u1Token" }
+      $status = $null
+      try {
+        $status = Invoke-RestMethod -Method Get -Uri "$BaseUrl/v1/event-requests/$($accepted.request_id)" -Headers @{ Authorization = "Bearer $u1Token" }
+      } catch {
+        $response = $_.Exception.Response
+        if ($response -and [int]$response.StatusCode -eq 404) {
+          Start-Sleep -Milliseconds 200
+          continue
+        }
+        throw
+      }
       if ($status.status -eq "persisted" -and $status.created_at) {
         $persisted = $status
         break
@@ -111,8 +108,6 @@ try {
     Add-StatSample -List $pollCounts -Value $pollCount
   }
 
-  $queueAfter = Get-QueueDepthSnapshot
-
   $acceptStats = Get-Stats -Values $acceptLatencies
   $persistStats = Get-Stats -Values $persistLatencies
   $pollStats = Get-Stats -Values $pollCounts
@@ -123,14 +118,12 @@ try {
     accept_latency = $acceptStats
     persist_latency = $persistStats
     status_poll_count = $pollStats
-    queue_depth_before = $queueBefore
-    queue_depth_after = $queueAfter
   }
 
   $result | ConvertTo-Json -Depth 5
 }
 finally {
   if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
   }
 }

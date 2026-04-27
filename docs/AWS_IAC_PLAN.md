@@ -1,7 +1,7 @@
 ﻿# AWS IaC Plan
 
-현재 로컬 `kind + Kubernetes` 검증 환경을 AWS 상의 `production-like` 환경으로 옮길 때의 기준 문서입니다.  
-목표는 단순히 "AWS에 올린다"가 아니라, 지금 프로젝트가 가진 강점인 `async intake`, `failure recovery`, `autoscaling`, `observability`, `backup / restore`를 AWS에서도 자연스럽게 이어 가는 것입니다.
+로컬 `kind + Kubernetes` 검증 환경과 AWS `production-like` 환경의 대응 관계를 정리한 문서입니다.
+목표는 단순히 "AWS에 올린다"가 아니라, 프로젝트의 핵심인 `async intake`, `failure recovery`, `autoscaling`, `observability`, `backup / restore`를 AWS에서도 자연스럽게 이어 가는 것입니다.
 
 ## 목표
 - 로컬 검증 구조를 AWS에서도 비슷한 책임 분리로 유지
@@ -23,7 +23,7 @@
 ### Compute
 - `Amazon EKS`
   - API / Worker / DLQ Replayer 실행
-  - API CPU HPA, Worker queue-depth autoscaling, Ingress, metrics 구조를 현재와 비슷하게 유지
+- API CPU HPA, Worker Kafka lag autoscaling, Ingress, metrics 구조 유지
 - `Managed Node Group`
   - 초기에는 일반 노드 그룹 하나로 시작
   - 이후 API / worker 용도 분리 가능
@@ -31,7 +31,7 @@
 ### Ingress / Networking
 - `VPC`
   - public subnet: ALB
-  - private subnet: EKS node, RDS, ElastiCache
+  - private subnet: EKS node, RDS, Kafka brokers or MSK connectivity
 - `AWS Load Balancer Controller`
   - Kubernetes `Ingress`를 ALB로 연결
 - `Application Load Balancer`
@@ -50,28 +50,28 @@
 
 ### Database
 - `Amazon RDS for PostgreSQL` 또는 `Aurora PostgreSQL`
-  - 현재 로컬의 PostgreSQL HA + pgpool을 AWS에서는 managed DB로 단순화
+  - 로컬 PostgreSQL HA + pgpool 역할을 AWS에서는 managed DB로 단순화
   - 포트폴리오 기준 첫 버전은 `RDS PostgreSQL Multi-AZ`가 설명하기 쉽습니다
   - 더 높은 확장성과 읽기 분리가 필요하면 `Aurora PostgreSQL`로 확장 가능
 
-### Queue / Cache
-- `Amazon ElastiCache for Redis`
-  - 현재 Redis ingress queue 역할 유지
-  - Multi-AZ + automatic failover 사용
-  - 로컬 Sentinel 기반 failover를 AWS managed failover로 대체
+### Event Log
+- `Amazon MSK` 또는 EKS 위의 Kafka operator
+  - Kafka ingress topic / DLQ topic 역할 유지
+  - Multi-AZ broker replication 사용
+  - 로컬 3-broker KRaft runtime을 운영형 managed Kafka runtime으로 대체
 
 ### Secrets
 - `AWS Secrets Manager`
   - DB credential
-  - Redis auth
+  - Kafka credential 또는 SASL/SCRAM secret
   - JWT secret
   - Grafana admin credential
 - EKS에서는 `External Secrets Operator` 또는 CSI driver로 주입 가능
 
 ### Observability
 - 1차안:
-  - 기존 Prometheus / Grafana를 EKS 안에 유지
-  - 현재 대시보드와 alert 흐름을 크게 바꾸지 않음
+  - Prometheus / Grafana를 EKS 안에 유지
+  - dashboard와 alert 흐름을 유지
 - 2차안:
   - `Amazon Managed Service for Prometheus`
   - `Amazon Managed Grafana`
@@ -83,11 +83,11 @@
 - `RDS automated backups`
 - 수동 snapshot
 - 필요 시 point-in-time recovery
-- Redis는 ElastiCache snapshot 옵션 사용 가능
+- Kafka topic 내구성은 replication factor, `min.insync.replicas`, producer `acks` 정책으로 관리
 
-즉 현재 수동 `backup / restore` 경험은 유지하되, AWS에서는 managed backup 전략으로 옮기는 방향입니다.
+AWS에서는 managed backup 전략을 기본값으로 둡니다.
 
-## 현재 로컬 구성과 AWS 매핑
+## 로컬 구성과 AWS 매핑
 
 | 현재 구성 | AWS 대응 |
 |---|---|
@@ -95,7 +95,7 @@
 | `ingress-nginx` | `AWS Load Balancer Controller + ALB` |
 | local self-signed TLS | `ACM + Route 53 + HTTPS ALB` |
 | PostgreSQL HA + pgpool | `RDS PostgreSQL Multi-AZ` 또는 `Aurora PostgreSQL` |
-| Redis HA + Sentinel | `ElastiCache for Redis Multi-AZ` |
+| Kafka 3-broker local KRaft runtime | `Amazon MSK` 또는 Kafka operator 기반 replicated Kafka |
 | runtime secret | `AWS Secrets Manager` |
 | local image build/load | `ECR push + EKS deploy` |
 | in-cluster Prometheus/Grafana | EKS 유지 또는 `AMP / AMG` |
@@ -108,9 +108,9 @@
 - EKS
 - ALB Ingress
 - RDS PostgreSQL Multi-AZ
-- ElastiCache Redis
+- Amazon MSK 또는 Kafka operator
 - Secrets Manager
-- 기존 Prometheus / Grafana는 EKS 안에서 유지
+- Prometheus / Grafana는 EKS 안에서 유지
 
 이 단계만으로도 충분히 "실배포 가능한 구조"로 설명할 수 있습니다.
 
@@ -135,7 +135,6 @@ infra/
    │  ├─ eks/
    │  ├─ ecr/
    │  ├─ rds_postgres/
-   │  ├─ elasticache_redis/
    │  ├─ route53_acm/
    │  └─ secrets/
    └─ README.md
@@ -165,11 +164,6 @@ infra/
 - parameter group
 - backup retention
 
-### `modules/elasticache_redis`
-- replication group
-- subnet group
-- automatic failover
-
 ### `modules/route53_acm`
 - hosted zone lookup
 - ACM certificate
@@ -177,11 +171,11 @@ infra/
 
 ### `modules/secrets`
 - JWT / Grafana / app secret
-- DB / Redis credential 참조 구조
+- DB / Kafka credential 참조 구조
 
 ## Kubernetes 쪽에서 바뀌는 점
 
-AWS로 옮긴다고 해도 앱의 핵심은 그대로 갑니다.
+AWS로 옮겨도 앱의 핵심 책임은 유지됩니다.
 - API / Worker / DLQ Replayer deployment
 - readiness / metrics
 - API HPA
@@ -189,51 +183,50 @@ AWS로 옮긴다고 해도 앱의 핵심은 그대로 갑니다.
 - Ingress 기반 노출
 
 대신 아래는 바뀝니다.
-- NodePort 중심 접근 제거
+- ALB Ingress 중심 접근 사용
 - DB endpoint는 RDS endpoint 사용
-- Redis endpoint는 ElastiCache endpoint 사용
-- 로컬 backup CronJob은 managed backup 전략으로 축소 또는 제거
+- Kafka bootstrap endpoint는 MSK 또는 Kafka operator service endpoint 사용
+- 로컬 backup CronJob 역할은 managed backup 전략으로 대체
 - TLS는 self-signed 대신 ACM 사용
 
 ## 보안 기준
 - EKS node는 private subnet 배치
-- RDS / Redis는 public access 비활성화
+- RDS / Kafka brokers는 public access 비활성화
 - ALB만 public subnet 노출
 - secret은 Kubernetes manifest에 직접 쓰지 않고 Secrets Manager에서 주입
 - Grafana / Prometheus는 ALB path로 노출하더라도 실제 운영에서는 접근 제한 필요
 
 ## 이 프로젝트에서 가장 중요한 설명 포인트
-AWS로 옮길 때 핵심은 서비스를 많이 붙이는 것이 아니라, 현재 구조를 더 운영형으로 정리하는 것입니다.
+AWS로 옮길 때 핵심은 서비스를 많이 붙이는 것이 아니라, 로컬에서 검증한 구조를 운영형 책임으로 정리하는 것입니다.
 
 즉 포인트는:
 - `kind`에서 검증한 Kubernetes 구조를 `EKS`로 확장
-- 직접 HA를 구성하던 DB/Redis를 managed service로 단순화
+- DB/Kafka를 managed service 또는 operator 기반 runtime으로 단순화
 - Ingress / TLS / secret / backup을 AWS 방식으로 치환
 - 애플리케이션 레벨의 `async intake`, `retry`, `DLQ`, `replayer`, `API HPA`, `Worker queue-depth autoscaling`, `metrics`는 그대로 유지
 
 ## 권장 최종 문장
 면접이나 문서에서 AWS IaC 방향을 설명할 때는 아래 식이 가장 자연스럽습니다.
 
-> 로컬에서는 `kind` 기반으로 장애 복구와 운영 시나리오를 검증했고, 실제 배포 단계에서는 `Terraform + EKS + RDS + ElastiCache + ALB + ACM + Secrets Manager` 조합으로 옮겨갈 수 있도록 구조를 설계했습니다.
+> 로컬에서는 `kind` 기반으로 장애 복구와 운영 시나리오를 검증했고, 실제 배포 단계에서는 `Terraform + EKS + RDS + MSK + ALB + ACM + Secrets Manager` 조합으로 옮겨갈 수 있도록 구조를 설계했습니다.
 
 ## 구현 우선순위
 실제로 IaC를 추가한다면 이 순서가 좋습니다.
 
 1. `infra/terraform` 기본 구조 생성
 2. `VPC + EKS + ECR`
-3. `RDS PostgreSQL + ElastiCache Redis`
+3. `RDS PostgreSQL + MSK`
 4. `AWS Load Balancer Controller + Ingress`
 5. `Secrets Manager` 연동
 6. observability / CI 연결
 
-## 현재 상태
-현재 저장소에는 아래 초기 Terraform 코드가 포함되어 있습니다.
+## Terraform Structure
+저장소에는 아래 Terraform 코드가 포함되어 있습니다.
 - `infra/terraform/envs/dev`
 - `infra/terraform/modules/vpc`
 - `infra/terraform/modules/eks`
 - `infra/terraform/modules/ecr`
 - `infra/terraform/modules/rds_postgres`
-- `infra/terraform/modules/elasticache_redis`
 - `infra/terraform/modules/secrets`
 - `infra/terraform/modules/route53_acm`
 

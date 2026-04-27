@@ -3,7 +3,6 @@ param(
   [string]$Namespace = "messaging-app",
   [string]$ApiDeployment = "api",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
-  [string]$RedisDeployment = "messaging-redis-node",
   [switch]$SkipReset
 )
 
@@ -42,7 +41,7 @@ function Get-HealthState() {
 }
 
 if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
 
 function Wait-Ready([int]$TimeoutSec = 180) {
@@ -88,6 +87,37 @@ function Wait-DbQueryReady([int]$TimeoutSec = 180, [int]$RequiredSuccesses = 3) 
   throw "Timed out waiting for pgpool-backed DB query readiness"
 }
 
+function Warm-ApiMembershipCache([int]$StreamId, [string]$Token, [string]$Suffix) {
+  $code = @'
+import json
+import os
+import urllib.request
+
+stream_id = os.environ["STREAM_ID"]
+token = os.environ["TOKEN"]
+suffix = os.environ["SUFFIX"]
+payload = json.dumps({"body": f"cache warmup {suffix}"}).encode("utf-8")
+request = urllib.request.Request(
+    f"http://127.0.0.1:8000/v1/streams/{stream_id}/events",
+    data=payload,
+    headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    },
+    method="POST",
+)
+with urllib.request.urlopen(request, timeout=10) as response:
+    if response.status >= 300:
+        raise SystemExit(response.status)
+'@
+  $encodedCode = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($code))
+  $podsRaw = kubectl -n $Namespace get pods -l app=$ApiDeployment -o jsonpath='{.items[*].metadata.name}'
+  $pods = @($podsRaw -split '\s+' | Where-Object { $_ })
+  foreach ($pod in $pods) {
+    kubectl -n $Namespace exec $pod -- env "TOKEN=$Token" "STREAM_ID=$StreamId" "SUFFIX=$Suffix" python -c "import base64; exec(base64.b64decode('$encodedCode'))" | Out-Null
+  }
+}
+
 try {
 Wait-Ready | Out-Null
 
@@ -99,6 +129,7 @@ $u1 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "appl
 $u2 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "application/json" -Body (@{ username = $u2Name; password = $password } | ConvertTo-Json)
 $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)).access_token
 $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "dbtest-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
+Warm-ApiMembershipCache -StreamId $stream.id -Token $u1Token -Suffix $suffix
 
 try {
   $dbRef = Get-WorkloadRef $DbDeployment
@@ -110,13 +141,12 @@ try {
   if (
     $healthDown.status -ne "degraded" `
       -or $reasons -notcontains "postgres_primary_unreachable" `
-      -or $healthDown.postgres.primary_reachable -ne $false `
-      -or $healthDown.redis.master_reachable -ne $true
+      -or $healthDown.postgres.primary_reachable -ne $false
   ) {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 
-  $accept = Invoke-RestMethod -Method Post -Uri ("$BaseUrl/v1/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="db-down-$suffix"} -ContentType "application/json" -Body (@{ body = "event while db down" } | ConvertTo-Json)
+  $accept = Invoke-RestMethod -Method Post -Uri ("$BaseUrl/v1/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ body = "event while db down" } | ConvertTo-Json)
   if ($accept.status -ne "accepted") {
     throw "Expected accepted while db down, got: $($accept | ConvertTo-Json -Compress)"
   }
@@ -161,6 +191,6 @@ finally {
 }
 finally {
   if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
   }
 }

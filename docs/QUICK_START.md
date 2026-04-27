@@ -4,6 +4,22 @@
 - Docker Desktop 또는 Docker Engine 이 실행 중이어야 합니다
 - Windows PowerShell 또는 Linux bash 기준으로 실행합니다
 
+## Local Python
+로컬 테스트와 개발은 Dockerfile / CI와 같은 Python 3.11 기준으로 맞춥니다.
+
+Windows PowerShell:
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+참고:
+- `.venv`는 `.gitignore`와 `.dockerignore`에 포함되어 있습니다.
+- 시스템 Python 3.13은 그대로 두고, 이 저장소만 `.venv`의 Python 3.11을 사용합니다.
+
 저장소에 포함된 도구:
 - `tools/kind.exe`
 - `tools/helm/windows-amd64/helm.exe`
@@ -47,15 +63,15 @@ bash scripts/quick_start_all.sh
 - `ingress-nginx` 설치
 - `metrics-server` 설치
 - application image build and kind load
-- PostgreSQL HA / Redis HA 배포
+- PostgreSQL HA / Kafka runtime 배포
 - `kube-state-metrics` 설치
 - KEDA 설치
 - application stack 배포
 - ingress readiness 확인
-- Windows PowerShell 기본 실행에서는 smoke, DB recovery, Redis recovery, HPA scaling test 실행
+- Windows PowerShell 기본 실행에서는 smoke, DB recovery, HPA scaling test 실행
 - Linux bash 기본 실행에서는 smoke test 실행
 
-DB / Redis 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
+DB 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
 
 ```bash
 RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
@@ -82,12 +98,8 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | Linux smoke test | `scripts/smoke_test.sh` | about 15-30 sec |
 | DB recovery test | `scripts/test_db_down.ps1` | about 1-2 min |
 | Linux DB recovery test | `scripts/test_db_down.sh` | about 1-2 min |
-| Redis complete outage test | `scripts/test_redis_down.ps1` | about 2-3 min |
-| Linux Redis complete outage test | `scripts/test_redis_down.sh` | about 2-3 min |
-| Redis single-node failover test | `scripts/test_redis_failover.ps1` | about 2-3 min |
 | HPA scaling test | `scripts/test_hpa_scaling.ps1` | about 30-45 sec |
 | DLQ flow test | `scripts/test_dlq_flow.ps1` | about 1-2 min |
-| Failover + alert test | `scripts/test_failover_alerts.ps1` | about 4-5 min |
 | k6 load test | `scripts/test_k6_load.ps1` | about 1 min |
 
 ## Optional
@@ -99,11 +111,25 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1 -IncludeFai
 
 추가로 검증하는 항목:
 - Prometheus alert firing for DB outage
-- Prometheus alert firing for Redis outage
+- Prometheus alert firing for Kafka outage
 - alert resolution after recovery
 
 ## Separate Load Test
-k6 performance test 는 별도로 실행합니다.
+Kafka performance suite 는 기능 검증과 분리해서 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
+```
+
+이 suite는 아래 순서로 실행됩니다.
+
+- Kubernetes runtime 상태 확인
+- Kafka async persistence latency 측정
+- k6 Kafka intake load 측정
+- HPA / metrics sanity 확인
+- `results/kafka-performance/latest.txt`에 최신 결과 저장
+
+개별 k6 test 만 실행하려면 아래 명령을 사용합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
@@ -111,7 +137,8 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 
 참고:
 - 이 테스트는 health check 가 아니라 performance test 입니다
-- 현재 저장소 상태에서는 실행 경로가 정상이며, latency threshold는 성능 개선 과제로 추적합니다
+- `test_k6_load.ps1` 기본값은 `single500` profile, 100 VU, 10초입니다
+- `run_kafka_performance_suite.ps1` 기본값은 100 VU, 30초입니다
 - k6는 backlog와 latency spike를 만들 수 있으므로 장애 검증 뒤, reset 후 마지막에 실행합니다.
 
 ## Recommended Test Order
@@ -125,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 
 - correctness / 장애 정책 검증을 먼저 수행합니다.
 - k6 부하 테스트는 reset 후 맨 마지막에 수행합니다.
-- k6 이후 final reset을 수행해 queue / Redis key / DB 상태를 정리합니다.
+- k6 이후 final reset을 수행해 Kafka backlog / DB 상태를 정리합니다.
 
 수동 실행 순서:
 
@@ -133,9 +160,8 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/test_redis_down.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
-powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
+powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 ```
 
@@ -152,18 +178,6 @@ DB outage and recovery:
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1
 ```
 
-Redis complete outage and recovery:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test_redis_down.ps1
-```
-
-Redis single-node failover:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test_redis_failover.ps1
-```
-
 Kubernetes autoscaling:
 
 ```powershell
@@ -172,18 +186,12 @@ powershell -ExecutionPolicy Bypass -File scripts/test_hpa_scaling.ps1
 
 참고:
 - API는 CPU HPA를 사용합니다.
-- Worker는 KEDA queue depth scaling을 사용합니다.
+- Worker는 KEDA Kafka lag scaling을 사용합니다.
 
 DLQ flow:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_dlq_flow.ps1
-```
-
-Failover and alert validation:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test_failover_alerts.ps1
 ```
 
 ## GitOps Quick Start
@@ -203,7 +211,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
 
 이 흐름은 아래를 수행합니다.
 - local cluster bootstrap
-- HA PostgreSQL / Redis 설치
+- HA PostgreSQL / Kafka runtime 설치
 - Argo CD 설치
 - `k8s/gitops/overlays/local-ha` 를 가리키는 `Application` 생성
 - readiness 확인과 smoke test 실행

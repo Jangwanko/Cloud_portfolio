@@ -110,11 +110,11 @@
       },
       "targets": [
         {
-          "expr": "messaging_health_status{job=\"api\",component=\"redis\"}",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
           "refId": "A"
         }
       ],
-      "title": "Redis Health",
+      "title": "Kafka Health",
       "type": "stat"
     },
     {
@@ -166,11 +166,11 @@
       },
       "targets": [
         {
-          "expr": "messaging_redis_connected_replicas{job=\"api\"}",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
           "refId": "A"
         }
       ],
-      "title": "Redis Connected Replicas",
+      "title": "Kafka Bootstrap Health",
       "type": "stat"
     },
     {
@@ -351,12 +351,12 @@
       "id": 8,
       "targets": [
         {
-          "expr": "sum by (queue) (messaging_queue_depth)",
+          "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
       ],
-      "title": "Queue Depth By Queue",
+      "title": "Worker Throughput By Result",
       "type": "timeseries"
     },
     {
@@ -381,22 +381,22 @@
       "id": 9,
       "targets": [
         {
-          "expr": "messaging_redis_connected_replicas{job=\"api\"}",
-          "legendFormat": "connected_replicas",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+          "legendFormat": "bootstrap_available",
           "refId": "A"
         },
         {
-          "expr": "messaging_redis_sentinel_master_ok{job=\"api\"}",
-          "legendFormat": "sentinel_master_ok",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+          "legendFormat": "producer_append_path",
           "refId": "B"
         },
         {
-          "expr": "messaging_redis_sentinel_quorum_ok{job=\"api\"}",
-          "legendFormat": "sentinel_quorum_ok",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+          "legendFormat": "consumer_read_path",
           "refId": "C"
         }
       ],
-      "title": "Redis Topology Signals",
+      "title": "Kafka Health Signals",
       "type": "timeseries"
     },
     {
@@ -421,12 +421,12 @@
       "id": 10,
       "targets": [
         {
-          "expr": "messaging_redis_master_link_status{job=\"api\"}",
-          "legendFormat": "{{replica}}",
+          "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
+          "legendFormat": "worker_consumer_group",
           "refId": "A"
         }
       ],
-      "title": "Redis Replica Link Status",
+      "title": "Kafka Worker Signal",
       "type": "timeseries"
     },
     {
@@ -564,7 +564,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Redis enqueue.",
+      "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Kafka publish.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -665,7 +665,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "Time spent waiting in Redis queue before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
+      "description": "Time spent waiting in Kafka topic before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -694,7 +694,7 @@
           "refId": "B"
         }
       ],
-      "title": "Redis Queue Wait Time",
+      "title": "Kafka topic Wait Time",
       "type": "timeseries"
     },
     {

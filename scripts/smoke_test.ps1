@@ -2,14 +2,13 @@ param(
   [string]$BaseUrl = "http://localhost",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
-  [string]$RedisDeployment = "messaging-redis-node",
   [switch]$SkipReset
 )
 
 $ErrorActionPreference = "Stop"
 
 if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
 
 try {
@@ -67,6 +66,6 @@ Write-Host "health=$($health.status) event_count=$($events.Count) unread=$($unre
 }
 finally {
   if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment -RedisDeployment $RedisDeployment
+    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
   }
 }

@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: messaging-app
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: kafka
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+    - name: controller
+      port: 9093
+      targetPort: 9093
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: messaging-app
+spec:
+  selector:
+    app: kafka
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: messaging-app
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: kafka
+          image: apache/kafka:3.7.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              ordinal="${HOSTNAME##*-}"
+              node_id="$((ordinal + 1))"
+              export KAFKA_NODE_ID="$node_id"
+              export KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://${HOSTNAME}.kafka-headless.messaging-app.svc.cluster.local:9092"
+              exec /etc/kafka/docker/run
+          ports:
+            - name: broker
+              containerPort: 9092
+            - name: controller
+              containerPort: 9093
+          env:
+            - name: CLUSTER_ID
+              value: "MkU3OEVBNTcwNTJENDM2Qk"
+            - name: KAFKA_PROCESS_ROLES
+              value: "controller,broker"
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: "1@kafka-0.kafka-headless.messaging-app.svc.cluster.local:9093,2@kafka-1.kafka-headless.messaging-app.svc.cluster.local:9093,3@kafka-2.kafka-headless.messaging-app.svc.cluster.local:9093"
+            - name: KAFKA_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
+            - name: KAFKA_NUM_PARTITIONS
+              value: "8"
+            - name: KAFKA_LOG_DIRS
+              value: "/tmp/kafka-logs"
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_MIN_INSYNC_REPLICAS
+              value: "2"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "2"
+            - name: KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS
+              value: "0"
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "300m"
+              memory: "768Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1536Mi"
+          volumeMounts:
+            - name: data
+              mountPath: /tmp/kafka-logs
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topic-bootstrap
+  namespace: messaging-app
+spec:
+  backoffLimit: 8
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: topic-bootstrap
+          image: apache/kafka:3.7.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              set -eu
+              bootstrap="kafka.messaging-app.svc.cluster.local:9092"
+              until /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --list >/dev/null 2>&1; do
+                sleep 3
+              done
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress --partitions 8 --replication-factor 3 --config min.insync.replicas=2
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress-dlq --partitions 8 --replication-factor 3 --config min.insync.replicas=2

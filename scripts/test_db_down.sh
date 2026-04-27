@@ -132,6 +132,29 @@ print(json.dumps({"token": token, "stream_id": stream["id"], "suffix": suffix}))
 PY
 )"
 
+for pod in $(kubectl -n "$NAMESPACE" get pods -l "app=$API_DEPLOYMENT" -o jsonpath='{.items[*].metadata.name}'); do
+  kubectl -n "$NAMESPACE" exec "$pod" -- env "SETUP_JSON=$setup_json" python - <<'PY' >/dev/null
+import json
+import os
+import urllib.request
+
+setup = json.loads(os.environ["SETUP_JSON"])
+payload = json.dumps({"body": f"cache warmup {setup['suffix']}"}).encode()
+req = urllib.request.Request(
+    f"http://127.0.0.1:8000/v1/streams/{setup['stream_id']}/events",
+    data=payload,
+    headers={
+        "Authorization": f"Bearer {setup['token']}",
+        "Content-Type": "application/json",
+    },
+    method="POST",
+)
+with urllib.request.urlopen(req, timeout=10) as res:
+    if res.status >= 300:
+        raise SystemExit(res.status)
+PY
+done
+
 kubectl -n "$NAMESPACE" scale "$db_ref" --replicas=0 >/dev/null
 sleep 4
 
@@ -144,13 +167,11 @@ import urllib.request
 base_url = sys.argv[1].rstrip("/")
 setup = json.loads(sys.argv[2])
 
-def request(method, path, body=None, token=None, idempotency_key=None):
+def request(method, path, body=None, token=None):
     data = json.dumps(body).encode() if body is not None else None
     headers = {"Content-Type": "application/json"} if body is not None else {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    if idempotency_key:
-        headers["X-Idempotency-Key"] = idempotency_key
     req = urllib.request.Request(f"{base_url}{path}", data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=5) as res:
@@ -168,15 +189,11 @@ if "postgres_primary_unreachable" not in reasons:
     raise SystemExit(f"Expected postgres_primary_unreachable, got: {json.dumps(health, separators=(',', ':'))}")
 if health.get("postgres", {}).get("primary_reachable") is not False:
     raise SystemExit(f"Expected postgres.primary_reachable=false, got: {json.dumps(health, separators=(',', ':'))}")
-if health.get("redis", {}).get("master_reachable") is not True:
-    raise SystemExit(f"Expected redis.master_reachable=true, got: {json.dumps(health, separators=(',', ':'))}")
-
 status, accepted = request(
     "POST",
     f"/v1/streams/{setup['stream_id']}/events",
     {"body": "event while db down"},
     token=setup["token"],
-    idempotency_key=f"db-down-{setup['suffix']}",
 )
 if status >= 300 or accepted.get("status") != "accepted":
     raise SystemExit(f"Expected accepted during DB down, got HTTP {status}: {json.dumps(accepted, separators=(',', ':'))}")

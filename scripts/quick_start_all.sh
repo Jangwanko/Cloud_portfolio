@@ -14,7 +14,6 @@ RUN_FAILURE_TESTS="${RUN_FAILURE_TESTS:-false}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KIND_CONFIG="$ROOT_DIR/k8s/kind-config.yaml"
 PG_VALUES="$ROOT_DIR/k8s/values/postgresql-ha-values.yaml"
-REDIS_VALUES="$ROOT_DIR/k8s/values/redis-ha-values.yaml"
 APP_MANIFEST="$ROOT_DIR/k8s/app/manifests-ha.yaml"
 METRICS_SERVER_MANIFEST="$ROOT_DIR/k8s/metrics-server-components.yaml"
 INGRESS_NGINX_MANIFEST="https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml"
@@ -224,9 +223,8 @@ if [[ ! -d "$ROOT_DIR/tools/helm-cache/repository" ]]; then
 fi
 
 PG_CHART="$(helm_chart_source 'postgresql-ha-*.tgz' 'bitnami/postgresql-ha')"
-REDIS_CHART="$(helm_chart_source 'redis-*.tgz' 'bitnami/redis')"
 
-if [[ "$PG_CHART" == bitnami/* || "$REDIS_CHART" == bitnami/* ]]; then
+if [[ "$PG_CHART" == bitnami/* ]]; then
   helm repo add bitnami https://charts.bitnami.com/bitnami >/dev/null 2>&1 || true
   helm repo update
 fi
@@ -237,11 +235,6 @@ helm upgrade --install messaging-postgresql-ha "$PG_CHART" \
   --wait --timeout 15m
 
 grant_pg_monitor
-
-helm upgrade --install messaging-redis "$REDIS_CHART" \
-  -n "$NAMESPACE" \
-  -f "$REDIS_VALUES" \
-  --wait --timeout 15m
 
 log "Installing kube-state-metrics"
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1 || true
@@ -259,6 +252,11 @@ helm upgrade --install keda kedacore/keda \
   -n keda \
   --wait --timeout 10m
 wait_deployment keda-operator keda
+
+log "Applying Kafka runtime"
+kubectl apply -f "$ROOT_DIR/k8s/gitops/base/kafka-ha.yaml"
+kubectl rollout status statefulset/kafka -n "$NAMESPACE" --timeout=600s
+kubectl wait --for=condition=complete job/kafka-topic-bootstrap -n "$NAMESPACE" --timeout=300s
 
 log "Applying application manifests"
 kubectl apply -f "$APP_MANIFEST"
@@ -281,9 +279,6 @@ fi
 if [[ "$RUN_FAILURE_TESTS" == "true" ]]; then
   log "Running DB outage test"
   BASE_URL="$BASE_URL" NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/scripts/test_db_down.sh"
-
-  log "Running Redis total outage test"
-  BASE_URL="$BASE_URL" NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/scripts/test_redis_down.sh"
 fi
 
 log "Deployment summary"

@@ -1,4 +1,4 @@
-import json
+import time
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -7,9 +7,8 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
+from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job
 from portfolio.metrics import observe_api_stage
-from portfolio.queues import ingress_partition_queue
-from portfolio.redis_client import get_redis, reconnect_redis
 from portfolio.schemas import (
     EventCreate,
     LoginRequest,
@@ -17,34 +16,44 @@ from portfolio.schemas import (
     StreamCreate,
     UserCreate,
 )
+from portfolio.state_store import (
+    clear_fallback_idem,
+    delete_request_status,
+    fallback_idem_key,
+    get_fallback_idem,
+    load_request_status,
+    request_status_key,
+    set_fallback_idem,
+    store_request_status,
+)
 
 router = APIRouter(prefix="/v1", tags=["events"])
 
+_membership_cache: dict[tuple[int, int], float] = {}
+
 
 def _request_status_key(request_id: str) -> str:
-    return f"message_request_status:{request_id}"
+    return request_status_key(request_id)
 
 
 def _fallback_idem_key(route: str, idem_key: str) -> str:
-    return f"message_request_idem:{route}:{idem_key}"
+    return fallback_idem_key(route, idem_key)
 
 
-def _redis_client():
-    try:
-        return get_redis()
-    except Exception:
-        return reconnect_redis()
+def _queue_unavailable_detail() -> str:
+    return "Kafka unavailable"
+
+
+def _state_unavailable_detail() -> str:
+    return "PostgreSQL state store unavailable"
 
 
 def _store_request_status(request_id: str, payload: dict) -> None:
-    _redis_client().set(_request_status_key(request_id), json.dumps(payload))
+    store_request_status(request_id, payload)
 
 
 def _load_request_status(request_id: str) -> dict | None:
-    raw = _redis_client().get(_request_status_key(request_id))
-    if not raw:
-        return None
-    return json.loads(raw)
+    return load_request_status(request_id)
 
 
 def _externalize_request_status(payload: dict) -> dict:
@@ -59,30 +68,23 @@ def _externalize_request_status(payload: dict) -> dict:
 
 
 def _set_fallback_idem(route: str, idem_key: str, request_id: str) -> bool:
-    return bool(_redis_client().set(_fallback_idem_key(route, idem_key), request_id, nx=True))
+    return set_fallback_idem(route, idem_key, request_id)
 
 
 def _get_fallback_idem(route: str, idem_key: str) -> str | None:
-    return _redis_client().get(_fallback_idem_key(route, idem_key))
+    return get_fallback_idem(route, idem_key)
 
 
 def _clear_fallback_idem(route: str, idem_key: str, request_id: str | None = None) -> None:
-    redis_client = _redis_client()
-    key = _fallback_idem_key(route, idem_key)
-    if request_id is None:
-        redis_client.delete(key)
-        return
-
-    if redis_client.get(key) == request_id:
-        redis_client.delete(key)
+    clear_fallback_idem(route, idem_key, request_id)
 
 
 def _delete_request_status(request_id: str) -> None:
-    _redis_client().delete(_request_status_key(request_id))
+    delete_request_status(request_id)
 
 
 def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict | None:
-    with observe_api_stage("redis_idempotency"):
+    with observe_api_stage("postgres_idempotency"):
         # The common path is a new idempotency key, so claim first and only
         # do extra lookups when the key already exists.
         if _set_fallback_idem(route, idem_key, request_id):
@@ -108,32 +110,39 @@ def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict |
 
 
 def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
-    with observe_api_stage("redis_enqueue"):
-        redis_client = _redis_client()
-        queue_name = ingress_partition_queue(int(job_payload["room_id"]))
-        with redis_client.pipeline() as pipe:
-            pipe.set(_request_status_key(request_id), json.dumps(request_payload))
-            pipe.lpush(queue_name, json.dumps(job_payload))
-            pipe.execute()
-
-
-def _next_room_seq(room_id: int) -> int:
-    with observe_api_stage("redis_sequence"):
-        key = f"{settings.room_seq_key_prefix}:{room_id}"
-        return int(_redis_client().incr(key))
+    with observe_api_stage("kafka_publish"):
+        publish_ingress_job(job_payload["room_id"], job_payload)
 
 
 def _room_members_key(room_id: int) -> str:
     return f"room_members:{room_id}"
 
 
+def _membership_cache_key(room_id: int, user_id: int) -> tuple[int, int]:
+    return (int(room_id), int(user_id))
+
+
+def _cache_membership(room_id: int, user_id: int) -> None:
+    _membership_cache[_membership_cache_key(room_id, user_id)] = (
+        time.monotonic() + settings.membership_cache_ttl_seconds
+    )
+
+
+def _is_membership_cached(room_id: int, user_id: int) -> bool:
+    expires_at = _membership_cache.get(_membership_cache_key(room_id, user_id))
+    if expires_at is None:
+        return False
+    if expires_at < time.monotonic():
+        _membership_cache.pop(_membership_cache_key(room_id, user_id), None)
+        return False
+    return True
+
+
 def _cache_room_members(room_id: int, member_ids: list[int]) -> None:
     if not member_ids:
         return
-    redis_client = _redis_client()
-    key = _room_members_key(room_id)
-    redis_client.delete(key)
-    redis_client.sadd(key, *[str(member_id) for member_id in member_ids])
+    for member_id in member_ids:
+        _cache_membership(room_id, int(member_id))
 
 
 def _ensure_room_exists(cur, room_id: int) -> None:
@@ -154,11 +163,8 @@ def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
 
 def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
     with observe_api_stage("membership_check"):
-        try:
-            if _redis_client().sismember(_room_members_key(room_id), str(user_id)):
-                return
-        except Exception:
-            pass
+        if _is_membership_cached(room_id, user_id):
+            return
 
         try:
             with get_conn() as conn:
@@ -268,17 +274,7 @@ def create_event(
             if existing_status is not None:
                 return existing_status
         except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=503, detail="Redis unavailable") from exc
-
-    try:
-        room_seq = _next_room_seq(stream_id)
-    except Exception as exc:  # noqa: BLE001
-        if x_idempotency_key:
-            try:
-                _clear_fallback_idem(route, x_idempotency_key, request_id)
-            except Exception:
-                pass
-        raise HTTPException(status_code=503, detail="Redis unavailable") from exc
+            raise HTTPException(status_code=503, detail=_state_unavailable_detail()) from exc
 
     queued_at = datetime.now(timezone.utc).isoformat()
     accepted_response = {
@@ -286,7 +282,6 @@ def create_event(
         "status": "accepted",
         "persistence": "queued",
         "stream_id": stream_id,
-        "stream_seq": room_seq,
         "user_id": actor_user_id,
         "body": payload.body,
         "queued_at": queued_at,
@@ -301,7 +296,7 @@ def create_event(
                 "room_id": stream_id,
                 "user_id": actor_user_id,
                 "body": payload.body,
-                "room_seq": room_seq,
+                "room_seq": None,
                 "x_idempotency_key": x_idempotency_key,
                 "queued_at": queued_at,
                 "retry_count": 0,
@@ -318,7 +313,7 @@ def create_event(
             _delete_request_status(request_id)
         except Exception:
             pass
-        raise HTTPException(status_code=503, detail="Redis unavailable") from exc
+        raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
     return accepted_response
 
 
@@ -338,17 +333,10 @@ def get_ingress_dlq(
     limit: int = Query(default=20, ge=1, le=200),
     current_user: dict = Depends(get_current_user),
 ):
-    redis_client = _redis_client()
-    raw_items = redis_client.lrange(settings.ingress_dlq, 0, limit - 1)
-    items = []
-    for raw in raw_items:
-        try:
-            items.append(json.loads(raw))
-        except Exception:
-            items.append({"raw": raw})
-    update_queue_depth(settings.ingress_dlq)
+    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
     return {
-        "queue": settings.ingress_dlq,
+        "queue_backend": "kafka",
+        "topic": settings.kafka_dlq_topic,
         "count": len(items),
         "items": items,
     }

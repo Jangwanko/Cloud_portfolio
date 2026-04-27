@@ -62,7 +62,7 @@ kubectl get pvc -n messaging-app
 - 필요하면 이후 일 단위 또는 더 짧은 주기로 쉽게 변경할 수 있습니다.
 
 ## PostgreSQL Restore
-기존 logical backup을 현재 클러스터 DB에 다시 적용할 수 있습니다.
+logical backup을 현재 클러스터 DB에 적용할 수 있습니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
@@ -81,7 +81,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 
 주의:
 - 기본값으로는 실행하지 않습니다. 반드시 `-Force`가 필요합니다.
-- `-ResetSchema`를 주면 기존 `public` schema를 비운 뒤 backup SQL을 다시 적용합니다.
+- `-ResetSchema`를 주면 `public` schema를 비운 뒤 backup SQL을 적용합니다.
 - 현재 목적은 disposable local cluster 기준의 운영 흐름 검증입니다.
 
 ## Demo Access
@@ -130,7 +130,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - local: Kubernetes secret
 - staging / prod: 외부 secret manager 또는 배포 파이프라인 연동 secret 관리
 
-즉 현재는 “하드코딩 제거와 실행 경로 분리”까지 적용된 상태이고, 이후 실서비스 단계에서 secret 저장소를 외부화하는 방향으로 확장할 수 있습니다.
+로컬 검증에서는 Kubernetes Secret을 사용하고, 운영형 환경에서는 외부 secret manager로 확장할 수 있습니다.
 
 ## TLS Position
 현재 ingress TLS는 local self-signed certificate 기반입니다.
@@ -154,45 +154,37 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 주 1회 backup `CronJob`: HA 매니페스트에 포함 및 클러스터 적용 완료
 - 운영 UI 접근 제한: 로컬 검증 기준으로 접근 가능하게 유지
 
-## Redis Operational Scenarios
-현재 Redis 관련 운영 검증은 두 가지로 나눠서 봅니다.
+## Kafka Operational Scenarios
+현재 event intake는 Kafka append 성공을 write-path 수락 기준으로 봅니다.
 
-- complete outage
-  - `scripts/test_redis_down.ps1`
-  - 전체 Redis 접근 불가 시 event intake 실패와 복구 후 재수락을 확인합니다.
-- single-node failover
-  - `scripts/test_redis_failover.ps1`
-  - Redis pod 하나 재시작 후 readiness 복구와 event intake 유지 여부를 확인합니다.
+- Kafka bootstrap 또는 topic append가 불가능하면 API는 새 write request를 fail-fast로 거절합니다.
+- Worker는 Kafka consumer group으로 ingress topic을 처리하고, 재시도 한계를 넘은 event는 DLQ topic으로 이동합니다.
+- Worker autoscaling은 KEDA Kafka lag 기준으로 동작합니다.
 
-이 구분을 두는 이유:
-- Redis HA + Sentinel 환경에서는 단일 pod 중단이 곧바로 전체 Redis down과 같지 않습니다.
-- 따라서 outage와 failover를 별도 운영 시나리오로 보는 편이 더 정확합니다.
-
-## Redis persistence 정책
-- Redis는 accepted write를 잠시 받는 `intake buffer` 역할을 합니다.
+## Kafka persistence 정책
+- Kafka는 accepted write를 순서 있는 commit log로 보관합니다.
 - 최종 영속 저장소는 PostgreSQL입니다.
-- Redis는 `AOF everysec`과 `RDB snapshot`을 함께 사용합니다.
-- 이 정책은 성능과 내구성 사이의 균형을 위한 선택이며, PostgreSQL 영속화 이전 구간에서 최악의 경우 약 1초 내외 손실 가능성을 허용합니다.
+- 같은 stream은 같은 Kafka key를 사용해야 하며, 같은 key는 같은 partition에 들어가므로 partition 내부 순서가 유지됩니다.
+- PostgreSQL 영속화 이전 구간의 내구성은 Kafka topic replication factor와 `acks` 정책에 의해 결정됩니다.
 
-## Redis fail-fast 정책
-- writable master unreachable이면 Redis total outage로 봅니다.
-- Sentinel이 master를 결정하지 못하면 Redis total outage로 봅니다.
-- Redis total outage 동안에는 API가 새 write request를 계속 받지 않고 fail-fast로 전환합니다.
+## Kafka fail-fast 정책
+- Kafka bootstrap unreachable이면 write path failure로 봅니다.
+- Kafka topic append 실패도 write path failure로 봅니다.
+- Kafka 장애 동안에는 API가 새 write request를 계속 받지 않고 fail-fast 상태로 응답합니다.
 - 즉, enqueue 불가 상태를 soft failure가 아니라 write path failure로 취급합니다.
 
 ## readiness / alert 운영 기준
 - readiness는 `ready`, `degraded`, `not_ready`를 즉시 반영합니다.
 - replica count와 standby count는 degraded 판단 기준으로 사용합니다.
-- Redis degraded는 replica 부족, replica link 불안정, Sentinel quorum 불안정을 포함합니다.
 - PostgreSQL degraded는 primary write 불가, standby 부족, replication state 불안정, replication lag 상승을 포함합니다.
-- Redis enqueue가 가능하면 PostgreSQL primary loss 중에도 API readiness는 `not_ready`가 아니라 `degraded`입니다.
+- PostgreSQL primary loss 중에도 Kafka append path가 살아 있으면 API readiness는 `degraded`입니다.
 - 로컬 데모에서는 async streaming standby를 정상 ready 상태로 봅니다.
 - `30초`는 alert 승격 유예이며 readiness 지연에는 사용하지 않습니다.
-- Redis total outage와 PostgreSQL primary loss는 즉시 critical로 봅니다.
+- Kafka outage와 PostgreSQL primary loss는 즉시 critical로 봅니다.
 
 자세한 상태 모델과 응답 예시는 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)에서 함께 관리합니다.
 
-## 운영 확장 과제
+## 운영 확장 포인트
 - 운영 UI 접근 정책 강화
 - secret 외부화 방향 정리
 - alert / incident runbook 보강

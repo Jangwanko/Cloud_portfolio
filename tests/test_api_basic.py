@@ -1,13 +1,13 @@
 """
 Unit tests for small pure helpers.
 
-These tests intentionally avoid live PostgreSQL and Redis dependencies so they
+These tests intentionally avoid live PostgreSQL and Kafka dependencies so they
 can run as a fast compile/import sanity check.
 """
 
 
 class TestRequestStatusKey:
-    """Redis key generation helpers."""
+    """Request key generation helpers."""
 
     def test_request_status_key_format(self):
         from portfolio.api import _request_status_key
@@ -92,7 +92,8 @@ class TestConfig:
 
         assert settings is not None
 
-    def test_queues_module_has_ingress_queue(self):
-        from portfolio import queues
+    def test_kafka_settings_exist(self):
+        from portfolio.config import settings
 
-        assert hasattr(queues, "ingress_partition_queue")
+        assert settings.kafka_ingress_topic
+        assert settings.kafka_dlq_topic

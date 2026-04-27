@@ -4,7 +4,6 @@ param(
   [string]$BaseUrl = "http://localhost",
   [string]$TlsBaseUrl = "https://localhost",
   [string]$PrometheusUrl = "http://localhost:9090",
-  [switch]$IncludeFailoverAlerts,
   [switch]$KeepPortForwards
 )
 
@@ -112,13 +111,6 @@ function Assert-LocalPorts {
       Fail-Friendly "Preflight check failed: local port $port is already in use.`nFree the port and rerun this script."
     }
     Write-CheckOk "Port $port is available"
-  }
-
-  if ($IncludeFailoverAlerts) {
-    if (-not (Test-PortAvailable -Port 9090)) {
-      Fail-Friendly "Preflight check failed: local port 9090 is already in use.`nFree the port and rerun with -IncludeFailoverAlerts."
-    }
-    Write-CheckOk "Port 9090 is available"
   }
 }
 
@@ -296,7 +288,7 @@ try {
     & $resolvedKind load docker-image messaging-portfolio:local --name $ClusterName | Out-Host
   }
 
-  Invoke-Step "Installing HA PostgreSQL and Redis" {
+  Invoke-Step "Installing HA PostgreSQL" {
     & "$PSScriptRoot/../k8s/scripts/install-ha.ps1" -Namespace $Namespace
   }
 
@@ -306,6 +298,12 @@ try {
 
   Invoke-Step "Installing KEDA" {
     & "$PSScriptRoot/../k8s/scripts/install-keda.ps1"
+  }
+
+  Invoke-Step "Applying Kafka runtime" {
+    kubectl apply -f k8s/gitops/base/kafka-ha.yaml | Out-Host
+    kubectl rollout status statefulset/kafka -n $Namespace --timeout=600s | Out-Host
+    kubectl wait --for=condition=complete job/kafka-topic-bootstrap -n $Namespace --timeout=300s | Out-Host
   }
 
   Invoke-Step "Applying application manifests" {
@@ -335,8 +333,7 @@ try {
     & "$PSScriptRoot/smoke_test.ps1" `
       -BaseUrl $BaseUrl `
       -Namespace $Namespace `
-      -DbDeployment "messaging-postgresql-ha-postgresql" `
-      -RedisDeployment "messaging-redis-node"
+      -DbDeployment "messaging-postgresql-ha-postgresql"
   }
 
   Invoke-Step "Running DB recovery test" {
@@ -344,16 +341,7 @@ try {
       -BaseUrl $BaseUrl `
       -Namespace $Namespace `
       -ApiDeployment "api" `
-      -DbDeployment "messaging-postgresql-ha-postgresql" `
-      -RedisDeployment "messaging-redis-node"
-  }
-
-  Invoke-Step "Running Redis recovery test" {
-    & "$PSScriptRoot/test_redis_down.ps1" `
-      -BaseUrl $BaseUrl `
-      -Namespace $Namespace `
-      -DbDeployment "messaging-postgresql-ha-postgresql" `
-      -RedisDeployment "messaging-redis-node"
+      -DbDeployment "messaging-postgresql-ha-postgresql"
   }
 
   Invoke-Step "Running HPA scaling test" {
@@ -363,23 +351,6 @@ try {
       -HpaName "api-hpa"
   }
 
-  if ($IncludeFailoverAlerts) {
-    Invoke-Step "Starting Prometheus port-forward" {
-      if (-not (Test-HttpOk -Url "$PrometheusUrl/-/ready")) {
-        $prometheusPortForwardProcess = Start-PortForward -ServiceName "prometheus" -LocalPort 9090 -RemotePort 9090
-      }
-    }
-
-    Invoke-Step "Running failover alert test" {
-      & "$PSScriptRoot/test_failover_alerts.ps1" `
-        -BaseUrl $BaseUrl `
-        -PrometheusUrl $PrometheusUrl `
-        -Namespace $Namespace `
-        -DbDeployment "messaging-postgresql-ha-postgresql" `
-        -RedisDeployment "messaging-redis-node"
-    }
-  }
-
   Write-Host ""
   Write-Host "Quick Start all-in-one run completed successfully."
   Write-Host "API URL: $BaseUrl"
@@ -387,9 +358,6 @@ try {
   Write-Host "Grafana login: admin / 1q2w3e4r"
   Write-Host "Prometheus URL: http://localhost/prometheus"
   Write-Host "TLS ingress is also available from $TlsBaseUrl for the same paths."
-  if ($IncludeFailoverAlerts) {
-    Write-Host "Prometheus alert API URL: $PrometheusUrl"
-  }
   Write-Host "k6 load tests remain separate: powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1"
 }
 catch {

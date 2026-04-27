@@ -1,14 +1,14 @@
 groups:
   - name: messaging-critical
     rules:
-      - alert: MessagingRedisDown
-        expr: messaging_health_status{job="api",component="redis"} == 0
+      - alert: MessagingKafkaDown
+        expr: messaging_health_status{job="api",component="kafka"} == 0
         labels:
           severity: critical
           service: messaging
         annotations:
-          summary: "Redis total outage"
-          description: "Writable Redis master is unavailable or Sentinel cannot resolve a writable master, so intake must fail fast."
+          summary: "Kafka unavailable"
+          description: "Kafka bootstrap is unavailable, so event intake cannot append to the replicated event log."
 
       - alert: MessagingDbDown
         expr: messaging_health_status{job="api",component="db"} == 0
@@ -17,7 +17,7 @@ groups:
           service: messaging
         annotations:
           summary: "PostgreSQL primary unavailable"
-          description: "Writable PostgreSQL primary is unavailable. Redis intake may continue in degraded mode, but persistence is blocked until PostgreSQL recovers."
+          description: "Writable PostgreSQL primary is unavailable. Kafka intake may continue if the broker is reachable, but persistence is blocked until PostgreSQL recovers."
 
       - alert: MessagingApiHigh5xxRate
         expr: |
@@ -48,46 +48,8 @@ groups:
           summary: "API p95 latency critical"
           description: "API p95 latency is above 4 seconds for 5 minutes."
 
-      - alert: MessagingIngressQueueBacklogCritical
-        expr: sum(messaging_queue_depth{queue=~"message_ingress:.*"}) > 5000
-        for: 5m
-        labels:
-          severity: critical
-          service: messaging
-        annotations:
-          summary: "Ingress queue backlog critical"
-          description: "Ingress queue depth is above 5000 for 5 minutes."
-
-      - alert: MessagingDlqBacklogCritical
-        expr: messaging_queue_depth{queue="message_ingress_dlq"} > 500
-        for: 10m
-        labels:
-          severity: critical
-          service: messaging
-        annotations:
-          summary: "DLQ backlog critical"
-          description: "DLQ depth is above 500 for 10 minutes."
-
   - name: messaging-warning
     rules:
-      - alert: MessagingRedisDegraded
-        expr: |
-          (
-            messaging_redis_connected_replicas{job="api"} <= 1
-            or min(messaging_redis_master_link_status{job="api"}) < 1
-            or (
-              messaging_redis_sentinel_quorum_ok{job="api"} == 0
-              and messaging_redis_sentinel_master_ok{job="api"} == 1
-            )
-          )
-        for: 30s
-        labels:
-          severity: warning
-          service: messaging
-        annotations:
-          summary: "Redis topology degraded"
-          description: "Redis remains writable but replica count, replica links, or Sentinel quorum are below the ready-state expectation."
-
       - alert: MessagingPostgresDegraded
         expr: |
           (
@@ -112,26 +74,6 @@ groups:
         annotations:
           summary: "Worker unhealthy"
           description: "Worker health status is down for over 2 minutes."
-
-      - alert: MessagingIngressQueueBacklogHigh
-        expr: sum(messaging_queue_depth{queue=~"message_ingress:.*"}) > 1000
-        for: 10m
-        labels:
-          severity: warning
-          service: messaging
-        annotations:
-          summary: "Ingress queue backlog high"
-          description: "Ingress queue depth is above 1000 for 10 minutes."
-
-      - alert: MessagingDlqBacklogGrowing
-        expr: (max_over_time(messaging_queue_depth{queue="message_ingress_dlq"}[15m]) - min_over_time(messaging_queue_depth{queue="message_ingress_dlq"}[15m])) > 100
-        for: 5m
-        labels:
-          severity: warning
-          service: messaging
-        annotations:
-          summary: "DLQ backlog is growing"
-          description: "DLQ depth increased by more than 100 within 15 minutes."
 
       - alert: MessagingWorkerFailureRateHigh
         expr: |

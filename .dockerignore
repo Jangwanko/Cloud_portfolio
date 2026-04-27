@@ -9,6 +9,8 @@ __pycache__/
 .vscode/
 .idea/
 *.log
+results/
+k6/results/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
