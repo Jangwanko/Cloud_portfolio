@@ -1,9 +1,9 @@
-# Metrics Reference
+# Metrics 기준표
 
 이 문서는 Kafka-native 포트폴리오의 Prometheus / Grafana 지표를 빠르게 찾기 위한 참고 문서입니다.
 장애별 확인 순서와 해석은 [OBSERVABILITY.md](OBSERVABILITY.md)를 먼저 봅니다.
 
-## Dashboard Groups
+## Dashboard 그룹
 
 - API request rate / latency
 - API hot path stage latency
@@ -34,7 +34,7 @@ messaging_health_status{job="api",component="kafka"}
 messaging_health_status{job="api",component="db"}
 ```
 
-## API Metrics
+## API metrics
 
 ### `messaging_api_requests_total`
 
@@ -83,7 +83,7 @@ histogram_quantile(
 - state stage가 증가하면 API hot path가 다시 DB에 묶이는지 확인
 - API latency 증가 + event persist lag 정상: intake path 병목 가능성
 
-## Worker Metrics
+## Worker metrics
 
 ### `messaging_worker_processed_total`
 
@@ -123,7 +123,7 @@ histogram_quantile(
 - status update 증가: request state path 병목
 - notification stage 증가: event persist 이후 후속 처리 병목
 
-## Async Lag
+## 비동기 lag
 
 ### `messaging_event_persist_lag_seconds`
 
@@ -159,7 +159,7 @@ histogram_quantile(
 - queue wait 낮음 + `db_persist` 높음: queue보다 DB write path가 직접 병목
 - queue wait 증가 + Worker replica 미증가: KEDA trigger / HPA / consumer group 상태 확인
 
-## PostgreSQL Metrics
+## PostgreSQL metrics
 
 ### `messaging_postgres_is_primary`
 
@@ -197,7 +197,7 @@ DB failure reason별 counter입니다.
 sum by (reason) (increase(messaging_db_failure_total[15m]))
 ```
 
-## KEDA / Kubernetes Metrics
+## KEDA / Kubernetes metrics
 
 Worker autoscaling은 CPU 기반 HPA가 아니라 KEDA 기반 Kafka consumer lag scaling을 사용합니다.
 
@@ -223,7 +223,7 @@ kube_horizontalpodautoscaler_status_desired_replicas{namespace="messaging-app",h
 - desired replica 미증가 + lag 증가: KEDA Kafka trigger / ScaledObject / Prometheus external metric 확인
 - replica 증가 후 lag 유지: Worker 수보다 DB persistence 병목 가능성
 
-## State Model
+## 상태 모델
 
 ### `ready`
 

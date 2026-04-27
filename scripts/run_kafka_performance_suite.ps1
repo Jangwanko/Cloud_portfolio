@@ -2,6 +2,7 @@ param(
   [string]$BaseUrl = "http://localhost",
   [string]$Namespace = "messaging-app",
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
+  [int]$OrderingEventCount = 100,
   [int]$EventCount = 50,
   [string]$K6Profile = "single500",
   [int]$K6SingleVus = 100,
@@ -48,6 +49,7 @@ Add-Line ("k6_profile: {0}" -f $K6Profile)
 Add-Line ("k6_single_vus: {0}" -f $K6SingleVus)
 Add-Line ("stage_duration: {0}" -f $StageDuration)
 Add-Line ("think_time: {0}" -f $ThinkTime)
+Add-Line ("ordering_event_count: {0}" -f $OrderingEventCount)
 Add-Line ("event_count: {0}" -f $EventCount)
 
 try {
@@ -63,6 +65,16 @@ try {
         -Namespace $Namespace `
         -DbDeployment $DbDeployment
     }
+  }
+
+  Invoke-SuiteStep "Same-stream ordering guarantee" {
+    $orderingOutput = & "$PSScriptRoot/test_stream_ordering.ps1" `
+      -BaseUrl $BaseUrl `
+      -Namespace $Namespace `
+      -DbDeployment $DbDeployment `
+      -EventCount $OrderingEventCount `
+      -SkipReset
+    $orderingOutput | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }
   }
 
   Invoke-SuiteStep "Kafka async persistence latency" {

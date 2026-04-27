@@ -1,10 +1,10 @@
-﻿# Quick Start
+# 빠른 실행
 
-## Before You Run
+## 실행 전 준비
 - Docker Desktop 또는 Docker Engine 이 실행 중이어야 합니다
 - Windows PowerShell 또는 Linux bash 기준으로 실행합니다
 
-## Local Python
+## 로컬 Python
 로컬 테스트와 개발은 Dockerfile / CI와 같은 Python 3.11 기준으로 맞춥니다.
 
 Windows PowerShell:
@@ -45,7 +45,7 @@ bash scripts/install_linux_prereqs.sh
 
 `scripts/quick_start_all.ps1` 실행 전에 포트 충돌을 확인하고, 충돌이 있으면 배포 전에 중단합니다.
 
-## One Command
+## 한 번에 실행
 전체 로컬 검증은 아래 명령 하나로 실행할 수 있습니다.
 
 ```powershell
@@ -62,7 +62,7 @@ bash scripts/quick_start_all.sh
 - kind cluster 생성
 - `ingress-nginx` 설치
 - `metrics-server` 설치
-- application image build and kind load
+- application image build 및 kind load
 - PostgreSQL HA / Kafka runtime 배포
 - `kube-state-metrics` 설치
 - KEDA 설치
@@ -80,29 +80,30 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 기본 접근 URL:
 - API: `http://localhost`
 - Grafana: `http://localhost/grafana`
-- Grafana login: `ID admin` / `Password 1q2w3e4r`
+- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
 
 참고:
 - 기본 실행과 문서는 `http://localhost` 기준으로 봅니다.
 - HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 표시될 수 있습니다.
 
-## Expected Duration
+## 예상 소요 시간
 아래 시간은 최근 kind + Docker Desktop 기준 대략적인 실행 시간입니다.
 
-| Scenario | Script | Typical duration |
+| 시나리오 | 스크립트 | 일반 소요 시간 |
 | --- | --- | --- |
-| Full quick start | `scripts/quick_start_all.ps1` | about 12-18 min |
-| Linux quick start | `scripts/quick_start_all.sh` | about 12-18 min |
-| Smoke test | `scripts/smoke_test.ps1` | about 15-30 sec |
-| Linux smoke test | `scripts/smoke_test.sh` | about 15-30 sec |
-| DB recovery test | `scripts/test_db_down.ps1` | about 1-2 min |
-| Linux DB recovery test | `scripts/test_db_down.sh` | about 1-2 min |
-| HPA scaling test | `scripts/test_hpa_scaling.ps1` | about 30-45 sec |
-| DLQ flow test | `scripts/test_dlq_flow.ps1` | about 1-2 min |
-| k6 load test | `scripts/test_k6_load.ps1` | about 1 min |
+| 전체 quick start | `scripts/quick_start_all.ps1` | 약 12-18분 |
+| Linux quick start | `scripts/quick_start_all.sh` | 약 12-18분 |
+| Smoke test | `scripts/smoke_test.ps1` | 약 15-30초 |
+| Linux smoke test | `scripts/smoke_test.sh` | 약 15-30초 |
+| DB recovery test | `scripts/test_db_down.ps1` | 약 1-2분 |
+| Linux DB recovery test | `scripts/test_db_down.sh` | 약 1-2분 |
+| Stream ordering test | `scripts/test_stream_ordering.ps1` | 약 1분 |
+| HPA scaling test | `scripts/test_hpa_scaling.ps1` | 약 30-45초 |
+| DLQ flow test | `scripts/test_dlq_flow.ps1` | 약 1-2분 |
+| k6 load test | `scripts/test_k6_load.ps1` | 약 1분 |
 
-## Optional
+## 선택 실행
 failover alert validation 까지 포함해서 실행하려면:
 
 ```powershell
@@ -114,7 +115,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1 -IncludeFai
 - Prometheus alert firing for Kafka outage
 - alert resolution after recovery
 
-## Separate Load Test
+## 별도 부하 테스트
 Kafka performance suite 는 기능 검증과 분리해서 실행합니다.
 
 ```powershell
@@ -124,6 +125,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 이 suite는 아래 순서로 실행됩니다.
 
 - Kubernetes runtime 상태 확인
+- same-stream ordering 보장 검증
 - Kafka async persistence latency 측정
 - k6 Kafka intake load 측정
 - HPA / metrics sanity 확인
@@ -141,7 +143,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 - `run_kafka_performance_suite.ps1` 기본값은 100 VU, 30초입니다
 - k6는 backlog와 latency spike를 만들 수 있으므로 장애 검증 뒤, reset 후 마지막에 실행합니다.
 
-## Recommended Test Order
+## 권장 테스트 순서
 전체 검증을 순서대로 실행하려면 아래 스크립트를 사용합니다.
 
 ```powershell
@@ -159,13 +161,14 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 ```
 
-## Individual Scenarios
+## 개별 시나리오
 Smoke test:
 
 ```powershell
@@ -176,6 +179,12 @@ DB outage and recovery:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1
+```
+
+Stream ordering:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -EventCount 100
 ```
 
 Kubernetes autoscaling:
@@ -194,7 +203,7 @@ DLQ flow:
 powershell -ExecutionPolicy Bypass -File scripts/test_dlq_flow.ps1
 ```
 
-## GitOps Quick Start
+## GitOps 빠른 실행
 Argo CD 요구사항을 보여주기 위한 GitOps bootstrap 스크립트도 포함되어 있습니다.
 
 전제:

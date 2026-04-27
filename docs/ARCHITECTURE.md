@@ -1,4 +1,4 @@
-# Architecture
+# 아키텍처
 
 ## 구성 요소
 - API (`FastAPI`)
@@ -64,7 +64,7 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 - DLQ도 topic으로 분리해 실패 이벤트를 보존하고 replay합니다.
 - Worker scaling은 queue length가 아니라 consumer lag를 기준으로 판단합니다.
 
-Design choice: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 event 처리 경로를 확보합니다.
+설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 event 처리 경로를 확보합니다.
 
 ## 인증 / 인가
 현재 최소 범위의 인증 / 인가가 적용되어 있습니다.
@@ -80,20 +80,20 @@ Design choice: 이 시스템은 최소 latency보다 요청 수락 안정성과 
 
 ## 장애 시나리오별 동작
 
-### PostgreSQL / Pgpool bottleneck
+### PostgreSQL / Pgpool 병목
 - API intake는 Kafka append를 통해 persistence path와 분리됩니다.
 - Worker는 DB 쓰기 실패 시 retry를 수행합니다.
 - retry 한도를 넘긴 요청은 Kafka DLQ topic으로 이동합니다.
 - DB recovery 후 worker와 replayer가 다시 영속화를 진행합니다.
 - Kafka 모드에서는 API가 sequence를 선점하지 않고, Worker가 persistence 시점에 sequence를 배정합니다. request status도 Worker persistence path에서 갱신해 API intake가 DB hot path에 강하게 묶이지 않도록 했습니다.
 
-### Kafka broker unavailable
+### Kafka broker 장애
 - API가 ingress topic에 append할 수 없으면 event intake는 실패합니다.
 - readiness는 Kafka reachable 여부를 반영해 `not_ready`로 내려갈 수 있습니다.
 - Worker는 topic 소비를 중단합니다.
 - Kafka recovery 후 API append와 Worker consume이 정상화됩니다.
 
-### Worker backlog
+### Worker backlog 증가
 - API는 Kafka append를 통해 요청을 계속 수락할 수 있습니다.
 - Worker 처리량이 ingress rate보다 낮으면 consumer lag가 증가합니다.
 - KEDA Kafka scaler가 lag를 기준으로 Worker replica를 늘립니다.
@@ -105,7 +105,7 @@ Design choice: 이 시스템은 최소 latency보다 요청 수락 안정성과 
 - DLQ Replayer는 DLQ topic을 소비해 ingress topic으로 재주입합니다.
 - replay된 event는 Worker consumer group에서 다시 처리됩니다.
 
-## Autoscaling
+## 자동 확장
 현재 autoscaling은 API와 Worker가 서로 다른 기준을 사용합니다.
 
 - API HPA
@@ -122,7 +122,7 @@ Design choice: 이 시스템은 최소 latency보다 요청 수락 안정성과 
 
 Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다.
 
-## Observability
+## 관측성
 현재 관측 가능한 항목:
 - API request count / latency
 - API stage latency
@@ -139,7 +139,7 @@ Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이
 - Kafka broker HA topology metric
 - Kafka DLQ topic depth / replay rate metric
 
-## Backup and Restore
+## 백업과 복구
 현재 PostgreSQL 운영 보강은 아래처럼 구성되어 있습니다.
 
 - 수동 backup

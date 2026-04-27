@@ -8,7 +8,7 @@ from psycopg2 import InterfaceError, OperationalError
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
-from portfolio.kafka_client import build_ingress_consumer, publish_dlq_job, publish_ingress_job
+from portfolio.kafka_client import build_ingress_consumer, publish_dlq_job
 from portfolio.metrics import (
     event_persist_lag_seconds,
     health_status,
@@ -212,24 +212,27 @@ def move_to_dlq(job_payload: dict, reason: str) -> None:
     )
 
 
-def requeue_with_backoff(job_payload: dict) -> None:
+def mark_inline_retry(job_payload: dict) -> float:
     retry_count = int(job_payload.get("retry_count", 0)) + 1
     delay = settings.ingress_retry_base_delay_seconds * (2 ** (retry_count - 1))
     job_payload["retry_count"] = retry_count
     job_payload["next_retry_at"] = time.time() + delay
-    publish_ingress_job(job_payload["room_id"], job_payload)
-    update_request_status(
-        job_payload["request_id"],
-        {
-            "request_id": job_payload["request_id"],
-            "status": "queued",
-            "room_seq": job_payload.get("room_seq"),
-            "retry_count": retry_count,
-            "next_retry_at": datetime.fromtimestamp(
-                float(job_payload["next_retry_at"]), tz=timezone.utc
-            ).isoformat(),
-        },
-    )
+    try:
+        update_request_status(
+            job_payload["request_id"],
+            {
+                "request_id": job_payload["request_id"],
+                "status": "queued",
+                "room_seq": job_payload.get("room_seq"),
+                "retry_count": retry_count,
+                "next_retry_at": datetime.fromtimestamp(
+                    float(job_payload["next_retry_at"]), tz=timezone.utc
+                ).isoformat(),
+            },
+        )
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("Failed to update inline retry status request_id=%s error=%s", job_payload["request_id"], exc)
+    return delay
 
 
 def store_attempt(payload: dict) -> None:
@@ -260,7 +263,6 @@ def store_attempt(payload: dict) -> None:
 def handle_ingress_job(raw: str) -> None:
     job_payload = raw if isinstance(raw, dict) else json.loads(raw)
     request_id = job_payload["request_id"]
-    next_retry_at = job_payload.get("next_retry_at")
     queued_at = job_payload.get("queued_at")
 
     if queued_at:
@@ -270,62 +272,63 @@ def handle_ingress_job(raw: str) -> None:
         except Exception:  # noqa: BLE001
             pass
 
-    if next_retry_at is not None and float(next_retry_at) > time.time():
-        # Not ready for retry yet; move to tail and process other jobs first.
-        time.sleep(min(1, max(0, float(next_retry_at) - time.time())))
-        publish_ingress_job(job_payload["room_id"], job_payload)
-        return
+    while True:
+        next_retry_at = job_payload.get("next_retry_at")
+        if next_retry_at is not None and float(next_retry_at) > time.time():
+            time.sleep(max(0, float(next_retry_at) - time.time()))
 
-    try:
-        with observe_worker_stage("db_persist"):
-            response = persist_message(job_payload)
-        if queued_at:
+        try:
+            with observe_worker_stage("db_persist"):
+                response = persist_message(job_payload)
+            if queued_at:
+                try:
+                    accepted_at = datetime.fromisoformat(str(queued_at)).timestamp()
+                    event_persist_lag_seconds.observe(max(0, time.time() - accepted_at))
+                except Exception:  # noqa: BLE001
+                    pass
+            update_request_status(
+                request_id,
+                {
+                    "request_id": request_id,
+                    "status": "persisted",
+                    "message_id": response["id"],
+                    "room_id": response["room_id"],
+                    "room_seq": response["room_seq"],
+                    "user_id": response["user_id"],
+                    "created_at": response["created_at"],
+                },
+            )
+            queue_notification(response)
+            return
+        except ValueError as exc:
+            update_request_status(
+                request_id,
+                {
+                    "request_id": request_id,
+                    "status": "failed",
+                    "reason": str(exc),
+                },
+            )
+            return
+        except RoomSequenceGapError:
+            retry_count = int(job_payload.get("retry_count", 0))
+            if retry_count >= settings.ingress_max_retries:
+                move_to_dlq(job_payload, "room_sequence_gap")
+                return
+            delay = mark_inline_retry(job_payload)
+            time.sleep(delay)
+        except (OperationalError, InterfaceError, RuntimeError) as exc:
+            retry_count = int(job_payload.get("retry_count", 0))
+            if retry_count >= settings.ingress_max_retries:
+                move_to_dlq(job_payload, f"transient_error_max_retries:{type(exc).__name__}")
+                return
+
+            delay = mark_inline_retry(job_payload)
             try:
-                accepted_at = datetime.fromisoformat(str(queued_at)).timestamp()
-                event_persist_lag_seconds.observe(max(0, time.time() - accepted_at))
+                reconnect_pool()
             except Exception:  # noqa: BLE001
                 pass
-        update_request_status(
-            request_id,
-            {
-                "request_id": request_id,
-                "status": "persisted",
-                "message_id": response["id"],
-                "room_id": response["room_id"],
-                "room_seq": response["room_seq"],
-                "user_id": response["user_id"],
-                "created_at": response["created_at"],
-            },
-        )
-        queue_notification(response)
-    except ValueError as exc:
-        update_request_status(
-            request_id,
-            {
-                "request_id": request_id,
-                "status": "failed",
-                "reason": str(exc),
-            },
-        )
-    except RoomSequenceGapError:
-        retry_count = int(job_payload.get("retry_count", 0))
-        if retry_count >= settings.ingress_max_retries:
-            move_to_dlq(job_payload, "room_sequence_gap")
-            return
-        requeue_with_backoff(job_payload)
-        return
-    except (OperationalError, InterfaceError, RuntimeError) as exc:
-        retry_count = int(job_payload.get("retry_count", 0))
-        if retry_count >= settings.ingress_max_retries:
-            move_to_dlq(job_payload, f"transient_error_max_retries:{type(exc).__name__}")
-            return
-
-        requeue_with_backoff(job_payload)
-        try:
-            reconnect_pool()
-        except Exception:  # noqa: BLE001
-            pass
-        return
+            time.sleep(delay)
 
 
 def handle_notification_job(raw: str) -> None:

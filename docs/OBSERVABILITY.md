@@ -1,4 +1,4 @@
-# Observability
+# 관측성
 
 이 문서는 Kafka 기반 event stream pipeline을 Grafana / Prometheus에서 어떻게 읽는지 정리합니다.
 
@@ -10,7 +10,7 @@
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
 
-## Grafana Panels
+## Grafana 패널
 
 | Panel | PromQL / Metric | Interpretation |
 | --- | --- | --- |
@@ -28,7 +28,7 @@
 
 Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상태로 확인합니다.
 
-## Key Interpretation
+## 핵심 해석
 
 - Kafka consumer lag 증가: ingress rate가 Worker 처리량보다 빠르거나 downstream persistence path가 막힌 상태입니다.
 - Queue wait 증가: Worker가 backlog를 충분히 빨리 소비하지 못하고 있거나 DB write path가 느린 상태입니다.
@@ -37,7 +37,7 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - Worker `db_persist` stage 증가: PostgreSQL / Pgpool / row lock / disk I/O 병목 가능성이 큽니다.
 - Worker replica 증가 후에도 lag가 줄지 않음: 단순 Worker 수 부족보다 PostgreSQL persistence path 병목일 가능성이 높습니다.
 
-## Troubleshooting Flow
+## 문제 해결 흐름
 
 ### API latency 증가
 
@@ -70,7 +70,7 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - Worker replica가 늘었는데 lag가 줄지 않으면 `db_persist` stage와 PostgreSQL 상태를 먼저 봅니다.
 - Worker failure가 함께 증가하면 DLQ topic과 retry reason을 확인합니다.
 
-### Accepted to persisted lag 증가
+### Accepted-to-persisted lag 증가
 
 확인 순서:
 
@@ -101,7 +101,7 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - DLQ payload의 `failed_reason`, `retry_count`, `replay_count`를 보고 재처리 가능 여부를 판단합니다.
 - replay 후 같은 이유로 다시 DLQ에 쌓이면 일시 장애가 아니라 데이터 조건 또는 persistence logic 문제일 수 있습니다.
 
-## Metric Notes
+## Metric 메모
 
 ### API
 

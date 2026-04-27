@@ -1,8 +1,8 @@
-# Kafka Design Notes
+# Kafka 설계 기록
 
 이 문서는 Kafka-native 설계와 검증 기록입니다.
 
-## Why Kafka
+## Kafka를 선택한 이유
 
 이 포트폴리오의 핵심 주제는 request intake와 persistence를 분리해 장애 전파를 줄이고, 실패한 event를 재처리 가능한 형태로 남기는 것입니다.
 
@@ -14,7 +14,7 @@ Kafka를 선택한 이유:
 - consumer lag를 backlog 신호로 사용해 KEDA scaling 기준을 세울 수 있습니다.
 - DLQ topic과 replay flow를 운영 가능한 실패 복구 경로로 만들 수 있습니다.
 
-## Current Flow
+## 현재 흐름
 
 ```text
 Client
@@ -47,7 +47,7 @@ API / Worker metrics
 -> Worker replica scale-out
 ```
 
-## Kafka Runtime
+## Kafka runtime
 
 현재 dev 환경은 3-broker KRaft Kafka StatefulSet을 사용합니다.
 
@@ -67,7 +67,7 @@ kubectl -n messaging-app set env deployment/dlq-replayer KAFKA_BOOTSTRAP_SERVERS
 
 Worker autoscaling은 `k8s/app/manifests-ha.yaml`에 포함된 Kafka lag 기준 ScaledObject를 사용합니다.
 
-## Design Details
+## 설계 상세
 
 - Kafka ingress topic: `message-ingress`
 - Kafka DLQ topic: `message-ingress-dlq`
@@ -77,7 +77,7 @@ Worker autoscaling은 `k8s/app/manifests-ha.yaml`에 포함된 Kafka lag 기준 
 - Offset commit: Worker 처리 성공 후 commit
 - DLQ listing: `GET /v1/dlq/ingress?limit=5`
 
-## Verified Result
+## 검증 결과
 
 2026-04-26 실행 결과:
 
@@ -89,7 +89,7 @@ Worker autoscaling은 `k8s/app/manifests-ha.yaml`에 포함된 Kafka lag 기준 
 - DLQ replay trace: pass
 - HPA / metrics sanity: pass
 
-## Load Test Finding
+## 부하 테스트에서 확인한 점
 
 초기 Kafka 실험에서는 API가 request status / idempotency / sequence를 PostgreSQL hot path에 두면서 Pgpool 병목이 먼저 드러났습니다. 이후 API intake를 Kafka append 중심으로 정리했습니다.
 
@@ -101,18 +101,22 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 2026-04-28 실행 결과:
 
+- 순차 검증 이벤트 수: `100`
+- 순차 검증 결과: `stream_seq 1..100`, body 순서 일치
 - profile: `single500`
-- concurrent users: `100`
-- duration: `30s`
-- idempotency header: disabled
-- total HTTP requests: `30922`
-- event status 200: `30916`
-- event status 503: `2`
-- error rate: `0.01%`
-- average latency: `46.50ms`
-- p95 latency: `92.25ms`
-- API HPA final replicas: `8`
-- Worker KEDA final replicas: `8`
+- 동시 사용자: `100`
+- 실행 시간: `30s`
+- idempotency header: 비활성화
+- 전체 HTTP 요청 수: `31676`
+- event status 200: `31672`
+- event status 503: `0`
+- 오류율: `0.00%`
+- 평균 latency: `44.13ms`
+- p95 latency: `80.65ms`
+- p99 latency: `103.57ms`
+- accepted-to-persisted p95: `7.67ms`
+- API HPA 최종 replica: `6`
+- Worker KEDA 최종 replica: `4`
 
 비교 진단:
 
@@ -127,7 +131,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 - API의 accepted status store는 기본값에서 synchronous DB hot path에 두지 않습니다.
 - request idempotency claim도 기본값에서는 API hot path에서 수행하지 않고 Worker persistence path가 최종 idempotency를 처리합니다.
 
-## Design Direction
+## 설계 방향
 
 Kafka-native 완성형으로 가려면 event log path와 low-latency state path를 분리해야 합니다.
 

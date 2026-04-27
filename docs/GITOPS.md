@@ -1,4 +1,4 @@
-﻿# GitOps / Argo CD
+# GitOps / Argo CD
 
 이 문서는 이 저장소에 추가한 `GitOps` / `Argo CD` 경로를 정리한 문서입니다.
 현재 프로젝트는 직접 배포 경로와 Git 기반 동기화 경로를 함께 제공합니다.
@@ -44,7 +44,7 @@
 `그 이후 애플리케이션 반영은 GitOps`
 라는 구조를 보여주도록 설계했습니다.
 
-## Sync Strategy
+## Sync 전략
 GitOps 검증은 Git remote의 특정 revision을 Argo CD `Application`이 바라보게 하는 방식으로 수행합니다.
 
 ## 로컬 실행 방법
@@ -91,7 +91,7 @@ EKS까지 확장할 때는 보통 아래 단계가 이어집니다.
 - 이미지 태그 갱신
 - Argo CD 자동 동기화
 
-## Operating Notes
+## 운영 메모
 - 로컬 데모에서는 앱 이미지를 build 한 뒤 kind 에 load 합니다.
 - Argo CD는 `deployment controller` 이지 테스트 프레임워크는 아닙니다.
   - lint / test / image build 검증은 `CI` 에서 분리하는 것이 맞습니다.

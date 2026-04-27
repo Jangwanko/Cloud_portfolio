@@ -1,8 +1,8 @@
-﻿# Operations
+# 운영 지침
 
 운영 관점에서 필요한 secret, backup, restore, 운영 UI 경로를 정리한 문서입니다.
 
-## Runtime Secrets
+## Runtime secret
 로컬 kind 기준 운영 보강을 위해 runtime secret를 별도로 생성합니다.
 
 생성 스크립트:
@@ -22,12 +22,12 @@ powershell -ExecutionPolicy Bypass -File k8s/scripts/install-runtime-secrets.ps1
 - Grafana 자격증명은 더 이상 매니페스트에 하드코딩하지 않습니다.
 - API / Worker / DLQ replayer가 동일 secret를 받아 인증 관련 값을 사용합니다.
 
-## PostgreSQL Monitoring Role
+## PostgreSQL monitoring role
 PostgreSQL HA 설치 후 `k8s/scripts/install-ha.ps1`는 `portfolio` 사용자에게 `pg_monitor` 역할을 부여합니다.
 
 이 권한은 `pg_stat_replication`을 읽기 위한 PostgreSQL 내장 읽기 전용 모니터링 역할입니다. API는 이 정보를 사용해 standby의 `state`, `sync_state`, replication lag를 Prometheus metric으로 노출합니다.
 
-## PostgreSQL Backup
+## PostgreSQL 백업
 로컬 HA PostgreSQL에 대해 logical backup을 생성할 수 있습니다.
 
 ```powershell
@@ -42,7 +42,7 @@ powershell -ExecutionPolicy Bypass -File scripts/backup_postgres_k8s.ps1
 - `pgpool` 서비스 경유로 `pg_dump`를 수행합니다.
 - 결과를 로컬 `backups/` 디렉터리에 저장합니다.
 
-## Weekly Backup Schedule
+## 주간 백업 일정
 HA 배포에는 주 1회 PostgreSQL logical backup을 남기는 `CronJob`이 포함되어 있습니다.
 
 - 리소스 이름: `postgres-weekly-backup`
@@ -61,7 +61,7 @@ kubectl get pvc -n messaging-app
 - 현재 목적은 “주기 backup 설정이 포함되어 있다”는 운영 구성을 보여주는 것입니다.
 - 필요하면 이후 일 단위 또는 더 짧은 주기로 쉽게 변경할 수 있습니다.
 
-## PostgreSQL Restore
+## PostgreSQL 복구
 logical backup을 현재 클러스터 DB에 적용할 수 있습니다.
 
 ```powershell
@@ -84,17 +84,17 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - `-ResetSchema`를 주면 `public` schema를 비운 뒤 backup SQL을 적용합니다.
 - 현재 목적은 disposable local cluster 기준의 운영 흐름 검증입니다.
 
-## Demo Access
+## 데모 접근
 로컬 데모 기준 운영 UI 경로:
 - Grafana: `http://localhost/grafana`
-- Grafana login: `ID admin` / `Password 1q2w3e4r`
+- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
 
 참고:
 - 기본 운영 문서와 데모 경로는 `http://localhost` 기준입니다.
 - HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 처음 한 번 표시될 수 있습니다.
 
-## Access Policy
+## 접근 정책
 현재 운영 경로는 일반 서비스 경로와 구분하되, 포트폴리오 데모 기준으로 쉽게 접근할 수 있게 유지합니다.
 
 - API
@@ -113,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 운영 경로와 일반 경로를 구분하고 있다는 점을 보여줍니다.
 - 동시에 면접관이 직접 Grafana / Prometheus를 확인하는 흐름은 막지 않습니다.
 
-## Secret Handling
+## Secret 처리
 현재 민감한 값은 코드나 매니페스트 하드코딩 대신 Kubernetes secret로 분리합니다.
 
 현재 분리된 값:
@@ -132,7 +132,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 
 로컬 검증에서는 Kubernetes Secret을 사용하고, 운영형 환경에서는 외부 secret manager로 확장할 수 있습니다.
 
-## TLS Position
+## TLS 기준
 현재 ingress TLS는 local self-signed certificate 기반입니다.
 
 현재 목적:
@@ -145,7 +145,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 
 즉 현재 TLS는 로컬 검증용 구현이고, 운영 단계에서는 신뢰된 인증서 체계로 바꾸는 것이 다음 단계입니다.
 
-## Current Operational Position
+## 현재 운영 기준
 현재 상태는 아래처럼 정리할 수 있습니다.
 
 - runtime secret 분리: 적용됨
@@ -154,7 +154,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 주 1회 backup `CronJob`: HA 매니페스트에 포함 및 클러스터 적용 완료
 - 운영 UI 접근 제한: 로컬 검증 기준으로 접근 가능하게 유지
 
-## Kafka Operational Scenarios
+## Kafka 운영 시나리오
 현재 event intake는 Kafka append 성공을 write-path 수락 기준으로 봅니다.
 
 - Kafka bootstrap 또는 topic append가 불가능하면 API는 새 write request를 fail-fast로 거절합니다.
