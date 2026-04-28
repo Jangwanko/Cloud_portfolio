@@ -98,6 +98,7 @@ sequenceDiagram
 - Kafka mode smoke test
 - Kafka ingress topic append / Worker consume / PostgreSQL persisted
 - Kafka DLQ topic listing through `GET /v1/dlq/ingress`
+- API contract validation for auth, stream membership, request status, unread count, and DLQ summary
 - KEDA Kafka scaler readiness and external metric lookup
 - API HPA scaling
 - PostgreSQL backup / restore
@@ -221,6 +222,7 @@ Grafana 기본 계정:
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): 구조와 처리 흐름
 - [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md): Kafka 설계와 검증 기록
 - [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침
+- [RUNBOOK.md](docs/RUNBOOK.md): 장애 대응 절차
 - [OBSERVABILITY.md](docs/OBSERVABILITY.md): 지표, 대시보드, 병목 해석
 - [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md): readiness / degraded / not_ready 정책
 - [TEST_RESULTS.md](docs/TEST_RESULTS.md): 검증 결과

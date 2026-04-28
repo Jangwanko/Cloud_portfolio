@@ -56,3 +56,4 @@
 - AWS IaC 설계: [AWS_IAC_PLAN.md](AWS_IAC_PLAN.md)
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
 - 운영 정리: [OPERATIONS.md](OPERATIONS.md)
+- Runbook: [RUNBOOK.md](RUNBOOK.md)

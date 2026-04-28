@@ -187,7 +187,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 ## 운영 확장 포인트
 - 운영 UI 접근 정책 강화
 - secret 외부화 방향 정리
-- alert / incident runbook 보강
+- incident 대응 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리
 
 ## DLQ 운영 기준
 

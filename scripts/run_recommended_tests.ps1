@@ -40,6 +40,14 @@ Invoke-Step "Smoke test" {
     -SkipReset
 }
 
+Invoke-Step "API contract test" {
+  & "$PSScriptRoot/test_api_contracts.ps1" `
+    -BaseUrl $BaseUrl `
+    -Namespace $Namespace `
+    -DbDeployment $DbDeployment `
+    -SkipReset
+}
+
 Invoke-Step "DB outage and recovery test" {
   & "$PSScriptRoot/test_db_down.ps1" `
     -BaseUrl $BaseUrl `

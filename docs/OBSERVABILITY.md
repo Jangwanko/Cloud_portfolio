@@ -131,4 +131,4 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - `kube_deployment_status_replicas_available`: 실제 available Worker replica 수입니다.
 - `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA가 생성한 HPA의 desired replica 수입니다.
 
-자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md), readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리되어 있습니다.
+자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md), readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 장애 대응 절차는 [RUNBOOK.md](RUNBOOK.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리되어 있습니다.

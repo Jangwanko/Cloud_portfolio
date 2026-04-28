@@ -82,3 +82,5 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 초기 Kafka 실험에서는 request status / idempotency / sequence 일부를 PostgreSQL state table에 배치했고, 이 방식이 API hot path를 Pgpool에 다시 묶을 수 있음을 확인했습니다.
 
 기본 Kafka 모드는 Worker가 persistence 시점에 sequence와 request status를 갱신하며, API intake는 Kafka append 중심으로 동작합니다.
+
+장애별 확인 순서와 복구 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리합니다.

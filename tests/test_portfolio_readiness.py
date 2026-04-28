@@ -80,3 +80,45 @@ class TestManifestContracts:
         assert "secretRef:" in manifest
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
+
+
+class TestApiContractAndRunbook:
+    def test_api_contract_script_is_in_recommended_flow_and_docs(self):
+        script = read_text("scripts/test_api_contracts.ps1")
+        recommended = read_text("scripts/run_recommended_tests.ps1")
+        quick_start = read_text("docs/QUICK_START.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        assert "Assert-HasProperty" in script
+        assert "/v1/auth/login" in script
+        assert "/v1/streams/" in script
+        assert "/v1/dlq/ingress" in script
+        assert "Expected HTTP $ExpectedStatus" in script
+        assert "test_api_contracts.ps1" in recommended
+        assert "test_api_contracts.ps1" in quick_start
+        assert "API contract test" in test_results
+
+    def test_runbook_is_linked_and_covers_incident_paths(self):
+        readme = read_text("README.md")
+        operations = read_text("docs/OPERATIONS.md")
+        runbook = read_text("docs/RUNBOOK.md")
+
+        assert "RUNBOOK.md" in readme
+        assert "RUNBOOK.md" in operations
+        for heading in (
+            "Kafka Intake",
+            "PostgreSQL / Pgpool",
+            "Worker Consumer Lag",
+            "DLQ",
+            "API Contract",
+            "Resource Contention",
+        ):
+            assert heading in runbook
+
+        for command in (
+            "kubectl get pods -n messaging-app",
+            "scripts/test_api_contracts.ps1 -SkipReset",
+            "scripts/test_dlq_replay_guard.ps1 -SkipReset",
+            "scripts/run_recommended_tests.ps1 -SkipK6",
+        ):
+            assert command in runbook

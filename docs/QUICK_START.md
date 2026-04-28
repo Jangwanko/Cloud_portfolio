@@ -130,6 +130,7 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | 전체 quick start | `scripts/quick_start_all.ps1` | 약 12-18분 |
 | Linux quick start | `scripts/quick_start_all.sh` | 약 12-18분 |
 | Smoke test | `scripts/smoke_test.ps1` | 약 15-30초 |
+| API contract test | `scripts/test_api_contracts.ps1` | 약 15-30초 |
 | Linux smoke test | `scripts/smoke_test.sh` | 약 15-30초 |
 | DB recovery test | `scripts/test_db_down.ps1` | 약 1-2분 |
 | Linux DB recovery test | `scripts/test_db_down.sh` | 약 1-2분 |
@@ -197,6 +198,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
@@ -209,6 +211,12 @@ Smoke test:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1
+```
+
+API contract:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1
 ```
 
 DB outage and recovery:
