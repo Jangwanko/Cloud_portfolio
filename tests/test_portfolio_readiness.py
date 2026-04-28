@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -122,3 +123,52 @@ class TestApiContractAndRunbook:
             "scripts/run_recommended_tests.ps1 -SkipK6",
         ):
             assert command in runbook
+
+
+class TestOperationsDashboard:
+    def test_dashboard_uses_operational_metrics_without_fake_kafka_signals(self):
+        dashboard = json.loads(read_text("monitoring/grafana/dashboards/messaging-overview.json"))
+        serialized = json.dumps(dashboard)
+        titles = {panel["title"] for panel in dashboard["panels"]}
+
+        expected_titles = {
+            "Kafka Intake Health",
+            "PostgreSQL Primary",
+            "Worker Health",
+            "API 5xx Ratio",
+            "Worker Failure Ratio",
+            "Worker Last Success Age",
+            "DB Pool In Use",
+            "DLQ Events And Replay",
+            "Pod Restarts (15m)",
+            "Unavailable Replicas",
+        }
+        assert expected_titles.issubset(titles)
+
+        assert "{{queue}}" not in serialized
+        assert "producer_append_path" not in serialized
+        assert "consumer_read_path" not in serialized
+        assert "worker_consumer_group" not in serialized
+
+        for metric in (
+            "messaging_db_pool_in_use",
+            "messaging_worker_last_success_timestamp",
+            "messaging_dlq_events_total",
+            "messaging_dlq_replay_total",
+            "kube_pod_container_status_restarts_total",
+            "kube_deployment_status_replicas_unavailable",
+        ):
+            assert metric in serialized
+
+    def test_dashboard_is_embedded_in_both_kubernetes_manifest_paths(self):
+        dashboard = read_text("monitoring/grafana/dashboards/messaging-overview.json")
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
+
+        for manifest in (app_manifest, gitops_manifest):
+            assert "name: dlq-replayer" in manifest
+            assert 'targets: ["dlq-replayer:9102"]' in manifest
+            assert "Messaging Portfolio Operations Overview" in manifest
+            assert "messaging_dlq_replay_total" in manifest
+
+        assert "Messaging Portfolio Operations Overview" in dashboard

@@ -17,16 +17,23 @@
 | `API Request Rate` | `sum(rate(messaging_api_requests_total[1m])) by (status)` | HTTP status별 request rate |
 | `API Latency` | `messaging_api_request_latency_seconds_bucket` | API intake 요청이 응답을 받기까지의 p95 / p99 |
 | `API Stage Latency` | `messaging_api_stage_latency_seconds_bucket` | membership, Kafka publish 등 hot path 구간 |
-| `Worker Throughput` | `sum(rate(messaging_worker_processed_total[1m])) by (result)` | Worker 처리량과 성공 / 실패 비율 |
+| `Worker Throughput By Result` | `sum(rate(messaging_worker_processed_total[1m])) by (result)` | Worker 처리량과 성공 / 실패 비율 |
+| `Worker Failure Ratio` | `messaging_worker_processed_total{result="failure"}` 비율 | Worker 처리 실패가 retry / DLQ로 이어지는지 확인 |
+| `Worker Last Success Age` | `time() - max(messaging_worker_last_success_timestamp{job="worker"})` | Worker pod는 살아 있지만 실제 처리가 멈춘 상태 감지 |
 | `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket` | DB persist, status update, notification 처리 구간 |
 | `Accepted To Persisted Lag` | `messaging_event_persist_lag_seconds_bucket` | API accepted부터 PostgreSQL persisted까지의 async lag |
 | `Queue Wait Time` | `messaging_queue_wait_seconds_bucket` | Kafka consume 전까지 대기한 시간에 가까운 Worker-side wait 지표 |
+| `DB Pool In Use` | `messaging_db_pool_in_use` | API / Worker / DLQ Replayer의 DB connection checkout 압력 |
+| `DLQ Events And Replay` | `messaging_dlq_events_total`, `messaging_dlq_replay_total` | DLQ 유입, replay, replay guard skip 흐름 |
 | `Worker Replicas` | `kube_deployment_spec_replicas`, `kube_deployment_status_replicas_available`, `kube_horizontalpodautoscaler_status_desired_replicas` | Worker desired / available / KEDA HPA desired replica 비교 |
+| `API Scaling` | API deployment / HPA replica 지표 | API HPA와 실제 available replica 비교 |
+| `Pod Restarts` | `kube_pod_container_status_restarts_total` | CrashLoopBackOff, OOMKilled, 낮은 사양 신호 |
+| `Unavailable Replicas` | `kube_deployment_status_replicas_unavailable` | rollout, scheduling, readiness 문제 |
 | `DB Health` | `messaging_health_status{job="api",component="db"}` | API가 보는 PostgreSQL writable path |
 | `PostgreSQL Standbys` | `messaging_postgres_standby_count{job="api"}` | pgpool / replication 기준 standby 수 |
 | `PostgreSQL Replication Delay` | `messaging_postgres_replication_delay_bytes_max{job="api"}` | standby replay delay |
 
-Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상태로 확인합니다.
+현재 dashboard는 Kafka lag를 `Queue Wait Time`, Worker/KEDA replica, Worker throughput으로 해석합니다. Kafka broker에서 직접 산출한 partition별 consumer lag는 아직 별도 exporter를 붙이지 않았기 때문에 직접 패널로 주장하지 않습니다.
 
 ## 핵심 해석
 
@@ -36,6 +43,9 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - API latency 증가: Kafka publish, membership check 등 request intake path 병목입니다.
 - Worker `db_persist` stage 증가: PostgreSQL / Pgpool / row lock / disk I/O 병목 가능성이 큽니다.
 - Worker replica 증가 후에도 lag가 줄지 않음: 단순 Worker 수 부족보다 PostgreSQL persistence path 병목일 가능성이 높습니다.
+- Worker last success age 증가: Worker pod 상태보다 실제 consume / persist 성공 여부를 우선 확인합니다.
+- DB pool in use 증가: API / Worker / DLQ Replayer 중 어느 process가 DB connection을 오래 붙잡는지 분리해서 봅니다.
+- Pod restart 증가: 낮은 사양, OOMKilled, CrashLoopBackOff, image / readiness 문제를 먼저 확인합니다.
 
 ## 문제 해결 흐름
 
@@ -113,9 +123,13 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 ### Worker
 
 - `messaging_worker_processed_total`: Worker가 event를 처리한 누적 건수입니다.
+- `messaging_worker_last_success_timestamp`: Worker가 마지막으로 event를 성공 처리한 Unix timestamp입니다.
+- `messaging_worker_failures_total`: Worker loop failure 누적 건수입니다.
 - `messaging_worker_stage_latency_seconds`: Worker 내부 병목을 stage별로 봅니다.
 - `messaging_event_persist_lag_seconds`: API accepted부터 PostgreSQL persisted까지의 end-to-end async lag입니다.
 - `messaging_queue_wait_seconds`: event가 Worker에 의해 처리되기 전까지 대기한 시간을 해석하는 지표입니다.
+- `messaging_dlq_events_total`: Worker가 Kafka DLQ로 보낸 event 수입니다.
+- `messaging_dlq_replay_total`: DLQ Replayer의 replay / max replay skip 결과입니다.
 
 ### PostgreSQL
 

@@ -3,9 +3,12 @@ import logging
 import time
 from datetime import datetime, timezone
 
+from prometheus_client import start_http_server
+
 from portfolio.config import settings
 from portfolio.db import init_pool_with_retry, ping_db
 from portfolio.kafka_client import build_dlq_consumer, publish_ingress_job
+from portfolio.metrics import dlq_replay_total, registry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -23,6 +26,7 @@ def replay_one(raw: str) -> bool:
             job_payload.get("request_id"),
             replay_count,
         )
+        dlq_replay_total.labels(result="skipped_max_replay").inc()
         return False
 
     job_payload["replay_count"] = replay_count + 1
@@ -31,6 +35,7 @@ def replay_one(raw: str) -> bool:
     job_payload["next_retry_at"] = None
 
     publish_ingress_job(job_payload["room_id"], job_payload)
+    dlq_replay_total.labels(result="replayed").inc()
     return True
 
 
@@ -81,6 +86,7 @@ def run_kafka_replayer_loop() -> None:
 
 def main() -> None:
     init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
+    start_http_server(settings.dlq_replayer_metrics_port, registry=registry)
     run_kafka_replayer_loop()
 
 

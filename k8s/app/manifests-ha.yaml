@@ -265,6 +265,19 @@ spec:
               memory: "256Mi"
 ---
 apiVersion: v1
+kind: Service
+metadata:
+  name: dlq-replayer
+  namespace: messaging-app
+spec:
+  selector:
+    app: dlq-replayer
+  ports:
+    - name: metrics
+      port: 9102
+      targetPort: 9102
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
@@ -285,6 +298,10 @@ data:
         metrics_path: /metrics
         static_configs:
           - targets: ["worker:9101"]
+      - job_name: dlq-replayer
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["dlq-replayer:9102"]
       - job_name: kube-state-metrics
         metrics_path: /metrics
         static_configs:
@@ -425,764 +442,987 @@ metadata:
 data:
   messaging-overview.json: |
     {
-      "annotations": {
-        "list": []
-      },
-      "editable": true,
-      "graphTooltip": 0,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 6,
-            "x": 0,
-            "y": 0
-          },
-          "id": 1,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "targets": [
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"db\"}",
-              "refId": "A"
-            }
-          ],
-          "title": "DB Health",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 6,
-            "x": 6,
-            "y": 0
-          },
-          "id": 2,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "targets": [
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "refId": "A"
-            }
-          ],
-          "title": "Kafka Health",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 6,
-            "x": 12,
-            "y": 0
-          },
-          "id": 3,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "targets": [
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "refId": "A"
-            }
-          ],
-          "title": "Kafka Bootstrap Health",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 1
-                  },
-                  {
-                    "color": "green",
-                    "value": 2
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 6,
-            "x": 18,
-            "y": 0
-          },
-          "id": 4,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "textMode": "value"
-          },
-          "targets": [
-            {
-              "expr": "messaging_postgres_standby_count{job=\"api\"}",
-              "refId": "A"
-            }
-          ],
-          "title": "PostgreSQL Standbys",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 6
-          },
-          "id": 5,
-          "targets": [
-            {
-              "expr": "sum(rate(messaging_api_requests_total[1m])) by (status)",
-              "legendFormat": "{{status}}",
-              "refId": "A"
-            }
-          ],
-          "title": "API Request Rate",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 6
-          },
-          "id": 6,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
-              "legendFormat": "p95",
-              "refId": "A"
-            },
-            {
-              "expr": "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
-              "legendFormat": "p99",
-              "refId": "B"
-            }
-          ],
-          "title": "API Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 14
-          },
-          "id": 7,
-          "description": "Per-second rate of events consumed and processed by workers. If no events were produced recently, this panel can show No data during normal idle periods.",
-          "targets": [
-            {
-              "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
-              "legendFormat": "{{result}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Worker Throughput (events only)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 14
-          },
-          "id": 8,
-          "targets": [
-            {
-              "expr": "sum(rate(messaging_worker_processed_total[1m])) by (result)",
-              "legendFormat": "{{queue}}",
-              "refId": "A"
-            }
-          ],
-          "title": "Worker Throughput By Result",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 22
-          },
-          "id": 9,
-          "targets": [
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "legendFormat": "bootstrap_available",
-              "refId": "A"
-            },
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "legendFormat": "producer_append_path",
-              "refId": "B"
-            },
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "legendFormat": "consumer_read_path",
-              "refId": "C"
-            }
-          ],
-          "title": "Kafka Health Signals",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 22
-          },
-          "id": 10,
-          "targets": [
-            {
-              "expr": "messaging_health_status{job=\"api\",component=\"kafka\"}",
-              "legendFormat": "worker_consumer_group",
-              "refId": "A"
-            }
-          ],
-          "title": "Kafka Worker Signal",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 30
-          },
-          "id": 11,
-          "targets": [
-            {
-              "expr": "messaging_postgres_standby_count{job=\"api\"}",
-              "legendFormat": "standby_count",
-              "refId": "A"
-            },
-            {
-              "expr": "messaging_postgres_sync_standby_count{job=\"api\"}",
-              "legendFormat": "sync_standby_count",
-              "refId": "B"
-            },
-            {
-              "expr": "messaging_postgres_is_primary{job=\"api\"}",
-              "legendFormat": "primary_reachable",
-              "refId": "C"
-            }
-          ],
-          "title": "PostgreSQL Replication Capacity",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 30
-          },
-          "id": 12,
-          "targets": [
-            {
-              "expr": "messaging_postgres_replication_delay_bytes_max{job=\"api\"}",
-              "legendFormat": "delay_bytes_max",
-              "refId": "A"
-            }
-          ],
-          "title": "PostgreSQL Replication Delay",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 38
-          },
-          "id": 13,
-          "targets": [
-            {
-              "expr": "messaging_postgres_replication_state_count{job=\"api\"}",
-              "legendFormat": "{{state}}",
-              "refId": "A"
-            }
-          ],
-          "title": "PostgreSQL Replication States",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 38
-          },
-          "id": 14,
-          "targets": [
-            {
-              "expr": "sum by (reason) (increase(messaging_db_failure_total[15m]))",
-              "legendFormat": "{{reason}}",
-              "refId": "A"
-            }
-          ],
-          "title": "DB Failure Reasons (15m)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "p95 latency for API hot-path stages: membership check, idempotency, sequence allocation, and Kafka publish.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 46
-          },
-          "id": 15,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
-              "legendFormat": "{{stage}} p95",
-              "refId": "A"
-            }
-          ],
-          "title": "API Stage Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "p95 latency for worker stages: DB persist, request status update, notification enqueue, and notification DB insert.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 46
-          },
-          "id": 16,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))",
-              "legendFormat": "{{stage}} p95",
-              "refId": "A"
-            }
-          ],
-          "title": "Worker Stage Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "End-to-end async processing lag from API accepted response to PostgreSQL persisted state.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 54
-          },
-          "id": 17,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
-              "legendFormat": "accepted_to_persisted p95",
-              "refId": "A"
-            },
-            {
-              "expr": "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
-              "legendFormat": "accepted_to_persisted p99",
-              "refId": "B"
-            }
-          ],
-          "title": "Accepted To Persisted Lag",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "Time spent waiting in Kafka topic before a worker dequeues the job. Rising values indicate backlog, worker saturation, or DB persistence bottlenecks.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 54
-          },
-          "id": 18,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
-              "legendFormat": "queue_wait p95",
-              "refId": "A"
-            },
-            {
-              "expr": "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
-              "legendFormat": "queue_wait p99",
-              "refId": "B"
-            }
-          ],
-          "title": "Kafka topic Wait Time",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "description": "Desired and available worker replicas from kube-state-metrics and the KEDA-managed HPA.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 62
-          },
-          "id": 19,
-          "targets": [
-            {
-              "expr": "kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}",
-              "legendFormat": "deployment_spec",
-              "refId": "A"
-            },
-            {
-              "expr": "kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}",
-              "legendFormat": "available",
-              "refId": "B"
-            },
-            {
-              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"messaging-app\",horizontalpodautoscaler=\"worker-keda-hpa\"}",
-              "legendFormat": "hpa_desired",
-              "refId": "C"
-            }
-          ],
-          "title": "Worker Replicas",
-          "type": "timeseries"
-        }
-      ],
-      "refresh": "5s",
-      "schemaVersion": 39,
-      "tags": [
-        "messaging",
-        "portfolio",
-        "observability"
-      ],
-      "templating": {
-        "list": []
-      },
-      "time": {
-        "from": "now-30m",
-        "to": "now"
-      },
-      "timezone": "browser",
-      "title": "Messaging Portfolio Overview",
-      "uid": "messaging-portfolio-overview",
-      "version": 4
+        "annotations":  {
+                            "list":  [
+                                     ]
+                        },
+        "editable":  true,
+        "graphTooltip":  0,
+        "panels":  [
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "thresholds":  {
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "value":  null,
+                                                                                                     "color":  "red"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "value":  1,
+                                                                                                     "color":  "green"
+                                                                                                 }
+                                                                                             ],
+                                                                                   "mode":  "absolute"
+                                                                               },
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  0,
+                                           "w":  6,
+                                           "x":  0,
+                                           "h":  6
+                                       },
+                           "id":  1,
+                           "options":  {
+                                           "textMode":  "value",
+                                           "graphMode":  "none",
+                                           "reduceOptions":  {
+                                                                 "values":  false,
+                                                                 "calcs":  [
+                                                                               "lastNotNull"
+                                                                           ],
+                                                                 "fields":  ""
+                                                             },
+                                           "justifyMode":  "auto",
+                                           "orientation":  "auto",
+                                           "colorMode":  "value"
+                                       },
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "",
+                                               "expr":  "messaging_health_status{job=\"api\",component=\"kafka\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Kafka Intake Health",
+                           "type":  "stat",
+                           "description":  "API can reach Kafka bootstrap for event append."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "thresholds":  {
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "value":  null,
+                                                                                                     "color":  "red"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "value":  1,
+                                                                                                     "color":  "green"
+                                                                                                 }
+                                                                                             ],
+                                                                                   "mode":  "absolute"
+                                                                               },
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  0,
+                                           "w":  6,
+                                           "x":  6,
+                                           "h":  6
+                                       },
+                           "id":  2,
+                           "options":  {
+                                           "textMode":  "value",
+                                           "graphMode":  "none",
+                                           "reduceOptions":  {
+                                                                 "values":  false,
+                                                                 "calcs":  [
+                                                                               "lastNotNull"
+                                                                           ],
+                                                                 "fields":  ""
+                                                             },
+                                           "justifyMode":  "auto",
+                                           "orientation":  "auto",
+                                           "colorMode":  "value"
+                                       },
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "",
+                                               "expr":  "messaging_postgres_is_primary{job=\"api\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Primary",
+                           "type":  "stat",
+                           "description":  "Writable primary reachability through Pgpool."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "thresholds":  {
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "value":  null,
+                                                                                                     "color":  "red"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "value":  1,
+                                                                                                     "color":  "green"
+                                                                                                 }
+                                                                                             ],
+                                                                                   "mode":  "absolute"
+                                                                               },
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  0,
+                                           "w":  6,
+                                           "x":  12,
+                                           "h":  6
+                                       },
+                           "id":  3,
+                           "options":  {
+                                           "textMode":  "value",
+                                           "graphMode":  "none",
+                                           "reduceOptions":  {
+                                                                 "values":  false,
+                                                                 "calcs":  [
+                                                                               "lastNotNull"
+                                                                           ],
+                                                                 "fields":  ""
+                                                             },
+                                           "justifyMode":  "auto",
+                                           "orientation":  "auto",
+                                           "colorMode":  "value"
+                                       },
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "",
+                                               "expr":  "messaging_health_status{job=\"worker\",component=\"worker\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Worker Health",
+                           "type":  "stat",
+                           "description":  "Worker consumer loop health."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "thresholds":  {
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "value":  null,
+                                                                                                     "color":  "red"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "value":  1,
+                                                                                                     "color":  "yellow"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "value":  2,
+                                                                                                     "color":  "green"
+                                                                                                 }
+                                                                                             ],
+                                                                                   "mode":  "absolute"
+                                                                               },
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  0,
+                                           "w":  6,
+                                           "x":  18,
+                                           "h":  6
+                                       },
+                           "id":  4,
+                           "options":  {
+                                           "textMode":  "value",
+                                           "graphMode":  "none",
+                                           "reduceOptions":  {
+                                                                 "values":  false,
+                                                                 "calcs":  [
+                                                                               "lastNotNull"
+                                                                           ],
+                                                                 "fields":  ""
+                                                             },
+                                           "justifyMode":  "auto",
+                                           "orientation":  "auto",
+                                           "colorMode":  "value"
+                                       },
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "",
+                                               "expr":  "messaging_postgres_standby_count{job=\"api\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Standbys",
+                           "type":  "stat",
+                           "description":  "Local HA target is two standbys."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  6,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  5,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{status}}",
+                                               "expr":  "sum(rate(messaging_api_requests_total[1m])) by (status)",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "API Request Rate",
+                           "type":  "timeseries",
+                           "description":  "API request rate by HTTP status."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "percentunit",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  6,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  6,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "5xx_ratio",
+                                               "expr":  "(sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(messaging_api_requests_total[5m])), 1))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "API 5xx Ratio",
+                           "type":  "timeseries",
+                           "description":  "User-visible server error ratio."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  14,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  7,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "p95",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "p99",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "API Latency",
+                           "type":  "timeseries",
+                           "description":  "API response latency. Worker persistence is measured separately."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  14,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  8,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{stage}} p95",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "API Stage Latency",
+                           "type":  "timeseries",
+                           "description":  "Hot-path stage latency such as membership, idempotency, and Kafka publish."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  22,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  9,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{result}}",
+                                               "expr":  "sum(rate(messaging_worker_processed_total[1m])) by (result)",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Worker Throughput By Result",
+                           "type":  "timeseries",
+                           "description":  "Worker event processing rate by result."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "percentunit",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  22,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  10,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "failure_ratio",
+                                               "expr":  "(sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) / clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Worker Failure Ratio",
+                           "type":  "timeseries",
+                           "description":  "Worker processing failure ratio."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  30,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  11,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "p95",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "p99",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "Accepted To Persisted Lag",
+                           "type":  "timeseries",
+                           "description":  "End-to-end async lag from API accepted to PostgreSQL persisted."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  30,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  12,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "p95",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "p99",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "Kafka Topic Wait Time",
+                           "type":  "timeseries",
+                           "description":  "Application-side proxy for Kafka backlog before worker processing."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  38,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  13,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{stage}} p95",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Worker Stage Latency",
+                           "type":  "timeseries",
+                           "description":  "Worker stage bottlenecks such as db_persist and status update."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "s",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  38,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  14,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "seconds_since_last_success",
+                                               "expr":  "time() - max(messaging_worker_last_success_timestamp{job=\"worker\"})",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Worker Last Success Age",
+                           "type":  "timeseries",
+                           "description":  "Seconds since last successful worker job."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  46,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  15,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "api",
+                                               "expr":  "messaging_db_pool_in_use{job=\"api\"}",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "worker",
+                                               "expr":  "messaging_db_pool_in_use{job=\"worker\"}",
+                                               "refId":  "B"
+                                           },
+                                           {
+                                               "legendFormat":  "dlq-replayer",
+                                               "expr":  "messaging_db_pool_in_use{job=\"dlq-replayer\"}",
+                                               "refId":  "C"
+                                           }
+                                       ],
+                           "title":  "DB Pool In Use",
+                           "type":  "timeseries",
+                           "description":  "Checked-out DB connections by process."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  46,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  16,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{reason}}",
+                                               "expr":  "sum by (reason) (increase(messaging_db_failure_total[15m]))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "DB Failure Reasons (15m)",
+                           "type":  "timeseries",
+                           "description":  "DB failures grouped by reason over 15 minutes."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  54,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  17,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "dlq {{reason}}",
+                                               "expr":  "sum by (reason) (increase(messaging_dlq_events_total[15m]))",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "replay {{result}}",
+                                               "expr":  "sum by (result) (increase(messaging_dlq_replay_total[15m]))",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "DLQ Events And Replay",
+                           "type":  "timeseries",
+                           "description":  "DLQ inflow and replay guard outcomes."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "unit":  "bytes",
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  54,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  18,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "delay_bytes_max",
+                                               "expr":  "messaging_postgres_replication_delay_bytes_max{job=\"api\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Replication Delay",
+                           "type":  "timeseries",
+                           "description":  "Maximum standby replication delay in bytes."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  62,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  19,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "standby_count",
+                                               "expr":  "messaging_postgres_standby_count{job=\"api\"}",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "sync_standby_count",
+                                               "expr":  "messaging_postgres_sync_standby_count{job=\"api\"}",
+                                               "refId":  "B"
+                                           },
+                                           {
+                                               "legendFormat":  "primary_reachable",
+                                               "expr":  "messaging_postgres_is_primary{job=\"api\"}",
+                                               "refId":  "C"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Replication Capacity",
+                           "type":  "timeseries",
+                           "description":  "Primary reachability and standby capacity."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  62,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  20,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{state}}",
+                                               "expr":  "messaging_postgres_replication_state_count{job=\"api\"}",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "{{sync_state}}",
+                                               "expr":  "messaging_postgres_replication_sync_state_count{job=\"api\"}",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Replication States",
+                           "type":  "timeseries",
+                           "description":  "Replication state and sync state distribution."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  70,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  21,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "deployment_spec",
+                                               "expr":  "kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "available",
+                                               "expr":  "kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}",
+                                               "refId":  "B"
+                                           },
+                                           {
+                                               "legendFormat":  "hpa_desired",
+                                               "expr":  "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"messaging-app\",horizontalpodautoscaler=\"worker-keda-hpa\"}",
+                                               "refId":  "C"
+                                           }
+                                       ],
+                           "title":  "Worker Scaling",
+                           "type":  "timeseries",
+                           "description":  "KEDA desired worker replicas versus available replicas."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  70,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  22,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "deployment_spec",
+                                               "expr":  "kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"api\"}",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "available",
+                                               "expr":  "kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"api\"}",
+                                               "refId":  "B"
+                                           },
+                                           {
+                                               "legendFormat":  "hpa_desired",
+                                               "expr":  "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"messaging-app\",horizontalpodautoscaler=\"api-hpa\"}",
+                                               "refId":  "C"
+                                           }
+                                       ],
+                           "title":  "API Scaling",
+                           "type":  "timeseries",
+                           "description":  "API HPA desired replicas versus available replicas."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  78,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  23,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{pod}}/{{container}}",
+                                               "expr":  "sum by (pod, container) (increase(kube_pod_container_status_restarts_total{namespace=\"messaging-app\"}[15m]))",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Pod Restarts (15m)",
+                           "type":  "timeseries",
+                           "description":  "Restart signal for CrashLoopBackOff, OOMKilled, and resource pressure."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  78,
+                                           "w":  12,
+                                           "x":  12,
+                                           "h":  8
+                                       },
+                           "id":  24,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{deployment}} unavailable",
+                                               "expr":  "kube_deployment_status_replicas_unavailable{namespace=\"messaging-app\"}",
+                                               "refId":  "A"
+                                           }
+                                       ],
+                           "title":  "Unavailable Replicas",
+                           "type":  "timeseries",
+                           "description":  "Unavailable deployment replicas from rollout, scheduling, or readiness issues."
+                       }
+                   ],
+        "refresh":  "5s",
+        "schemaVersion":  39,
+        "tags":  [
+                     "messaging",
+                     "portfolio",
+                     "observability"
+                 ],
+        "templating":  {
+                           "list":  [
+                                    ]
+                       },
+        "time":  {
+                     "to":  "now",
+                     "from":  "now-30m"
+                 },
+        "timezone":  "browser",
+        "title":  "Messaging Portfolio Operations Overview",
+        "uid":  "messaging-portfolio-overview",
+        "version":  5
     }
 ---
 apiVersion: apps/v1

@@ -10,6 +10,7 @@ from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
 from portfolio.kafka_client import build_ingress_consumer, publish_dlq_job
 from portfolio.metrics import (
+    dlq_events_total,
     event_persist_lag_seconds,
     health_status,
     observe_worker_stage,
@@ -200,6 +201,7 @@ def move_to_dlq(job_payload: dict, reason: str) -> None:
     job_payload["failed_reason"] = reason
     job_payload["failed_at"] = now_iso()
     publish_dlq_job(job_payload["room_id"], job_payload)
+    dlq_events_total.labels(reason=reason).inc()
     update_request_status(
         request_id,
         {

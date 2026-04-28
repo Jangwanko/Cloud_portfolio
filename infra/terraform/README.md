@@ -9,7 +9,6 @@ infra/terraform
 │  └─ dev/                  # 개발/포트폴리오용 환경 진입점
 └─ modules/
    ├─ ecr/                  # ECR repository
-   ├─ elasticache_redis/    # ElastiCache Redis
    ├─ eks/                  # EKS cluster + node group
    ├─ rds_postgres/         # RDS PostgreSQL
    ├─ route53_acm/          # Route53 + ACM
@@ -23,7 +22,7 @@ infra/terraform
 - EKS
 - ECR
 - RDS PostgreSQL Multi-AZ
-- ElastiCache for Redis
+- Amazon MSK or self-managed Kafka on EKS
 - Secrets Manager
 - optional Route 53 + ACM
 

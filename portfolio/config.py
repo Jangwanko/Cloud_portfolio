@@ -33,6 +33,7 @@ class Settings:
     dlq_replay_max_count: int = int(os.getenv("DLQ_REPLAY_MAX_COUNT", "3"))
     observer_port: int = int(os.getenv("OBSERVER_PORT", "8081"))
     worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9101"))
+    dlq_replayer_metrics_port: int = int(os.getenv("DLQ_REPLAYER_METRICS_PORT", "9102"))
     postgres_min_ready_standbys: int = int(os.getenv("POSTGRES_MIN_READY_STANDBYS", "2"))
     postgres_min_sync_standbys: int = int(os.getenv("POSTGRES_MIN_SYNC_STANDBYS", "0"))
     postgres_replication_delay_degraded_bytes: int = int(

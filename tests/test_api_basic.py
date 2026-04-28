@@ -141,6 +141,29 @@ class TestDlqHelpers:
         assert moved is False
         assert published == []
 
+    def test_replay_one_records_replay_result(self, monkeypatch):
+        from worker import dlq_replayer
+
+        published = []
+        monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+
+        moved = dlq_replayer.replay_one(
+            {
+                "request_id": "req-replay",
+                "room_id": 1,
+                "replay_count": 0,
+            }
+        )
+
+        assert moved is True
+        assert len(published) == 1
+
+    def test_dlq_metrics_are_defined(self):
+        from portfolio.metrics import dlq_events_total, dlq_replay_total
+
+        assert dlq_events_total is not None
+        assert dlq_replay_total is not None
+
 
 class TestSecurityHelpers:
     """Security defaults stay visible to tests and documentation."""
@@ -169,3 +192,8 @@ class TestConfig:
         from portfolio.config import settings
 
         assert settings.dlq_replay_max_count >= 1
+
+    def test_dlq_replayer_metrics_port_exists(self):
+        from portfolio.config import settings
+
+        assert settings.dlq_replayer_metrics_port == 9102

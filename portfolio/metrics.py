@@ -112,6 +112,20 @@ worker_failures_total = Counter(
     registry=registry,
 )
 
+dlq_events_total = Counter(
+    "messaging_dlq_events_total",
+    "Events published to the Kafka DLQ",
+    ["reason"],
+    registry=registry,
+)
+
+dlq_replay_total = Counter(
+    "messaging_dlq_replay_total",
+    "Kafka DLQ replay attempts grouped by result",
+    ["result"],
+    registry=registry,
+)
+
 postgres_is_primary = Gauge(
     "messaging_postgres_is_primary",
     "Whether PostgreSQL primary is reachable through pgpool",
