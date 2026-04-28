@@ -114,6 +114,29 @@ def _store_request_and_queue_job(request_id: str, request_payload: dict, job_pay
         publish_ingress_job(job_payload["room_id"], job_payload)
 
 
+def _summarize_dlq_item(item: dict) -> dict:
+    value = item.get("value") or {}
+    replay_count = int(value.get("replay_count", 0) or 0)
+    return {
+        "topic": item.get("topic"),
+        "partition": item.get("partition"),
+        "offset": item.get("offset"),
+        "timestamp": item.get("timestamp"),
+        "key": item.get("key"),
+        "request_id": value.get("request_id"),
+        "stream_id": value.get("room_id"),
+        "user_id": value.get("user_id"),
+        "failed_reason": value.get("failed_reason"),
+        "retry_count": int(value.get("retry_count", 0) or 0),
+        "replay_count": replay_count,
+        "replayable": replay_count < settings.dlq_replay_max_count,
+        "max_replay_count": settings.dlq_replay_max_count,
+        "failed_at": value.get("failed_at"),
+        "replayed_at": value.get("replayed_at"),
+        "payload": value,
+    }
+
+
 def _room_members_key(room_id: int) -> str:
     return f"room_members:{room_id}"
 
@@ -334,11 +357,13 @@ def get_ingress_dlq(
     current_user: dict = Depends(get_current_user),
 ):
     items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
+    summarized_items = [_summarize_dlq_item(item) for item in items]
     return {
         "queue_backend": "kafka",
         "topic": settings.kafka_dlq_topic,
-        "count": len(items),
-        "items": items,
+        "count": len(summarized_items),
+        "max_replay_count": settings.dlq_replay_max_count,
+        "items": summarized_items,
     }
 
 

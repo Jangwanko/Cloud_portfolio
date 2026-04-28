@@ -30,6 +30,42 @@ flowchart LR
     Argo --> K8s[Kubernetes sync]
 ```
 
+정상 event 흐름:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Kafka as Kafka ingress topic
+    participant Worker
+    participant DB as PostgreSQL HA
+
+    Client->>API: event request
+    API->>Kafka: append with stream_id key
+    API-->>Client: 202 Accepted
+    Worker->>Kafka: consume partition
+    Worker->>DB: persist event and stream_seq
+    Worker->>DB: update request status
+```
+
+장애 / DLQ 흐름:
+
+```mermaid
+sequenceDiagram
+    participant Kafka as Kafka ingress topic
+    participant Worker
+    participant DLQ as Kafka DLQ topic
+    participant Replayer as DLQ Replayer
+    participant DB as PostgreSQL HA
+
+    Worker->>Kafka: consume event
+    Worker->>Worker: inline retry on transient failure
+    Worker->>DLQ: publish after retry limit
+    Replayer->>DLQ: consume replayable event
+    Replayer->>Kafka: re-append until max replay count
+    Worker->>DB: persist after recovery
+```
+
 처리 흐름:
 - API는 event request를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
 - Kafka message key는 `stream_id`로 두어 같은 stream 이벤트의 ordering boundary를 partition 단위로 유지합니다.
@@ -45,12 +81,14 @@ flowchart LR
 - Partition key 기반 stream ordering boundary
 - Worker consumer group processing
 - Kafka DLQ topic / DLQ Replayer
+- DLQ replay count guard
 - Kafka consumer lag based KEDA autoscaling
 - PostgreSQL HA + Pgpool
 - API CPU HPA
 - Prometheus / Grafana observability
 - PostgreSQL backup / restore
 - Ingress nginx + local self-signed TLS
+- Runtime secret separation
 - Argo CD GitOps sync path
 - AWS Terraform IaC extension path
 
@@ -69,6 +107,18 @@ flowchart LR
 
 ## 성능 요약
 Kafka 포트폴리오의 성능 기준은 기능 테스트와 분리해서 봅니다. 기능 검증은 `quick_start_all.ps1`에서 확인하고, 성능 기준선은 아래 suite로 측정합니다.
+
+측정 / 재현 환경:
+
+| 항목 | 값 |
+| --- | --- |
+| Host CPU | AMD Ryzen 5 5600, 6 cores / 12 threads, max 3.5GHz |
+| Host memory | 약 32GiB |
+| Docker Desktop 노출 사양 | 12 CPU, 약 15.6GiB memory |
+| Kubernetes node | kind single-node, `messaging-ha-control-plane` |
+| Kubernetes allocatable | 12 CPU, `16338128Ki` memory |
+| Pod resource requests | 5.1 CPU, `6768Mi` memory |
+| Pod resource limits | 13.725 CPU, `14782Mi` memory |
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1

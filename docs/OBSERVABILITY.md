@@ -100,6 +100,7 @@ Kafka consumer lag는 KEDA Kafka scaler의 external metric과 consumer group 상
 - retry 한도를 넘긴 event는 Kafka DLQ topic으로 이동합니다.
 - DLQ payload의 `failed_reason`, `retry_count`, `replay_count`를 보고 재처리 가능 여부를 판단합니다.
 - replay 후 같은 이유로 다시 DLQ에 쌓이면 일시 장애가 아니라 데이터 조건 또는 persistence logic 문제일 수 있습니다.
+- `replay_count`가 `max_replay_count` 이상이면 자동 replay 대상에서 제외된 것으로 봅니다.
 
 ## Metric 메모
 

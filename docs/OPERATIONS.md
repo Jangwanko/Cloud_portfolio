@@ -188,3 +188,49 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 운영 UI 접근 정책 강화
 - secret 외부화 방향 정리
 - alert / incident runbook 보강
+
+## DLQ 운영 기준
+
+DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 경로입니다.
+
+현재 정책:
+
+- Worker는 retry 한도를 넘긴 event를 Kafka DLQ topic으로 보냅니다.
+- DLQ payload에는 `failed_reason`, `retry_count`, `replay_count`, `failed_at`이 포함됩니다.
+- `GET /v1/dlq/ingress`는 최근 DLQ event를 운영자가 읽기 쉬운 요약 형태로 반환합니다.
+- DLQ Replayer는 PostgreSQL writable path가 복구된 뒤 replay 가능한 event를 ingress topic으로 재주입합니다.
+- `DLQ_REPLAY_MAX_COUNT` 기본값은 `3`입니다.
+- `replay_count`가 최대값 이상이면 replayer는 해당 event를 다시 ingress topic에 넣지 않습니다.
+
+확인 순서:
+
+1. `GET /v1/dlq/ingress?limit=20`으로 최근 실패 event를 확인합니다.
+2. `failed_reason`이 일시 장애인지 데이터 조건 문제인지 구분합니다.
+3. `replay_count`가 `max_replay_count`에 도달했는지 확인합니다.
+4. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
+5. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
+
+같은 stream 순서 보장 기준:
+
+- Worker는 transient persistence failure 시 같은 Kafka offset에서 inline retry를 수행합니다.
+- 앞 event가 처리되거나 DLQ로 이동하기 전까지 같은 partition의 뒤 event는 앞지르지 못합니다.
+- 앞 event가 최종 DLQ가 되면 운영자는 DLQ reason을 확인한 뒤 replay 여부를 결정합니다.
+
+## 보안 기본선
+
+현재 보안 기준은 로컬 포트폴리오 검증과 운영형 확장 방향을 분리해서 봅니다.
+
+현재 적용:
+
+- 사용자 비밀번호는 plain text가 아니라 `pbkdf2_sha256` hash로 저장합니다.
+- API 인증은 bearer token 기반으로 처리합니다.
+- `AUTH_SECRET_KEY`, token TTL, Grafana credential은 `messaging-runtime-secrets`로 분리합니다.
+- `.env`는 Git 추적 대상에서 제외합니다.
+- local Grafana 기본 비밀번호는 데모용이며 운영 credential이 아닙니다.
+
+운영형 확장 기준:
+
+- `AUTH_SECRET_KEY` 기본값 `dev-secret-change-me`는 local 외 환경에서 사용하지 않습니다.
+- Grafana / Prometheus는 public ingress로 직접 열지 않고 내부망, VPN, SSO, basic auth 같은 접근 제한을 둡니다.
+- secret은 Kubernetes Secret에서 외부 secret manager로 확장합니다.
+- credential rotation은 배포 파이프라인에서 관리합니다.

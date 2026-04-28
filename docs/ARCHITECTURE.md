@@ -55,6 +55,42 @@ Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각
 7. retry 한도를 넘기면 Kafka DLQ topic으로 이동합니다.
 8. DLQ Replayer가 복구 조건이 맞으면 ingress topic으로 재주입합니다.
 
+정상 event 흐름:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Kafka as Kafka ingress topic
+    participant Worker
+    participant DB as PostgreSQL HA
+
+    Client->>API: event request
+    API->>Kafka: append with stream_id key
+    API-->>Client: 202 Accepted
+    Worker->>Kafka: consume partition
+    Worker->>DB: persist event and stream_seq
+    Worker->>DB: update request status
+```
+
+장애 / DLQ 흐름:
+
+```mermaid
+sequenceDiagram
+    participant Kafka as Kafka ingress topic
+    participant Worker
+    participant DLQ as Kafka DLQ topic
+    participant Replayer as DLQ Replayer
+    participant DB as PostgreSQL HA
+
+    Worker->>Kafka: consume event
+    Worker->>Worker: inline retry on transient failure
+    Worker->>DLQ: publish after retry limit
+    Replayer->>DLQ: consume replayable event
+    Replayer->>Kafka: re-append until max replay count
+    Worker->>DB: persist after recovery
+```
+
 ## Kafka 설계 선택
 Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event stream processing 특성을 더 명확히 검증하기 위해서입니다.
 

@@ -14,6 +14,11 @@ from portfolio.db import get_conn, get_cursor
 _TOKEN_TTL_SECONDS = int(os.getenv("ACCESS_TOKEN_TTL_SECONDS", "3600"))
 _SECRET_KEY = os.getenv("AUTH_SECRET_KEY", "dev-secret-change-me")
 _bearer_scheme = HTTPBearer(auto_error=False)
+_DEFAULT_SECRET_KEY = "dev-secret-change-me"
+
+
+def is_default_auth_secret() -> bool:
+    return _SECRET_KEY == _DEFAULT_SECRET_KEY
 
 
 def _b64url_encode(data: bytes) -> str:

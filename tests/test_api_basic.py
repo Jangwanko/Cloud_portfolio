@@ -84,6 +84,73 @@ class TestWorkerUtils:
         assert issubclass(RoomSequenceGapError, RuntimeError)
 
 
+class TestDlqHelpers:
+    """DLQ API payload shaping and replay guard checks."""
+
+    def test_summarize_dlq_item_marks_replayable(self):
+        from portfolio.api import _summarize_dlq_item
+
+        item = {
+            "topic": "message-ingress-dlq",
+            "partition": 2,
+            "offset": 10,
+            "timestamp": 12345,
+            "key": "7",
+            "value": {
+                "request_id": "req-1",
+                "room_id": 7,
+                "user_id": 3,
+                "failed_reason": "transient_error",
+                "retry_count": 3,
+                "replay_count": 1,
+            },
+        }
+
+        result = _summarize_dlq_item(item)
+
+        assert result["request_id"] == "req-1"
+        assert result["stream_id"] == 7
+        assert result["failed_reason"] == "transient_error"
+        assert result["replayable"] is True
+        assert result["payload"] == item["value"]
+
+    def test_summarize_dlq_item_marks_max_replay_exceeded(self):
+        from portfolio.api import _summarize_dlq_item
+        from portfolio.config import settings
+
+        result = _summarize_dlq_item({"value": {"replay_count": settings.dlq_replay_max_count}})
+
+        assert result["replayable"] is False
+        assert result["max_replay_count"] == settings.dlq_replay_max_count
+
+    def test_replay_one_skips_when_max_replay_count_reached(self, monkeypatch):
+        from portfolio.config import settings
+        from worker import dlq_replayer
+
+        published = []
+        monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+
+        moved = dlq_replayer.replay_one(
+            {
+                "request_id": "req-max",
+                "room_id": 1,
+                "replay_count": settings.dlq_replay_max_count,
+            }
+        )
+
+        assert moved is False
+        assert published == []
+
+
+class TestSecurityHelpers:
+    """Security defaults stay visible to tests and documentation."""
+
+    def test_default_auth_secret_is_detectable(self):
+        from portfolio.auth import is_default_auth_secret
+
+        assert isinstance(is_default_auth_secret(), bool)
+
+
 class TestConfig:
     """Basic settings/module import checks."""
 
@@ -97,3 +164,8 @@ class TestConfig:
 
         assert settings.kafka_ingress_topic
         assert settings.kafka_dlq_topic
+
+    def test_dlq_replay_limit_exists(self):
+        from portfolio.config import settings
+
+        assert settings.dlq_replay_max_count >= 1

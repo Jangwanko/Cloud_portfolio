@@ -75,6 +75,7 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 - retry 한도를 넘긴 event는 Kafka DLQ topic으로 이동합니다.
 - DLQ payload의 `failed_reason`, `retry_count`, `replay_count`를 확인합니다.
 - 데이터 조건 문제가 해결되지 않으면 replay해도 다시 DLQ에 쌓일 수 있습니다.
+- DLQ Replayer는 `DLQ_REPLAY_MAX_COUNT`를 넘긴 event를 다시 ingress topic으로 재주입하지 않습니다.
 
 ## 현재 메모
 

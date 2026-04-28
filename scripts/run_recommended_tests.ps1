@@ -49,6 +49,22 @@ Invoke-Step "DB outage and recovery test" {
     -SkipReset
 }
 
+Invoke-Step "DLQ flow test" {
+  & "$PSScriptRoot/test_dlq_flow.ps1" `
+    -BaseUrl $BaseUrl `
+    -Namespace $Namespace `
+    -DbDeployment $DbDeployment `
+    -SkipReset
+}
+
+Invoke-Step "DLQ replay guard test" {
+  & "$PSScriptRoot/test_dlq_replay_guard.ps1" `
+    -BaseUrl $BaseUrl `
+    -Namespace $Namespace `
+    -DbDeployment $DbDeployment `
+    -SkipReset
+}
+
 Invoke-Step "Reset before load test" {
   Reset-State
 }

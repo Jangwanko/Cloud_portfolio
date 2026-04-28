@@ -16,7 +16,16 @@ def now_iso() -> str:
 
 def replay_one(raw: str) -> bool:
     job_payload = raw if isinstance(raw, dict) else json.loads(raw)
-    job_payload["replay_count"] = int(job_payload.get("replay_count", 0)) + 1
+    replay_count = int(job_payload.get("replay_count", 0))
+    if replay_count >= settings.dlq_replay_max_count:
+        logging.warning(
+            "Kafka DLQ replay skipped request_id=%s reason=max_replay_count replay_count=%s",
+            job_payload.get("request_id"),
+            replay_count,
+        )
+        return False
+
+    job_payload["replay_count"] = replay_count + 1
     job_payload["replayed_at"] = now_iso()
     job_payload["retry_count"] = 0
     job_payload["next_retry_at"] = None

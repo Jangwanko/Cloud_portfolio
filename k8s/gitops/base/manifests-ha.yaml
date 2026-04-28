@@ -20,6 +20,7 @@ stringData:
   KAFKA_INGRESS_TOPIC: "message-ingress"
   KAFKA_DLQ_TOPIC: "message-ingress-dlq"
   KAFKA_CONSUMER_GROUP: "message-worker"
+  DLQ_REPLAY_MAX_COUNT: "3"
   STARTUP_RETRIES: "30"
   STARTUP_RETRY_DELAY: "2"
   DB_POOL_MIN_CONN: "1"

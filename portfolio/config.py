@@ -30,6 +30,7 @@ class Settings:
     dlq_replay_enabled: bool = os.getenv("DLQ_REPLAY_ENABLED", "true").lower() == "true"
     dlq_replay_interval_seconds: float = float(os.getenv("DLQ_REPLAY_INTERVAL_SECONDS", "0.2"))
     dlq_replay_batch_size: int = int(os.getenv("DLQ_REPLAY_BATCH_SIZE", "5"))
+    dlq_replay_max_count: int = int(os.getenv("DLQ_REPLAY_MAX_COUNT", "3"))
     observer_port: int = int(os.getenv("OBSERVER_PORT", "8081"))
     worker_metrics_port: int = int(os.getenv("WORKER_METRICS_PORT", "9101"))
     postgres_min_ready_standbys: int = int(os.getenv("POSTGRES_MIN_READY_STANDBYS", "2"))

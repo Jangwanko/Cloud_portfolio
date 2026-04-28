@@ -69,7 +69,22 @@ Publish-PoisonEvent -RequestId $requestId -StreamId $stream.id -UserId $u1.id
   while ((Get-Date) -lt $deadline) {
     $dlq = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/dlq/ingress?limit=200"
     foreach ($item in $dlq.items) {
-      if ($item.value.request_id -eq $requestId) {
+      if ($item.request_id -eq $requestId) {
+        if ($item.stream_id -ne $stream.id) {
+          throw "Expected DLQ stream_id=$($stream.id) got=$($item.stream_id)"
+        }
+        if (-not $item.failed_reason) {
+          throw "Expected DLQ failed_reason for request_id=$requestId"
+        }
+        if ($null -eq $item.replayable) {
+          throw "Expected DLQ replayable field for request_id=$requestId"
+        }
+        if ($item.max_replay_count -lt 1) {
+          throw "Expected positive DLQ max_replay_count for request_id=$requestId"
+        }
+        if (-not $item.payload -or $item.payload.request_id -ne $requestId) {
+          throw "Expected original DLQ payload for request_id=$requestId"
+        }
         $found = $true
         break
       }
