@@ -166,3 +166,10 @@ DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 rea
 - `by_stream`: 특정 stream에 DLQ가 몰리는지 확인합니다.
 
 이 API는 Prometheus counter보다 payload에 가까운 운영 조회입니다. 알림은 “증가했다”를 알려주고, summary API는 “무엇이 왜 쌓였는가”를 확인합니다.
+## Dashboard Operator Links
+
+Grafana dashboard에는 `DLQ Operator Links` 패널을 둡니다. `DLQ Events And Replay` 패널에서 변화가 보이면 해당 링크 패널의 summary endpoint와 Runbook을 따라갑니다.
+
+- Summary: `GET /v1/dlq/ingress/summary?limit=200&sample_limit=5`
+- Samples: `GET /v1/dlq/ingress?limit=20`
+- Runbook: `DLQ Summary Triage`

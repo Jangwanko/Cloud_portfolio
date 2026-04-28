@@ -241,3 +241,20 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 | `by_reason.transient_error_max_retries:*` 증가 | PostgreSQL / Pgpool / persistence path 장애 확인 |
 | `oldest_age_seconds` 증가 | DLQ가 계속 남아있는 상태이므로 replay 또는 수동 처리 결정 필요 |
 | `by_stream` 특정 stream 집중 | 해당 stream의 앞 event, membership, sequence 상태를 우선 조사 |
+## Incident Signal Suite
+
+개별 장애 테스트가 아니라 운영 신호가 연결되어 있는지 한 번에 볼 때는 incident signal suite를 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_incident_signals.ps1 -SkipDbOutage
+```
+
+기본 구성:
+
+| Scenario | 확인 신호 |
+| --- | --- |
+| PostgreSQL outage / recovery | DB 장애 중 accepted event가 복구 후 persisted 되는지 확인 |
+| DLQ alert probe | `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked` alert 확인 |
+| Worker bad rollout | `MessagingDeploymentUnavailableReplicas` pending/firing 확인 후 image 복구 |
+
+긴 DB 장애 시나리오를 제외하려면 `-SkipDbOutage`를 사용합니다. 이 suite는 성능 측정이 아니라 장애 신호 배선과 복구 절차 검증입니다.

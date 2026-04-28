@@ -11,11 +11,21 @@ from portfolio.db import get_conn, get_cursor
 from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job
 from portfolio.metrics import observe_api_stage
 from portfolio.schemas import (
+    DlqListResponse,
+    DlqSummaryResponse,
     EventCreate,
+    EventAcceptedResponse,
+    EventRequestStatusResponse,
+    EventResponse,
     LoginRequest,
     ReadReceiptCreate,
+    ReadReceiptResponse,
     StreamCreate,
+    StreamResponse,
+    TokenResponse,
+    UnreadCountResponse,
     UserCreate,
+    UserResponse,
 )
 from portfolio.state_store import (
     clear_fallback_idem,
@@ -271,7 +281,7 @@ def _message_room_id(cur, message_id: int) -> int:
     return int(row["room_id"])
 
 
-@router.post("/users")
+@router.post("/users", response_model=UserResponse)
 def create_user(payload: UserCreate):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
@@ -292,7 +302,7 @@ def create_user(payload: UserCreate):
                 raise HTTPException(status_code=409, detail="Username already exists") from exc
 
 
-@router.post("/auth/login")
+@router.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest):
     user = authenticate_user(payload.username, payload.password)
     if user is None:
@@ -305,7 +315,7 @@ def login(payload: LoginRequest):
     }
 
 
-@router.post("/streams")
+@router.post("/streams", response_model=StreamResponse)
 def create_stream(payload: StreamCreate, current_user: dict = Depends(get_current_user)):
     with get_conn() as conn:
         with get_cursor(conn) as cur:
@@ -340,7 +350,7 @@ def create_stream(payload: StreamCreate, current_user: dict = Depends(get_curren
             }
 
 
-@router.post("/streams/{stream_id}/events")
+@router.post("/streams/{stream_id}/events", response_model=EventAcceptedResponse)
 def create_event(
     stream_id: int,
     payload: EventCreate,
@@ -402,7 +412,7 @@ def create_event(
     return accepted_response
 
 
-@router.get("/event-requests/{request_id}")
+@router.get("/event-requests/{request_id}", response_model=EventRequestStatusResponse)
 def get_event_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
     status = _load_request_status(request_id)
     if status is None:
@@ -413,7 +423,7 @@ def get_event_request_status(request_id: str, current_user: dict = Depends(get_c
     return _externalize_request_status(status)
 
 
-@router.get("/dlq/ingress")
+@router.get("/dlq/ingress", response_model=DlqListResponse)
 def get_ingress_dlq(
     limit: int = Query(default=20, ge=1, le=200),
     current_user: dict = Depends(get_current_user),
@@ -429,7 +439,7 @@ def get_ingress_dlq(
     }
 
 
-@router.get("/dlq/ingress/summary")
+@router.get("/dlq/ingress/summary", response_model=DlqSummaryResponse)
 def get_ingress_dlq_summary(
     limit: int = Query(default=200, ge=1, le=500),
     sample_limit: int = Query(default=5, ge=0, le=20),
@@ -448,7 +458,7 @@ def get_ingress_dlq_summary(
     }
 
 
-@router.get("/streams/{stream_id}/events")
+@router.get("/streams/{stream_id}/events", response_model=list[EventResponse])
 def list_events(
     stream_id: int,
     limit: int = Query(default=20, ge=1, le=100),
@@ -494,7 +504,7 @@ def list_events(
     return result
 
 
-@router.post("/events/{event_id}/read")
+@router.post("/events/{event_id}/read", response_model=ReadReceiptResponse)
 def mark_as_read(
     event_id: int,
     payload: ReadReceiptCreate,
@@ -518,7 +528,7 @@ def mark_as_read(
     return {"status": "ok", "event_id": event_id, "user_id": int(current_user["id"])}
 
 
-@router.get("/streams/{stream_id}/unread-count/{user_id}")
+@router.get("/streams/{stream_id}/unread-count/{user_id}", response_model=UnreadCountResponse)
 def unread_count(stream_id: int, user_id: int, current_user: dict = Depends(get_current_user)):
     if int(current_user["id"]) != user_id:
         raise HTTPException(status_code=403, detail="Unread count access denied")

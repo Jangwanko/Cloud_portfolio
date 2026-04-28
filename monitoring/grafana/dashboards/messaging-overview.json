@@ -984,6 +984,21 @@
                        "title":  "Unavailable Replicas",
                        "type":  "timeseries",
                        "description":  "Unavailable deployment replicas from rollout, scheduling, or readiness issues."
+                   },
+                   {
+                       "id":  25,
+                       "title":  "DLQ Operator Links",
+                       "type":  "text",
+                       "gridPos":  {
+                                       "x":  0,
+                                       "y":  86,
+                                       "w":  24,
+                                       "h":  4
+                                   },
+                       "options":  {
+                                       "mode":  "markdown",
+                                       "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_age_seconds`, and `by_stream`."
+                                   }
                    }
                ],
     "refresh":  "5s",
@@ -1005,5 +1020,5 @@
     "timezone":  "browser",
     "title":  "Messaging Portfolio Operations Overview",
     "uid":  "messaging-portfolio-overview",
-    "version":  5
+    "version":  6
 }

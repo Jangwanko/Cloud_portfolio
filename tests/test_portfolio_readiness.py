@@ -101,16 +101,45 @@ class TestApiContractAndRunbook:
         assert "API contract test" in test_results
 
     def test_dlq_summary_api_is_documented(self):
+        readme = read_text("README.md")
         operations = read_text("docs/OPERATIONS.md")
         runbook = read_text("docs/RUNBOOK.md")
         observability = read_text("docs/OBSERVABILITY.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (operations, runbook, observability, test_results):
+        for document in (readme, operations, runbook, observability, test_results):
             assert "/v1/dlq/ingress/summary" in document
             assert "by_reason" in document
             assert "replayable" in document
             assert "blocked" in document
+
+    def test_response_models_and_incident_probe_are_documented(self):
+        schemas = read_text("portfolio/schemas.py")
+        api = read_text("portfolio/api.py")
+        main = read_text("portfolio/main.py")
+        readme = read_text("README.md")
+        runbook = read_text("docs/RUNBOOK.md")
+        operations = read_text("docs/OPERATIONS.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+        incident_script = read_text("scripts/test_incident_signals.ps1")
+
+        for model in (
+            "ReadinessResponse",
+            "DlqListResponse",
+            "DlqSummaryResponse",
+            "EventRequestStatusResponse",
+        ):
+            assert model in schemas
+            assert model in api or model in main
+
+        assert "test_incident_signals.ps1" in runbook
+        assert "test_incident_signals.ps1" in test_results
+        assert "MessagingDeploymentUnavailableReplicas" in incident_script
+        assert "messaging-portfolio:incident-probe-missing" in incident_script
+        assert "response_model" in operations
+        assert "/docs" in readme
+        assert "/openapi.json" in operations
+        assert "OpenAPI" in test_results
 
     def test_runbook_is_linked_and_covers_incident_paths(self):
         readme = read_text("README.md")
@@ -155,6 +184,7 @@ class TestOperationsDashboard:
             "DLQ Events And Replay",
             "Pod Restarts (15m)",
             "Unavailable Replicas",
+            "DLQ Operator Links",
         }
         assert expected_titles.issubset(titles)
 
@@ -170,6 +200,7 @@ class TestOperationsDashboard:
             "messaging_dlq_replay_total",
             "kube_pod_container_status_restarts_total",
             "kube_deployment_status_replicas_unavailable",
+            "/v1/dlq/ingress/summary",
         ):
             assert metric in serialized
 

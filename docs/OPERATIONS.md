@@ -255,3 +255,28 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 | `recent_samples` | 최근 DLQ event 샘플 |
 
 `blocked > 0`이면 replay보다 원인 수정이 먼저입니다. `by_reason`이 같은 값으로 몰리면 일시 장애보다 데이터 조건 또는 persistence logic 문제를 우선 의심합니다.
+## API 계약과 운영 노출 기준
+
+핵심 운영 endpoint는 FastAPI `response_model`로 응답 계약을 고정합니다. 현재 고정된 계약은 readiness, event request status, DLQ list, DLQ summary, unread count, read receipt입니다.
+
+운영 노출 기준:
+
+| Surface | 로컬 포트폴리오 | 운영 전환 기준 |
+| --- | --- | --- |
+| API | ingress로 공개 | 인증 endpoint 외에는 JWT 필요, public path 최소화 |
+| Grafana | ingress로 공개 | SSO, basic auth, VPN 또는 사설망 뒤에 배치 |
+| Prometheus | ingress로 공개 | 직접 public 노출 금지, Grafana 또는 내부망에서만 접근 |
+| DLQ API | JWT 필요 | 운영자 권한 분리, replay/blocked 판단 로그 보존 |
+| Metrics | `/metrics` scrape | 외부 공개 금지, cluster-local scrape 우선 |
+
+이 프로젝트의 로컬 ingress 노출은 포트폴리오 검증 편의를 위한 설정입니다. 실제 운영형 배포에서는 ingress class, auth proxy, network policy, secret manager를 함께 적용하는 것을 기준으로 둡니다.
+## OpenAPI 사용 설명서
+
+FastAPI는 핵심 API 계약을 `/openapi.json`으로 공개하고, 사람이 보는 문서는 `/docs`에서 제공합니다.
+
+| Endpoint | 용도 |
+| --- | --- |
+| `/docs` | Swagger UI 기반 API 사용 설명서 |
+| `/openapi.json` | client generator와 테스트가 읽는 OpenAPI schema |
+
+운영 API를 변경할 때는 route, request model, `response_model`, API contract script, OpenAPI schema test를 함께 갱신합니다. 이렇게 해야 실제 응답과 공용 사용 설명서가 같은 계약을 유지합니다.

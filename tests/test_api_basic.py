@@ -243,3 +243,44 @@ class TestConfig:
         from portfolio.config import settings
 
         assert settings.dlq_replayer_metrics_port == 9102
+
+
+class TestOpenApiContract:
+    """FastAPI OpenAPI schema exposes the public API contract."""
+
+    def test_openapi_contains_operational_response_models(self):
+        from portfolio.main import app
+
+        schema = app.openapi()
+        components = schema["components"]["schemas"]
+        paths = schema["paths"]
+
+        for model in (
+            "ReadinessResponse",
+            "EventRequestStatusResponse",
+            "DlqListResponse",
+            "DlqSummaryResponse",
+        ):
+            assert model in components
+
+        expected_refs = {
+            "/health/ready": "ReadinessResponse",
+            "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
+            "/v1/dlq/ingress": "DlqListResponse",
+            "/v1/dlq/ingress/summary": "DlqSummaryResponse",
+        }
+        for path, model in expected_refs.items():
+            response_schema = paths[path]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+            assert response_schema["$ref"] == f"#/components/schemas/{model}"
+
+        dlq_summary = components["DlqSummaryResponse"]["properties"]
+        for field in (
+            "total",
+            "replayable",
+            "blocked",
+            "oldest_age_seconds",
+            "by_reason",
+            "by_stream",
+            "recent_samples",
+        ):
+            assert field in dlq_summary

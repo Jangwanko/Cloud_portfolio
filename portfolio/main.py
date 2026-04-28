@@ -9,6 +9,7 @@ from portfolio.config import settings
 from portfolio.db import close_pool, get_postgres_runtime_status, init_pool_with_retry, run_alembic_migrations
 from portfolio.kafka_client import ping_kafka
 from portfolio.metrics import api_request_latency_seconds, api_requests_total, metrics_response
+from portfolio.schemas import LiveHealthResponse, ReadinessResponse, RootResponse
 
 _degraded_started_at: float | None = None
 
@@ -51,7 +52,7 @@ async def collect_http_metrics(request: Request, call_next):
         ).observe(time.perf_counter() - started_at)
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 def root():
     return {
         "project": "event-stream-portfolio",
@@ -68,7 +69,7 @@ def metrics():
     return metrics_response()
 
 
-@app.get("/health/live")
+@app.get("/health/live", response_model=LiveHealthResponse)
 def health_live():
     return {"status": "live"}
 
@@ -124,7 +125,7 @@ def _build_readiness_payload() -> tuple[int, dict]:
     return status_code, payload
 
 
-@app.get("/health/ready")
+@app.get("/health/ready", response_model=ReadinessResponse)
 def health_ready():
     status_code, payload = _build_readiness_payload()
     if status_code >= 400:
