@@ -258,3 +258,20 @@ powershell -ExecutionPolicy Bypass -File scripts/test_incident_signals.ps1 -Skip
 | Worker bad rollout | `MessagingDeploymentUnavailableReplicas` pending/firing 확인 후 image 복구 |
 
 긴 DB 장애 시나리오를 제외하려면 `-SkipDbOutage`를 사용합니다. 이 suite는 성능 측정이 아니라 장애 신호 배선과 복구 절차 검증입니다.
+## Kafka Exporter 확인
+
+Kafka backlog가 의심되면 앱 지표만 보지 말고 kafka-exporter 지표를 먼저 확인합니다.
+
+```powershell
+Invoke-RestMethod "http://localhost/prometheus/api/v1/query?query=kafka_brokers"
+Invoke-RestMethod "http://localhost/prometheus/api/v1/query?query=sum(kafka_consumergroup_lag%7Bconsumergroup%3D%22message-worker%22%7D)"
+```
+
+해석:
+
+| Signal | 판단 |
+| --- | --- |
+| `kafka_brokers < 3` | broker topology가 로컬 HA 기준보다 낮음 |
+| `kafka_consumergroup_lag` 증가 | Worker consumer group이 ingress topic을 따라잡지 못함 |
+| lag 증가 + Worker throughput 낮음 | Worker replica / consumer loop 확인 |
+| lag 증가 + DB persist latency 증가 | PostgreSQL / Pgpool persistence path 확인 |

@@ -86,6 +86,16 @@ groups:
           summary: "DLQ replay blocked by max replay guard"
           description: "At least one DLQ event reached DLQ_REPLAY_MAX_COUNT since the DLQ replayer process started and was excluded from automatic replay."
 
+      - alert: MessagingKafkaExporterDown
+        expr: up{job="kafka-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "Kafka exporter unavailable"
+          description: "Prometheus cannot scrape kafka-exporter, so broker/topic/consumer group lag visibility is unavailable."
+
   - name: messaging-warning
     rules:
       - alert: MessagingPostgresDegraded
@@ -184,6 +194,16 @@ groups:
         annotations:
           summary: "Kafka topic wait high"
           description: "Queue wait p95 is above 10 seconds for 5 minutes."
+
+      - alert: MessagingKafkaConsumerLagHigh
+        expr: sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "Kafka consumer group lag high"
+          description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
       - alert: MessagingWorkerLastSuccessStale
         expr: |

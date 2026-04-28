@@ -80,6 +80,7 @@ sequenceDiagram
 - API는 Kafka append 중심의 빠른 intake path를 유지하고, PostgreSQL persistence는 Worker가 비동기로 처리합니다.
 - 같은 stream은 Kafka key와 Worker inline retry로 순서를 지키며, 실패 event는 DLQ와 replay guard로 격리합니다.
 - Prometheus alert, Grafana dashboard, Runbook, incident signal script가 같은 운영 신호를 바라봅니다.
+- kafka-exporter로 broker count, topic partition, `message-worker` consumer group lag를 직접 관측합니다.
 - DLQ 운영자는 `GET /v1/dlq/ingress/summary`로 `by_reason`, replayable, blocked, stream 분포를 먼저 확인합니다.
 - 핵심 운영 API는 FastAPI `response_model`, `/docs`, `/openapi.json`, API contract test로 응답 형태를 고정합니다.
 
@@ -93,6 +94,7 @@ sequenceDiagram
 - PostgreSQL HA + Pgpool
 - API CPU HPA
 - Prometheus / Grafana observability
+- kafka-exporter broker / topic / consumer group lag observability
 - PostgreSQL backup / restore
 - Ingress nginx + local self-signed TLS
 - Runtime secret separation

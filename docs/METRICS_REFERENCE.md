@@ -17,7 +17,7 @@
 - Worker / API replica count and HPA desired replicas
 - Pod restart / unavailable replica signal
 
-Kafka broker에서 직접 산출한 partition별 consumer lag는 아직 별도 exporter를 붙이지 않았습니다. 현재 dashboard에서는 `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica를 함께 보며 application-side backlog를 해석합니다.
+Kafka broker/topic/consumer group 지표는 kafka-exporter가 제공합니다. dashboard는 `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`를 직접 보고, `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica를 보조 신호로 함께 해석합니다.
 
 ## Health
 
@@ -255,3 +255,32 @@ kube_deployment_status_replicas_unavailable{namespace="messaging-app"}
 - API intake state path 장애로 request 수락 불가
 
 더 자세한 readiness 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 봅니다.
+## Kafka exporter metrics
+
+### `kafka_brokers`
+
+kafka-exporter가 broker metadata에서 확인한 broker 수입니다.
+
+```promql
+kafka_brokers
+```
+
+로컬 HA 기준은 `3`입니다.
+
+### `kafka_consumergroup_lag`
+
+consumer group lag를 topic / partition 단위로 보여줍니다.
+
+```promql
+sum by (topic) (kafka_consumergroup_lag{consumergroup="message-worker"})
+```
+
+`message-worker` lag가 높으면 Worker 처리량, DB persist latency, pod scaling을 함께 확인합니다.
+
+### `kafka_topic_partition_current_offset`
+
+topic partition offset 지표입니다. topic별 partition 수와 write 흐름을 확인하는 데 사용합니다.
+
+```promql
+count by (topic) (kafka_topic_partition_current_offset{topic=~"message-.*"})
+```

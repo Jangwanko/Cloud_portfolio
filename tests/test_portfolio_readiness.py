@@ -82,6 +82,24 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
+    def test_kafka_exporter_is_wired_to_prometheus_and_manifests(self):
+        prometheus = read_text("monitoring/prometheus/prometheus.yml")
+        alerts = read_text("monitoring/prometheus/alerts.yml")
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
+
+        for manifest in (app_manifest, gitops_manifest):
+            assert "name: kafka-exporter" in manifest
+            assert "danielqsj/kafka-exporter:v1.7.0" in manifest
+            assert "--kafka.server=kafka.messaging-app.svc.cluster.local:9092" in manifest
+            assert 'targets: ["kafka-exporter:9308"]' in manifest
+
+        assert "job_name: kafka-exporter" in prometheus
+        assert 'targets: ["kafka-exporter:9308"]' in prometheus
+        assert "MessagingKafkaExporterDown" in alerts
+        assert "MessagingKafkaConsumerLagHigh" in alerts
+        assert 'kafka_consumergroup_lag{consumergroup="message-worker"}' in alerts
+
 
 class TestApiContractAndRunbook:
     def test_api_contract_script_is_in_recommended_flow_and_docs(self):
@@ -175,6 +193,9 @@ class TestOperationsDashboard:
 
         expected_titles = {
             "Kafka Intake Health",
+            "Kafka Broker Count",
+            "Kafka Consumer Group Lag",
+            "Kafka Topic Partitions",
             "PostgreSQL Primary",
             "Worker Health",
             "API 5xx Ratio",
@@ -198,6 +219,9 @@ class TestOperationsDashboard:
             "messaging_worker_last_success_timestamp",
             "messaging_dlq_events_total",
             "messaging_dlq_replay_total",
+            "kafka_brokers",
+            "kafka_consumergroup_lag",
+            "kafka_topic_partition_current_offset",
             "kube_pod_container_status_restarts_total",
             "kube_deployment_status_replicas_unavailable",
             "/v1/dlq/ingress/summary",
@@ -269,6 +293,8 @@ class TestAlertPolicy:
     def test_operational_docs_describe_alert_thresholds_and_metric_probe(self):
         reliability = read_text("docs/RELIABILITY_POLICY.md")
         runbook = read_text("docs/RUNBOOK.md")
+        observability = read_text("docs/OBSERVABILITY.md")
+        metrics_reference = read_text("docs/METRICS_REFERENCE.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
         for document in (reliability, runbook, test_results):
@@ -276,6 +302,11 @@ class TestAlertPolicy:
             assert "accepted-to-persisted" in document
             assert "Kafka topic wait" in document
             assert "MessagingDlqReplayBlocked" in document
+
+        for document in (observability, metrics_reference, runbook, test_results):
+            assert "kafka-exporter" in document
+            assert "kafka_consumergroup_lag" in document
+            assert "kafka_brokers" in document
 
         assert "3974 -> 4008" in test_results
         assert "stream_seq 1..20" in test_results

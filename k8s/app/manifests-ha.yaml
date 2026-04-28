@@ -277,6 +277,54 @@ spec:
       port: 9102
       targetPort: 9102
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-exporter
+  namespace: messaging-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-exporter
+  template:
+    metadata:
+      labels:
+        app: kafka-exporter
+    spec:
+      containers:
+        - name: kafka-exporter
+          image: danielqsj/kafka-exporter:v1.7.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --kafka.server=kafka.messaging-app.svc.cluster.local:9092
+            - --web.listen-address=:9308
+            - --topic.filter=message-.*
+            - --group.filter=message-.*
+          ports:
+            - name: metrics
+              containerPort: 9308
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-exporter
+  namespace: messaging-app
+spec:
+  selector:
+    app: kafka-exporter
+  ports:
+    - name: metrics
+      port: 9308
+      targetPort: 9308
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -287,21 +335,31 @@ data:
     global:
       scrape_interval: 5s
       evaluation_interval: 5s
+
     rule_files:
       - /etc/prometheus/alerts.yml
+
     scrape_configs:
       - job_name: api
         metrics_path: /metrics
         static_configs:
           - targets: ["api:8000"]
+
       - job_name: worker
         metrics_path: /metrics
         static_configs:
           - targets: ["worker:9101"]
+
       - job_name: dlq-replayer
         metrics_path: /metrics
         static_configs:
           - targets: ["dlq-replayer:9102"]
+
+      - job_name: kafka-exporter
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["kafka-exporter:9308"]
+
       - job_name: kube-state-metrics
         metrics_path: /metrics
         static_configs:
@@ -394,6 +452,16 @@ data:
             annotations:
               summary: "DLQ replay blocked by max replay guard"
               description: "At least one DLQ event reached DLQ_REPLAY_MAX_COUNT since the DLQ replayer process started and was excluded from automatic replay."
+
+          - alert: MessagingKafkaExporterDown
+            expr: up{job="kafka-exporter"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "Kafka exporter unavailable"
+              description: "Prometheus cannot scrape kafka-exporter, so broker/topic/consumer group lag visibility is unavailable."
 
       - name: messaging-warning
         rules:
@@ -493,6 +561,16 @@ data:
             annotations:
               summary: "Kafka topic wait high"
               description: "Queue wait p95 is above 10 seconds for 5 minutes."
+
+          - alert: MessagingKafkaConsumerLagHigh
+            expr: sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 100
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Kafka consumer group lag high"
+              description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
           - alert: MessagingWorkerLastSuccessStale
             expr: |
@@ -1647,6 +1725,141 @@ data:
                                            "mode":  "markdown",
                                            "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_age_seconds`, and `by_stream`."
                                        }
+                       },
+                       {
+                           "id":  26,
+                           "title":  "Kafka Broker Count",
+                           "type":  "stat",
+                           "description":  "Broker count reported directly by kafka-exporter.",
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "gridPos":  {
+                                           "x":  0,
+                                           "y":  90,
+                                           "w":  8,
+                                           "h":  5
+                                       },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          },
+                                                                "thresholds":  {
+                                                                                   "mode":  "absolute",
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "color":  "red",
+                                                                                                     "value":  null
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "yellow",
+                                                                                                     "value":  2
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "green",
+                                                                                                     "value":  3
+                                                                                                 }
+                                                                                             ]
+                                                                               }
+                                                            },
+                                               "overrides":  [
+
+                                                             ]
+                                           },
+                           "options":  {
+                                           "colorMode":  "value",
+                                           "graphMode":  "none",
+                                           "justifyMode":  "auto",
+                                           "orientation":  "auto",
+                                           "reduceOptions":  {
+                                                                 "calcs":  [
+                                                                               "lastNotNull"
+                                                                           ],
+                                                                 "fields":  "",
+                                                                 "values":  false
+                                                             },
+                                           "textMode":  "value"
+                                       },
+                           "targets":  [
+                                           {
+                                               "expr":  "kafka_brokers",
+                                               "legendFormat":  "brokers",
+                                               "refId":  "A"
+                                           }
+                                       ]
+                       },
+                       {
+                           "id":  27,
+                           "title":  "Kafka Consumer Group Lag",
+                           "type":  "timeseries",
+                           "description":  "Direct kafka-exporter lag for the message-worker consumer group.",
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "gridPos":  {
+                                           "x":  8,
+                                           "y":  90,
+                                           "w":  16,
+                                           "h":  8
+                                       },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+
+                                                             ]
+                                           },
+                           "targets":  [
+                                           {
+                                               "expr":  "sum by (topic) (kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
+                                               "legendFormat":  "{{topic}} lag",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "expr":  "sum(kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
+                                               "legendFormat":  "total lag",
+                                               "refId":  "B"
+                                           }
+                                       ]
+                       },
+                       {
+                           "id":  28,
+                           "title":  "Kafka Topic Partitions",
+                           "type":  "timeseries",
+                           "description":  "Partition count by Kafka topic from kafka-exporter.",
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "gridPos":  {
+                                           "x":  0,
+                                           "y":  95,
+                                           "w":  8,
+                                           "h":  8
+                                       },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          }
+                                                            },
+                                               "overrides":  [
+
+                                                             ]
+                                           },
+                           "targets":  [
+                                           {
+                                               "expr":  "count by (topic) (kafka_topic_partition_current_offset{topic=~\"message-.*\"})",
+                                               "legendFormat":  "{{topic}} partitions",
+                                               "refId":  "A"
+                                           }
+                                       ]
                        }
                    ],
         "refresh":  "5s",
@@ -1668,7 +1881,7 @@ data:
         "timezone":  "browser",
         "title":  "Messaging Portfolio Operations Overview",
         "uid":  "messaging-portfolio-overview",
-        "version":  6
+        "version":  7
     }
 ---
 apiVersion: apps/v1

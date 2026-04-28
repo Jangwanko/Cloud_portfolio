@@ -33,7 +33,7 @@
 | `PostgreSQL Standbys` | `messaging_postgres_standby_count{job="api"}` | pgpool / replication 기준 standby 수 |
 | `PostgreSQL Replication Delay` | `messaging_postgres_replication_delay_bytes_max{job="api"}` | standby replay delay |
 
-현재 dashboard는 Kafka lag를 `Queue Wait Time`, Worker/KEDA replica, Worker throughput으로 해석합니다. Kafka broker에서 직접 산출한 partition별 consumer lag는 아직 별도 exporter를 붙이지 않았기 때문에 직접 패널로 주장하지 않습니다.
+현재 dashboard는 kafka-exporter가 제공하는 `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`를 직접 보고, application-side 보조 신호로 `Queue Wait Time`, Worker throughput, KEDA desired replica를 함께 해석합니다.
 
 ## 핵심 해석
 
@@ -173,3 +173,14 @@ Grafana dashboard에는 `DLQ Operator Links` 패널을 둡니다. `DLQ Events An
 - Summary: `GET /v1/dlq/ingress/summary?limit=200&sample_limit=5`
 - Samples: `GET /v1/dlq/ingress?limit=20`
 - Runbook: `DLQ Summary Triage`
+## Kafka Exporter Panels
+
+Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.
+
+| Panel | Metric | Interpretation |
+| --- | --- | --- |
+| `Kafka Broker Count` | `kafka_brokers` | exporter가 보는 broker 수. 로컬 HA 기준은 `3`입니다. |
+| `Kafka Consumer Group Lag` | `kafka_consumergroup_lag{consumergroup="message-worker"}` | Worker consumer group이 topic별로 따라잡지 못한 message 수입니다. |
+| `Kafka Topic Partitions` | `kafka_topic_partition_current_offset` | topic별 partition 구성을 확인합니다. |
+
+`Kafka Consumer Group Lag`가 증가하면서 `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다.

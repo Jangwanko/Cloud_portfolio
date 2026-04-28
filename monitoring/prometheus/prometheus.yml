@@ -21,6 +21,11 @@ scrape_configs:
     static_configs:
       - targets: ["dlq-replayer:9102"]
 
+  - job_name: kafka-exporter
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["kafka-exporter:9308"]
+
   - job_name: kube-state-metrics
     metrics_path: /metrics
     static_configs:
