@@ -315,11 +315,86 @@ data:
             labels:
               severity: critical
               service: messaging
+            annotations:
+              summary: "Kafka unavailable"
+              description: "Kafka bootstrap is unavailable, so event intake cannot append to the replicated event log."
+
           - alert: MessagingDbDown
             expr: messaging_health_status{job="api",component="db"} == 0
             labels:
               severity: critical
               service: messaging
+            annotations:
+              summary: "PostgreSQL primary unavailable"
+              description: "Writable PostgreSQL primary is unavailable. Kafka intake may continue if the broker is reachable, but persistence is blocked until PostgreSQL recovers."
+
+          - alert: MessagingApiHigh5xxRate
+            expr: |
+              (
+                (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
+                /
+                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+              ) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "High API 5xx rate"
+              description: "API 5xx ratio is above 5% for 5 minutes."
+
+          - alert: MessagingApiP95LatencyCritical
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_api_request_latency_seconds_bucket[5m]))
+              ) > 4
+            for: 5m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "API p95 latency critical"
+              description: "API p95 latency is above 4 seconds for 5 minutes."
+
+          - alert: MessagingEventPersistLagCritical
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_event_persist_lag_seconds_bucket[5m]))
+              ) > 15
+            for: 5m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "Accepted-to-persisted lag critical"
+              description: "Event persistence p95 lag is above 15 seconds for 5 minutes."
+
+          - alert: MessagingQueueWaitCritical
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_queue_wait_seconds_bucket[5m]))
+              ) > 30
+            for: 5m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "Kafka topic wait critical"
+              description: "Queue wait p95 is above 30 seconds for 5 minutes."
+
+          - alert: MessagingDlqReplayBlocked
+            expr: sum(messaging_dlq_replay_total{result="skipped_max_replay"}) > 0
+            for: 0m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "DLQ replay blocked by max replay guard"
+              description: "At least one DLQ event reached DLQ_REPLAY_MAX_COUNT since the DLQ replayer process started and was excluded from automatic replay."
+
       - name: messaging-warning
         rules:
           - alert: MessagingPostgresDegraded
@@ -333,6 +408,136 @@ data:
             labels:
               severity: warning
               service: messaging
+            annotations:
+              summary: "PostgreSQL replication degraded"
+              description: "PostgreSQL primary is still reachable, but standby count, replication state, or lag are outside the local demo ready-state target."
+
+          - alert: MessagingWorkerUnhealthy
+            expr: messaging_health_status{component="worker"} == 0
+            for: 2m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Worker unhealthy"
+              description: "Worker health status is down for over 2 minutes."
+
+          - alert: MessagingWorkerFailureRateHigh
+            expr: |
+              (
+                (sum(rate(messaging_worker_processed_total{result="failure"}[5m])) or vector(0))
+                /
+                clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1)
+              ) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Worker failure rate high"
+              description: "Worker failure ratio is above 10% for 5 minutes."
+
+          - alert: MessagingApiP95LatencyHigh
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_api_request_latency_seconds_bucket[5m]))
+              ) > 2
+            for: 10m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "API p95 latency high"
+              description: "API p95 latency is above 2 seconds for 10 minutes."
+
+          - alert: MessagingApi5xxRateWarning
+            expr: |
+              (
+                (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
+                /
+                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+              ) > 0.01
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "API 5xx rate warning"
+              description: "API 5xx ratio is above 1% for 5 minutes."
+
+          - alert: MessagingEventPersistLagHigh
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_event_persist_lag_seconds_bucket[5m]))
+              ) > 5
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Accepted-to-persisted lag high"
+              description: "Event persistence p95 lag is above 5 seconds for 5 minutes."
+
+          - alert: MessagingQueueWaitHigh
+            expr: |
+              histogram_quantile(
+                0.95,
+                sum by (le) (rate(messaging_queue_wait_seconds_bucket[5m]))
+              ) > 10
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Kafka topic wait high"
+              description: "Queue wait p95 is above 10 seconds for 5 minutes."
+
+          - alert: MessagingWorkerLastSuccessStale
+            expr: |
+              (
+                (sum(rate(messaging_worker_processed_total[5m])) > 0)
+                and
+                (time() - max(messaging_worker_last_success_timestamp{job="worker"}) > 60)
+              )
+            for: 2m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Worker success timestamp stale"
+              description: "Worker has recent processing activity but no successful event for over 60 seconds."
+
+          - alert: MessagingDlqEventsIncreasing
+            expr: sum(increase(messaging_dlq_events_total[5m])) > 0
+            for: 0m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "DLQ events increasing"
+              description: "At least one event was moved to the Kafka DLQ in the last 5 minutes."
+
+          - alert: MessagingPodRestarting
+            expr: sum by (pod, container) (increase(kube_pod_container_status_restarts_total{namespace="messaging-app"}[15m])) > 0
+            for: 0m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Messaging pod restarted"
+              description: "A messaging-app pod/container restarted in the last 15 minutes."
+
+          - alert: MessagingDeploymentUnavailableReplicas
+            expr: kube_deployment_status_replicas_unavailable{namespace="messaging-app"} > 0
+            for: 2m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Deployment has unavailable replicas"
+              description: "A messaging-app deployment has unavailable replicas for over 2 minutes."
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -746,7 +951,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "5xx_ratio",
-                                               "expr":  "(sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(messaging_api_requests_total[5m])), 1))",
+                                               "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -882,7 +1087,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "failure_ratio",
-                                               "expr":  "(sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) / clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1))",
+                                               "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1))",
                                                "refId":  "A"
                                            }
                                        ],

@@ -84,3 +84,21 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 기본 Kafka 모드는 Worker가 persistence 시점에 sequence와 request status를 갱신하며, API intake는 Kafka append 중심으로 동작합니다.
 
 장애별 확인 순서와 복구 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리합니다.
+## 운영 알림 기준값
+
+아래 값은 Kafka event stream 포트폴리오를 운영형으로 보이게 하기 위한 1차 기본값입니다. 실제 장기 트래픽 기준값이 쌓이기 전까지는 장애 조기 감지와 과도한 오탐 사이의 균형을 보는 임시 SLO 가드레일로 사용합니다.
+
+| 신호 | Warning | Critical |
+| --- | ---: | ---: |
+| API 5xx ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |
+| API p95 latency | 10분 동안 `> 2s` | 5분 동안 `> 4s` |
+| accepted-to-persisted p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
+| Kafka topic wait p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
+| Worker failure ratio | 5분 동안 `> 10%` | - |
+| Worker last success age | 최근 처리량이 있는데 60초 이상 성공 없음 | - |
+| DLQ events | 5분 안에 1건 이상 증가 | `skipped_max_replay` 누적값 `> 0` |
+| PostgreSQL replication | standby 부족, non-streaming, 1MiB 초과 lag | primary down |
+| Pod restarts | 15분 안에 restart 증가 | - |
+| Deployment availability | 2분 이상 unavailable replica `> 0` | - |
+
+알림 이름은 `monitoring/prometheus/alerts.yml`의 `MessagingApi5xxRateWarning`, `MessagingApiHigh5xxRate`, `MessagingEventPersistLagHigh`, `MessagingEventPersistLagCritical`, `MessagingQueueWaitHigh`, `MessagingQueueWaitCritical`, `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 기준으로 문서와 매니페스트가 같은 값을 바라보게 유지합니다.

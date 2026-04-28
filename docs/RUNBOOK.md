@@ -188,3 +188,56 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 ```
 
 성능 suite는 기능 검증이 아니라 기준선 측정입니다. 기능 검증이 실패하면 먼저 원인을 수정하고, 기능 검증이 통과한 뒤 성능 수치를 다시 기록합니다.
+## Alert 기준값과 첫 확인 지점
+
+운영 알림은 먼저 Grafana의 `Messaging Portfolio Operations Overview`에서 같은 이름의 지표 흐름을 보고, 그 다음 아래 runbook 절차로 내려갑니다.
+
+| Alert | 기준 | 먼저 볼 패널 | 첫 조치 |
+| --- | --- | --- | --- |
+| `MessagingApi5xxRateWarning` | API 5xx ratio `> 1%` for 5m | API 5xx Ratio | API log와 Kafka/PostgreSQL health를 같이 확인 |
+| `MessagingApiHigh5xxRate` | API 5xx ratio `> 5%` for 5m | API 5xx Ratio | intake 장애로 보고 Kafka Intake / PostgreSQL 절차 진입 |
+| `MessagingApiP95LatencyHigh` | API p95 `> 2s` for 10m | API Latency | API pod CPU, DB pool, Kafka publish 지연 확인 |
+| `MessagingApiP95LatencyCritical` | API p95 `> 4s` for 5m | API Latency | client 영향 장애로 보고 scale/resource 상태 확인 |
+| `MessagingEventPersistLagHigh` | accepted-to-persisted p95 `> 5s` for 5m | Accepted To Persisted Lag | Worker 처리량과 PostgreSQL 상태 확인 |
+| `MessagingEventPersistLagCritical` | accepted-to-persisted p95 `> 15s` for 5m | Accepted To Persisted Lag | persistence 장애로 보고 Worker / PostgreSQL 절차 진입 |
+| `MessagingQueueWaitHigh` | Kafka topic wait p95 `> 10s` for 5m | Kafka Topic Wait Time | Worker replica와 KEDA desired replica 확인 |
+| `MessagingQueueWaitCritical` | Kafka topic wait p95 `> 30s` for 5m | Kafka Topic Wait Time | backlog 장애로 보고 Worker Consumer Lag 절차 진입 |
+| `MessagingDlqEventsIncreasing` | DLQ event 1건 이상 증가 | DLQ Events And Replay | failed_reason을 확인하고 replay 가능 여부 판단 |
+| `MessagingDlqReplayBlocked` | `skipped_max_replay` 누적값 `> 0` | DLQ Events And Replay | 자동 replay 중단 상태로 보고 원인 수정 전 수동 재시도 금지 |
+| `MessagingPodRestarting` | 15분 안에 pod restart 증가 | Pod Restarts (15m) | `kubectl describe pod`로 OOMKilled/CrashLoopBackOff 확인 |
+| `MessagingDeploymentUnavailableReplicas` | 2분 이상 unavailable replica 존재 | Unavailable Replicas | rollout, PDB, node resource 상태 확인 |
+## 운영 Alert Probe
+
+Alert rule이 Prometheus에 로드되는 것만으로는 운영 검증이 끝나지 않습니다. 아래 스크립트는 짧은 장애 신호를 만들어 실제 alert 상태가 `firing`으로 바뀌는지 확인합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -SkipReset
+```
+
+검증하는 신호:
+
+| Scenario | Expected alert | 확인 의미 |
+| --- | --- | --- |
+| poison event를 Kafka DLQ로 이동 | `MessagingDlqEventsIncreasing` | Worker -> Kafka DLQ metric과 alert rule이 연결됨 |
+| max replay guard event 생성 | `MessagingDlqReplayBlocked` | 자동 replay 차단 상태가 운영 알림으로 노출됨 |
+| 잘못된 `dlq-replayer` image rollout | `MessagingDeploymentUnavailableReplicas` | kube-state-metrics unavailable replica 지표와 alert rule이 연결됨 |
+
+unavailable replica 시나리오를 생략하려면 `-SkipUnavailableReplicaScenario`를 사용합니다. 이 스크립트는 성능 측정이 아니라 운영 신호 배선 검증입니다.
+## DLQ Summary Triage
+
+DLQ 알림을 받으면 먼저 summary endpoint로 운영 판단에 필요한 숫자를 확인합니다.
+
+```powershell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5
+```
+
+판단 순서:
+
+| 확인 값 | 판단 |
+| --- | --- |
+| `blocked > 0` | 자동 replay가 막힌 event가 있으므로 `by_reason`과 sample payload를 먼저 확인 |
+| `replayable > 0` | 원인이 복구된 뒤 DLQ Replayer가 ingress topic으로 재주입할 수 있는 후보 |
+| `by_reason.room_sequence_gap` 증가 | 같은 stream ordering 경계에서 앞 event 실패 또는 잘못된 sequence 입력 확인 |
+| `by_reason.transient_error_max_retries:*` 증가 | PostgreSQL / Pgpool / persistence path 장애 확인 |
+| `oldest_age_seconds` 증가 | DLQ가 계속 남아있는 상태이므로 replay 또는 수동 처리 결정 필요 |
+| `by_stream` 특정 stream 집중 | 해당 stream의 앞 event, membership, sequence 상태를 우선 조사 |

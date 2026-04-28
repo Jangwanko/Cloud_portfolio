@@ -110,6 +110,7 @@ try {
   $outsiderHeaders = @{ Authorization = "Bearer $($outsiderLogin.access_token)" }
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/dlq/ingress?limit=1" -ExpectedStatus 401
+  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/dlq/ingress/summary?limit=1" -ExpectedStatus 401
   Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/auth/login" -ExpectedStatus 401 -Body (@{ username = $u1Name; password = "wrong-password" } | ConvertTo-Json)
 
   $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers $u1Headers -ContentType "application/json" -Body (@{ name = "contract-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
@@ -195,6 +196,20 @@ try {
   Assert-HasProperty $dlq "count" "dlq response"
   Assert-HasProperty $dlq "max_replay_count" "dlq response"
   Assert-HasProperty $dlq "items" "dlq response"
+
+  $dlqSummary = Invoke-RestMethod -Method Get -Headers $u1Headers -Uri "$BaseUrl/v1/dlq/ingress/summary?limit=20&sample_limit=3"
+  Assert-Equal $dlqSummary.queue_backend "kafka" "dlq summary queue backend"
+  Assert-HasProperty $dlqSummary "topic" "dlq summary response"
+  Assert-HasProperty $dlqSummary "total" "dlq summary response"
+  Assert-HasProperty $dlqSummary "replayable" "dlq summary response"
+  Assert-HasProperty $dlqSummary "blocked" "dlq summary response"
+  Assert-HasProperty $dlqSummary "oldest_age_seconds" "dlq summary response"
+  Assert-HasProperty $dlqSummary "by_reason" "dlq summary response"
+  Assert-HasProperty $dlqSummary "by_stream" "dlq summary response"
+  Assert-HasProperty $dlqSummary "recent_samples" "dlq summary response"
+  Assert-True ([int]$dlqSummary.total -ge 0) "dlq summary total must be non-negative"
+  Assert-True ([int]$dlqSummary.replayable -ge 0) "dlq summary replayable must be non-negative"
+  Assert-True ([int]$dlqSummary.blocked -ge 0) "dlq summary blocked must be non-negative"
 
   Write-Host "API contract test passed: stream_id=$($stream.id) request_id=$requestId event_id=$($persisted.event_id)"
 }

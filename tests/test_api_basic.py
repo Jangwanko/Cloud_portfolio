@@ -123,6 +123,52 @@ class TestDlqHelpers:
         assert result["replayable"] is False
         assert result["max_replay_count"] == settings.dlq_replay_max_count
 
+    def test_summarize_dlq_items_groups_operational_fields(self):
+        from datetime import datetime, timezone
+
+        from portfolio.api import _summarize_dlq_items
+
+        now = datetime(2026, 4, 29, 12, 0, 0, tzinfo=timezone.utc)
+        items = [
+            {
+                "request_id": "req-1",
+                "stream_id": 10,
+                "failed_reason": "room_sequence_gap",
+                "replayable": True,
+                "failed_at": "2026-04-29T11:59:30+00:00",
+            },
+            {
+                "request_id": "req-2",
+                "stream_id": 10,
+                "failed_reason": "room_sequence_gap",
+                "replayable": False,
+                "timestamp": 1777463940000,
+            },
+            {
+                "request_id": "req-3",
+                "stream_id": 11,
+                "failed_reason": "transient_error_max_retries:OperationalError",
+                "replayable": True,
+                "failed_at": "2026-04-29T11:58:00Z",
+            },
+        ]
+
+        result = _summarize_dlq_items(items, now=now, sample_limit=2)
+
+        assert result["total"] == 3
+        assert result["replayable"] == 2
+        assert result["blocked"] == 1
+        assert result["oldest_age_seconds"] == 120
+        assert result["by_reason"] == {
+            "room_sequence_gap": 2,
+            "transient_error_max_retries:OperationalError": 1,
+        }
+        assert result["by_stream"] == [
+            {"stream_id": 10, "count": 2},
+            {"stream_id": 11, "count": 1},
+        ]
+        assert [item["request_id"] for item in result["recent_samples"]] == ["req-1", "req-2"]
+
     def test_replay_one_skips_when_max_replay_count_reached(self, monkeypatch):
         from portfolio.config import settings
         from worker import dlq_replayer

@@ -94,10 +94,23 @@ class TestApiContractAndRunbook:
         assert "/v1/auth/login" in script
         assert "/v1/streams/" in script
         assert "/v1/dlq/ingress" in script
+        assert "/v1/dlq/ingress/summary" in script
         assert "Expected HTTP $ExpectedStatus" in script
         assert "test_api_contracts.ps1" in recommended
         assert "test_api_contracts.ps1" in quick_start
         assert "API contract test" in test_results
+
+    def test_dlq_summary_api_is_documented(self):
+        operations = read_text("docs/OPERATIONS.md")
+        runbook = read_text("docs/RUNBOOK.md")
+        observability = read_text("docs/OBSERVABILITY.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        for document in (operations, runbook, observability, test_results):
+            assert "/v1/dlq/ingress/summary" in document
+            assert "by_reason" in document
+            assert "replayable" in document
+            assert "blocked" in document
 
     def test_runbook_is_linked_and_covers_incident_paths(self):
         readme = read_text("README.md")
@@ -172,3 +185,87 @@ class TestOperationsDashboard:
             assert "messaging_dlq_replay_total" in manifest
 
         assert "Messaging Portfolio Operations Overview" in dashboard
+
+
+class TestAlertPolicy:
+    def test_prometheus_alerts_define_operational_thresholds(self):
+        alerts = read_text("monitoring/prometheus/alerts.yml")
+
+        expected_alerts = (
+            "MessagingApi5xxRateWarning",
+            "MessagingApiHigh5xxRate",
+            "MessagingEventPersistLagHigh",
+            "MessagingEventPersistLagCritical",
+            "MessagingQueueWaitHigh",
+            "MessagingQueueWaitCritical",
+            "MessagingWorkerLastSuccessStale",
+            "MessagingDlqEventsIncreasing",
+            "MessagingDlqReplayBlocked",
+            "MessagingPodRestarting",
+            "MessagingDeploymentUnavailableReplicas",
+        )
+        for alert in expected_alerts:
+            assert alert in alerts
+
+        for threshold in (
+            "> 0.01",
+            "> 0.05",
+            "> 5",
+            "> 15",
+            "> 10",
+            "> 30",
+            "skipped_max_replay",
+            "kube_pod_container_status_restarts_total",
+            "kube_deployment_status_replicas_unavailable",
+        ):
+            assert threshold in alerts
+
+    def test_alert_rules_are_embedded_in_both_kubernetes_manifest_paths(self):
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
+
+        for manifest in (app_manifest, gitops_manifest):
+            for alert in (
+                "MessagingApi5xxRateWarning",
+                "MessagingEventPersistLagCritical",
+                "MessagingQueueWaitCritical",
+                "MessagingDlqReplayBlocked",
+                "MessagingPodRestarting",
+                "MessagingDeploymentUnavailableReplicas",
+            ):
+                assert alert in manifest
+
+    def test_operational_docs_describe_alert_thresholds_and_metric_probe(self):
+        reliability = read_text("docs/RELIABILITY_POLICY.md")
+        runbook = read_text("docs/RUNBOOK.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        for document in (reliability, runbook, test_results):
+            assert "API 5xx" in document
+            assert "accepted-to-persisted" in document
+            assert "Kafka topic wait" in document
+            assert "MessagingDlqReplayBlocked" in document
+
+        assert "3974 -> 4008" in test_results
+        assert "stream_seq 1..20" in test_results
+
+    def test_operational_alert_probe_is_documented(self):
+        script = read_text("scripts/test_operational_alerts.ps1")
+        runbook = read_text("docs/RUNBOOK.md")
+        observability = read_text("docs/OBSERVABILITY.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        for alert in (
+            "MessagingDlqEventsIncreasing",
+            "MessagingDlqReplayBlocked",
+            "MessagingDeploymentUnavailableReplicas",
+        ):
+            assert alert in script
+            assert alert in runbook
+            assert alert in test_results
+
+        assert "test_operational_alerts.ps1" in runbook
+        assert "test_operational_alerts.ps1" in observability
+        assert "test_operational_alerts.ps1" in test_results
+        assert "messaging-portfolio:alert-probe-missing" in script
+        assert "messaging-portfolio:local" in script

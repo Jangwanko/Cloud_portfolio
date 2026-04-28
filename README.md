@@ -98,6 +98,7 @@ sequenceDiagram
 - Kafka mode smoke test
 - Kafka ingress topic append / Worker consume / PostgreSQL persisted
 - Kafka DLQ topic listing through `GET /v1/dlq/ingress`
+- DLQ operating summary through `GET /v1/dlq/ingress/summary`
 - API contract validation for auth, stream membership, request status, unread count, and DLQ summary
 - KEDA Kafka scaler readiness and external metric lookup
 - API HPA scaling
@@ -131,6 +132,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | --- | --- | --- |
 | Kafka smoke | 통과 | event accepted -> Kafka ingress topic -> Worker -> PostgreSQL persisted |
 | Kafka DLQ listing | 통과 | `GET /v1/dlq/ingress`로 DLQ topic 최근 메시지 조회 |
+| DLQ operating summary | 통과 | `GET /v1/dlq/ingress/summary`로 reason / replayable / blocked / stream 분포 조회 |
 | 같은 stream 순차 보증 | 통과 | 100개 순차 이벤트, `stream_seq 1..100` 및 body 순서 일치 |
 | Kafka 비동기 영속화 latency | 통과 | 50 events, accept avg `53.34ms`, accept p95 `63.59ms`, persist p95 `7.67ms` |
 | Kafka intake 부하 | 통과 | 100 VU / 30s, `31676` requests, `0.00%` error, avg `44.13ms`, p95 `80.65ms`, p99 `103.57ms` |

@@ -310,7 +310,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "5xx_ratio",
-                                           "expr":  "(sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(messaging_api_requests_total[5m])), 1))",
+                                           "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -450,7 +450,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "failure_ratio",
-                                           "expr":  "(sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) / clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1))",
+                                           "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1))",
                                            "refId":  "A"
                                        }
                                    ],

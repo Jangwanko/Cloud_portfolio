@@ -1,4 +1,5 @@
 import time
+from collections import Counter
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -134,6 +135,67 @@ def _summarize_dlq_item(item: dict) -> dict:
         "failed_at": value.get("failed_at"),
         "replayed_at": value.get("replayed_at"),
         "payload": value,
+    }
+
+
+def _parse_dlq_timestamp_seconds(item: dict) -> float | None:
+    failed_at = item.get("failed_at")
+    if failed_at:
+        try:
+            normalized = str(failed_at).replace("Z", "+00:00")
+            return datetime.fromisoformat(normalized).timestamp()
+        except ValueError:
+            pass
+
+    timestamp_ms = item.get("timestamp")
+    if timestamp_ms is None:
+        return None
+    try:
+        return float(timestamp_ms) / 1000
+    except (TypeError, ValueError):
+        return None
+
+
+def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_limit: int = 5) -> dict:
+    now_ts = (now or datetime.now(timezone.utc)).timestamp()
+    reasons: Counter[str] = Counter()
+    streams: Counter[int] = Counter()
+    oldest_age_seconds: int | None = None
+    replayable_count = 0
+    blocked_count = 0
+
+    for item in items:
+        reason = item.get("failed_reason") or "unknown"
+        reasons[str(reason)] += 1
+
+        stream_id = item.get("stream_id")
+        if stream_id is not None:
+            streams[int(stream_id)] += 1
+
+        if item.get("replayable"):
+            replayable_count += 1
+        else:
+            blocked_count += 1
+
+        event_ts = _parse_dlq_timestamp_seconds(item)
+        if event_ts is not None:
+            age_seconds = max(0, int(now_ts - event_ts))
+            if oldest_age_seconds is None or age_seconds > oldest_age_seconds:
+                oldest_age_seconds = age_seconds
+
+    by_stream = [
+        {"stream_id": stream_id, "count": count}
+        for stream_id, count in sorted(streams.items(), key=lambda entry: (-entry[1], entry[0]))
+    ]
+
+    return {
+        "total": len(items),
+        "replayable": replayable_count,
+        "blocked": blocked_count,
+        "oldest_age_seconds": oldest_age_seconds,
+        "by_reason": dict(sorted(reasons.items())),
+        "by_stream": by_stream,
+        "recent_samples": items[:sample_limit],
     }
 
 
@@ -364,6 +426,25 @@ def get_ingress_dlq(
         "count": len(summarized_items),
         "max_replay_count": settings.dlq_replay_max_count,
         "items": summarized_items,
+    }
+
+
+@router.get("/dlq/ingress/summary")
+def get_ingress_dlq_summary(
+    limit: int = Query(default=200, ge=1, le=500),
+    sample_limit: int = Query(default=5, ge=0, le=20),
+    current_user: dict = Depends(get_current_user),
+):
+    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
+    summarized_items = [_summarize_dlq_item(item) for item in items]
+    summary = _summarize_dlq_items(summarized_items, sample_limit=sample_limit)
+    return {
+        "queue_backend": "kafka",
+        "topic": settings.kafka_dlq_topic,
+        "limit": limit,
+        "sample_limit": sample_limit,
+        "max_replay_count": settings.dlq_replay_max_count,
+        **summary,
     }
 
 

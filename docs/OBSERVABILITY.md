@@ -146,3 +146,23 @@
 - `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA가 생성한 HPA의 desired replica 수입니다.
 
 자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md), readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 장애 대응 절차는 [RUNBOOK.md](RUNBOOK.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리되어 있습니다.
+## Alert Probe
+
+Prometheus alert rule과 Grafana 운영 패널이 실제 metric 변화에 연결되어 있는지는 아래 스크립트로 확인합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -SkipReset
+```
+
+이 검증은 `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 실제 `firing` 상태까지 관찰하고, `MessagingDeploymentUnavailableReplicas`가 `pending` 또는 `firing`으로 전환되는지 확인합니다. 성능 수치를 측정하는 suite가 아니라 metric scrape, alert evaluation, Kubernetes 상태 지표 배선을 확인하는 운영성 테스트입니다.
+## DLQ Summary 해석
+
+DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 reason과 replay 가능 상태를 먼저 나눕니다.
+
+- `by_reason`: 실패 원인별 분포입니다.
+- `replayable`: replay guard에 걸리지 않은 event 수입니다.
+- `blocked`: `DLQ_REPLAY_MAX_COUNT`에 도달해 자동 replay에서 제외된 event 수입니다.
+- `oldest_age_seconds`: 오래 남아있는 DLQ가 있는지 확인하는 age 신호입니다.
+- `by_stream`: 특정 stream에 DLQ가 몰리는지 확인합니다.
+
+이 API는 Prometheus counter보다 payload에 가까운 운영 조회입니다. 알림은 “증가했다”를 알려주고, summary API는 “무엇이 왜 쌓였는가”를 확인합니다.
