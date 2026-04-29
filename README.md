@@ -4,16 +4,109 @@
 
 대표 도메인은 실시간 협업 메시징이지만, 같은 구조는 주문 처리, 알림 발송, 감사 로그, IoT 수집처럼 `order_id`, `user_id`, `device_id`, `stream_id` 단위 순서와 복구가 중요한 서비스에도 적용할 수 있습니다.
 
-DB 중심 동기 처리 구조에서 발생하는 장애 전파와 write path 병목을 줄이기 위해, Kafka 기반 event log를 request intake 경로에 두고 persistence를 Worker consumer group으로 분리했습니다.
+## 요약
 
-API는 event request를 PostgreSQL에 직접 쓰지 않고 Kafka ingress topic에 append한 뒤 `202 Accepted`를 반환합니다. Worker는 Kafka consumer group으로 partition을 소비해 PostgreSQL HA에 비동기 영속화하고, 실패 이벤트는 retry 후 Kafka DLQ topic과 DLQ Replayer를 통해 복구합니다.
+Kafka 기반 event intake pipeline입니다.
 
-구조적 특징:
-- Kafka를 단순 queue가 아니라 replay 가능한 event log와 ordering boundary로 사용합니다.
-- API request 수락 경로와 PostgreSQL persistence 경로를 분리해 DB 장애 전파를 줄입니다.
-- Worker consumer group, inline retry, Kafka DLQ, replay guard로 순서와 복구 경계를 명확히 둡니다.
-- Prometheus / Grafana / kafka-exporter / Runbook으로 backlog, DLQ, replica, GitOps 상태를 운영 관점에서 확인합니다.
-- DLQ summary API의 `oldest_age_seconds`로 실패 event가 오래 방치되는지 확인합니다.
+- API는 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
+- Worker consumer group이 PostgreSQL HA에 비동기 persistence를 수행합니다.
+- 실패 event는 inline retry 후 Kafka DLQ로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
+- KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
+- kafka-exporter / Prometheus / Grafana / Runbook으로 broker, lag, DLQ, replica, GitOps 상태를 확인합니다.
+
+## Problem
+
+DB 동기 write 중심 구조에서는 event request가 아래 문제에 취약합니다.
+
+- DB 장애가 API request 실패로 바로 전파됩니다.
+- write path 병목이 API latency와 timeout으로 드러납니다.
+- 실패 request를 보존하고 복구하기 어렵습니다.
+- backlog, DLQ, consumer lag를 운영자가 한눈에 보기 어렵습니다.
+
+## Solution
+
+Kafka 기반 event log를 request intake 경로에 두고, persistence를 Worker consumer group으로 분리했습니다.
+
+- API는 event request를 Kafka ingress topic에 append하고 빠르게 응답합니다.
+- Kafka는 `stream_id` key를 기준으로 같은 stream event를 같은 partition boundary에 둡니다.
+- Worker는 partition을 소비해 PostgreSQL HA에 최종 영속화합니다.
+- 실패 event는 retry / DLQ / replay guard를 거쳐 복구 가능한 상태로 남깁니다.
+
+## Architecture Boundary
+
+이 프로젝트는 Kafka-only 구조가 아니라 Kafka-centered 구조입니다.
+
+Kafka 중심:
+- event intake
+- stream ordering boundary
+- Worker consumer group processing
+- retry / DLQ / replay
+- lag based autoscaling
+- kafka-exporter observability
+
+PostgreSQL state path:
+- auth / membership
+- request status
+- final message persistence
+- room sequence
+- read model
+
+현재 한계:
+- `X-Idempotency-Key`를 켜면 request claim / status 저장 때문에 PostgreSQL state path가 API hot path에 다시 들어옵니다.
+- 다음 개선 과제는 idempotency / request status를 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
+
+## Validation Summary
+
+| 항목 | 결과 |
+| --- | ---: |
+| Kafka intake load | 100 VU / 30s |
+| Requests | `31,676` |
+| Error rate | `0.00%` |
+| Avg latency | `44.13ms` |
+| p95 latency | `80.65ms` |
+| p99 latency | `103.57ms` |
+| Same-stream ordering | `100/100 pass` |
+| API HPA | `6 replicas` |
+| Worker KEDA | `4 replicas` |
+
+## Trade-off
+
+| 선택 | 얻은 것 | 포기한 것 |
+| --- | --- | --- |
+| API -> Kafka append | DB 장애 전파 감소 | 즉시 persistence 보장 약화 |
+| Worker async persistence | 처리량 / 복구성 향상 | eventual consistency 발생 |
+| inline retry | stream 순서 보존 | 뒤 event backpressure |
+| DLQ replay | 실패 event 복구 | 운영 판단 필요 |
+| PostgreSQL read model 유지 | 조회 / 영속성 단순화 | state path 일부 DB 의존 |
+
+## Ordering Guarantee
+
+- 같은 `stream_id`는 같은 Kafka partition으로 라우팅됩니다.
+- Kafka는 partition 내부 순서를 보장합니다.
+- Worker는 transient failure에서 tail 재발행이 아니라 inline retry를 사용합니다.
+- 따라서 같은 stream의 event가 실패 event를 추월하지 않도록 설계했습니다.
+- 단, multi-partition 전체 global ordering은 보장하지 않습니다.
+
+## Known Limitation: Idempotency State Path
+
+현재 기본 성능 기준선은 `X-Idempotency-Key`를 사용하지 않는 Kafka append path입니다.
+
+`X-Idempotency-Key`를 켜면 request claim / status 저장을 위해 PostgreSQL state path가 API hot path에 다시 들어옵니다.
+
+따라서 idempotency는 현재 optional safety path이며, 고부하 Kafka-native intake 기준선과 분리해 해석합니다.
+
+## What I Learned
+
+- Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / replay 경계로 쓰는 것이 적합했습니다.
+- 장애 대응에서 중요한 것은 실패를 없애는 것이 아니라 실패를 격리하고 복구 가능하게 만드는 것입니다.
+- CPU 기반 scaling보다 consumer lag 기반 scaling이 event pipeline에 더 자연스럽습니다.
+- idempotency, request status 같은 low-latency state는 별도 state path 설계가 필요합니다.
+
+## Next Improvements
+
+1. idempotency / request status를 Kafka compacted topic 또는 별도 state backend로 분리
+2. consumer group rebalance / partition imbalance 시나리오 추가
+3. SLO 기반 alert rule 강화
 
 ## 아키텍처
 ```mermaid

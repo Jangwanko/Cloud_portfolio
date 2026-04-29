@@ -47,9 +47,38 @@ class TestOperationalDocumentation:
 
         assert "순서가 중요하고 유실되면 안 되는 event request" in readme
         assert "주문 처리, 알림 발송, 감사 로그, IoT 수집" in readme
-        assert "구조적 특징" in readme
+        assert "## TL;DR" in readme
+        assert "## Trade-off" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in readme
+
+    def test_readme_is_interview_friendly_about_boundary_and_tradeoffs(self):
+        readme = read_text("README.md")
+
+        for token in (
+            "## TL;DR",
+            "## Problem",
+            "## Solution",
+            "## Architecture Boundary",
+            "Kafka-only 구조가 아니라 Kafka-centered 구조",
+            "PostgreSQL state path",
+            "## Validation Summary",
+            "31,676",
+            "100/100 pass",
+            "## Trade-off",
+            "API -> Kafka append",
+            "Worker async persistence",
+            "## Ordering Guarantee",
+            "multi-partition 전체 global ordering은 보장하지 않습니다",
+            "## Known Limitation: Idempotency State Path",
+            "X-Idempotency-Key",
+            "optional safety path",
+            "## What I Learned",
+            "## Next Improvements",
+            "Kafka compacted topic",
+            "consumer group rebalance",
+        ):
+            assert token in readme
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         readme = read_text("README.md")
