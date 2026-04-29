@@ -10,6 +10,47 @@ def read_text(relative_path: str) -> str:
 
 
 class TestOperationalDocumentation:
+    def test_service_requirements_define_user_slo_and_operating_purpose(self):
+        requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
+        readme = read_text("README.md")
+        architecture = read_text("docs/ARCHITECTURE.md")
+        reliability = read_text("docs/RELIABILITY_POLICY.md")
+        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        for token in (
+            "실시간 협업 메시징",
+            "적용 가능한 서비스 관점",
+            "주문 / 결제 이벤트",
+            "알림 발송 파이프라인",
+            "감사 로그 / 활동 로그",
+            "IoT / 센서 수집",
+            "사용자와 관심사",
+            "기능 요구",
+            "비기능 요구",
+            "SLO 가드레일",
+            "API 5xx ratio",
+            "accepted-to-persisted p95",
+            "Kafka topic wait p95",
+            "DLQ oldest age",
+            "oldest_age_seconds > 600",
+            "oldest_age_seconds > 1800",
+            "stream_id",
+            "Worker inline retry",
+            "Kafka DLQ topic",
+            "Argo CD `Synced / Healthy`",
+        ):
+            assert token in requirements
+
+        for document in (readme, architecture, reliability, repository_structure, test_results):
+            assert "SERVICE_REQUIREMENTS.md" in document
+
+        assert "순서가 중요하고 유실되면 안 되는 event request" in readme
+        assert "주문 처리, 알림 발송, 감사 로그, IoT 수집" in readme
+        assert "구조적 특징" in readme
+        assert "서비스 문제" in architecture
+        assert "서비스 기준" in readme
+
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
@@ -412,11 +453,18 @@ class TestAlertPolicy:
             assert "accepted-to-persisted" in document
             assert "Kafka topic wait" in document
             assert "MessagingDlqReplayBlocked" in document
+            assert "oldest_age_seconds" in document
+            assert "> 600" in document
+            assert "> 1800" in document
 
         for document in (observability, metrics_reference, runbook, test_results):
             assert "kafka-exporter" in document
             assert "kafka_consumergroup_lag" in document
             assert "kafka_brokers" in document
+
+        for document in (metrics_reference, runbook, test_results):
+            assert "GET /v1/dlq/ingress/summary" in document
+            assert "oldest_age_seconds" in document
 
         assert "3974 -> 4008" in test_results
         assert "stream_seq 1..20" in test_results

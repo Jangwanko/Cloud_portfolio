@@ -1,8 +1,19 @@
 # Kafka 이벤트 스트림 시스템 포트폴리오
 
-DB 중심 동기 처리 구조에서 발생하는 장애 전파와 write path 병목을 줄이기 위해, Kafka 기반 event log를 request intake 경로에 두고 persistence를 Worker consumer group으로 분리한 이벤트 처리 파이프라인입니다.
+순서가 중요하고 유실되면 안 되는 event request를 먼저 안전하게 받아두고, 뒤에서 비동기로 처리 / 복구 / 관측하는 Kafka event stream pipeline입니다.
+
+대표 도메인은 실시간 협업 메시징이지만, 같은 구조는 주문 처리, 알림 발송, 감사 로그, IoT 수집처럼 `order_id`, `user_id`, `device_id`, `stream_id` 단위 순서와 복구가 중요한 서비스에도 적용할 수 있습니다.
+
+DB 중심 동기 처리 구조에서 발생하는 장애 전파와 write path 병목을 줄이기 위해, Kafka 기반 event log를 request intake 경로에 두고 persistence를 Worker consumer group으로 분리했습니다.
 
 API는 event request를 PostgreSQL에 직접 쓰지 않고 Kafka ingress topic에 append한 뒤 `202 Accepted`를 반환합니다. Worker는 Kafka consumer group으로 partition을 소비해 PostgreSQL HA에 비동기 영속화하고, 실패 이벤트는 retry 후 Kafka DLQ topic과 DLQ Replayer를 통해 복구합니다.
+
+구조적 특징:
+- Kafka를 단순 queue가 아니라 replay 가능한 event log와 ordering boundary로 사용합니다.
+- API request 수락 경로와 PostgreSQL persistence 경로를 분리해 DB 장애 전파를 줄입니다.
+- Worker consumer group, inline retry, Kafka DLQ, replay guard로 순서와 복구 경계를 명확히 둡니다.
+- Prometheus / Grafana / kafka-exporter / Runbook으로 backlog, DLQ, replica, GitOps 상태를 운영 관점에서 확인합니다.
+- DLQ summary API의 `oldest_age_seconds`로 실패 event가 오래 방치되는지 확인합니다.
 
 ## 아키텍처
 ```mermaid
@@ -83,6 +94,11 @@ sequenceDiagram
 - kafka-exporter로 broker count, topic partition, `message-worker` consumer group lag를 직접 관측합니다.
 - DLQ 운영자는 `GET /v1/dlq/ingress/summary`로 `by_reason`, replayable, blocked, stream 분포를 먼저 확인합니다.
 - 핵심 운영 API는 FastAPI `response_model`, `/docs`, `/openapi.json`, API contract test로 응답 형태를 고정합니다.
+
+## 서비스 기준
+이 포트폴리오는 실시간 협업 메시징을 가정합니다. 같은 stream의 message 순서, 빠른 request 수락, PostgreSQL write 지연 중 복구 가능성, 운영자가 장애 위치를 판단할 수 있는 관측성을 핵심 요구로 둡니다.
+
+상세한 사용자, 기능 요구, 비기능 요구, SLO guardrail은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md)에 정리했습니다.
 
 ## 핵심 기능
 - Kafka-backed async event intake
@@ -240,6 +256,7 @@ Grafana 기본 계정:
 
 ## 문서
 - [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
+- [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): 구조와 처리 흐름
 - [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md): Kafka 설계와 검증 기록
 - [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침

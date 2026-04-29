@@ -161,6 +161,21 @@ sum by (result) (increase(messaging_dlq_replay_total[15m]))
 - `replayed`: DLQ event를 ingress topic으로 다시 append함
 - `skipped_max_replay`: `DLQ_REPLAY_MAX_COUNT`에 도달해 자동 replay에서 제외함
 
+### DLQ summary `oldest_age_seconds`
+
+DLQ에 오래 남아있는 event는 counter 증가보다 운영 위험이 큽니다. 이 값은 Prometheus metric이 아니라 운영 API 응답 필드입니다.
+
+```powershell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5
+```
+
+Endpoint: `GET /v1/dlq/ingress/summary`
+
+해석 기준:
+
+- `oldest_age_seconds > 600`: 10분 이상 남은 DLQ event가 있으므로 replay 조건과 `by_reason`을 확인합니다.
+- `oldest_age_seconds > 1800`: 30분 이상 남은 DLQ event가 있으므로 자동 replay만 기다리지 않고 수동 처리 또는 원인 수정을 결정합니다.
+
 ## PostgreSQL metrics
 
 ### `messaging_db_pool_in_use`

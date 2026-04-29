@@ -2,6 +2,8 @@
 
 Kafka Event Stream Systems 포트폴리오의 로컬 Kubernetes/kind 검증 결과입니다.
 
+테스트 결과는 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)의 서비스 요구와 SLO guardrail을 기준으로 해석합니다. 즉 단순히 Pod가 떠 있는지가 아니라, request intake, stream ordering, Worker persistence, DLQ 격리, replay guard, GitOps 일관성, 운영 관측 신호가 실제 서비스 흐름을 설명할 수 있는지를 확인합니다.
+
 ## 전체 검증 요약
 
 | 시나리오 | 결과 | 비고 |
@@ -224,7 +226,7 @@ Grafana / Prometheus 대시보드가 실제 운영 신호를 받는지 확인하
 | Pod restart increase | `0` | 테스트 동안 workload restart 없음 |
 | Unavailable replicas | `0` | 테스트 종료 시점 availability 정상 |
 
-운영 알림 기준값도 같은 측정 체계에 연결했습니다. `MessagingApi5xxRateWarning`은 API 5xx ratio `> 1%`, `MessagingApiHigh5xxRate`는 `> 5%`, `MessagingEventPersistLagHigh`는 accepted-to-persisted p95 `> 5s`, `MessagingEventPersistLagCritical`은 `> 15s`, `MessagingQueueWaitHigh`는 Kafka topic wait p95 `> 10s`, `MessagingQueueWaitCritical`은 `> 30s`, `MessagingDlqReplayBlocked`는 `skipped_max_replay` 누적값 `> 0`을 기준으로 합니다.
+운영 알림 기준값도 같은 측정 체계에 연결했습니다. `MessagingApi5xxRateWarning`은 API 5xx ratio `> 1%`, `MessagingApiHigh5xxRate`는 `> 5%`, `MessagingEventPersistLagHigh`는 accepted-to-persisted p95 `> 5s`, `MessagingEventPersistLagCritical`은 `> 15s`, `MessagingQueueWaitHigh`는 Kafka topic wait p95 `> 10s`, `MessagingQueueWaitCritical`은 `> 30s`, `MessagingDlqReplayBlocked`는 `skipped_max_replay` 누적값 `> 0`을 기준으로 합니다. DLQ age는 Prometheus counter가 아니라 DLQ summary API의 `oldest_age_seconds`로 확인하며 warning `> 600`, critical `> 1800`을 운영 판단 기준으로 둡니다.
 ## 운영 Alert Probe 결과
 
 `test_operational_alerts.ps1`는 Prometheus rule 로딩과 실제 alert firing을 검증하기 위해 추가했습니다. 2026-04-29 실행 결과 DLQ 증가와 replay blocked는 `firing`, unavailable replica는 `pending` 상태까지 확인했습니다.
@@ -287,6 +289,8 @@ OpenAPI는 ChatGPT API가 아니라 이 서비스의 공용 API 사용 설명서
 | `GET /v1/dlq/ingress/summary` | `DlqSummaryResponse` |
 
 특히 `DlqSummaryResponse`는 `total`, `replayable`, `blocked`, `oldest_age_seconds`, `by_reason`, `by_stream`, `recent_samples`를 OpenAPI schema에 노출하는지 확인합니다.
+
+`oldest_age_seconds`는 DLQ event가 오래 방치되는지를 보는 운영 신호입니다. 10분 초과는 warning, 30분 초과는 critical 기준으로 보고, `blocked`, `by_reason`, `recent_samples`를 함께 확인합니다.
 ## Kafka Exporter 관측성
 
 Kafka broker/topic/consumer group 상태를 직접 보기 위해 kafka-exporter를 추가했습니다.

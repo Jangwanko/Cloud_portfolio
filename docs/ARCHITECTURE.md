@@ -1,5 +1,18 @@
 # 아키텍처
 
+## 서비스 문제
+
+이 구조는 실시간 협업 메시징을 가정합니다. 사용자는 같은 stream 안에서 message 순서를 기대하고, 운영자는 DB write 지연이나 일시 장애가 생겨도 request intake, persistence, DLQ, replay 상태를 분리해서 판단해야 합니다.
+
+따라서 설계 기준은 단순 처리량이 아니라 아래 네 가지입니다.
+
+- Kafka append 중심의 빠른 request 수락
+- 같은 stream ordering boundary 유지
+- PostgreSQL write path 장애 시 DLQ / replay 기반 복구
+- Prometheus / Grafana / Runbook으로 장애 위치를 설명할 수 있는 운영성
+
+서비스 요구와 SLO guardrail은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)에 정리합니다.
+
 ## 구성 요소
 - API (`FastAPI`)
   - event request 수락

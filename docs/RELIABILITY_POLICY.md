@@ -2,6 +2,8 @@
 
 이 문서는 Kafka event intake, Worker persistence, PostgreSQL HA 기준의 readiness / alert 해석 정책을 정리합니다.
 
+서비스 사용자, 기능 요구, 비기능 요구, SLO guardrail의 상위 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)를 기준으로 합니다. 이 문서는 그 요구사항을 runtime readiness와 alert 판단으로 변환합니다.
+
 ## 핵심 모델
 
 - Kafka는 request intake의 event log입니다.
@@ -97,8 +99,11 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 | Worker failure ratio | 5분 동안 `> 10%` | - |
 | Worker last success age | 최근 처리량이 있는데 60초 이상 성공 없음 | - |
 | DLQ events | 5분 안에 1건 이상 증가 | `skipped_max_replay` 누적값 `> 0` |
+| DLQ oldest age | summary API `oldest_age_seconds > 600` | summary API `oldest_age_seconds > 1800` |
 | PostgreSQL replication | standby 부족, non-streaming, 1MiB 초과 lag | primary down |
 | Pod restarts | 15분 안에 restart 증가 | - |
 | Deployment availability | 2분 이상 unavailable replica `> 0` | - |
 
 알림 이름은 `monitoring/prometheus/alerts.yml`의 `MessagingApi5xxRateWarning`, `MessagingApiHigh5xxRate`, `MessagingEventPersistLagHigh`, `MessagingEventPersistLagCritical`, `MessagingQueueWaitHigh`, `MessagingQueueWaitCritical`, `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 기준으로 문서와 매니페스트가 같은 값을 바라보게 유지합니다.
+
+`DLQ oldest age`는 현재 Prometheus counter가 아니라 DLQ summary API의 운영 판단 신호입니다. `GET /v1/dlq/ingress/summary`에서 `oldest_age_seconds`가 warning / critical 기준을 넘으면, 자동 replay 여부보다 먼저 `blocked`, `by_reason`, `recent_samples`를 확인해 오래 남은 event를 처리합니다.
