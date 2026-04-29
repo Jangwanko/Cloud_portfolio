@@ -82,6 +82,19 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
+    def test_terraform_uses_msk_instead_of_redis(self):
+        terraform_files = [
+            path.read_text(encoding="utf-8").lower()
+            for path in (ROOT / "infra" / "terraform").rglob("*.tf")
+        ]
+        combined = "\n".join(terraform_files)
+
+        assert "aws_msk_cluster" in combined
+        assert "module \"msk_kafka\"" in combined
+        assert "kafka_bootstrap_servers" in combined
+        assert "aws_elasticache" not in combined
+        assert "redis" not in combined
+
     def test_kafka_exporter_is_wired_to_prometheus_and_manifests(self):
         prometheus = read_text("monitoring/prometheus/prometheus.yml")
         alerts = read_text("monitoring/prometheus/alerts.yml")
@@ -99,6 +112,27 @@ class TestManifestContracts:
         assert "MessagingKafkaExporterDown" in alerts
         assert "MessagingKafkaConsumerLagHigh" in alerts
         assert 'kafka_consumergroup_lag{consumergroup="message-worker"}' in alerts
+
+    def test_argocd_gitops_contract_matches_local_ha_runtime(self):
+        install_script = read_text("k8s/scripts/install-argocd.ps1")
+        bootstrap_script = read_text("k8s/scripts/bootstrap-argocd-app.ps1")
+        quick_start = read_text("scripts/quick_start_gitops.ps1")
+        app_example = read_text("k8s/argocd/application-messaging-portfolio-local-ha.example.yaml")
+        gitops_docs = read_text("docs/GITOPS.md")
+
+        for document in (bootstrap_script, quick_start, app_example, gitops_docs):
+            assert "dev-kafka" in document
+
+        for manifest in (bootstrap_script, app_example):
+            assert "RespectIgnoreDifferences=true" in manifest
+            assert "ignoreDifferences:" in manifest
+            assert "/spec/replicas" in manifest
+
+        assert "--server-side --force-conflicts" in install_script
+        assert "Clear-ProxyForKubectlDownload" in install_script
+        assert "WaitForFirstConsumer" in install_script
+        assert "postgres-backups" in install_script
+        assert "Synced / Healthy" in gitops_docs
 
 
 class TestApiContractAndRunbook:

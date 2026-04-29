@@ -6,3 +6,6 @@ domain_name               = "portfolio.example.com"
 grafana_admin_user        = "admin"
 grafana_admin_password    = "change-me"
 jwt_secret_override       = "replace-this-in-real-env"
+kafka_broker_count         = 3
+kafka_broker_instance_type = "kafka.t3.small"
+kafka_broker_volume_size   = 20

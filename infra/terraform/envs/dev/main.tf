@@ -38,38 +38,40 @@ module "eks" {
 module "rds_postgres" {
   source = "../../modules/rds_postgres"
 
-  name_prefix              = local.name_prefix
-  db_name                  = var.db_name
-  username                 = var.db_username
-  instance_class           = var.db_instance_class
-  allocated_storage        = var.db_allocated_storage
-  backup_retention_period  = var.db_backup_retention_period
-  vpc_id                   = module.vpc.vpc_id
-  subnet_ids               = module.vpc.database_subnet_ids
+  name_prefix                = local.name_prefix
+  db_name                    = var.db_name
+  username                   = var.db_username
+  instance_class             = var.db_instance_class
+  allocated_storage          = var.db_allocated_storage
+  backup_retention_period    = var.db_backup_retention_period
+  vpc_id                     = module.vpc.vpc_id
+  subnet_ids                 = module.vpc.database_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
 }
 
-module "elasticache_redis" {
-  source = "../../modules/elasticache_redis"
+module "msk_kafka" {
+  source = "../../modules/msk_kafka"
 
   name_prefix                = local.name_prefix
   vpc_id                     = module.vpc.vpc_id
-  subnet_ids                 = module.vpc.elasticache_subnet_ids
-  node_type                  = var.redis_node_type
-  num_cache_clusters         = var.redis_num_cache_clusters
+  subnet_ids                 = module.vpc.private_subnet_ids
   allowed_security_group_ids = [module.eks.node_security_group_id]
+  kafka_version              = var.kafka_version
+  broker_instance_type       = var.kafka_broker_instance_type
+  broker_volume_size         = var.kafka_broker_volume_size
+  broker_count               = var.kafka_broker_count
 }
 
 module "secrets" {
   source = "../../modules/secrets"
 
-  name_prefix            = local.name_prefix
-  db_username            = var.db_username
-  db_password            = module.rds_postgres.generated_password
-  redis_auth_token       = module.elasticache_redis.auth_token
-  jwt_secret_override    = var.jwt_secret_override
-  grafana_admin_user     = var.grafana_admin_user
-  grafana_admin_password = var.grafana_admin_password
+  name_prefix             = local.name_prefix
+  db_username             = var.db_username
+  db_password             = module.rds_postgres.generated_password
+  kafka_bootstrap_servers = module.msk_kafka.bootstrap_brokers
+  jwt_secret_override     = var.jwt_secret_override
+  grafana_admin_user      = var.grafana_admin_user
+  grafana_admin_password  = var.grafana_admin_password
 }
 
 module "route53_acm" {

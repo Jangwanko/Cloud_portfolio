@@ -7,7 +7,7 @@ spec:
   project: messaging-portfolio
   source:
     repoURL: https://github.com/your-org/your-repo.git
-    targetRevision: master
+    targetRevision: dev-kafka
     path: k8s/gitops/overlays/local-ha
   destination:
     server: https://kubernetes.default.svc
@@ -18,3 +18,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

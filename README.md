@@ -215,11 +215,11 @@ Grafana 기본 계정:
 - EKS
 - ECR
 - RDS PostgreSQL
-- managed messaging path 검토
+- Amazon MSK Kafka
 - Secrets Manager
 - optional Route 53 + ACM
 
-현재 AWS IaC는 실제 리소스 운영 배포가 아니라 `terraform plan` 검증 단계입니다. 설계 의도와 구성은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 정리했습니다.
+현재 AWS IaC는 실제 리소스 운영 배포가 아니라 로컬 코드 검증 단계입니다. 설계 의도와 구성은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 정리했습니다.
 
 ## 운영 메모
 - Kafka broker는 로컬 기준 3-broker KRaft StatefulSet으로 실행합니다.

@@ -11,9 +11,8 @@ variable "db_password" {
   sensitive = true
 }
 
-variable "redis_auth_token" {
-  type      = string
-  sensitive = true
+variable "kafka_bootstrap_servers" {
+  type = string
 }
 
 variable "jwt_secret_override" {

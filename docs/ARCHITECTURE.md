@@ -166,13 +166,14 @@ Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이
 - queue wait / accepted-to-persisted lag
 - worker replica count / KEDA desired replicas
 - Kafka health
+- Kafka broker count
+- Kafka consumer group lag
+- Kafka topic partition offset
 - PostgreSQL primary / standby / replication state / replication delay
 - DB / Kafka / Worker health
 - Prometheus alert firing / resolution
 
 관측 확장 포인트:
-- Kafka consumer lag dashboard 통합
-- Kafka broker HA topology metric
 - Kafka DLQ topic depth / replay rate metric
 
 ## 백업과 복구
@@ -194,7 +195,7 @@ Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이
 
 ## 운영 기준
 - Kafka broker는 로컬 기준 3-broker KRaft StatefulSet입니다.
-- 최신 Kafka intake baseline은 100 VU / 30초 기준 `30922` requests, error `0.01%`, p95 `92.25ms`입니다.
+- 최신 Kafka intake baseline은 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`입니다.
 - 이 baseline은 `X-Idempotency-Key`를 끈 Kafka append 중심 경로입니다.
 - idempotency header를 켠 경로는 PostgreSQL state-store 병목이 드러났고 별도 보강 대상입니다.
 - Kafka lag / consumer group metric은 KEDA와 consumer group 상태를 기준으로 해석합니다.

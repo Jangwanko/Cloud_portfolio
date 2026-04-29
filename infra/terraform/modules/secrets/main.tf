@@ -33,9 +33,11 @@ locals {
         password = var.db_password
       })
     }
-    redis = {
-      name  = "${var.name_prefix}/redis/auth"
-      value = jsonencode({ auth_token = var.redis_auth_token })
+    kafka = {
+      name = "${var.name_prefix}/kafka/bootstrap"
+      value = jsonencode({
+        bootstrap_servers = var.kafka_bootstrap_servers
+      })
     }
   }
 }

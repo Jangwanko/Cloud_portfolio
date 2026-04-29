@@ -1,7 +1,7 @@
 param(
   [Parameter(Mandatory = $true)]
   [string]$RepoUrl,
-  [string]$Revision = "master",
+  [string]$Revision = "dev-kafka",
   [string]$Namespace = "argocd",
   [string]$AppName = "messaging-portfolio-local-ha",
   [string]$ProjectName = "messaging-portfolio",
@@ -34,6 +34,12 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
 "@
 
 $applicationManifest | kubectl apply -f -

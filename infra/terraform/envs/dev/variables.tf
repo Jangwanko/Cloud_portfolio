@@ -25,7 +25,7 @@ variable "vpc_cidr" {
 variable "az_count" {
   type        = number
   description = "How many AZs to use"
-  default     = 2
+  default     = 3
 }
 
 variable "cluster_version" {
@@ -80,14 +80,25 @@ variable "db_backup_retention_period" {
   default     = 7
 }
 
-variable "redis_node_type" {
+variable "kafka_version" {
   type        = string
-  default     = "cache.t4g.small"
+  default     = "3.6.0"
 }
 
-variable "redis_num_cache_clusters" {
+variable "kafka_broker_instance_type" {
+  type        = string
+  default     = "kafka.t3.small"
+}
+
+variable "kafka_broker_volume_size" {
   type        = number
-  default     = 2
+  default     = 20
+}
+
+variable "kafka_broker_count" {
+  type        = number
+  description = "MSK broker count. Keep this aligned with az_count for the portfolio HA baseline."
+  default     = 3
 }
 
 variable "grafana_admin_user" {

@@ -14,8 +14,12 @@ output "rds_endpoint" {
   value = module.rds_postgres.endpoint
 }
 
-output "redis_primary_endpoint" {
-  value = module.elasticache_redis.primary_endpoint
+output "msk_cluster_arn" {
+  value = module.msk_kafka.cluster_arn
+}
+
+output "kafka_bootstrap_brokers" {
+  value = module.msk_kafka.bootstrap_brokers
 }
 
 output "secrets_arns" {
