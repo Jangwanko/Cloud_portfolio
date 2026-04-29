@@ -241,7 +241,7 @@ def _cache_room_members(room_id: int, member_ids: list[int]) -> None:
 
 
 def _ensure_room_exists(cur, room_id: int) -> None:
-    cur.execute("SELECT id FROM rooms WHERE id=%s", (room_id,))
+    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms WHERE id=%s", (room_id,))
     if cur.fetchone() is None:
         raise HTTPException(status_code=404, detail="Stream not found")
 
@@ -249,7 +249,7 @@ def _ensure_room_exists(cur, room_id: int) -> None:
 def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
     _ensure_room_exists(cur, room_id)
     cur.execute(
-        "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
+        "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
         (room_id, user_id),
     )
     if cur.fetchone() is None:

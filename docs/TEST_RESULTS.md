@@ -209,6 +209,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
 - `X-Idempotency-Key`를 켠 경우 API가 Kafka append 전에 PostgreSQL state-store 작업을 수행합니다.
 - 진단 실행에서 이 DB state path가 병목이 되었고, `503` 응답과 Pgpool 재시작 압력이 함께 나타났습니다.
 - 따라서 idempotency-state 설계는 별도 Kafka-native 보강 과제로 다룹니다.
+- 2026-04-29 성능 튜닝 실험에서 producer linger / batch size와 Worker batch commit을 조정했지만, 100 VU / 30초 intake 기준선은 기존보다 낮아지고 p95/p99가 악화되어 채택하지 않았습니다. 대신 실험 중 발견한 stream 생성 직후 event append의 read-after-write 문제는 Pgpool primary routing hint로 보강했습니다.
 - 장시간 500+ VU 테스트는 별도 capacity profile로 다룹니다.
 ## 운영 메트릭 변화 확인
 

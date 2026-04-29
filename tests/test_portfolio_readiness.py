@@ -47,7 +47,7 @@ class TestOperationalDocumentation:
 
         assert "순서가 중요하고 유실되면 안 되는 event request" in readme
         assert "주문 처리, 알림 발송, 감사 로그, IoT 수집" in readme
-        assert "## TL;DR" in readme
+        assert "## 요약" in readme
         assert "## Trade-off" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in readme
@@ -56,7 +56,7 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
 
         for token in (
-            "## TL;DR",
+            "## 요약",
             "## Problem",
             "## Solution",
             "## Architecture Boundary",

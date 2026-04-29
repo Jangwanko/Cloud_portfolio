@@ -171,6 +171,8 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 
 Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다.
 
+Stream 생성 직후 event를 append하는 read-after-write 경로는 Pgpool load balancing 때문에 standby replication lag에 걸릴 수 있습니다. Event intake 전 membership check는 Pgpool의 primary routing hint를 사용해 방금 생성한 stream / membership을 primary 기준으로 확인합니다.
+
 ## 관측성
 현재 관측 가능한 항목:
 - API request count / latency

@@ -5,6 +5,11 @@ These tests intentionally avoid live PostgreSQL and Kafka dependencies so they
 can run as a fast compile/import sanity check.
 """
 
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
 
 class TestRequestStatusKey:
     """Request key generation helpers."""
@@ -243,6 +248,14 @@ class TestConfig:
         from portfolio.config import settings
 
         assert settings.dlq_replayer_metrics_port == 9102
+
+
+class TestReadAfterWriteRouting:
+    def test_stream_membership_check_uses_primary_routing_hint(self):
+        api = (ROOT / "portfolio/api.py").read_text(encoding="utf-8")
+
+        assert "/*NO LOAD BALANCE*/ SELECT id FROM rooms" in api
+        assert "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members" in api
 
 
 class TestOpenApiContract:
