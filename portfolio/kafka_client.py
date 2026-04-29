@@ -38,6 +38,24 @@ def publish_dlq_job(key: int | str, payload: dict) -> None:
     future.get(timeout=10)
 
 
+def publish_request_status(request_id: str, payload: dict) -> None:
+    producer = get_kafka_producer()
+    future = producer.send(settings.kafka_request_status_topic, key=request_id, value=payload)
+    future.get(timeout=10)
+
+
+def publish_message_snapshot(message_id: int | str, payload: dict) -> None:
+    producer = get_kafka_producer()
+    future = producer.send(settings.kafka_message_snapshot_topic, key=message_id, value=payload)
+    future.get(timeout=10)
+
+
+def publish_stream_snapshot(stream_id: int | str, payload: dict) -> None:
+    producer = get_kafka_producer()
+    future = producer.send(settings.kafka_stream_snapshot_topic, key=stream_id, value=payload)
+    future.get(timeout=10)
+
+
 def build_ingress_consumer():
     from kafka import KafkaConsumer
 
@@ -65,6 +83,18 @@ def build_dlq_consumer():
         key_deserializer=lambda value: value.decode("utf-8") if value else None,
         value_deserializer=lambda value: json.loads(value.decode("utf-8")),
         consumer_timeout_ms=1000,
+    )
+
+
+def build_materialized_cache_consumer():
+    from kafka import KafkaConsumer
+
+    return KafkaConsumer(
+        bootstrap_servers=_bootstrap_servers(),
+        enable_auto_commit=False,
+        consumer_timeout_ms=1000,
+        key_deserializer=lambda value: value.decode("utf-8") if value else None,
+        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
     )
 
 

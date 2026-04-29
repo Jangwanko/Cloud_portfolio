@@ -86,7 +86,8 @@ try {
   }
 
   Start-Sleep -Seconds 5
-  $events = Invoke-RestMethod -Method Get -Headers $headers -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=20"
+  $eventsResponse = Invoke-RestMethod -Method Get -Headers $headers -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=20"
+  $events = @($eventsResponse.items)
   $persistedPoison = @($events | Where-Object { $_.body -eq "poison event for replay guard verification" }).Count
   if ($persistedPoison -ne 0) {
     throw "Replay guard failed: max replay poison event was persisted"

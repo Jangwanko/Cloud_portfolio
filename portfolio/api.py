@@ -1,4 +1,3 @@
-import time
 from collections import Counter
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -8,13 +7,20 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
-from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job
+from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job, publish_stream_snapshot
+from portfolio.materialized_cache import (
+    cache_stream_snapshot,
+    get_cached_request_status,
+    is_cached_stream_member,
+    list_cached_events,
+)
 from portfolio.metrics import observe_api_stage
 from portfolio.schemas import (
     DlqListResponse,
     DlqSummaryResponse,
     EventCreate,
     EventAcceptedResponse,
+    EventListResponse,
     EventRequestStatusResponse,
     EventResponse,
     LoginRequest,
@@ -28,19 +34,12 @@ from portfolio.schemas import (
     UserResponse,
 )
 from portfolio.state_store import (
-    clear_fallback_idem,
-    delete_request_status,
     fallback_idem_key,
-    get_fallback_idem,
     load_request_status,
     request_status_key,
-    set_fallback_idem,
-    store_request_status,
 )
 
 router = APIRouter(prefix="/v1", tags=["events"])
-
-_membership_cache: dict[tuple[int, int], float] = {}
 
 
 def _request_status_key(request_id: str) -> str:
@@ -53,14 +52,6 @@ def _fallback_idem_key(route: str, idem_key: str) -> str:
 
 def _queue_unavailable_detail() -> str:
     return "Kafka unavailable"
-
-
-def _state_unavailable_detail() -> str:
-    return "PostgreSQL state store unavailable"
-
-
-def _store_request_status(request_id: str, payload: dict) -> None:
-    store_request_status(request_id, payload)
 
 
 def _load_request_status(request_id: str) -> dict | None:
@@ -76,48 +67,6 @@ def _externalize_request_status(payload: dict) -> dict:
     if "room_seq" in status:
         status["stream_seq"] = status.pop("room_seq")
     return status
-
-
-def _set_fallback_idem(route: str, idem_key: str, request_id: str) -> bool:
-    return set_fallback_idem(route, idem_key, request_id)
-
-
-def _get_fallback_idem(route: str, idem_key: str) -> str | None:
-    return get_fallback_idem(route, idem_key)
-
-
-def _clear_fallback_idem(route: str, idem_key: str, request_id: str | None = None) -> None:
-    clear_fallback_idem(route, idem_key, request_id)
-
-
-def _delete_request_status(request_id: str) -> None:
-    delete_request_status(request_id)
-
-
-def _claim_or_load_request(route: str, idem_key: str, request_id: str) -> dict | None:
-    with observe_api_stage("postgres_idempotency"):
-        # The common path is a new idempotency key, so claim first and only
-        # do extra lookups when the key already exists.
-        if _set_fallback_idem(route, idem_key, request_id):
-            return None
-
-        existing_request_id = _get_fallback_idem(route, idem_key)
-        if existing_request_id:
-            existing_status = _load_request_status(existing_request_id)
-            if existing_status is not None:
-                return _externalize_request_status(existing_status)
-            _clear_fallback_idem(route, idem_key, existing_request_id)
-
-        if _set_fallback_idem(route, idem_key, request_id):
-            return None
-
-        existing_request_id = _get_fallback_idem(route, idem_key)
-        if existing_request_id:
-            existing_status = _load_request_status(existing_request_id)
-            if existing_status is not None:
-                return _externalize_request_status(existing_status)
-
-    raise RuntimeError("Failed to claim idempotency key")
 
 
 def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
@@ -209,37 +158,6 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
     }
 
 
-def _room_members_key(room_id: int) -> str:
-    return f"room_members:{room_id}"
-
-
-def _membership_cache_key(room_id: int, user_id: int) -> tuple[int, int]:
-    return (int(room_id), int(user_id))
-
-
-def _cache_membership(room_id: int, user_id: int) -> None:
-    _membership_cache[_membership_cache_key(room_id, user_id)] = (
-        time.monotonic() + settings.membership_cache_ttl_seconds
-    )
-
-
-def _is_membership_cached(room_id: int, user_id: int) -> bool:
-    expires_at = _membership_cache.get(_membership_cache_key(room_id, user_id))
-    if expires_at is None:
-        return False
-    if expires_at < time.monotonic():
-        _membership_cache.pop(_membership_cache_key(room_id, user_id), None)
-        return False
-    return True
-
-
-def _cache_room_members(room_id: int, member_ids: list[int]) -> None:
-    if not member_ids:
-        return
-    for member_id in member_ids:
-        _cache_membership(room_id, int(member_id))
-
-
 def _ensure_room_exists(cur, room_id: int) -> None:
     cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms WHERE id=%s", (room_id,))
     if cur.fetchone() is None:
@@ -254,23 +172,6 @@ def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
     )
     if cur.fetchone() is None:
         raise HTTPException(status_code=403, detail="Stream access denied")
-
-
-def _ensure_room_member_for_ingress(room_id: int, user_id: int) -> None:
-    with observe_api_stage("membership_check"):
-        if _is_membership_cached(room_id, user_id):
-            return
-
-        try:
-            with get_conn() as conn:
-                with get_cursor(conn) as cur:
-                    _ensure_room_member(cur, room_id, user_id)
-                    _cache_room_members(room_id, [user_id])
-            return
-        except HTTPException:
-            raise
-        except Exception:
-            raise HTTPException(status_code=503, detail="Authorization check unavailable")
 
 
 def _message_room_id(cur, message_id: int) -> int:
@@ -342,7 +243,16 @@ def create_stream(payload: StreamCreate, current_user: dict = Depends(get_curren
                     )
 
             conn.commit()
-            _cache_room_members(int(room["id"]), valid_member_ids)
+            stream_snapshot = {
+                "stream_id": int(room["id"]),
+                "name": room["name"],
+                "member_ids": valid_member_ids,
+            }
+            cache_stream_snapshot(stream_snapshot)
+            try:
+                publish_stream_snapshot(int(room["id"]), stream_snapshot)
+            except Exception:
+                pass
             return {
                 "id": room["id"],
                 "name": room["name"],
@@ -358,18 +268,9 @@ def create_event(
     current_user: dict = Depends(get_current_user),
 ):
     actor_user_id = int(current_user["id"])
-    _ensure_room_member_for_ingress(stream_id, actor_user_id)
 
     route = f"POST:/v1/streams/{stream_id}/events"
     request_id = str(uuid4())
-
-    if x_idempotency_key:
-        try:
-            existing_status = _claim_or_load_request(route, x_idempotency_key, request_id)
-            if existing_status is not None:
-                return existing_status
-        except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=503, detail=_state_unavailable_detail()) from exc
 
     queued_at = datetime.now(timezone.utc).isoformat()
     accepted_response = {
@@ -399,24 +300,23 @@ def create_event(
             },
         )
     except Exception as exc:  # noqa: BLE001
-        if x_idempotency_key:
-            try:
-                _clear_fallback_idem(route, x_idempotency_key, request_id)
-            except Exception:
-                pass
-        try:
-            _delete_request_status(request_id)
-        except Exception:
-            pass
         raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
     return accepted_response
 
 
 @router.get("/event-requests/{request_id}", response_model=EventRequestStatusResponse)
 def get_event_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
-    status = _load_request_status(request_id)
+    try:
+        status = _load_request_status(request_id)
+    except Exception as exc:  # noqa: BLE001
+        status = get_cached_request_status(request_id)
+        if status is None:
+            raise HTTPException(status_code=503, detail="Request status unavailable") from exc
+
     if status is None:
-        raise HTTPException(status_code=404, detail="Request not found")
+        status = get_cached_request_status(request_id)
+        if status is None:
+            raise HTTPException(status_code=404, detail="Request not found")
     status_user_id = status.get("user_id")
     if status_user_id is not None and int(status_user_id) != int(current_user["id"]):
         raise HTTPException(status_code=403, detail="Request access denied")
@@ -458,16 +358,58 @@ def get_ingress_dlq_summary(
     }
 
 
-@router.get("/streams/{stream_id}/events", response_model=list[EventResponse])
+def _event_row_to_response(row: dict) -> dict:
+    created_at = row["created_at"]
+    return {
+        "id": row["id"],
+        "request_id": row["request_id"],
+        "stream_id": row["room_id"],
+        "stream_seq": row["room_seq"],
+        "user_id": row["user_id"],
+        "body": row["body"],
+        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+    }
+
+
+def _event_list_response(source: str, degraded: bool, items: list[dict], snapshot_age: float | None) -> dict:
+    return {
+        "source": source,
+        "degraded": degraded,
+        "snapshot_age_seconds": None if snapshot_age is None else round(snapshot_age, 3),
+        "items": items,
+    }
+
+
+@router.get("/streams/{stream_id}/events", response_model=EventListResponse)
 def list_events(
     stream_id: int,
     limit: int = Query(default=20, ge=1, le=100),
     before_id: int | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ):
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            _ensure_room_member(cur, stream_id, int(current_user["id"]))
+    user_id = int(current_user["id"])
+    cached_items, snapshot_age = list_cached_events(stream_id, limit, before_id)
+    if (
+        before_id is None
+        and cached_items
+        and snapshot_age is not None
+        and snapshot_age <= settings.snapshot_cache_fresh_seconds
+        and is_cached_stream_member(stream_id, user_id)
+    ):
+        return _event_list_response("cache", False, cached_items, snapshot_age)
+
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                _ensure_room_member(cur, stream_id, user_id)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        if not is_cached_stream_member(stream_id, user_id):
+            raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
+        if cached_items:
+            return _event_list_response("cache", True, cached_items, snapshot_age)
+        raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
     sql = """
         SELECT id, request_id, room_id, room_seq, user_id, body, created_at
@@ -483,25 +425,18 @@ def list_events(
     sql += " ORDER BY id DESC LIMIT %s"
     params.append(limit)
 
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            cur.execute(sql, tuple(params))
-            rows = cur.fetchall()
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute(sql, tuple(params))
+                rows = cur.fetchall()
+    except Exception as exc:  # noqa: BLE001
+        if cached_items:
+            return _event_list_response("cache", True, cached_items, snapshot_age)
+        raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
-    result = []
-    for row in rows:
-        result.append(
-            {
-                "id": row["id"],
-                "request_id": row["request_id"],
-                "stream_id": row["room_id"],
-                "stream_seq": row["room_seq"],
-                "user_id": row["user_id"],
-                "body": row["body"],
-                "created_at": row["created_at"].isoformat(),
-            }
-        )
-    return result
+    result = [_event_row_to_response(row) for row in rows]
+    return _event_list_response("db", False, result, None)
 
 
 @router.post("/events/{event_id}/read", response_model=ReadReceiptResponse)

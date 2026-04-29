@@ -155,3 +155,6 @@ spec:
               done
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress --partitions 8 --replication-factor 3 --config min.insync.replicas=2
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress-dlq --partitions 8 --replication-factor 3 --config min.insync.replicas=2
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-request-status --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic stream-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact

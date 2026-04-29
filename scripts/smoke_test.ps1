@@ -57,12 +57,13 @@ if ($null -eq $eventId) {
 }
 
 $events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/events"
+$eventItems = @($events.items)
 
 Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/events/$eventId/read" -Headers @{ Authorization = "Bearer $u2Token" } -ContentType "application/json" -Body "{}" | Out-Null
 
 $unread = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u2Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/unread-count/$($u2.id)"
 
-Write-Host "health=$($health.status) event_count=$($events.Count) unread=$($unread.unread)"
+Write-Host "health=$($health.status) event_count=$($eventItems.Count) event_source=$($events.source) unread=$($unread.unread)"
 }
 finally {
   if (-not $SkipReset) {

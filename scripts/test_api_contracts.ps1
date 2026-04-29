@@ -26,24 +26,25 @@ function Assert-HasProperty($Object, [string]$Name, [string]$Context) {
 }
 
 function Assert-HttpStatus([string]$Method, [string]$Uri, [int]$ExpectedStatus, $Headers = @{}, $Body = $null) {
+  $args = @("-s", "-o", "NUL", "-w", "%{http_code}", "-X", $Method)
+  if ($null -ne $Headers) {
+    foreach ($name in $Headers.Keys) {
+      $args += @("-H", ("{0}: {1}" -f $name, $Headers[$name]))
+    }
+  }
+  $tempBody = $null
+  if ($null -ne $Body) {
+    $tempBody = [System.IO.Path]::GetTempFileName()
+    Set-Content -LiteralPath $tempBody -Value $Body -NoNewline -Encoding UTF8
+    $args += @("-H", "Content-Type: application/json", "--data-binary", "@$tempBody")
+  }
+  $args += $Uri
   try {
-    $params = @{
-      Method = $Method
-      Uri = $Uri
-      Headers = $Headers
-      TimeoutSec = 10
+    $status = [int](& curl.exe @args)
+  } finally {
+    if ($null -ne $tempBody) {
+      Remove-Item -LiteralPath $tempBody -Force -ErrorAction SilentlyContinue
     }
-    if ($null -ne $Body) {
-      $params.ContentType = "application/json"
-      $params.Body = $Body
-    }
-    $response = Invoke-WebRequest @params
-    $status = [int]$response.StatusCode
-  } catch {
-    if ($null -eq $_.Exception.Response) {
-      throw
-    }
-    $status = [int]$_.Exception.Response.StatusCode
   }
 
   if ($status -ne $ExpectedStatus) {
@@ -122,7 +123,7 @@ try {
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 401
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 403 -Headers $outsiderHeaders
-  Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 404 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
+  Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 200 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
 
   $eventBody = "contract event $suffix"
   $eventHeaders = @{ Authorization = "Bearer $($u1Login.access_token)"; "X-Idempotency-Key" = "contract-event-$suffix" }
@@ -165,7 +166,12 @@ try {
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/event-requests/$requestId" -ExpectedStatus 403 -Headers $u2Headers
 
   $eventsResponse = Invoke-RestMethod -Method Get -Headers $u1Headers -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=10"
-  if ($eventsResponse.PSObject.Properties.Name -contains "value") {
+  Assert-HasProperty $eventsResponse "source" "events response"
+  Assert-HasProperty $eventsResponse "degraded" "events response"
+  Assert-HasProperty $eventsResponse "items" "events response"
+  if ($eventsResponse.PSObject.Properties.Name -contains "items") {
+    $events = @($eventsResponse.items)
+  } elseif ($eventsResponse.PSObject.Properties.Name -contains "value") {
     $events = @($eventsResponse.value)
   } else {
     $events = @($eventsResponse)

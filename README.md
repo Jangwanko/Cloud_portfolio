@@ -4,7 +4,7 @@
 
 대표 도메인은 실시간 협업 메시징이지만, 같은 구조는 주문 처리, 알림 발송, 감사 로그, IoT 수집처럼 `order_id`, `user_id`, `device_id`, `stream_id` 단위 순서와 복구가 중요한 서비스에도 적용할 수 있습니다.
 
-## 요약
+## TL;DR
 
 Kafka 기반 event intake pipeline입니다.
 
@@ -42,18 +42,24 @@ Kafka 중심:
 - Worker consumer group processing
 - retry / DLQ / replay
 - lag based autoscaling
+- DB snapshot compacted topics / local materialized cache
 - kafka-exporter observability
 
 PostgreSQL state path:
 - auth / membership
-- request status
 - final message persistence
 - room sequence
 - read model
 
-현재 한계:
-- `X-Idempotency-Key`를 켜면 request claim / status 저장 때문에 PostgreSQL state path가 API hot path에 다시 들어옵니다.
-- 다음 개선 과제는 idempotency / request status를 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
+현재 경계:
+- API event intake는 stream membership / idempotency 확인을 위해 PostgreSQL을 먼저 조회하지 않습니다.
+- `X-Idempotency-Key`는 Kafka payload에 포함되고, 최종 deduplication은 Worker persistence 단계에서 처리합니다.
+- DB commit 이후의 message snapshot은 Kafka compacted topic `message-snapshots`에 publish되고, API pod는 이를 local materialized cache로 복구합니다.
+- stream membership snapshot은 DB commit 이후 `stream-snapshots`에 publish되어 DB failover 중 cached read 권한 확인에 사용됩니다.
+- message read는 cache-first로 동작합니다. fresh snapshot hit이면 cache에서 응답하고, cache miss / stale이면 DB를 조회하며, DB 실패 시 stale cache를 `degraded=true`로 반환합니다.
+- API pod는 PostgreSQL startup 실패만으로 종료하지 않아 DB failover 중에도 Kafka intake / status cache 경로를 먼저 살릴 수 있습니다.
+- request lifecycle status는 `message-request-status`에 보조 기록하지만, DB read fallback은 DB commit 이후 snapshot만 사용합니다.
+- 다음 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
 
 ## Validation Summary
 
@@ -87,24 +93,24 @@ PostgreSQL state path:
 - 따라서 같은 stream의 event가 실패 event를 추월하지 않도록 설계했습니다.
 - 단, multi-partition 전체 global ordering은 보장하지 않습니다.
 
-## Known Limitation: Idempotency State Path
+## Intake Boundary: Idempotency State Path
 
-현재 기본 성능 기준선은 `X-Idempotency-Key`를 사용하지 않는 Kafka append path입니다.
+현재 event intake 기준선은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다.
 
-`X-Idempotency-Key`를 켜면 request claim / status 저장을 위해 PostgreSQL state path가 API hot path에 다시 들어옵니다.
+`X-Idempotency-Key`를 켜도 API가 Kafka append 전에 PostgreSQL claim / status 저장을 수행하지 않습니다.
 
-따라서 idempotency는 현재 optional safety path이며, 고부하 Kafka-native intake 기준선과 분리해 해석합니다.
+Idempotency key는 Kafka event payload에 포함되고, Worker persistence 단계에서 최종 deduplication을 처리합니다. DB read fallback은 Kafka ingress event가 아니라 Worker가 PostgreSQL commit 이후 발행한 DB snapshot compacted topic만 사용합니다. 남은 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
 
 ## What I Learned
 
 - Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / replay 경계로 쓰는 것이 적합했습니다.
 - 장애 대응에서 중요한 것은 실패를 없애는 것이 아니라 실패를 격리하고 복구 가능하게 만드는 것입니다.
 - CPU 기반 scaling보다 consumer lag 기반 scaling이 event pipeline에 더 자연스럽습니다.
-- idempotency, request status 같은 low-latency state는 별도 state path 설계가 필요합니다.
+- read cache는 Kafka ingress event가 아니라 DB commit 이후 발행한 snapshot을 원본으로 둬야 하며, cache-first read에는 `source`, `degraded`, `snapshot_age_seconds` 같은 응답 메타데이터가 필요합니다.
 
 ## Next Improvements
 
-1. idempotency / request status를 Kafka compacted topic 또는 별도 state backend로 분리
+1. idempotency state를 Kafka compacted topic 또는 별도 state backend로 분리
 2. consumer group rebalance / partition imbalance 시나리오 추가
 3. SLO 기반 alert rule 강화
 
@@ -258,7 +264,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | HPA와 metrics 점검 | 통과 | 부하 중 API HPA 6 replicas, Worker KEDA 4 replicas까지 증가 |
 
 Latency는 k6 `http_req_duration` 기준으로, event request가 intake path에서 수락되고 API 응답을 받을 때까지의 시간입니다. PostgreSQL persisted 완료까지의 lag는 `messaging_event_persist_lag_seconds`로 별도 관측합니다.
-현재 Kafka intake load baseline은 `X-Idempotency-Key`를 보내지 않는 Kafka append 중심 경로입니다. Idempotency header를 켜면 PostgreSQL state path가 다시 hot path가 되어 별도 병목으로 봅니다.
+현재 Kafka intake load baseline은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다. Idempotency header를 켜도 key는 Kafka payload에 포함되며, 최종 deduplication은 Worker persistence 단계에서 처리합니다.
 
 Kafka 실험의 핵심 결과:
 - Kafka ingress / DLQ transport는 동작했습니다.

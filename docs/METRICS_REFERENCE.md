@@ -67,8 +67,8 @@ API hot path 내부 구간별 latency입니다.
 
 주요 stage:
 
-- `membership_check`: stream membership 확인
-- `postgres_idempotency`: idempotency state path
+- `membership_check`: 조회 API 등 PostgreSQL state 확인이 필요한 경로의 stream membership 확인
+- `postgres_idempotency`: legacy / 진단용 idempotency state path. 현재 event intake 기본 경로에서는 Kafka append 전에 사용하지 않음
 - `kafka_publish`: Kafka ingress topic publish
 
 ```promql
@@ -111,6 +111,8 @@ Worker 내부 구간별 latency입니다.
 
 - `db_persist`: PostgreSQL transaction으로 event 영속화
 - `request_status_update`: request status 갱신
+- request status는 PostgreSQL 저장과 함께 `message-request-status` compacted topic으로 publish됩니다. DB read fallback은 별도의 DB commit 이후 snapshot topic인 `message-snapshots` / `stream-snapshots`를 원본으로 사용합니다.
+- message read 응답의 `source`, `degraded`, `snapshot_age_seconds`는 cache-first read의 hit / stale fallback 상태를 판단하는 API-level signal입니다.
 - `notification_enqueue`: 후속 notification 작업 생성
 - `notification_db_insert`: notification 처리 결과 기록
 

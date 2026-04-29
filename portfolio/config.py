@@ -42,8 +42,17 @@ class Settings:
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
     kafka_ingress_topic: str = os.getenv("KAFKA_INGRESS_TOPIC", "message-ingress")
     kafka_dlq_topic: str = os.getenv("KAFKA_DLQ_TOPIC", "message-ingress-dlq")
+    kafka_request_status_topic: str = os.getenv(
+        "KAFKA_REQUEST_STATUS_TOPIC", "message-request-status"
+    )
+    kafka_message_snapshot_topic: str = os.getenv(
+        "KAFKA_MESSAGE_SNAPSHOT_TOPIC", "message-snapshots"
+    )
+    kafka_stream_snapshot_topic: str = os.getenv(
+        "KAFKA_STREAM_SNAPSHOT_TOPIC", "stream-snapshots"
+    )
     kafka_consumer_group: str = os.getenv("KAFKA_CONSUMER_GROUP", "message-worker")
-    membership_cache_ttl_seconds: int = int(os.getenv("MEMBERSHIP_CACHE_TTL_SECONDS", "300"))
+    snapshot_cache_fresh_seconds: float = float(os.getenv("SNAPSHOT_CACHE_FRESH_SECONDS", "5"))
 
 
 settings = Settings()

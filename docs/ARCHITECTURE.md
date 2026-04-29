@@ -17,11 +17,14 @@
 - API (`FastAPI`)
   - event request 수락
   - Kafka ingress topic append
+  - DB snapshot local materialized cache
   - health / readiness / metrics 노출
 - Kafka
   - ingress event log
   - stream 단위 partition ordering boundary
   - DLQ topic
+  - request status compacted topic
+  - message / stream snapshot compacted topics
   - consumer group offset 관리
 - Worker
   - Kafka consumer group으로 ingress topic 소비
@@ -125,12 +128,16 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 
 중요한 점:
 - 인증은 token payload 기준으로 처리해서 DB down 중에도 인증 경로 자체 때문에 요청이 막히지 않도록 했습니다.
-- Kafka-native 완성형에서는 membership / idempotency / request status 같은 low-latency state path를 event log path와 분리해야 합니다.
+- Kafka-native intake에서는 membership / idempotency / request status 같은 low-latency state path가 Kafka append 앞에 오지 않아야 합니다. API는 request를 Kafka에 먼저 append하고, Worker persistence 단계에서 최종 검증 / 상태 갱신을 수행합니다.
+- DB read fallback은 Kafka ingress event를 읽지 않습니다. Worker가 PostgreSQL commit 이후 발행한 `message-snapshots` compacted topic과 stream 생성 commit 이후 발행한 `stream-snapshots` compacted topic만 local materialized cache의 원본으로 사용합니다.
+- request lifecycle status는 `message-request-status`에 보조 기록하지만, DB row cache와 같은 의미로 해석하지 않습니다. `accepted`는 Kafka 수락 상태이고, DB snapshot은 아닙니다.
+- `GET /streams/{stream_id}/events`는 cache-first로 동작합니다. fresh snapshot이면 cache 응답을 반환하고, cache miss 또는 stale이면 PostgreSQL을 조회합니다. PostgreSQL 조회가 실패해도 stale snapshot이 있으면 `degraded=true`로 반환하며, 응답에는 `source`, `degraded`, `snapshot_age_seconds`, `items`를 포함합니다.
+- API startup은 PostgreSQL 초기화 실패만으로 process를 종료하지 않습니다. DB failover 중 새 API pod가 떠도 Kafka intake와 materialized cache consumer가 먼저 살아날 수 있게 합니다.
 
 ## 장애 시나리오별 동작
 
 ### PostgreSQL / Pgpool 병목
-- API intake는 Kafka append를 통해 persistence path와 분리됩니다.
+- API intake는 Kafka append를 통해 persistence path와 state validation path에서 분리됩니다.
 - Worker는 DB 쓰기 실패 시 retry를 수행합니다.
 - retry 한도를 넘긴 요청은 Kafka DLQ topic으로 이동합니다.
 - DB recovery 후 worker와 replayer가 다시 영속화를 진행합니다.
@@ -171,7 +178,7 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 
 Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다.
 
-Stream 생성 직후 event를 append하는 read-after-write 경로는 Pgpool load balancing 때문에 standby replication lag에 걸릴 수 있습니다. Event intake 전 membership check는 Pgpool의 primary routing hint를 사용해 방금 생성한 stream / membership을 primary 기준으로 확인합니다.
+Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지 않습니다. API는 Kafka append를 먼저 수행하고, Worker persistence 단계에서 stream / membership을 primary state 기준으로 검증합니다. 조회 API의 membership check는 Pgpool primary routing hint를 사용해 standby replication lag 영향을 줄입니다.
 
 ## 관측성
 현재 관측 가능한 항목:
@@ -212,7 +219,7 @@ Stream 생성 직후 event를 append하는 read-after-write 경로는 Pgpool loa
 - Kafka broker는 로컬 기준 3-broker KRaft StatefulSet입니다.
 - 최신 Kafka intake baseline은 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`입니다.
 - 이 baseline은 `X-Idempotency-Key`를 끈 Kafka append 중심 경로입니다.
-- idempotency header를 켠 경로는 PostgreSQL state-store 병목이 드러났고 별도 보강 대상입니다.
+- idempotency header는 API가 PostgreSQL claim을 선점하지 않고 Kafka payload에 포함합니다. 최종 deduplication은 Worker persistence 단계에서 처리합니다. DB read fallback은 DB commit 이후 snapshot topic만 사용하며, idempotency state 분리는 다음 보강 대상입니다.
 - Kafka lag / consumer group metric은 KEDA와 consumer group 상태를 기준으로 해석합니다.
 - 멀티 파드 환경에서도 stream 단위 ordering boundary는 Kafka key와 partition 기준으로 유지합니다.
 - 운영 UI는 로컬 포트폴리오 검증을 위해 ingress로 노출합니다.

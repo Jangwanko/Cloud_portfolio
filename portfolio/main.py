@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import logging
+import threading
 import time
 
 from fastapi import FastAPI, Request
@@ -8,17 +10,57 @@ from portfolio.api import router as api_router
 from portfolio.config import settings
 from portfolio.db import close_pool, get_postgres_runtime_status, init_pool_with_retry, run_alembic_migrations
 from portfolio.kafka_client import ping_kafka
+from portfolio.materialized_cache import start_materialized_cache, stop_materialized_cache
 from portfolio.metrics import api_request_latency_seconds, api_requests_total, metrics_response
 from portfolio.schemas import LiveHealthResponse, ReadinessResponse, RootResponse
 
 _degraded_started_at: float | None = None
+_db_startup_ready = False
+_db_startup_stop = threading.Event()
+_db_startup_thread: threading.Thread | None = None
+
+
+def _initialize_db_startup() -> None:
+    global _db_startup_ready
+
+    init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
+    run_alembic_migrations()
+    _db_startup_ready = True
+
+
+def _retry_db_startup_until_ready() -> None:
+    while not _db_startup_stop.is_set() and not _db_startup_ready:
+        try:
+            _initialize_db_startup()
+        except Exception as exc:  # noqa: BLE001
+            logging.warning("PostgreSQL startup retry failed: %s", exc)
+            _db_startup_stop.wait(settings.startup_retry_delay)
+
+
+def _start_db_startup_retry() -> None:
+    global _db_startup_thread
+
+    if _db_startup_thread is not None and _db_startup_thread.is_alive():
+        return
+    _db_startup_thread = threading.Thread(
+        target=_retry_db_startup_until_ready,
+        name="postgres-startup-retry",
+        daemon=True,
+    )
+    _db_startup_thread.start()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
-    run_alembic_migrations()
+    try:
+        _initialize_db_startup()
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("API started without PostgreSQL startup readiness: %s", exc)
+        _start_db_startup_retry()
+    start_materialized_cache()
     yield
+    _db_startup_stop.set()
+    stop_materialized_cache()
     close_pool()
 
 

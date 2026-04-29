@@ -6,6 +6,8 @@
 
 - API가 요청을 빠르게 `accepted` 하는가?
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
+- DB commit 이후 snapshot compacted topic 기반 local materialized cache가 DB failover 중 degraded read를 보조하는가?
+- message read 응답의 `source`, `degraded`, `snapshot_age_seconds`로 cache-first read가 정상 동작하는가?
 - `accepted` 된 요청이 PostgreSQL에 언제 `persisted` 되는가?
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
@@ -40,7 +42,7 @@
 - Kafka consumer lag 증가: ingress rate가 Worker 처리량보다 빠르거나 downstream persistence path가 막힌 상태입니다.
 - Queue wait 증가: Worker가 backlog를 충분히 빨리 소비하지 못하고 있거나 DB write path가 느린 상태입니다.
 - Accepted-to-persisted lag 증가: API는 요청을 수락하지만 PostgreSQL 영속화가 늦어지는 상태입니다.
-- API latency 증가: Kafka publish, membership check 등 request intake path 병목입니다.
+- API latency 증가: Kafka publish 또는 인증 토큰 처리 등 request intake path 병목입니다. Event write path에서 PostgreSQL membership / idempotency 선조회가 보이면 설계 회귀로 봅니다.
 - Worker `db_persist` stage 증가: PostgreSQL / Pgpool / row lock / disk I/O 병목 가능성이 큽니다.
 - Worker replica 증가 후에도 lag가 줄지 않음: 단순 Worker 수 부족보다 PostgreSQL persistence path 병목일 가능성이 높습니다.
 - Worker last success age 증가: Worker pod 상태보다 실제 consume / persist 성공 여부를 우선 확인합니다.

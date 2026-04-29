@@ -38,6 +38,13 @@ class EventResponse(BaseModel):
     created_at: str
 
 
+class EventListResponse(BaseModel):
+    source: str
+    degraded: bool
+    snapshot_age_seconds: float | None = None
+    items: list[EventResponse]
+
+
 class EventAcceptedResponse(BaseModel):
     request_id: str
     status: str

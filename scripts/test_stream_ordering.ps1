@@ -65,10 +65,11 @@ try {
   $deadline = (Get-Date).AddSeconds($PersistTimeoutSec)
   $events = @()
   while ((Get-Date) -lt $deadline) {
-    $events = Invoke-RestMethod `
+    $eventsResponse = Invoke-RestMethod `
       -Method Get `
       -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=$EventCount" `
       -Headers $headers
+    $events = @($eventsResponse.items)
 
     $matchedCount = @($events | Where-Object { $_.body -like "ordering-event-*" }).Count
     if ($matchedCount -ge $EventCount) {

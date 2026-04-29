@@ -8,7 +8,12 @@ from psycopg2 import InterfaceError, OperationalError
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
-from portfolio.kafka_client import build_ingress_consumer, publish_dlq_job
+from portfolio.kafka_client import (
+    build_ingress_consumer,
+    publish_dlq_job,
+    publish_message_snapshot,
+    publish_request_status,
+)
 from portfolio.metrics import (
     dlq_events_total,
     event_persist_lag_seconds,
@@ -90,6 +95,13 @@ def persist_message(job_payload: dict) -> dict:
             cur.execute("SELECT id FROM users WHERE id=%s", (user_id,))
             if cur.fetchone() is None:
                 raise ValueError("User not found")
+
+            cur.execute(
+                "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
+                (room_id, user_id),
+            )
+            if cur.fetchone() is None:
+                raise ValueError("Stream access denied")
 
             cur.execute(
                 """
@@ -193,7 +205,30 @@ def queue_notification(message_response: dict) -> None:
 
 def update_request_status(request_id: str, payload: dict) -> None:
     with observe_worker_stage("request_status_update"):
-        store_request_status(request_id, payload)
+        try:
+            store_request_status(request_id, payload)
+        except Exception as exc:  # noqa: BLE001
+            logging.warning("Failed to store request status in PostgreSQL request_id=%s error=%s", request_id, exc)
+        try:
+            publish_request_status(request_id, payload)
+        except Exception as exc:  # noqa: BLE001
+            logging.warning("Failed to publish request status state request_id=%s error=%s", request_id, exc)
+
+
+def publish_persisted_message_snapshot(response: dict) -> None:
+    snapshot = {
+        "id": response["id"],
+        "request_id": response["request_id"],
+        "stream_id": response["room_id"],
+        "stream_seq": response["room_seq"],
+        "user_id": response["user_id"],
+        "body": response["body"],
+        "created_at": response["created_at"],
+    }
+    try:
+        publish_message_snapshot(response["id"], snapshot)
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("Failed to publish message snapshot message_id=%s error=%s", response["id"], exc)
 
 
 def move_to_dlq(job_payload: dict, reason: str) -> None:
@@ -207,6 +242,8 @@ def move_to_dlq(job_payload: dict, reason: str) -> None:
         {
             "request_id": request_id,
             "status": "failed_dlq",
+            "room_id": job_payload.get("room_id"),
+            "user_id": job_payload.get("user_id"),
             "reason": reason,
             "retry_count": int(job_payload.get("retry_count", 0)),
             "failed_at": job_payload["failed_at"],
@@ -225,6 +262,8 @@ def mark_inline_retry(job_payload: dict) -> float:
             {
                 "request_id": job_payload["request_id"],
                 "status": "queued",
+                "room_id": job_payload.get("room_id"),
+                "user_id": job_payload.get("user_id"),
                 "room_seq": job_payload.get("room_seq"),
                 "retry_count": retry_count,
                 "next_retry_at": datetime.fromtimestamp(
@@ -300,6 +339,7 @@ def handle_ingress_job(raw: str) -> None:
                     "created_at": response["created_at"],
                 },
             )
+            publish_persisted_message_snapshot(response)
             queue_notification(response)
             return
         except ValueError as exc:
@@ -308,6 +348,8 @@ def handle_ingress_job(raw: str) -> None:
                 {
                     "request_id": request_id,
                     "status": "failed",
+                    "room_id": job_payload.get("room_id"),
+                    "user_id": job_payload.get("user_id"),
                     "reason": str(exc),
                 },
             )

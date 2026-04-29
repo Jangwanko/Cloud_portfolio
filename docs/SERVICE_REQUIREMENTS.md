@@ -27,7 +27,7 @@
 
 | 사용자 | 관심사 | 시스템 기준 |
 | --- | --- | --- |
-| 메시지를 보내는 사용자 | 요청이 빠르게 수락되고 중복 처리되지 않음 | API `202 Accepted`, request status 조회, idempotency guard |
+| 메시지를 보내는 사용자 | 요청이 빠르게 수락되고 중복 처리되지 않음 | API `202 Accepted`, DB snapshot materialized cache, idempotency guard |
 | 같은 stream을 보는 사용자 | 같은 stream message가 순서대로 보임 | Kafka `stream_id` key, partition ordering boundary, Worker inline retry |
 | 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
 | 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, replay count guard |
@@ -36,6 +36,8 @@
 ## 기능 요구
 
 - API는 정상 request를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
+- 기본 read fallback은 Kafka ingress event가 아니라 DB commit 이후 snapshot 기반 local materialized cache로 조회할 수 있어야 합니다.
+- message read는 fresh snapshot cache를 먼저 사용하고, cache miss / stale / DB failure 상태를 응답 메타데이터로 구분해야 합니다.
 - 같은 stream event는 같은 Kafka partition boundary 안에 유지합니다.
 - Worker는 Kafka consumer group으로 event를 처리하고 PostgreSQL에 최종 영속화합니다.
 - transient DB failure는 같은 offset에서 inline retry하여 뒤 event가 앞 event를 추월하지 않게 합니다.

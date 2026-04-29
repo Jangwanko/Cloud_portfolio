@@ -17,6 +17,8 @@
   - local dev broker
   - ingress topic: `message-ingress`
   - DLQ topic: `message-ingress-dlq`
+  - Request status compacted topic: `message-request-status`
+  - DB snapshot compacted topics: `message-snapshots`, `stream-snapshots`
   - Worker autoscaling: KEDA Kafka lag scaler
 
 ## 실행

@@ -47,7 +47,7 @@ class TestOperationalDocumentation:
 
         assert "순서가 중요하고 유실되면 안 되는 event request" in readme
         assert "주문 처리, 알림 발송, 감사 로그, IoT 수집" in readme
-        assert "## 요약" in readme
+        assert "## TL;DR" in readme
         assert "## Trade-off" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in readme
@@ -56,7 +56,7 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
 
         for token in (
-            "## 요약",
+            "## TL;DR",
             "## Problem",
             "## Solution",
             "## Architecture Boundary",
@@ -70,15 +70,61 @@ class TestOperationalDocumentation:
             "Worker async persistence",
             "## Ordering Guarantee",
             "multi-partition 전체 global ordering은 보장하지 않습니다",
-            "## Known Limitation: Idempotency State Path",
+            "## Intake Boundary: Idempotency State Path",
             "X-Idempotency-Key",
-            "optional safety path",
+            "Kafka append 전에 PostgreSQL claim",
             "## What I Learned",
             "## Next Improvements",
             "Kafka compacted topic",
             "consumer group rebalance",
         ):
             assert token in readme
+
+    def test_db_snapshot_materialized_cache_is_declared(self):
+        config = read_text("portfolio/config.py")
+        kafka_client = read_text("portfolio/kafka_client.py")
+        cache = read_text("portfolio/materialized_cache.py")
+        api = read_text("portfolio/api.py")
+        main = read_text("portfolio/main.py")
+        worker = read_text("worker/main.py")
+        kafka_bootstrap = read_text("k8s/gitops/base/kafka-ha.yaml")
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+
+        assert "kafka_request_status_topic" in config
+        assert "kafka_message_snapshot_topic" in config
+        assert "kafka_stream_snapshot_topic" in config
+        assert "snapshot_cache_fresh_seconds" in config
+        assert "publish_request_status" in kafka_client
+        assert "publish_message_snapshot" in kafka_client
+        assert "publish_stream_snapshot" in kafka_client
+        assert "build_materialized_cache_consumer" in kafka_client
+        assert "get_cached_request_status" in cache
+        assert "list_cached_events" in cache
+        assert "is_cached_stream_member" in cache
+        assert "start_materialized_cache" in cache
+        assert "get_cached_request_status(request_id)" in api
+        assert "list_cached_events(stream_id, limit, before_id)" in api
+        assert "snapshot_cache_fresh_seconds" in api
+        assert "response_model=EventListResponse" in api
+        assert "API started without PostgreSQL startup readiness" in main
+        assert "PostgreSQL startup retry failed" in main
+        assert "start_materialized_cache()" in main
+        assert "publish_request_status(request_id, payload)" in worker
+        assert "publish_message_snapshot" in worker
+        assert "message-request-status" in kafka_bootstrap
+        assert "message-snapshots" in kafka_bootstrap
+        assert "stream-snapshots" in kafka_bootstrap
+        assert "cleanup.policy=compact" in kafka_bootstrap
+        assert "KAFKA_REQUEST_STATUS_TOPIC" in app_manifest
+        assert "KAFKA_MESSAGE_SNAPSHOT_TOPIC" in app_manifest
+        assert "KAFKA_STREAM_SNAPSHOT_TOPIC" in app_manifest
+
+        readme = read_text("README.md")
+        architecture = read_text("docs/ARCHITECTURE.md")
+        for document in (readme, architecture):
+            assert "cache-first" in document
+            assert "snapshot_age_seconds" in document
+            assert "degraded=true" in document
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         readme = read_text("README.md")
