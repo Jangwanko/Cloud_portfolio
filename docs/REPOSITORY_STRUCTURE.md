@@ -57,3 +57,4 @@
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
 - 운영 정리: [OPERATIONS.md](OPERATIONS.md)
 - Runbook: [RUNBOOK.md](RUNBOOK.md)
+- 서비스 프로세스 점검표: [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)

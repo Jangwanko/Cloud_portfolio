@@ -104,6 +104,7 @@ sequenceDiagram
 ## 검증한 시나리오
 로컬 `kind` 환경에서 아래 시나리오를 검증했습니다. 최신 수치는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 기록합니다.
 
+- Portfolio status check for Kubernetes / Argo CD / Prometheus / Kafka exporter
 - Kafka mode smoke test
 - Kafka ingress topic append / Worker consume / PostgreSQL persisted
 - Kafka DLQ topic listing through `GET /v1/dlq/ingress`
@@ -157,6 +158,15 @@ Kafka 실험의 핵심 결과:
 - Worker가 persistence 시점에 sequence를 배정하고 request status를 갱신합니다.
 
 성능 suite 결과는 실행 후 `results/kafka-performance/latest.txt`에 남습니다. Kafka 설계 검증 내용은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)와 [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md)에 정리했습니다.
+
+## 운영 상태 확인
+현재 클러스터가 포트폴리오 데모 가능한 상태인지 빠르게 확인하려면 아래 스크립트를 사용합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+```
+
+이 스크립트는 API readiness, Argo CD `Synced / Healthy`, 핵심 workload replica, KEDA, Prometheus scrape, kafka-exporter broker / consumer lag 지표를 확인합니다. `postgres-backups` PVC는 local-path `WaitForFirstConsumer` 정책 때문에 첫 backup CronJob 전까지 `Pending`일 수 있으며, 이 경우는 warning으로만 표시합니다.
 
 ## 빠른 실행
 Windows PowerShell:
@@ -234,6 +244,7 @@ Grafana 기본 계정:
 - [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md): Kafka 설계와 검증 기록
 - [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침
 - [RUNBOOK.md](docs/RUNBOOK.md): 장애 대응 절차
+- [SERVICE_PROCESS_CHECKLIST.md](docs/SERVICE_PROCESS_CHECKLIST.md): 서비스 전체 프로세스 점검표
 - [OBSERVABILITY.md](docs/OBSERVABILITY.md): 지표, 대시보드, 병목 해석
 - [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md): readiness / degraded / not_ready 정책
 - [TEST_RESULTS.md](docs/TEST_RESULTS.md): 검증 결과

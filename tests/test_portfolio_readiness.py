@@ -134,6 +134,82 @@ class TestManifestContracts:
         assert "postgres-backups" in install_script
         assert "Synced / Healthy" in gitops_docs
 
+    def test_portfolio_status_check_covers_runtime_control_plane(self):
+        script = read_text("scripts/check_portfolio_status.ps1")
+        readme = read_text("README.md")
+        quick_start = read_text("docs/QUICK_START.md")
+        runbook = read_text("docs/RUNBOOK.md")
+        gitops_docs = read_text("docs/GITOPS.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+
+        for token in (
+            "Argo CD GitOps",
+            "Synced",
+            "Healthy",
+            "kafka_brokers",
+            "kafka_consumergroup_lag",
+            "worker-keda",
+            "postgres-backups",
+            "WaitForFirstConsumer",
+        ):
+            assert token in script
+
+        for document in (readme, quick_start, runbook, gitops_docs, test_results):
+            assert "check_portfolio_status.ps1" in document
+
+        assert "Portfolio Status Check" in test_results
+        assert "message-worker consumer_lag=0" in test_results
+
+    def test_service_process_checklist_covers_full_operating_flow(self):
+        checklist = read_text("docs/SERVICE_PROCESS_CHECKLIST.md")
+        readme = read_text("README.md")
+        quick_start = read_text("docs/QUICK_START.md")
+        runbook = read_text("docs/RUNBOOK.md")
+        operations = read_text("docs/OPERATIONS.md")
+        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
+
+        for process in (
+            "처음 실행하는 경우",
+            "정상 출력 예시",
+            "이상 신호를 읽는 법",
+            "Cluster / GitOps",
+            "API readiness",
+            "API 계약",
+            "Event intake",
+            "Kafka broker",
+            "Consumer lag",
+            "Worker persistence",
+            "Stream ordering",
+            "DLQ flow",
+            "DLQ replay guard",
+            "Autoscaling",
+            "Observability",
+            "Alert wiring",
+            "Backup",
+            "Restore",
+            "Performance baseline",
+        ):
+            assert process in checklist
+
+        for command in (
+            "scripts/quick_start_all.ps1",
+            "scripts/quick_start_gitops.ps1",
+            "scripts/check_portfolio_status.ps1",
+            "scripts/smoke_test.ps1",
+            "scripts/test_stream_ordering.ps1",
+            "scripts/test_dlq_flow.ps1",
+            "scripts/test_incident_signals.ps1",
+            "scripts/run_kafka_performance_suite.ps1",
+        ):
+            assert command in checklist
+
+        for document in (readme, quick_start, runbook, operations, repository_structure):
+            assert "SERVICE_PROCESS_CHECKLIST.md" in document
+
+        assert "-Revision dev-kafka" in quick_start
+        assert "consumer_lag > 100" in checklist
+        assert "`passed with warnings`는 실패가 아닙니다" in checklist
+
 
 class TestApiContractAndRunbook:
     def test_api_contract_script_is_in_recommended_flow_and_docs(self):

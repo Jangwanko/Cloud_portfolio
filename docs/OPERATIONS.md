@@ -1,6 +1,7 @@
 # 운영 지침
 
 운영 관점에서 필요한 secret, backup, restore, 운영 UI 경로를 정리한 문서입니다.
+서비스 전체 프로세스의 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)에서 함께 관리합니다.
 
 ## Runtime secret
 로컬 kind 기준 운영 보강을 위해 runtime secret를 별도로 생성합니다.

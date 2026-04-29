@@ -181,6 +181,16 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 - k6는 backlog와 latency spike를 만들 수 있으므로 장애 검증 뒤, reset 후 마지막에 실행합니다.
 
 ## 권장 테스트 순서
+현재 클러스터 상태만 빠르게 확인하려면 아래 스크립트를 먼저 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+```
+
+이 스크립트는 테스트 데이터를 만들지 않고 Kubernetes, Argo CD, API readiness, Prometheus scrape, kafka-exporter, KEDA 상태를 읽어 운영 상태를 요약합니다.
+
+서비스 전체 흐름을 순서대로 점검하려면 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 따릅니다.
+
 전체 검증을 순서대로 실행하려면 아래 스크립트를 사용합니다.
 
 ```powershell
@@ -265,7 +275,7 @@ Argo CD 요구사항을 보여주기 위한 GitOps bootstrap 스크립트도 포
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
-  -Revision ops
+  -Revision dev-kafka
 ```
 
 이 흐름은 아래를 수행합니다.

@@ -98,6 +98,7 @@ EKS까지 확장할 때는 보통 아래 단계가 이어집니다.
 
 ## 운영 메모
 - 로컬 데모에서는 앱 이미지를 build 한 뒤 kind 에 load 합니다.
+- GitOps 상태는 `scripts/check_portfolio_status.ps1`로 Argo CD `Synced / Healthy`와 workload readiness를 함께 확인합니다.
 - Argo CD는 `deployment controller` 이지 테스트 프레임워크는 아닙니다.
   - lint / test / image build 검증은 `CI` 에서 분리하는 것이 맞습니다.
 - AWS 나 다른 cloud 환경으로 확장할 때는 아래 항목을 함께 설계합니다.

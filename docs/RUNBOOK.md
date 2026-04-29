@@ -4,6 +4,16 @@
 
 ## 공통 확인 순서
 
+0. 전체 상태를 한 번에 확인합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+```
+
+이 명령은 API readiness, Argo CD `Synced / Healthy`, workload ready, KEDA, Prometheus scrape, kafka-exporter 지표를 함께 확인합니다.
+
+정상 운영 프로세스 전체를 순서대로 점검할 때는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 먼저 봅니다.
+
 1. API readiness를 확인합니다.
 
 ```powershell
