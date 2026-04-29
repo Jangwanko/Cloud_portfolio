@@ -116,9 +116,12 @@ function Assert-LocalPorts {
 
 function Remove-ClusterIfExists([string]$Name) {
   $resolvedKind = Resolve-KindPath
-  $clusters = & $resolvedKind get clusters 2>$null
-  if ($clusters -and ($clusters -contains $Name)) {
+  $nodeName = "$Name-control-plane"
+  $containers = docker ps -a --format "{{.Names}}"
+  if ($containers -contains $nodeName) {
     & $resolvedKind delete cluster --name $Name | Out-Host
+  } else {
+    Write-Host "[skip] No existing kind cluster named $Name"
   }
 }
 
@@ -239,7 +242,19 @@ try {
   }
 
   Invoke-Step "Removing previous local Docker Compose resources" {
-    docker compose down -v | Out-Host
+    $composeFiles = @("compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml")
+    $hasComposeFile = $false
+    foreach ($composeFile in $composeFiles) {
+      if (Test-Path (Join-Path (Get-Location) $composeFile)) {
+        $hasComposeFile = $true
+        break
+      }
+    }
+    if ($hasComposeFile) {
+      docker compose down -v | Out-Host
+    } else {
+      Write-Host "[skip] No Docker Compose project found"
+    }
   }
 
   Invoke-Step "Removing previous kind cluster if it exists" {
