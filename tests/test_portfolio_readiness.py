@@ -251,6 +251,7 @@ class TestOperationalDocumentation:
             "Kafka-only ingress path",
             "44 passed",
             "56 passed",
+            "516f65fdebc5e244332fc8c02839563acb561afe",
             "ecf8f2f70cfc3778ff56d2e4957f3395f04c76ee",
             "저장소에 포함된 도구:",
             "로컬 검증용 바이너리(kind/helm 등)",
@@ -260,7 +261,7 @@ class TestOperationalDocumentation:
 
         assert "Kafka append-first path" in combined
         assert "58 passed" in combined
-        assert "516f65fdebc5e244332fc8c02839563acb561afe" in combined
+        assert "9f7fc62be6f202abf98e12c8c108075502cd29a6" in combined
 
     def test_windows_quick_start_bootstraps_local_kubernetes_tools(self):
         bootstrap = read_text("scripts/bootstrap_tools.ps1")
