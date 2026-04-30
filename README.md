@@ -290,6 +290,8 @@ Windows PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
+Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 됩니다. `quick_start_all.ps1`은 시작 단계에서 `scripts/bootstrap_tools.ps1`을 호출해 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 자동으로 준비한 뒤 cluster bootstrap을 이어갑니다. 인터넷 연결은 최초 도구 다운로드와 Helm chart 설치에 필요합니다.
+
 Linux:
 
 ```bash

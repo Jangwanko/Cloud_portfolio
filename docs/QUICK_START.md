@@ -4,6 +4,21 @@
 - Docker Desktop 또는 Docker Engine 이 실행 중이어야 합니다
 - Windows PowerShell 또는 Linux bash 기준으로 실행합니다
 
+Windows PowerShell 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 됩니다. `scripts/quick_start_all.ps1`이 시작 단계에서 `scripts/bootstrap_tools.ps1`을 호출해 `kind`, `kubectl`, `helm`을 저장소의 `tools/` 아래에 자동으로 준비합니다.
+
+자동 준비되는 Windows 도구:
+- `tools/kind.exe`
+- `tools/kubectl.exe`
+- `tools/helm/windows-amd64/helm.exe`
+
+최초 실행에는 인터넷 연결이 필요합니다. 도구가 이미 있으면 다시 다운로드하지 않고 기존 파일을 사용합니다. 도구를 강제로 다시 받으려면 아래 명령을 먼저 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/bootstrap_tools.ps1 -Force
+```
+
+Docker Desktop이 실행 중이지 않거나 인터넷 연결이 없고 도구가 아직 내려받아지지 않았다면 quick start는 preflight 단계에서 중단됩니다.
+
 ## 로컬 Python
 로컬 테스트와 개발은 Dockerfile / CI와 같은 Python 3.11 기준으로 맞춥니다.
 

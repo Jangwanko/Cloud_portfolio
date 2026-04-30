@@ -48,6 +48,12 @@
 - `scripts/install_linux_prereqs.sh`: Ubuntu / Debian 계열 Linux 사전 도구 설치
 - `scripts/run_recommended_tests.ps1`: 권장 테스트 순서 일괄 실행
 
+## Windows Tool Bootstrap
+
+- `scripts/bootstrap_tools.ps1`: Windows quick start용 `kind`, `kubectl`, `helm` 자동 준비 스크립트
+- `tools/`: `scripts/bootstrap_tools.ps1`이 내려받은 로컬 검증용 바이너리 위치
+- `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`: Docker Desktop만 설치된 Windows 환경에서 `scripts/quick_start_all.ps1`이 자동으로 준비하는 Kubernetes 실습 도구
+
 ## 문서 연결
 - 빠른 실행: [QUICK_START.md](QUICK_START.md)
 - 서비스 요구사항: [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)

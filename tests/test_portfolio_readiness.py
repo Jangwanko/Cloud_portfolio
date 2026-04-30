@@ -180,6 +180,38 @@ class TestOperationalDocumentation:
         for term in blocked_terms:
             assert term not in combined
 
+    def test_windows_quick_start_bootstraps_local_kubernetes_tools(self):
+        bootstrap = read_text("scripts/bootstrap_tools.ps1")
+        quick_start_script = read_text("scripts/quick_start_all.ps1")
+        readme = read_text("README.md")
+        quick_start = read_text("docs/QUICK_START.md")
+        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
+        gitignore = read_text(".gitignore")
+
+        for token in (
+            "KindVersion",
+            "KubectlVersion",
+            "HelmVersion",
+            "kubernetes-sigs/kind",
+            "dl.k8s.io",
+            "get.helm.sh",
+            "tools",
+            "kind.exe",
+            "kubectl.exe",
+            "helm.exe",
+            "Docker Desktop is required",
+        ):
+            assert token in bootstrap
+
+        assert "bootstrap_tools.ps1" in quick_start_script
+        assert "bootstrap_tools.ps1" in readme
+        assert "bootstrap_tools.ps1" in quick_start
+        assert "bootstrap_tools.ps1" in repository_structure
+        assert "Docker Desktop만 설치하고 실행" in readme
+        assert "Docker Desktop만 설치하고 실행" in quick_start
+        assert "tools/kubectl.exe" in gitignore
+        assert "tools/downloads/" in gitignore
+
 
 class TestManifestContracts:
     def test_dlq_replay_limit_is_set_in_kubernetes_manifests(self):

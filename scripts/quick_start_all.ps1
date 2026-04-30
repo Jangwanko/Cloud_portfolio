@@ -238,6 +238,7 @@ function Start-PortForward([string]$ServiceName, [int]$LocalPort, [int]$RemotePo
 
 try {
   Invoke-Step "Checking Docker availability" {
+    & "$PSScriptRoot/bootstrap_tools.ps1"
     Assert-Preflight
   }
 

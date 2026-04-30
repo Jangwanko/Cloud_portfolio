@@ -45,6 +45,8 @@ backups/
 
 # Tools
 tools/kind.exe
+tools/kubectl.exe
 tools/helm/
 tools/helm-cache/
 tools/helm-home/
+tools/downloads/
