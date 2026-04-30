@@ -72,6 +72,8 @@ PostgreSQL state path:
 | p95 latency | `80.65ms` |
 | p99 latency | `103.57ms` |
 | Same-stream ordering | `100/100 pass` |
+| Fresh cache read | `source=cache`, `degraded=False`, `snapshot_age_seconds=0.507` |
+| DB down stale cache fallback | `source=cache`, `degraded=True`, `snapshot_age_seconds=11.798` |
 | API HPA | `6 replicas` |
 | Worker KEDA | `4 replicas` |
 
@@ -124,6 +126,11 @@ flowchart LR
     Kafka --> Worker[Worker consumer group]
     Worker --> Pgpool[Pgpool]
     Pgpool --> DB[(PostgreSQL HA)]
+    Worker --> MessageSnapshots[message-snapshots compacted topic]
+    API --> StreamSnapshots[stream-snapshots compacted topic]
+    MessageSnapshots --> Cache[API local materialized cache]
+    StreamSnapshots --> Cache
+    Cache -->|cache-first read| API
 
     Worker --> DLQ[Kafka DLQ topic]
     DLQ --> Replayer[DLQ Replayer]
@@ -133,8 +140,10 @@ flowchart LR
     Worker --> Metrics
     Metrics --> Prometheus[Prometheus]
     Prometheus --> Grafana[Grafana]
-    Prometheus --> KEDA[KEDA Kafka scaler]
+    Kafka -->|consumer group lag| KEDA[KEDA Kafka scaler]
     KEDA --> Worker
+    Kafka --> KafkaExporter[kafka-exporter]
+    KafkaExporter --> Prometheus
 
     GitHub[GitHub Actions] --> Argo[Argo CD GitOps path]
     Argo --> K8s[Kubernetes sync]
@@ -156,6 +165,26 @@ sequenceDiagram
     Worker->>Kafka: consume partition
     Worker->>DB: persist event and stream_seq
     Worker->>DB: update request status
+    Worker->>Kafka: publish message-snapshots after DB commit
+    Kafka-->>API: materialized cache consumes DB snapshot
+    Client->>API: GET stream events
+    API-->>Client: source=cache, degraded=false
+```
+
+DB 장애 중 cache-first read:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Cache as API local materialized cache
+    participant DB as PostgreSQL HA
+
+    Client->>API: GET stream events
+    API->>Cache: read DB snapshot
+    API->>DB: fallback read / membership check
+    DB--xAPI: unavailable
+    API-->>Client: source=cache, degraded=true, snapshot_age_seconds
 ```
 
 장애 / DLQ 흐름:
@@ -182,7 +211,8 @@ sequenceDiagram
 - Worker consumer group은 Kafka partition을 나눠 소비하고 PostgreSQL HA에 영속화합니다.
 - 실패한 job은 retry 후 Kafka DLQ topic으로 이동하고, DLQ Replayer가 복구 조건에서 ingress topic으로 재주입합니다.
 - Prometheus는 API / Worker metrics를 수집하고, Grafana는 latency, consumer lag, replica 변화를 보여줍니다.
-- Worker는 CPU가 아니라 KEDA Kafka scaler의 consumer lag 기준으로 scale-out합니다.
+- Worker는 CPU나 Prometheus query가 아니라 KEDA Kafka scaler가 Kafka의 `message-worker` consumer group lag를 직접 확인해 scale-out합니다.
+- Prometheus의 `kafka_consumergroup_lag`는 kafka-exporter가 노출한 관측 / alert용 지표이며, scaling trigger 자체는 KEDA `type: kafka`입니다.
 
 설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 partition ordering, consumer group scale-out, DLQ replay 기반 복구 경로를 확보합니다.
 

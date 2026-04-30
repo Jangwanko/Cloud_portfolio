@@ -122,7 +122,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 비교 진단:
 
-- `X-Idempotency-Key`를 켠 부하에서는 PostgreSQL state-store path가 API hot path로 다시 들어옵니다.
+- 초기 진단 구현에서 `X-Idempotency-Key`를 켠 부하에서는 PostgreSQL state-store path가 API hot path로 다시 들어왔습니다.
 - 이 경우 낮은 부하에서도 `503`이 발생했고, 100 VU에서는 Pgpool 재시작 압력과 높은 실패율이 나타났습니다.
 - 따라서 Kafka-native 완성형에서는 idempotency / request status state path를 Kafka append path와 분리하는 설계가 중요합니다.
 
@@ -133,13 +133,18 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 - API의 accepted status store는 기본값에서 synchronous DB hot path에 두지 않습니다.
 - request idempotency claim도 기본값에서는 API hot path에서 수행하지 않고 Worker persistence path가 최종 idempotency를 처리합니다.
 
-## 설계 방향
+## 현재 설계 방향
 
 Kafka-native 완성형으로 가려면 event log path와 low-latency state path를 분리해야 합니다.
 
-후보:
+현재 반영한 항목:
 
 - Kafka compacted topic으로 DB commit 이후 message / stream snapshot local materialized cache 구성
+- message read는 cache-first로 조회하고, cache miss / stale이면 PostgreSQL로 fallback
+- API는 Kafka append 전에 idempotency claim이나 request status 저장을 위해 PostgreSQL을 선점하지 않음
+
+남은 후보:
+
 - idempotency state를 compacted topic 또는 별도 state backend로 분리
 - 별도 low-latency state store 도입
 - API 응답 계약을 단순 `accepted event id` 중심으로 줄여 state lookup 최소화

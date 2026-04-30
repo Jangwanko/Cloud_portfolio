@@ -35,8 +35,9 @@ python -m pytest -q
 - `.venv`는 `.gitignore`와 `.dockerignore`에 포함되어 있습니다.
 - 시스템 Python 3.13은 그대로 두고, 이 저장소만 `.venv`의 Python 3.11을 사용합니다.
 
-저장소에 포함된 도구:
+Windows quick start가 `tools/` 아래에 자동으로 준비하는 도구:
 - `tools/kind.exe`
+- `tools/kubectl.exe`
 - `tools/helm/windows-amd64/helm.exe`
 
 Linux 에서는 아래 도구가 PATH 에 있어야 합니다.
@@ -146,6 +147,7 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | Linux quick start | `scripts/quick_start_all.sh` | 약 12-18분 |
 | Smoke test | `scripts/smoke_test.ps1` | 약 15-30초 |
 | API contract test | `scripts/test_api_contracts.ps1` | 약 15-30초 |
+| Cache read fallback test | `scripts/test_cache_read_fallback.ps1` | 약 1-2분 |
 | Linux smoke test | `scripts/smoke_test.sh` | 약 15-30초 |
 | DB recovery test | `scripts/test_db_down.ps1` | 약 1-2분 |
 | Linux DB recovery test | `scripts/test_db_down.sh` | 약 1-2분 |
@@ -224,6 +226,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1 -SkipReset
+powershell -ExecutionPolicy Bypass -File scripts/test_cache_read_fallback.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
@@ -242,6 +245,12 @@ API contract:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1
+```
+
+Cache-first / degraded read:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/test_cache_read_fallback.ps1
 ```
 
 DB outage and recovery:

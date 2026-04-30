@@ -13,7 +13,7 @@
 ├─ observer/                  # 관측 UI/보조 서비스 코드
 ├─ portfolio/                 # FastAPI 애플리케이션 본체
 ├─ scripts/                   # 운영/테스트 자동화 스크립트
-├─ tools/                     # 로컬 검증용 바이너리(kind/helm 등)
+├─ tools/                     # 로컬 검증용 자동 다운로드 바이너리(kind/kubectl/helm 등)
 ├─ worker/                    # 비동기 처리 워커
 └─ README.md                  # 프로젝트 개요
 ```

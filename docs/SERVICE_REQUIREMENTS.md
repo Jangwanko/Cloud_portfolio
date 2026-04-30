@@ -55,6 +55,12 @@
 | Persistence lag | accepted-to-persisted p95 warning `> 5s`, critical `> 15s` | `messaging_event_persist_lag_seconds` |
 | Kafka backlog | topic wait p95 warning `> 10s`, critical `> 30s` | `messaging_queue_wait_seconds` |
 | Consumer lag | `message-worker` lag이 낮은 값으로 회복되어야 함 | `kafka_consumergroup_lag` |
+| Read cache hit ratio | 정상 read traffic에서 fresh snapshot cache 응답 비율을 추적 | 현재는 `source=cache` 응답 샘플 / 향후 Prometheus counter 후보 |
+| Snapshot age | cached read의 snapshot age가 stale 기준을 넘지 않아야 함 | `snapshot_age_seconds`, warning `> 30s`, critical `> 120s` |
+| Cache rebuild time | API pod 재시작 후 snapshot topic replay로 read cache가 복구되는 시간 | pod restart 후 첫 `source=cache` 응답까지의 시간 |
+| Stale response count | DB failure 중 stale snapshot fallback이 얼마나 발생하는지 추적 | `degraded=true`, `source=cache` 응답 count |
+| Degraded read count | read path가 DB fallback 실패 또는 stale cache fallback에 의존하는 빈도 | `degraded=true` 응답 count |
+| Snapshot consumer lag | `message-snapshots` / `stream-snapshots` consumer lag이 낮게 유지되어야 함 | snapshot cache consumer group lag |
 | DLQ age | 가장 오래된 DLQ event age가 warning `> 10m`, critical `> 30m` 전에 처리되어야 함 | `GET /v1/dlq/ingress/summary`의 `oldest_age_seconds` |
 | Availability topology | 로컬 Kafka 3 broker, PostgreSQL 3 replica, Pgpool 2 replica | `scripts/check_portfolio_status.ps1` |
 | Recovery | poison event가 DLQ에 도달하고 replay guard가 동작 | `scripts/test_dlq_flow.ps1`, `scripts/test_dlq_replay_guard.ps1` |
@@ -71,6 +77,9 @@
 | accepted-to-persisted p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
 | Kafka topic wait p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
 | Worker failure ratio | 5분 동안 `> 10%` | - |
+| Read cache snapshot age | `snapshot_age_seconds > 30s` | `snapshot_age_seconds > 120s` |
+| Degraded read ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |
+| Snapshot consumer lag | 5분 동안 지속 증가 | read cache rebuild 지연 또는 stale read 증가 |
 | DLQ event 증가 | 5분 안에 1건 이상 증가 | `skipped_max_replay > 0` |
 | DLQ oldest age | `oldest_age_seconds > 600` | `oldest_age_seconds > 1800` |
 | PostgreSQL replication | standby 부족, non-streaming, 1MiB 초과 lag | primary down |
@@ -81,6 +90,8 @@
 - Kafka가 unavailable이면 request intake path 중단이므로 즉시 critical입니다.
 - PostgreSQL primary가 흔들리더라도 Kafka append가 가능하면 API intake는 degraded로 볼 수 있습니다.
 - Worker lag이 증가하면 먼저 Worker replica, KEDA desired replica, PostgreSQL write latency를 함께 봅니다.
+- read cache hit ratio가 급락하거나 `snapshot_age_seconds`가 증가하면 snapshot consumer lag, API pod restart, compacted topic consume 상태를 먼저 확인합니다.
+- `degraded=true`, `source=cache` 응답이 증가하면 PostgreSQL read path 장애가 사용자 read 경험에 전파되기 시작한 것으로 보고 DB primary / Pgpool / membership snapshot 상태를 함께 봅니다.
 - 같은 stream 순서가 깨졌다면 Kafka key뿐 아니라 Worker retry와 offset commit 경계를 확인합니다.
 - DLQ가 증가하면 reason 분포를 보고 poison data, schema mismatch, DB transient failure를 분리합니다.
 - `oldest_age_seconds`가 계속 증가하면 자동 replay가 되지 않는 운영 부채로 보고 replay 조건, blocked count, 원인 수정 여부를 먼저 확인합니다.

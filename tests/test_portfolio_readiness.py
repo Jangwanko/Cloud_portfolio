@@ -89,6 +89,7 @@ class TestOperationalDocumentation:
         worker = read_text("worker/main.py")
         kafka_bootstrap = read_text("k8s/gitops/base/kafka-ha.yaml")
         app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        cache_read_test = read_text("scripts/test_cache_read_fallback.ps1")
 
         assert "kafka_request_status_topic" in config
         assert "kafka_message_snapshot_topic" in config
@@ -111,6 +112,8 @@ class TestOperationalDocumentation:
         assert "start_materialized_cache()" in main
         assert "publish_request_status(request_id, payload)" in worker
         assert "publish_message_snapshot" in worker
+        assert "Wait-FreshCacheRead" in cache_read_test
+        assert "Expected degraded cache read while DB is down" in cache_read_test
         assert "message-request-status" in kafka_bootstrap
         assert "message-snapshots" in kafka_bootstrap
         assert "stream-snapshots" in kafka_bootstrap
@@ -125,6 +128,65 @@ class TestOperationalDocumentation:
             assert "cache-first" in document
             assert "snapshot_age_seconds" in document
             assert "degraded=true" in document
+            assert "message-snapshots" in document
+            assert "stream-snapshots" in document
+            assert "API local materialized cache" in document
+
+        assert "Prometheus --> KEDA" not in readme
+        assert "KEDA `type: kafka`" in architecture
+        assert "Prometheus / kafka-exporter는 같은 lag를 운영자가 관측" in architecture
+
+    def test_read_cache_validation_and_slo_are_documented(self):
+        requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+        metrics_reference = read_text("docs/METRICS_REFERENCE.md")
+        observability = read_text("docs/OBSERVABILITY.md")
+
+        for token in (
+            "DB Snapshot Cache / Degraded Read 검증 절차",
+            "scripts/test_cache_read_fallback.ps1",
+            "stream을 생성",
+            "Worker가 PostgreSQL commit",
+            "message-snapshots",
+            "stream-snapshots",
+            "source=cache",
+            "degraded=false",
+            "degraded=true",
+            "snapshot_age_seconds",
+            "DB failure + cache miss",
+            "Membership guard",
+        ):
+            assert token in test_results
+
+        for token in (
+            "Read cache hit ratio",
+            "Snapshot age",
+            "Cache rebuild time",
+            "Stale response count",
+            "Degraded read count",
+            "Snapshot consumer lag",
+            "snapshot_age_seconds > 30s",
+            "snapshot_age_seconds > 120s",
+            "Degraded read ratio",
+        ):
+            assert token in requirements
+
+        for token in (
+            "Read cache operating signals",
+            "Read cache hit ratio",
+            "Snapshot consumer lag",
+            "source=cache",
+            "degraded=true",
+        ):
+            assert token in metrics_reference
+
+        for token in (
+            "read cache hit ratio",
+            "snapshot age",
+            "degraded read count",
+            "snapshot consumer lag",
+        ):
+            assert token in observability
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         readme = read_text("README.md")
@@ -179,6 +241,26 @@ class TestOperationalDocumentation:
         blocked_terms = ["redis", "elasticache", "마이그레이션", "기존 redis", "처음부터 kafka"]
         for term in blocked_terms:
             assert term not in combined
+
+    def test_public_docs_do_not_use_stale_operating_claims(self):
+        public_docs = [read_text("README.md")]
+        public_docs.extend(path.read_text(encoding="utf-8") for path in (ROOT / "docs").glob("*.md"))
+        combined = "\n".join(public_docs)
+
+        blocked_terms = (
+            "Kafka-only ingress path",
+            "44 passed",
+            "56 passed",
+            "ecf8f2f70cfc3778ff56d2e4957f3395f04c76ee",
+            "저장소에 포함된 도구:",
+            "로컬 검증용 바이너리(kind/helm 등)",
+        )
+        for term in blocked_terms:
+            assert term not in combined
+
+        assert "Kafka append-first path" in combined
+        assert "58 passed" in combined
+        assert "516f65fdebc5e244332fc8c02839563acb561afe" in combined
 
     def test_windows_quick_start_bootstraps_local_kubernetes_tools(self):
         bootstrap = read_text("scripts/bootstrap_tools.ps1")

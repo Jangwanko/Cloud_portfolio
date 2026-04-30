@@ -87,6 +87,32 @@ sequenceDiagram
     Worker->>Kafka: consume partition
     Worker->>DB: persist event and stream_seq
     Worker->>DB: update request status
+    Worker->>Kafka: publish message-snapshots after DB commit
+    Kafka-->>API: materialized cache consumes DB snapshot
+    Client->>API: GET stream events
+    API-->>Client: source=cache, degraded=false
+```
+
+DB snapshot cache / degraded read 흐름:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Cache as API local materialized cache
+    participant Snapshots as message-snapshots / stream-snapshots
+    participant DB as PostgreSQL HA
+
+    DB-->>Snapshots: committed message / stream snapshot
+    Snapshots-->>Cache: compacted topic replay
+    Client->>API: GET stream events
+    API->>Cache: read fresh snapshot
+    API-->>Client: source=cache, degraded=false
+    Client->>API: GET stream events during DB failure
+    API->>DB: fallback read / membership check
+    DB--xAPI: unavailable
+    API->>Cache: read stale snapshot
+    API-->>Client: source=cache, degraded=true, snapshot_age_seconds
 ```
 
 장애 / DLQ 흐름:
@@ -171,12 +197,13 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 - Worker KEDA
   - min replicas: `2`
   - max replicas: `8`
-  - trigger: Kafka consumer lag
+  - trigger: KEDA `type: kafka`
+  - bootstrap servers: `kafka.messaging-app.svc.cluster.local:9092`
   - consumer group: `message-worker`
   - topic: `message-ingress`
   - lag threshold: `400`
 
-Worker를 CPU가 아니라 Kafka lag 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다.
+Worker를 CPU나 Prometheus query가 아니라 KEDA Kafka scaler 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다. KEDA는 Kafka broker의 `message-ingress` topic과 `message-worker` consumer group lag를 직접 확인해 `worker-keda-hpa` external metric을 만들고, Prometheus / kafka-exporter는 같은 lag를 운영자가 관측하고 alerting하기 위한 별도 경로입니다.
 
 Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지 않습니다. API는 Kafka append를 먼저 수행하고, Worker persistence 단계에서 stream / membership을 primary state 기준으로 검증합니다. 조회 API의 membership check는 Pgpool primary routing hint를 사용해 standby replication lag 영향을 줄입니다.
 

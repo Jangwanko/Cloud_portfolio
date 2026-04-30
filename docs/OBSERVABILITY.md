@@ -8,6 +8,7 @@
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
 - DB commit 이후 snapshot compacted topic 기반 local materialized cache가 DB failover 중 degraded read를 보조하는가?
 - message read 응답의 `source`, `degraded`, `snapshot_age_seconds`로 cache-first read가 정상 동작하는가?
+- read cache hit ratio, snapshot age, degraded read count, snapshot consumer lag로 read path가 DB failover를 얼마나 흡수하는가?
 - `accepted` 된 요청이 PostgreSQL에 언제 `persisted` 되는가?
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
