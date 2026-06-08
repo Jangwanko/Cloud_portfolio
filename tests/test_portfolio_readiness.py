@@ -352,7 +352,8 @@ class TestManifestContracts:
         gitops_docs = read_text("docs/GITOPS.md")
 
         for document in (bootstrap_script, quick_start, app_example, gitops_docs):
-            assert "dev-kafka" in document
+            assert "master" in document
+            assert "dev-kafka" not in document
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest
@@ -437,7 +438,7 @@ class TestManifestContracts:
         for document in (readme, quick_start, runbook, operations, repository_structure):
             assert "SERVICE_PROCESS_CHECKLIST.md" in document
 
-        assert "-Revision dev-kafka" in quick_start
+        assert "-Revision master" in quick_start
         assert "consumer_lag > 100" in checklist
         assert "`passed with warnings`는 실패가 아닙니다" in checklist
 

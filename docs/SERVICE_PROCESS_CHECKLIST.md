@@ -17,7 +17,7 @@ Argo CD 기반 GitOps 흐름까지 한 번에 확인하려면, 이 저장소를 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
-  -Revision dev-kafka
+  -Revision master
 ```
 
 설치가 끝난 뒤에는 이 문서의 점검 명령을 실행합니다. `check_portfolio_status.ps1`가 실패하면 출력의 마지막 실패 구간을 먼저 봅니다. 예를 들어 `Argo CD GitOps`에서 실패하면 GitOps sync 문제이고, `Prometheus and Kafka exporter`에서 실패하면 metric scrape 또는 Kafka exporter 문제입니다.

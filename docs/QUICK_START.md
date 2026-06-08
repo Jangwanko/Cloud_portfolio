@@ -299,7 +299,7 @@ Argo CD 요구사항을 보여주기 위한 GitOps bootstrap 스크립트도 포
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
-  -Revision dev-kafka
+  -Revision master
 ```
 
 이 흐름은 아래를 수행합니다.

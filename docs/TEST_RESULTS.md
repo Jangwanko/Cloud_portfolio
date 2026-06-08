@@ -365,7 +365,7 @@ Kafka broker/topic/consumer group 상태를 직접 보기 위해 kafka-exporter�
 | --- | --- |
 | Argo CD 설치 | `argocd` namespace 생성, controller / server / repo-server / dex / notifications / applicationset 모두 `1/1 Running` |
 | Application | `messaging-portfolio-local-ha` 생성 |
-| Source | `https://github.com/Jangwanko/Cloud_portfolio.git`, revision `dev-kafka`, path `k8s/gitops/overlays/local-ha` |
+| Source | `https://github.com/Jangwanko/Cloud_portfolio.git`, revision `master`, path `k8s/gitops/overlays/local-ha` |
 | Sync / Health | `Synced / Healthy` |
 | GitOps render | `kubectl kustomize k8s\gitops\overlays\local-ha` 통과 |
 | Workload readiness | `api`, `worker`, `kafka`, PostgreSQL, Pgpool, `kafka-exporter`, Prometheus, Grafana ready |

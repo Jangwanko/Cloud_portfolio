@@ -386,6 +386,7 @@ Grafana 기본 계정:
 - AWS IaC 문서는 운영형 확장 설계를 설명합니다.
 
 ## 문서
+- [AGENTS.md](AGENTS.md): 새 Codex 세션용 프로젝트 컨텍스트와 수치 해석 경계
 - [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
 - [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): 구조와 처리 흐름

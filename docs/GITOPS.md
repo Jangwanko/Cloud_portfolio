@@ -47,7 +47,7 @@
 ## Sync 전략
 GitOps 검증은 Git remote의 특정 revision을 Argo CD `Application`이 바라보게 하는 방식으로 수행합니다.
 
-현재 로컬 GitOps 기준 revision은 `dev-kafka`입니다. `Application`에는 HPA가 관리하는 Deployment replica 차이를 drift로 보지 않도록 `RespectIgnoreDifferences=true`와 `/spec/replicas` ignore rule을 둡니다.
+현재 로컬 GitOps 기준 revision은 `master`입니다. `Application`에는 HPA가 관리하는 Deployment replica 차이를 drift로 보지 않도록 `RespectIgnoreDifferences=true`와 `/spec/replicas` ignore rule을 둡니다.
 
 Argo CD 설치 스크립트는 로컬 `kind`의 `local-path` storage class 특성도 함께 처리합니다. `postgres-backups` PVC는 주간 backup `CronJob`이 처음 실행될 때 consumer가 생기므로, 그 전까지 `WaitForFirstConsumer` 상태로 남는 것이 정상입니다. 이 PVC 때문에 Application health가 계속 `Progressing`으로 남지 않도록 Argo CD health customization을 설치 단계에서 적용합니다.
 
@@ -58,7 +58,7 @@ Argo CD 설치 스크립트는 로컬 `kind`의 `local-path` storage class 특�
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
-  -Revision dev-kafka
+  -Revision master
 ```
 
 3. 스크립트는 아래 작업을 순서대로 수행합니다.
