@@ -1,8 +1,8 @@
 # 관측성
 
-이 문서는 Kafka 기반 event stream pipeline을 Grafana / Prometheus에서 어떻게 읽는지 정리합니다.
+Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persistence, lag, DLQ, replica 상태를 나눠 봅니다.
 
-관측의 목적은 단순히 Pod 생존 여부를 보는 것이 아니라, 아래 질문에 답하는 것입니다.
+관측 기준은 단순 Pod 생존 여부가 아니라 아래 질문에 대한 답입니다.
 
 - API가 요청을 빠르게 `accepted` 하는가?
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
@@ -187,3 +187,19 @@ Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.
 | `Kafka Topic Partitions` | `kafka_topic_partition_current_offset` | topic별 partition 구성을 확인합니다. |
 
 `Kafka Consumer Group Lag`가 증가하면서 `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다.
+
+## Ordering / Failure Injection 관측
+
+`scripts/ordering_failure_injection.py`는 pass/fail 판정을 새 Prometheus metric으로 만들지 않습니다. 실험 결과는 PostgreSQL `messages` table 조회 결과로 판정하고 `results/ordering-failure/latest.json`에 저장합니다.
+
+Grafana는 실험 중 시스템 반응을 보는 용도로 사용합니다.
+
+| 관측점 | PromQL | 해석 |
+| --- | --- | --- |
+| Kafka consumer lag | `sum(kafka_consumergroup_lag{consumergroup="message-worker"})` | DB write path가 막히는 동안 backlog가 쌓이고 복구 후 0으로 drain되는지 확인 |
+| Accepted-to-persisted p95 | `histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))` | Kafka accepted 이후 PostgreSQL persisted까지 걸리는 시간 |
+| PostgreSQL primary reachability | `messaging_postgres_is_primary{job="api"}` | 장애 주입이 DB path에 실제로 반영됐는지 확인 |
+| DLQ events | `sum(increase(messaging_dlq_events_total[5m]))` | 짧은 장애 흡수 실험에서 DLQ가 0인지 확인 |
+| Worker throughput | `sum(rate(messaging_worker_processed_total[1m]))` | 복구 후 backlog 처리 흐름 |
+
+실험 결과 자체는 `ordering`, `no_loss`, `no_duplicate`, `no_mixed_payload`, `dlq_empty` checks로 판단합니다.

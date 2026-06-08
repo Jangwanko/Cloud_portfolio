@@ -1,6 +1,6 @@
 # 서비스 프로세스 점검표
 
-이 문서는 Kafka 이벤트 스트림 포트폴리오를 서비스 운영 흐름 기준으로 점검하기 위한 체크리스트입니다. 목적은 단순히 Pod가 떠 있는지 보는 것이 아니라, request intake부터 persistence, 장애 격리, 복구, 관측, GitOps 반영까지 전체 흐름이 연결되어 있는지 확인하는 것입니다.
+Kafka 이벤트 스트림 포트폴리오는 단순히 Pod가 떠 있는지가 아니라 request intake부터 persistence, 장애 격리, 복구, 관측, GitOps 반영까지 전체 흐름이 연결되는지 점검합니다.
 
 ## 빠른 전체 점검
 
@@ -20,7 +20,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -Revision master
 ```
 
-설치가 끝난 뒤에는 이 문서의 점검 명령을 실행합니다. `check_portfolio_status.ps1`가 실패하면 출력의 마지막 실패 구간을 먼저 봅니다. 예를 들어 `Argo CD GitOps`에서 실패하면 GitOps sync 문제이고, `Prometheus and Kafka exporter`에서 실패하면 metric scrape 또는 Kafka exporter 문제입니다.
+설치가 끝난 뒤에는 아래 점검 명령을 실행합니다. `check_portfolio_status.ps1`가 실패하면 출력의 마지막 실패 구간을 먼저 봅니다. 예를 들어 `Argo CD GitOps`에서 실패하면 GitOps sync 문제이고, `Prometheus and Kafka exporter`에서 실패하면 metric scrape 또는 Kafka exporter 문제입니다.
 
 먼저 현재 클러스터가 데모와 운영 점검을 진행할 수 있는 상태인지 확인합니다.
 

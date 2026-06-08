@@ -59,7 +59,7 @@ kubectl get pvc -n messaging-app
 ```
 
 참고:
-- 현재 목적은 “주기 backup 설정이 포함되어 있다”는 운영 구성을 보여주는 것입니다.
+- 현재 구성은 주기 backup 설정이 포함된 운영 흐름을 검증합니다.
 - 필요하면 이후 일 단위 또는 더 짧은 주기로 쉽게 변경할 수 있습니다.
 
 ## PostgreSQL 복구
@@ -83,7 +83,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 주의:
 - 기본값으로는 실행하지 않습니다. 반드시 `-Force`가 필요합니다.
 - `-ResetSchema`를 주면 `public` schema를 비운 뒤 backup SQL을 적용합니다.
-- 현재 목적은 disposable local cluster 기준의 운영 흐름 검증입니다.
+- 현재 복구 절차는 disposable local cluster 기준의 운영 흐름을 검증합니다.
 
 ## 데모 접근
 로컬 데모 기준 운영 UI 경로:
@@ -112,7 +112,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 
 현재 목적:
 - 운영 경로와 일반 경로를 구분하고 있다는 점을 보여줍니다.
-- 동시에 면접관이 직접 Grafana / Prometheus를 확인하는 흐름은 막지 않습니다.
+- 동시에 데모 중 Grafana / Prometheus를 직접 확인할 수 있는 경로는 유지합니다.
 
 ## Secret 처리
 현재 민감한 값은 코드나 매니페스트 하드코딩 대신 Kubernetes secret로 분리합니다.

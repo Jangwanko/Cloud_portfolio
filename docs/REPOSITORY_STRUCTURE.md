@@ -40,6 +40,7 @@
 - `.env.example`: 환경변수 샘플
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
+- `scripts/ordering_failure_injection.py`: single/multi stream ordering, Pgpool 장애 주입, PostgreSQL row evidence 검증
 - `monitoring/prometheus/alerts.yml`: 장애 감지 임계치 알람 규칙
 - `infra/terraform/envs/dev/main.tf`: AWS dev 환경 진입점
 - `k8s/scripts/install-keda.ps1`: Worker autoscaling용 KEDA 설치

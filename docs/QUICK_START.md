@@ -152,6 +152,7 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | DB recovery test | `scripts/test_db_down.ps1` | 약 1-2분 |
 | Linux DB recovery test | `scripts/test_db_down.sh` | 약 1-2분 |
 | Stream ordering test | `scripts/test_stream_ordering.ps1` | 약 1분 |
+| Ordering / failure injection | `scripts/ordering_failure_injection.py` | 약 1-2분 |
 | HPA scaling test | `scripts/test_hpa_scaling.ps1` | 약 30-45초 |
 | DLQ flow test | `scripts/test_dlq_flow.ps1` | 약 1-2분 |
 | DLQ replay guard test | `scripts/test_dlq_replay_guard.ps1` | 약 1-2분 |
@@ -184,6 +185,18 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 - k6 Kafka intake load 측정
 - HPA / metrics sanity 확인
 - `results/kafka-performance/latest.txt`에 최신 결과 저장
+
+Ordering / failure injection 검증:
+
+```powershell
+.venv\Scripts\python.exe scripts\ordering_failure_injection.py --scenario all --event-count 100
+```
+
+- single stream `A001..A100`
+- multi stream `A001..A100`, `B001..B100`, `C001..C100`
+- Pgpool 장애 주입 중 accepted / persisted / missing / duplicate / mixed payload / DLQ / duration 확인
+- 결과는 `results/ordering-failure/latest.json`에 저장됩니다
+- Windows / Docker Desktop 로컬 측정 왜곡을 줄이기 위해 기본값은 `http://127.0.0.1` 연결과 `Host: localhost` header를 함께 사용합니다.
 
 개별 k6 test 만 실행하려면 아래 명령을 사용합니다.
 

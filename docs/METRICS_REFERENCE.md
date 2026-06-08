@@ -1,6 +1,6 @@
 # Metrics 기준표
 
-이 문서는 Kafka 기반 포트폴리오의 Prometheus / Grafana 지표를 빠르게 찾기 위한 참고 문서입니다. 장애별 확인 순서와 해석은 [OBSERVABILITY.md](OBSERVABILITY.md)를 먼저 봅니다.
+Kafka 기반 포트폴리오의 Prometheus / Grafana 지표는 장애별 확인 순서와 함께 해석합니다. 장애 대응 흐름은 [OBSERVABILITY.md](OBSERVABILITY.md)를 기준으로 봅니다.
 
 ## Dashboard 그룹
 

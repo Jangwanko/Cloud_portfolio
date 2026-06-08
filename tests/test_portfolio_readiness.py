@@ -210,12 +210,62 @@ class TestOperationalDocumentation:
     def test_test_results_and_patch_notes_keep_experiment_rounds(self):
         test_results = read_text("docs/TEST_RESULTS.md")
         patch_notes = read_text("docs/PATCH_NOTES.md")
+        ordering_script = read_text("scripts/ordering_failure_injection.py")
+        observability = read_text("docs/OBSERVABILITY.md")
+        quick_start = read_text("docs/QUICK_START.md")
+        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
 
         for document in (test_results, patch_notes):
             assert "1차 실험: Kafka 이벤트 스트림 기준선" in document
             assert "2차 실험: Pgpool HA와 엄격한 stream 순서 보장" in document
             assert "31710" in document
             assert "31676" in document
+
+        for token in (
+            "Ordering / Failure Injection 검증",
+            "single_no_failure",
+            "multi_no_failure",
+            "single_db_failure",
+            "multi_db_failure",
+            "A001..A100",
+            "B001..B100",
+            "C001..C100",
+            "PostgreSQL row evidence",
+            "missing `0`",
+            "duplicate `0`",
+            "mixed payload `0`",
+            "DLQ `0`",
+            "results/ordering-failure/latest.json",
+            "6.125s",
+            "8.438s",
+            "22.969s",
+            "23.703s",
+            "http://127.0.0.1",
+            "Host: localhost",
+            "Measurement Validity",
+            "old ordering / failure injection `~210s` duration",
+            "invalid",
+            "Kafka intake k6 baseline",
+            "valid",
+            "api.messaging-app.svc.cluster.local:8000",
+        ):
+            assert token in test_results
+
+        for token in (
+            "ordering",
+            "no_loss",
+            "no_duplicate",
+            "no_mixed_payload",
+            "dlq_empty",
+            "query_persisted_events",
+            "messaging-postgresql-ha-pgpool",
+            'default="http://127.0.0.1"',
+            'default="localhost"',
+        ):
+            assert token in ordering_script
+
+        for document in (observability, quick_start, repository_structure):
+            assert "ordering_failure_injection.py" in document
 
     def test_reproducibility_environment_is_documented(self):
         readme = read_text("README.md")

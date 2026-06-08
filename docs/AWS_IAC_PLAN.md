@@ -10,7 +10,7 @@
 - 포트폴리오 기준으로도 "실제 배포까지 고려했다"는 점이 보이도록 설계
 
 ## 선택 기준
-이 문서는 `Terraform + EKS` 기준으로 작성합니다.
+AWS 확장안은 `Terraform + EKS` 기준으로 둡니다.
 
 이 조합을 고른 이유:
 - 현재 프로젝트가 이미 Kubernetes 중심 구조입니다
@@ -122,7 +122,7 @@ AWS에서는 managed backup 전략을 기본값으로 둡니다.
 - GitHub Actions 기반 CI와 연동
 
 ## Terraform 기준 디렉터리 제안
-이 저장소의 Terraform 코드는 아래 구조를 기준으로 정리합니다.
+Terraform 코드는 아래 구조를 기준으로 정리합니다.
 
 ```text
 infra/
@@ -238,4 +238,4 @@ AWS로 옮길 때 핵심은 서비스를 많이 붙이는 것이 아니라, 로�
 - `infra/terraform/modules/secrets`
 - `infra/terraform/modules/route53_acm`
 
-즉 이 문서는 단순 아이디어 메모가 아니라, 실제 IaC 골격이 들어간 뒤 그 기준과 의도를 설명하는 문서입니다.
+현재 IaC 계획은 실제 Terraform 골격과 AWS 확장 기준을 포함합니다.

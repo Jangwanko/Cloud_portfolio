@@ -72,6 +72,7 @@ PostgreSQL state path:
 | p95 latency | `80.65ms` |
 | p99 latency | `103.57ms` |
 | Same-stream ordering | `100/100 pass` |
+| Ordering failure injection | single/multi stream, Pgpool outage, accepted=persisted, missing/duplicate/mixed/DLQ `0` |
 | Fresh cache read | `source=cache`, `degraded=False`, `snapshot_age_seconds=0.507` |
 | DB down stale cache fallback | `source=cache`, `degraded=True`, `snapshot_age_seconds=11.798` |
 | API HPA | `6 replicas` |

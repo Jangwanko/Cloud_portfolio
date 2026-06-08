@@ -1,8 +1,8 @@
 # 신뢰성 정책
 
-이 문서는 Kafka event intake, Worker persistence, PostgreSQL HA 기준의 readiness / alert 해석 정책을 정리합니다.
+Kafka event intake, Worker persistence, PostgreSQL HA 기준의 readiness / alert 정책입니다.
 
-서비스 사용자, 기능 요구, 비기능 요구, SLO guardrail의 상위 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)를 기준으로 합니다. 이 문서는 그 요구사항을 runtime readiness와 alert 판단으로 변환합니다.
+서비스 사용자, 기능 요구, 비기능 요구, SLO guardrail의 상위 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)에 두고, 여기서는 그 요구사항을 runtime readiness와 alert 판단으로 변환합니다.
 
 ## 핵심 모델
 

@@ -49,6 +49,9 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Same stream ordering: 100 events persisted as `stream_seq 1..100`.
 - Latest Kafka baseline: 100 VU / 30s, `31,676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`.
 - Accepted-to-persisted latest p95: `7.67ms`.
+- Ordering / failure injection validation: `single_no_failure`, `multi_no_failure`, `single_db_failure`, `multi_db_failure` all passed on 2026-06-08 with accepted=persisted, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`.
+- Ordering / failure injection payloads: stream A uses `A001..A100`, stream B uses `B001..B100`, stream C uses `C001..C100`.
+- Ordering / failure injection verifies final persistence by querying PostgreSQL `messages` rows from inside the API pod, not by trusting Kafka accept alone.
 - Cache fallback validation: fresh read `source=cache`, DB down stale fallback `source=cache`, `degraded=true`.
 - Local HA topology: Kafka `3`, PostgreSQL `3`, Pgpool `2`, API min `3`, Worker min `2`, DLQ replayer `1`.
 - KEDA Kafka trigger: topic `message-ingress`, consumer group `message-worker`, lag threshold `400`, min replicas `2`, max replicas `8`.
@@ -69,6 +72,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - `docs/KAFKA_EXPERIMENT.md`: Kafka migration experiment notes.
 - `docs/PATCH_NOTES.md`: change history.
 - `results/kafka-performance/latest.txt`: most recent local Kafka performance suite output, when present.
+- `results/ordering-failure/latest.json`: most recent ordering / failure injection result, when present.
 - `k8s/gitops/base/kafka-ha.yaml`: local Kafka KRaft StatefulSet and topic bootstrap.
 - `k8s/gitops/base/manifests-ha.yaml`: generated local HA application, observability, HPA/KEDA, alerting manifest.
 - `portfolio/api.py`: FastAPI intake, status, DLQ, cache-first read API.
@@ -101,6 +105,19 @@ Run cache read fallback validation:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\test_cache_read_fallback.ps1 -SkipReset
 ```
+
+Run ordering / failure injection validation:
+
+```powershell
+.venv\Scripts\python.exe scripts\ordering_failure_injection.py --scenario all --event-count 100
+```
+
+Latest ordering / failure injection result after fixing local client skew:
+- `single_no_failure`: 100 accepted / 100 persisted, ordering PASS, `6.125s`.
+- `multi_no_failure`: 300 accepted / 300 persisted across A/B/C streams, ordering PASS, `8.438s`.
+- `single_db_failure`: 100 accepted / 100 persisted, Pgpool outage `20.828s`, recovery to completion `1.375s`.
+- `multi_db_failure`: 300 accepted / 300 persisted, Pgpool outage `21.610s`, recovery to completion `1.218s`.
+- Earlier `~210s` ordering/failure injection durations were invalid as performance evidence because Python `urllib` calling `http://localhost` on Windows / Docker Desktop added about 2 seconds of client-side delay per request. The script now defaults to `http://127.0.0.1` with `Host: localhost`.
 
 ## Documentation Rules
 

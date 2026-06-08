@@ -1,7 +1,6 @@
 # GitOps / Argo CD
 
-이 문서는 이 저장소에 추가한 `GitOps` / `Argo CD` 경로를 정리한 문서입니다.
-현재 프로젝트는 직접 배포 경로와 Git 기반 동기화 경로를 함께 제공합니다.
+이 저장소는 직접 배포 경로와 Git 기반 Argo CD 동기화 경로를 함께 제공합니다.
 
 ## 목적
 - 로컬 `kind` 환경에서도 GitOps 흐름을 재현
@@ -80,7 +79,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
 - Argo CD가 새 revision 을 읽고 deployment 상태를 갱신
 - 클러스터 상태도 다시 원래 값으로 복귀
 
-즉 이 프로젝트는 문서상으로만 GitOps 를 설명하는 것이 아니라, 로컬 Kubernetes 환경에서 실제 sync 동작까지 검증한 상태입니다.
+로컬 Kubernetes 환경에서 Argo CD sync 동작까지 검증했습니다.
 
 ## GitHub Actions 와의 관계
 현재 저장소에는 기본 `GitHub Actions` CI 구성을 추가했습니다.

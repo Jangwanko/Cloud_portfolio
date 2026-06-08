@@ -1,6 +1,6 @@
 # Kafka 설계 기록
 
-이 문서는 Kafka-native 설계와 검증 기록입니다.
+Kafka-native 설계는 API intake, Worker persistence, PostgreSQL HA, DLQ / replay, 관측 지표를 분리해서 검증합니다.
 
 ## Kafka를 선택한 이유
 
