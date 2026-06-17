@@ -113,8 +113,8 @@ Worker 내부 구간별 latency입니다.
 - `request_status_update`: request status 갱신
 - request status는 PostgreSQL 저장과 함께 `message-request-status` compacted topic으로 publish됩니다. DB read fallback은 별도의 DB commit 이후 snapshot topic인 `message-snapshots` / `stream-snapshots`를 원본으로 사용합니다.
 - message read 응답의 `source`, `degraded`, `snapshot_age_seconds`는 cache-first read의 hit / stale fallback 상태를 판단하는 API-level signal입니다.
-- `notification_enqueue`: 후속 notification 작업 생성
-- `notification_db_insert`: notification 처리 결과 기록
+- `notification_enqueue`: DB commit 이후 `message-notifications` topic으로 후속 notification 작업 생성
+- `notification_db_insert`: 별도 `notification-worker`가 notification 처리 결과 기록
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))
@@ -287,6 +287,7 @@ kube_deployment_status_replicas_unavailable{namespace="messaging-app"}
 - API intake state path 장애로 request 수락 불가
 
 더 자세한 readiness 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 봅니다.
+
 ## Kafka exporter metrics
 
 ### `kafka_brokers`

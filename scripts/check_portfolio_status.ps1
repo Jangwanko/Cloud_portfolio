@@ -100,7 +100,7 @@ if (-not $SkipArgoCd) {
 }
 
 Write-Section "Core workloads"
-foreach ($name in @("api", "worker", "dlq-replayer", "kafka-exporter", "prometheus", "grafana", "kube-state-metrics", "messaging-postgresql-ha-pgpool")) {
+foreach ($name in @("api", "worker", "notification-worker", "dlq-replayer", "kafka-exporter", "prometheus", "grafana", "kube-state-metrics", "messaging-postgresql-ha-pgpool")) {
   Assert-DeploymentReady $name
 }
 foreach ($name in @("kafka", "messaging-postgresql-ha-postgresql")) {
@@ -122,7 +122,7 @@ Write-Host "scaledobject/worker-keda ready=True"
 
 if (-not $SkipPrometheus) {
   Write-Section "Prometheus and Kafka exporter"
-  foreach ($job in @("api", "worker", "dlq-replayer", "kafka-exporter", "kube-state-metrics")) {
+  foreach ($job in @("api", "worker", "notification-worker", "dlq-replayer", "kafka-exporter", "kube-state-metrics")) {
     $value = Get-ScalarPrometheusValue "up{job=`"$job`"}"
     Write-Host ("up{{job=""{0}""}}={1}" -f $job, $value)
     if ($value -lt 1) {
@@ -131,14 +131,19 @@ if (-not $SkipPrometheus) {
   }
 
   $brokerCount = Get-ScalarPrometheusValue "kafka_brokers"
-  $consumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"message-worker`"})"
+  $consumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"message-worker`"}) or vector(0)"
+  $notificationConsumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"notification-worker`"}) or vector(0)"
   Write-Host "kafka_brokers=$brokerCount"
   Write-Host "message-worker consumer_lag=$consumerLag"
+  Write-Host "notification-worker consumer_lag=$notificationConsumerLag"
   if ($brokerCount -lt 3) {
     throw "Kafka broker count is below local HA target: $brokerCount"
   }
   if ($consumerLag -gt 100) {
     Add-Warning "message-worker consumer lag is above warning threshold: $consumerLag"
+  }
+  if ($notificationConsumerLag -gt 100) {
+    Add-Warning "notification-worker consumer lag is above warning threshold: $notificationConsumerLag"
   }
 }
 

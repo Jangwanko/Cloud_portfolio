@@ -198,6 +198,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 ```
 
 성능 suite는 기능 검증이 아니라 기준선 측정입니다. 기능 검증이 실패하면 먼저 원인을 수정하고, 기능 검증이 통과한 뒤 성능 수치를 다시 기록합니다.
+
 ## Alert 기준값과 첫 확인 지점
 
 운영 알림은 먼저 Grafana의 `Messaging Portfolio Operations Overview`에서 같은 이름의 지표 흐름을 보고, 그 다음 아래 runbook 절차로 내려갑니다.
@@ -216,6 +217,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | `MessagingDlqReplayBlocked` | `skipped_max_replay` 누적값 `> 0` | DLQ Events And Replay | 자동 replay 중단 상태로 보고 원인 수정 전 수동 재시도 금지 |
 | `MessagingPodRestarting` | 15분 안에 pod restart 증가 | Pod Restarts (15m) | `kubectl describe pod`로 OOMKilled/CrashLoopBackOff 확인 |
 | `MessagingDeploymentUnavailableReplicas` | 2분 이상 unavailable replica 존재 | Unavailable Replicas | rollout, PDB, node resource 상태 확인 |
+
 ## 운영 Alert Probe
 
 Alert rule이 Prometheus에 로드되는 것만으로는 운영 검증이 끝나지 않습니다. 아래 스크립트는 짧은 장애 신호를 만들어 실제 alert 상태가 `firing`으로 바뀌는지 확인합니다.
@@ -233,6 +235,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -Sk
 | 잘못된 `dlq-replayer` image rollout | `MessagingDeploymentUnavailableReplicas` | kube-state-metrics unavailable replica 지표와 alert rule이 연결됨 |
 
 unavailable replica 시나리오를 생략하려면 `-SkipUnavailableReplicaScenario`를 사용합니다. 이 스크립트는 성능 측정이 아니라 운영 신호 배선 검증입니다.
+
 ## DLQ Summary Triage
 
 DLQ 알림을 받으면 먼저 summary endpoint로 운영 판단에 필요한 숫자를 확인합니다.
@@ -254,6 +257,7 @@ Endpoint: `GET /v1/dlq/ingress/summary`
 | `oldest_age_seconds > 600` | DLQ event가 10분 이상 남은 warning 상태이므로 replay 조건과 원인 수정 여부 확인 |
 | `oldest_age_seconds > 1800` | DLQ event가 30분 이상 남은 critical 상태이므로 자동 replay만 기다리지 말고 수동 처리 또는 원인 수정 결정 |
 | `by_stream` 특정 stream 집중 | 해당 stream의 앞 event, membership, sequence 상태를 우선 조사 |
+
 ## Incident Signal Suite
 
 개별 장애 테스트가 아니라 운영 신호가 연결되어 있는지 한 번에 볼 때는 incident signal suite를 실행합니다.
@@ -271,6 +275,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_incident_signals.ps1 -Skip
 | Worker bad rollout | `MessagingDeploymentUnavailableReplicas` pending/firing 확인 후 image 복구 |
 
 긴 DB 장애 시나리오를 제외하려면 `-SkipDbOutage`를 사용합니다. 이 suite는 성능 측정이 아니라 장애 신호 배선과 복구 절차 검증입니다.
+
 ## Kafka Exporter 확인
 
 Kafka backlog가 의심되면 앱 지표만 보지 말고 kafka-exporter 지표를 먼저 확인합니다.

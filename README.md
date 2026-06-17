@@ -48,7 +48,7 @@ Kafka 중심:
 PostgreSQL state path:
 - auth / membership
 - final message persistence
-- room sequence
+- stream sequence
 - read model
 
 현재 경계:
@@ -77,6 +77,12 @@ PostgreSQL state path:
 | DB down stale cache fallback | `source=cache`, `degraded=True`, `snapshot_age_seconds=11.798` |
 | API HPA | `6 replicas` |
 | Worker KEDA | `4 replicas` |
+
+2026-06-09 k6 재실행에서는 100 VU / 30초 기준 `34284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`를 확인했습니다. 같은 실행에서 `stream_id=30`의 100개 event가 `stream_seq 1..100`, `ordering-event-0001..0100`, ordering `pass`로 영속화되는 것도 재확인했습니다. 다만 부하 직후 Worker consumer lag가 `36394`까지 쌓인 뒤 약 14분에 걸쳐 `0`으로 drain되어, 최신 재실행 결과는 API intake 개선과 Worker persistence capacity를 분리해서 해석합니다.
+
+이후 Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 묶었습니다. DB commit 이후에는 request status / DB snapshot을 Kafka로 publish하고, 알림 처리는 `message-notifications` topic과 별도 `notification-worker`로 분리합니다. Post-tuning 재실행에서는 accepted-to-persisted p95가 `73.50ms -> 8.08ms`, Worker lag peak가 `36394 -> 29204`, drain time이 약 14분에서 약 10분으로 개선됐습니다. 반면 k6 API intake는 `34284 -> 28839` requests, p95 `66.06ms -> 108.68ms`로 악화되어, 이 튜닝은 persistence path 개선으로만 해석하고 전체 intake 기준선 대체 수치로는 사용하지 않습니다.
+
+2026-06-18 notification path 분리 후 재실행에서는 `27795` requests, error `0.00%`, p95 `119.28ms`, accepted-to-persisted p95 `22.13ms`였습니다. 이 결과는 알림 실패가 핵심 persistence transaction을 망가뜨리지 않도록 경계를 분리한 운영 개선으로 해석하며, 성능 기준선 개선 수치로 사용하지 않습니다.
 
 ## Trade-off
 
@@ -111,11 +117,27 @@ Idempotency key는 Kafka event payload에 포함되고, Worker persistence 단�
 - CPU 기반 scaling보다 consumer lag 기반 scaling이 event pipeline에 더 자연스럽습니다.
 - read cache는 Kafka ingress event가 아니라 DB commit 이후 발행한 snapshot을 원본으로 둬야 하며, cache-first read에는 `source`, `degraded`, `snapshot_age_seconds` 같은 응답 메타데이터가 필요합니다.
 
+## Current Bottleneck
+
+최근 튜닝 결과, Worker replica 수와 notification path 분리만으로는 backlog drain과 accepted-to-persisted latency가 안정적으로 개선되지 않았습니다.
+
+현재 병목 후보는 Worker 개수보다 다음 구간에 더 가깝습니다.
+
+- PostgreSQL insert / commit 처리량
+- `room_sequences FOR UPDATE` 기반 stream sequence lock
+- Kafka record를 1건씩 처리하고 commit하는 Worker loop
+- Pgpool / DB connection pool과 PostgreSQL lock wait
+- 같은 stream 순서 보장과 병렬 처리량 사이의 trade-off
+
+따라서 다음 단계는 replica를 더 늘리는 것이 아니라, Worker 1/2/4/8개별 persist throughput, DB commit latency, lock wait, stream 분산 수에 따른 drain time을 분리 측정하는 것입니다.
+
 ## Next Improvements
 
-1. idempotency state를 Kafka compacted topic 또는 별도 state backend로 분리
-2. consumer group rebalance / partition imbalance 시나리오 추가
-3. SLO 기반 alert rule 강화
+1. Worker DB write throughput / commit latency / lock wait 분리 측정
+2. Kafka consumer batch 처리와 offset commit 전략 실험
+3. `room_sequences` lock 완화 또는 stream sequence allocation 방식 재검토
+4. idempotency state를 Kafka compacted topic 또는 별도 state backend로 분리
+5. consumer group rebalance / partition imbalance 시나리오 추가
 
 ## 아키텍처
 ```mermaid

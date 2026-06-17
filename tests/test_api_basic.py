@@ -5,6 +5,7 @@ These tests intentionally avoid live PostgreSQL and Kafka dependencies so they
 can run as a fast compile/import sanity check.
 """
 
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -316,6 +317,104 @@ class TestKafkaIntakeBoundary:
 
         assert "publish_persisted_message_snapshot(response)" in worker
         assert "publish_message_snapshot(response[\"id\"], snapshot)" in worker
+
+    def test_worker_success_path_uses_single_db_transaction_helper(self):
+        worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
+
+        assert "def persist_ingress_job(" in worker
+        assert "persist_ingress_job(job_payload)" in worker
+
+    def test_persist_ingress_job_keeps_notification_out_of_core_transaction(self, monkeypatch):
+        from worker import main as worker_main
+
+        class CreatedAt:
+            def isoformat(self):
+                return "2026-06-09T00:00:00+00:00"
+
+        class FakeCursor:
+            def __init__(self):
+                self.executed = []
+                self.rows = [
+                    None,
+                    {"id": 1},
+                    {"id": 2},
+                    {"member": 1},
+                    {"last_seq": 0},
+                    {
+                        "id": 10,
+                        "request_id": "req-1",
+                        "room_id": 7,
+                        "user_id": 3,
+                        "body": "hello",
+                        "room_seq": 1,
+                        "created_at": CreatedAt(),
+                    },
+                ]
+
+            def execute(self, sql, params=None):
+                self.executed.append(sql)
+
+            def fetchone(self):
+                return self.rows.pop(0)
+
+        class FakeConn:
+            closed = False
+
+            def __init__(self):
+                self.commits = 0
+
+            def commit(self):
+                self.commits += 1
+
+        conn = FakeConn()
+        cur = FakeCursor()
+
+        @contextmanager
+        def fake_get_conn():
+            yield conn
+
+        @contextmanager
+        def fake_get_cursor(_conn):
+            yield cur
+
+        monkeypatch.setattr(worker_main, "get_conn", fake_get_conn)
+        monkeypatch.setattr(worker_main, "get_cursor", fake_get_cursor)
+        published_notifications = []
+
+        monkeypatch.setattr(worker_main, "publish_persisted_status", lambda *_args: None)
+        monkeypatch.setattr(worker_main, "publish_persisted_message_snapshot", lambda *_args: None)
+        monkeypatch.setattr(
+            worker_main,
+            "publish_notification_job",
+            lambda key, payload: published_notifications.append((key, payload)),
+        )
+
+        response = worker_main.persist_ingress_job(
+            {
+                "route": "send_event",
+                "request_id": "req-1",
+                "room_id": 7,
+                "user_id": 3,
+                "body": "hello",
+            }
+        )
+
+        executed_sql = "\n".join(cur.executed)
+        assert conn.commits == 1
+        assert response["room_seq"] == 1
+        assert "INSERT INTO messages" in executed_sql
+        assert "INSERT INTO request_statuses" in executed_sql
+        assert "INSERT INTO notification_attempts" not in executed_sql
+        assert published_notifications == [
+            (
+                7,
+                {
+                    "message_id": 10,
+                    "room_id": 7,
+                    "body_preview": "hello",
+                },
+            )
+        ]
 
     def test_event_list_response_exposes_cache_metadata(self):
         from portfolio.api import _event_list_response

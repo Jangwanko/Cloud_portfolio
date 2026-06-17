@@ -126,6 +126,50 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 - 이 경우 낮은 부하에서도 `503`이 발생했고, 100 VU에서는 Pgpool 재시작 압력과 높은 실패율이 나타났습니다.
 - 따라서 Kafka-native 완성형에서는 idempotency / request status state path를 Kafka append path와 분리하는 설계가 중요합니다.
 
+## 2026-06-09 재실행 메모
+
+동일한 `scripts/run_kafka_performance_suite.ps1` 조건에서 k6를 다시 실행했습니다.
+
+| 지표 | 결과 |
+| --- | ---: |
+| 전체 HTTP 요청 수 | `34284` |
+| event status 200 | `34280` |
+| event status 503 | `0` |
+| 오류율 | `0.00%` |
+| 평균 latency | `36.86ms` |
+| p95 latency | `66.06ms` |
+| p99 latency | `104.99ms` |
+| same-stream ordering | `stream_id=30`, `stream_seq 1..100`, ordering `pass` |
+| async persistence sample | `stream_id=31`, 50 events persisted |
+| accepted-to-persisted p95 | `73.50ms` |
+| 부하 직후 Worker consumer lag | `36394` |
+| Worker KEDA max replica | `8` |
+| 최종 drain | 약 14분 후 consumer lag `0` |
+
+API intake latency는 좋아졌고, 같은 실행에서 same-stream ordering과 async persistence completion도 통과했습니다. 다만 Worker consumer lag가 크게 쌓인 뒤 천천히 drain되었습니다. 따라서 이 결과는 기존 2차 baseline을 단순 대체하기보다 Worker persistence capacity와 drain time을 별도 튜닝 대상으로 보여주는 signal로 해석합니다.
+
+## 2026-06-09 transaction 통합 후 재실행
+
+Worker success path에서 message persistence와 request status update를 하나의 PostgreSQL transaction으로 묶은 뒤 같은 suite를 다시 실행했습니다. 이후 notification attempt 기록은 핵심 persistence transaction에서 분리해 `message-notifications` topic과 별도 `notification-worker`가 처리하도록 조정했습니다.
+
+| 지표 | 결과 |
+| --- | ---: |
+| 전체 HTTP 요청 수 | `28839` |
+| event status 200 | `28835` |
+| event status 503 | `0` |
+| 오류율 | `0.00%` |
+| 평균 latency | `53.47ms` |
+| p95 latency | `108.68ms` |
+| p99 latency | `134.53ms` |
+| same-stream ordering | `stream_id=34`, `stream_seq 1..100`, ordering `pass` |
+| async persistence sample | `stream_id=35`, 50 events persisted |
+| accepted-to-persisted p95 | `8.08ms` |
+| 부하 직후 Worker consumer lag | `29204` |
+| Worker KEDA max replica | `8` |
+| 최종 drain | 약 10분 후 consumer lag `0` |
+
+이 변경은 persistence lag와 backlog drain에는 긍정적이었지만, k6 API intake request count와 p95 latency는 악화됐습니다. 따라서 안정 기준선은 기존 2차 baseline을 유지하고, transaction 통합 결과는 Worker persistence path 개선 실험으로 분리해서 해석합니다.
+
 변경 해석:
 
 - API는 Kafka 모드에서 stream sequence를 선점하지 않습니다.

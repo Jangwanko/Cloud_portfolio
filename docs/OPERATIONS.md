@@ -235,6 +235,7 @@ DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 �
 - Grafana / Prometheus는 public ingress로 직접 열지 않고 내부망, VPN, SSO, basic auth 같은 접근 제한을 둡니다.
 - secret은 Kubernetes Secret에서 외부 secret manager로 확장합니다.
 - credential rotation은 배포 파이프라인에서 관리합니다.
+
 ### DLQ Summary API
 
 운영자는 개별 event를 뒤지기 전에 summary endpoint로 DLQ 상태를 먼저 봅니다.
@@ -256,6 +257,7 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 | `recent_samples` | 최근 DLQ event 샘플 |
 
 `blocked > 0`이면 replay보다 원인 수정이 먼저입니다. `by_reason`이 같은 값으로 몰리면 일시 장애보다 데이터 조건 또는 persistence logic 문제를 우선 의심합니다.
+
 ## API 계약과 운영 노출 기준
 
 핵심 운영 endpoint는 FastAPI `response_model`로 응답 계약을 고정합니다. 현재 고정된 계약은 readiness, event request status, DLQ list, DLQ summary, unread count, read receipt입니다.
@@ -271,6 +273,7 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 | Metrics | `/metrics` scrape | 외부 공개 금지, cluster-local scrape 우선 |
 
 이 프로젝트의 로컬 ingress 노출은 포트폴리오 검증 편의를 위한 설정입니다. 실제 운영형 배포에서는 ingress class, auth proxy, network policy, secret manager를 함께 적용하는 것을 기준으로 둡니다.
+
 ## OpenAPI 사용 설명서
 
 FastAPI는 핵심 API 계약을 `/openapi.json`으로 공개하고, 사람이 보는 문서는 `/docs`에서 제공합니다.

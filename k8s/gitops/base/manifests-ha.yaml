@@ -22,6 +22,8 @@ stringData:
   KAFKA_REQUEST_STATUS_TOPIC: "message-request-status"
   KAFKA_MESSAGE_SNAPSHOT_TOPIC: "message-snapshots"
   KAFKA_STREAM_SNAPSHOT_TOPIC: "stream-snapshots"
+  KAFKA_NOTIFICATION_TOPIC: "message-notifications"
+  KAFKA_NOTIFICATION_CONSUMER_GROUP: "notification-worker"
   KAFKA_CONSUMER_GROUP: "message-worker"
   DLQ_REPLAY_MAX_COUNT: "3"
   STARTUP_RETRIES: "30"
@@ -174,6 +176,55 @@ metadata:
 spec:
   selector:
     app: worker
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: 9101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-worker
+  namespace: messaging-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-worker
+  template:
+    metadata:
+      labels:
+        app: notification-worker
+    spec:
+      containers:
+        - name: notification-worker
+          image: messaging-portfolio:local
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "worker.main"]
+          env:
+            - name: WORKER_MODE
+              value: "notification"
+          envFrom:
+            - secretRef:
+                name: messaging-env
+            - secretRef:
+                name: messaging-runtime-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "400m"
+              memory: "384Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-worker
+  namespace: messaging-app
+spec:
+  selector:
+    app: notification-worker
   ports:
     - name: metrics
       port: 9101
@@ -352,6 +403,11 @@ data:
         metrics_path: /metrics
         static_configs:
           - targets: ["worker:9101"]
+
+      - job_name: notification-worker
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["notification-worker:9101"]
 
       - job_name: dlq-replayer
         metrics_path: /metrics

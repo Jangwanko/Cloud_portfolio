@@ -56,6 +56,12 @@ def publish_stream_snapshot(stream_id: int | str, payload: dict) -> None:
     future.get(timeout=10)
 
 
+def publish_notification_job(key: int | str, payload: dict) -> None:
+    producer = get_kafka_producer()
+    future = producer.send(settings.kafka_notification_topic, key=key, value=payload)
+    future.get(timeout=10)
+
+
 def build_ingress_consumer():
     from kafka import KafkaConsumer
 
@@ -78,6 +84,21 @@ def build_dlq_consumer():
         settings.kafka_dlq_topic,
         bootstrap_servers=_bootstrap_servers(),
         group_id=f"{settings.kafka_consumer_group}-dlq-replayer",
+        enable_auto_commit=False,
+        auto_offset_reset="earliest",
+        key_deserializer=lambda value: value.decode("utf-8") if value else None,
+        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        consumer_timeout_ms=1000,
+    )
+
+
+def build_notification_consumer():
+    from kafka import KafkaConsumer
+
+    return KafkaConsumer(
+        settings.kafka_notification_topic,
+        bootstrap_servers=_bootstrap_servers(),
+        group_id=settings.kafka_notification_consumer_group,
         enable_auto_commit=False,
         auto_offset_reset="earliest",
         key_deserializer=lambda value: value.decode("utf-8") if value else None,

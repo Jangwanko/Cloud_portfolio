@@ -74,6 +74,9 @@ class TestOperationalDocumentation:
             "X-Idempotency-Key",
             "Kafka append 전에 PostgreSQL claim",
             "## What I Learned",
+            "## Current Bottleneck",
+            "Worker DB write throughput",
+            "room_sequences",
             "## Next Improvements",
             "Kafka compacted topic",
             "consumer group rebalance",
@@ -94,10 +97,13 @@ class TestOperationalDocumentation:
         assert "kafka_request_status_topic" in config
         assert "kafka_message_snapshot_topic" in config
         assert "kafka_stream_snapshot_topic" in config
+        assert "kafka_notification_topic" in config
         assert "snapshot_cache_fresh_seconds" in config
         assert "publish_request_status" in kafka_client
         assert "publish_message_snapshot" in kafka_client
         assert "publish_stream_snapshot" in kafka_client
+        assert "publish_notification_job" in kafka_client
+        assert "build_notification_consumer" in kafka_client
         assert "build_materialized_cache_consumer" in kafka_client
         assert "get_cached_request_status" in cache
         assert "list_cached_events" in cache
@@ -112,15 +118,23 @@ class TestOperationalDocumentation:
         assert "start_materialized_cache()" in main
         assert "publish_request_status(request_id, payload)" in worker
         assert "publish_message_snapshot" in worker
+        assert "publish_notification_job(response[\"room_id\"], notification_attempt_payload(response))" in worker
+        assert "run_kafka_notification_loop" in worker
         assert "Wait-FreshCacheRead" in cache_read_test
         assert "Expected degraded cache read while DB is down" in cache_read_test
         assert "message-request-status" in kafka_bootstrap
         assert "message-snapshots" in kafka_bootstrap
         assert "stream-snapshots" in kafka_bootstrap
+        assert "message-notifications" in kafka_bootstrap
         assert "cleanup.policy=compact" in kafka_bootstrap
         assert "KAFKA_REQUEST_STATUS_TOPIC" in app_manifest
         assert "KAFKA_MESSAGE_SNAPSHOT_TOPIC" in app_manifest
         assert "KAFKA_STREAM_SNAPSHOT_TOPIC" in app_manifest
+        assert "KAFKA_NOTIFICATION_TOPIC" in app_manifest
+        assert "KAFKA_NOTIFICATION_CONSUMER_GROUP" in app_manifest
+        assert "name: notification-worker" in app_manifest
+        assert 'value: "notification"' in app_manifest
+        assert "job_name: notification-worker" in app_manifest
 
         readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
@@ -135,6 +149,7 @@ class TestOperationalDocumentation:
         assert "Prometheus --> KEDA" not in readme
         assert "KEDA `type: kafka`" in architecture
         assert "Prometheus / kafka-exporter는 같은 lag를 운영자가 관측" in architecture
+        assert "replica 증가만으로 성능 개선을 단정하지 않습니다" in architecture
 
     def test_read_cache_validation_and_slo_are_documented(self):
         requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
@@ -218,8 +233,11 @@ class TestOperationalDocumentation:
         for document in (test_results, patch_notes):
             assert "1차 실험: Kafka 이벤트 스트림 기준선" in document
             assert "2차 실험: Pgpool HA와 엄격한 stream 순서 보장" in document
+            assert "2026-06-09 재실행: 정합성 재확인과 backlog drain 관측" in document
             assert "31710" in document
             assert "31676" in document
+            assert "34284" in document
+            assert "36394 -> 33274 -> 23563 -> 11971 -> 0" in document
 
         for token in (
             "Ordering / Failure Injection 검증",
@@ -248,6 +266,13 @@ class TestOperationalDocumentation:
             "Kafka intake k6 baseline",
             "valid",
             "api.messaging-app.svc.cluster.local:8000",
+            "2026-06-09 Kafka 정합성 검증",
+            "stream_id` `30",
+            "ordering-event-0001",
+            "ordering-event-0100",
+            "ordering `pass`",
+            "stream_id` `31",
+            "36394 -> 33274 -> 23563 -> 11971 -> 0",
         ):
             assert token in test_results
 
@@ -299,6 +324,7 @@ class TestOperationalDocumentation:
 
         blocked_terms = (
             "Kafka-only ingress path",
+            "room sequence",
             "44 passed",
             "56 passed",
             "516f65fdebc5e244332fc8c02839563acb561afe",
@@ -310,8 +336,15 @@ class TestOperationalDocumentation:
             assert term not in combined
 
         assert "Kafka append-first path" in combined
-        assert "58 passed" in combined
+        assert "60 passed" in combined
         assert "9f7fc62be6f202abf98e12c8c108075502cd29a6" in combined
+        assert "Worker persistence capacity 신호" in combined
+        assert "fresh cache read는 `source=cache`, `degraded=false`" in combined
+        assert "Worker success path transaction 통합" in combined
+        assert "28839" in combined
+        assert "8.08ms" in combined
+        assert "29204 -> 23597 -> 15111 -> 6893 -> 0" in combined
+        assert "전체 intake 기준선 대체 수치로는 사용하지 않습니다" in combined
 
     def test_windows_quick_start_bootstraps_local_kubernetes_tools(self):
         bootstrap = read_text("scripts/bootstrap_tools.ps1")
@@ -431,6 +464,7 @@ class TestManifestContracts:
             "kafka_brokers",
             "kafka_consumergroup_lag",
             "worker-keda",
+            "notification-worker",
             "postgres-backups",
             "WaitForFirstConsumer",
         ):
@@ -441,6 +475,7 @@ class TestManifestContracts:
 
         assert "Portfolio Status Check" in test_results
         assert "message-worker consumer_lag=0" in test_results
+        assert "notification-worker consumer_lag=0" in test_results
 
     def test_service_process_checklist_covers_full_operating_flow(self):
         checklist = read_text("docs/SERVICE_PROCESS_CHECKLIST.md")

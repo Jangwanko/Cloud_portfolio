@@ -51,7 +51,14 @@ class Settings:
     kafka_stream_snapshot_topic: str = os.getenv(
         "KAFKA_STREAM_SNAPSHOT_TOPIC", "stream-snapshots"
     )
+    kafka_notification_topic: str = os.getenv(
+        "KAFKA_NOTIFICATION_TOPIC", "message-notifications"
+    )
     kafka_consumer_group: str = os.getenv("KAFKA_CONSUMER_GROUP", "message-worker")
+    kafka_notification_consumer_group: str = os.getenv(
+        "KAFKA_NOTIFICATION_CONSUMER_GROUP", "notification-worker"
+    )
+    worker_mode: str = os.getenv("WORKER_MODE", "ingress")
     snapshot_cache_fresh_seconds: float = float(os.getenv("SNAPSHOT_CACHE_FRESH_SECONDS", "5"))
 
 

@@ -131,6 +131,89 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - 대신 앞 이벤트가 오래 막히면 같은 stream 경계의 뒤 이벤트도 함께 대기한다. 이 trade-off는 순서 보장을 선택한 결과다.
 - 최신 baseline에서는 Pgpool HA 보강 후에도 `503` 없이 100 VU / 30s를 통과했다.
 
+## 2026-06-09 재실행: 정합성 재확인과 backlog drain 관측
+
+목표:
+
+- 현재 클러스터에서 Kafka append-first intake baseline이 크게 흔들리지 않는지 확인한다.
+- 같은 실행 안에서 same-stream ordering과 async persistence completion을 다시 확인한다.
+- 부하 직후 Worker consumer lag가 얼마나 쌓이고, KEDA max scale 이후 얼마나 걸려 drain되는지 본다.
+
+실행 명령:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
+```
+
+검증 결과:
+
+- 전체 HTTP 요청 수: `34284`
+- event status 200: `34280`
+- event status 503: `0`
+- 오류율: `0.00%`
+- 평균 latency: `36.86ms`
+- p95 latency: `66.06ms`
+- p99 latency: `104.99ms`
+- same-stream ordering: `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`
+- async persistence sample: `stream_id=31`, 50 events persisted
+- accepted-to-persisted p95: `73.50ms`
+- 부하 직후 Worker consumer lag: `36394`
+- drain 경로: `36394 -> 33274 -> 23563 -> 11971 -> 0`
+- Worker KEDA max replica: `8`
+- 최종 drain: 약 14분 후 consumer lag `0`
+
+해석:
+
+- API intake latency와 요청 수는 개선됐지만, Worker consumer lag가 크게 쌓여 drain time이 새 튜닝 후보로 드러났다.
+- 이 결과는 기존 2차 baseline을 대체하지 않고, API intake와 Worker persistence capacity를 분리해서 봐야 한다는 운영 신호로 기록한다.
+- Worker scaling 효과는 API throughput 증가로 단정하지 않고 consumer lag, accepted-to-persisted latency, backlog drain time으로 판단한다.
+
+## 2026-06-09 튜닝: Worker success path transaction 통합
+
+목표:
+
+- Worker replica가 max `8`까지 늘어도 backlog drain에 시간이 걸린 원인 후보 중 하나인 message 1건당 DB commit 비용을 줄인다.
+- message persistence와 request status update를 같은 PostgreSQL transaction boundary로 묶는다.
+- notification attempt 기록은 핵심 persistence transaction에서 분리한다.
+- DB commit 이후에만 Kafka request status와 DB snapshot topic publish를 수행해 read cache 원본이 committed row 기준이라는 계약을 유지한다.
+
+변경 내용:
+
+- `persist_ingress_job()`을 추가해 Worker success path를 통합했습니다.
+- 기존 `persist_message()` 내부 SQL을 cursor 기반 helper로 분리했습니다.
+- `request_statuses` upsert는 cursor 기반 `upsert_request_status()`를 사용해 같은 transaction에 포함했습니다.
+- 이후 `notification_attempts` insert는 `message-notifications` topic과 별도 `notification-worker` 처리로 분리했습니다.
+- Kafka `message-request-status`와 `message-snapshots` publish는 commit 이후에 수행합니다.
+
+검증:
+
+- success path fake DB test에서 commit `1`회를 확인했습니다.
+- `.venv\Scripts\python.exe -m pytest -q`: `60 passed`
+
+Post-tuning performance suite:
+
+- 실행 시각: `2026-06-09T02:17:11+09:00`
+- same-stream ordering: `stream_id=34`, 100 events, `stream_seq 1..100`, ordering `pass`
+- async persistence sample: `stream_id=35`, 50 events persisted
+- 전체 HTTP 요청 수: `28839`
+- event status 200: `28835`
+- event status 503: `0`
+- 오류율: `0.00%`
+- 평균 latency: `53.47ms`
+- p95 latency: `108.68ms`
+- p99 latency: `134.53ms`
+- accepted-to-persisted p95: `8.08ms`
+- 부하 직후 Worker consumer lag: `29204`
+- drain 경로: `29204 -> 23597 -> 15111 -> 6893 -> 0`
+- Worker KEDA max replica: `8`
+- 최종 drain: 약 10분 후 consumer lag `0`
+
+해석:
+
+- Worker persistence lag와 drain time은 개선됐습니다.
+- API intake request count와 p95 latency는 악화됐습니다.
+- 따라서 transaction 통합은 persistence path에는 효과가 있지만, 전체 k6 intake 기준선 개선으로는 아직 부족합니다. notification path는 별도 topic/worker로 분리했으며, 다음 측정은 API/Kafka publish path 영향과 notification-worker backlog를 분리해서 봐야 합니다.
+
 ## 현재 운영 기준선
 
 현재 기준으로 이 프로젝트는 다음 구조를 기본값으로 둡니다.
@@ -138,6 +221,8 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - API는 Kafka ingress topic에 append하고 `202 Accepted`를 반환한다.
 - Kafka는 ingress와 DLQ transport를 담당한다.
 - Worker는 Kafka consumer group으로 partition을 소비한다.
+- Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리한다.
+- notification attempt 기록은 `message-notifications` topic과 별도 `notification-worker`가 처리한다.
 - 같은 stream은 `stream_id` key를 통해 같은 Kafka partition ordering boundary에 들어간다.
 - Worker는 persistence 실패 시 같은 offset에서 inline retry를 수행해 같은 stream의 뒤 이벤트가 앞지르지 못하게 한다.
 - PostgreSQL HA는 최종 durable source of truth 역할을 맡는다.
@@ -146,6 +231,55 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - kafka-exporter로 broker count, topic partition, `message-worker` consumer lag를 직접 관측한다.
 - 핵심 운영 API는 FastAPI response model과 OpenAPI schema test로 계약을 고정한다.
 - AWS IaC 골격은 EKS + RDS PostgreSQL + Amazon MSK + Secrets Manager 기준으로 정렬한다.
+
+## 2026-06-18 튜닝: notification path 분리
+
+목표:
+
+- 알림 기록 실패가 핵심 message persistence transaction을 rollback시키지 않도록 분리한다.
+- Worker success path는 message persistence와 request status update만 같은 transaction으로 처리한다.
+- 알림은 DB commit 이후 `message-notifications` topic으로 넘기고 별도 `notification-worker`가 처리한다.
+
+변경 내용:
+
+- `KAFKA_NOTIFICATION_TOPIC=message-notifications`와 `KAFKA_NOTIFICATION_CONSUMER_GROUP=notification-worker` 설정을 추가했습니다.
+- Kafka topic bootstrap에 `message-notifications` topic을 추가했습니다.
+- `publish_notification_job()`과 `build_notification_consumer()`를 추가했습니다.
+- `notification-worker` Deployment / Service를 추가했습니다.
+- Prometheus scrape job과 `check_portfolio_status.ps1`에 `notification-worker`를 추가했습니다.
+
+검증:
+
+- `.venv\Scripts\python.exe -m pytest -q`: `60 passed`
+- `scripts\check_portfolio_status.ps1`: `Portfolio status check passed`
+- `notification-worker` readiness: `1/1`
+- `up{job="notification-worker"}=1`
+- `message-worker consumer_lag=0`
+- `notification-worker consumer_lag=0`
+
+Performance suite:
+
+- 실행 시각: `2026-06-18T03:29:47+09:00`
+- same-stream ordering: `stream_id=38`, 100 events, `stream_seq 1..100`, ordering `pass`
+- async persistence sample: `stream_id=39`, 50 events
+- 전체 HTTP 요청 수: `27795`
+- event status 200: `27791`
+- event status 503: `0`
+- 오류율: `0.00%`
+- 평균 latency: `57.64ms`
+- p95 latency: `119.28ms`
+- p99 latency: `150.60ms`
+- accepted-to-persisted p95: `22.13ms`
+- Worker KEDA max replica: `8`
+- message-worker lag: 약 16분 후 `0`
+- notification-worker lag: `0`
+
+해석:
+
+- notification path 분리는 성능 개선보다 장애 격리 개선입니다.
+- 알림 기록 실패가 핵심 persistence transaction을 망가뜨리지 않는 구조가 됐습니다.
+- 반면 이번 성능 suite에서는 API intake와 accepted-to-persisted latency가 개선되지 않았습니다.
+- 다음 튜닝 후보는 Worker DB write throughput, Kafka consumer batch 처리, PostgreSQL lock/commit 비용 분리 측정입니다.
 
 ## 남은 튜닝 항목
 

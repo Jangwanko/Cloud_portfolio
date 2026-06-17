@@ -141,6 +141,7 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 - 처리 성공 후 offset commit을 수행해 재처리 가능성을 유지합니다.
 - DLQ도 topic으로 분리해 실패 이벤트를 보존하고 replay합니다.
 - Worker scaling은 queue length가 아니라 consumer lag를 기준으로 판단합니다.
+- Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리합니다. 알림 처리는 DB commit 이후 `message-notifications` topic으로 넘기고 별도 `notification-worker`가 `notification_attempts`를 기록합니다.
 
 설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 event 처리 경로를 확보합니다.
 
@@ -205,6 +206,8 @@ Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event 
 
 Worker를 CPU나 Prometheus query가 아니라 KEDA Kafka scaler 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다. KEDA는 Kafka broker의 `message-ingress` topic과 `message-worker` consumer group lag를 직접 확인해 `worker-keda-hpa` external metric을 만들고, Prometheus / kafka-exporter는 같은 lag를 운영자가 관측하고 alerting하기 위한 별도 경로입니다.
 
+다만 최근 성능 suite에서는 Worker가 KEDA max `8`까지 확장돼도 backlog drain이 즉시 개선되지 않았습니다. 따라서 현재 병목은 단순 replica 수보다 PostgreSQL write throughput, commit latency, `room_sequences FOR UPDATE` lock, Kafka record 단건 처리 / offset commit 전략 쪽에 더 가깝다고 봅니다. Worker max를 더 늘리려면 Kafka partition 수, stream 분산도, DB connection / lock wait를 함께 측정해야 하며, replica 증가만으로 성능 개선을 단정하지 않습니다.
+
 Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지 않습니다. API는 Kafka append를 먼저 수행하고, Worker persistence 단계에서 stream / membership을 primary state 기준으로 검증합니다. 조회 API의 membership check는 Pgpool primary routing hint를 사용해 standby replication lag 영향을 줄입니다.
 
 ## 관측성
@@ -245,6 +248,8 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
 ## 운영 기준
 - Kafka broker는 로컬 기준 3-broker KRaft StatefulSet입니다.
 - 최신 Kafka intake baseline은 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`입니다.
+- 2026-06-09 재실행에서는 `34284` requests, error `0.00%`, p95 `66.06ms`를 확인했고, 같은 실행에서 `stream_id=30`의 100개 event가 `stream_seq 1..100`, ordering `pass`로 영속화됐습니다. 다만 Worker consumer lag가 `36394`까지 쌓인 뒤 약 14분에 걸쳐 `0`으로 drain되어, 이 결과는 안정 baseline 대체가 아니라 Worker persistence capacity 신호로 해석합니다.
+- 이후 Worker success path transaction 통합을 적용했습니다. 현재 구조에서는 message persistence와 request status update만 핵심 transaction에 포함하고, notification attempt 기록은 `message-notifications` topic과 별도 `notification-worker`로 분리했습니다. Post-tuning 재실행에서는 accepted-to-persisted p95가 `8.08ms`로 개선됐고 Worker lag는 약 10분 후 `0`으로 drain됐지만, k6 API intake p95는 `108.68ms`로 악화되어 안정 baseline 대체 수치로 사용하지 않습니다.
 - 이 baseline은 `X-Idempotency-Key`를 끈 Kafka append 중심 경로입니다.
 - idempotency header는 API가 PostgreSQL claim을 선점하지 않고 Kafka payload에 포함합니다. 최종 deduplication은 Worker persistence 단계에서 처리합니다. DB read fallback은 DB commit 이후 snapshot topic만 사용하며, idempotency state 분리는 다음 보강 대상입니다.
 - Kafka lag / consumer group metric은 KEDA와 consumer group 상태를 기준으로 해석합니다.

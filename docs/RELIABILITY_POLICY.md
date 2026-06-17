@@ -86,6 +86,7 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 기본 Kafka 모드는 Worker가 persistence 시점에 sequence와 request status를 갱신하며, API intake는 Kafka append 중심으로 동작합니다.
 
 장애별 확인 순서와 복구 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리합니다.
+
 ## 운영 알림 기준값
 
 아래 값은 Kafka event stream 포트폴리오를 운영형으로 보이게 하기 위한 1차 기본값입니다. 실제 장기 트래픽 기준값이 쌓이기 전까지는 장애 조기 감지와 과도한 오탐 사이의 균형을 보는 임시 SLO 가드레일로 사용합니다.

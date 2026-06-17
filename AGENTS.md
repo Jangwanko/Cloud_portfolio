@@ -49,6 +49,11 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Same stream ordering: 100 events persisted as `stream_seq 1..100`.
 - Latest Kafka baseline: 100 VU / 30s, `31,676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`.
 - Accepted-to-persisted latest p95: `7.67ms`.
+- 2026-06-09 k6 rerun: 100 VU / 30s, `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`; same-stream ordering revalidated with `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=31`, 50 events persisted; Worker consumer lag reached `36394` and drained to `0` after about 14 minutes. Treat this as an intake-vs-persistence capacity signal, not a direct replacement for the stable 2nd baseline.
+- Worker success path transaction tuning is applied after that rerun: message persistence and request status update share one PostgreSQL transaction; Kafka status/snapshot publish and notification enqueue happen after DB commit.
+- Notification attempts are decoupled from core persistence through Kafka `message-notifications` and a separate `notification-worker`.
+- Post-tuning performance suite at `2026-06-09T02:17:11+09:00`: `28,839` requests, error `0.00%`, avg `53.47ms`, p95 `108.68ms`, p99 `134.53ms`; same-stream ordering revalidated with `stream_id=34`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=35`, accepted-to-persisted p95 `8.08ms`; Worker consumer lag reached `29204` and drained to `0` after about 10 minutes. Treat this as persistence-path improvement but not a stable intake baseline replacement because API intake throughput and p95 worsened.
+- Notification path split suite at `2026-06-18T03:29:47+09:00`: `27,795` requests, error `0.00%`, avg `57.64ms`, p95 `119.28ms`, p99 `150.60ms`; same-stream ordering revalidated with `stream_id=38`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=39`, accepted-to-persisted p95 `22.13ms`; Worker consumer lag drained to `0` after about 16 minutes; notification-worker consumer lag was `0`. Treat this as operational-boundary improvement, not a performance improvement.
 - Ordering / failure injection validation: `single_no_failure`, `multi_no_failure`, `single_db_failure`, `multi_db_failure` all passed on 2026-06-08 with accepted=persisted, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`.
 - Ordering / failure injection payloads: stream A uses `A001..A100`, stream B uses `B001..B100`, stream C uses `C001..C100`.
 - Ordering / failure injection verifies final persistence by querying PostgreSQL `messages` rows from inside the API pod, not by trusting Kafka accept alone.
@@ -57,7 +62,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - KEDA Kafka trigger: topic `message-ingress`, consumer group `message-worker`, lag threshold `400`, min replicas `2`, max replicas `8`.
 - API HPA: CPU target `65%`, min replicas `3`, max replicas `8`.
 - Pgpool SPOF is reduced, not fully eliminated: Pgpool has `2` replicas and PDB `minAvailable=1`, but local kind remains a single-node demo environment.
-- Unit tests: `.venv\Scripts\python.exe -m pytest -q` => `58 passed` at the last documented verification.
+- Unit tests: `.venv\Scripts\python.exe -m pytest -q` => `60 passed` at the last documented verification.
 - GitOps status at last documented verification: Argo CD `Synced / Healthy`.
 
 ## Important Docs

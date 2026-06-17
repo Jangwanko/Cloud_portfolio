@@ -23,7 +23,7 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 | `Worker Throughput By Result` | `sum(rate(messaging_worker_processed_total[1m])) by (result)` | Worker 처리량과 성공 / 실패 비율 |
 | `Worker Failure Ratio` | `messaging_worker_processed_total{result="failure"}` 비율 | Worker 처리 실패가 retry / DLQ로 이어지는지 확인 |
 | `Worker Last Success Age` | `time() - max(messaging_worker_last_success_timestamp{job="worker"})` | Worker pod는 살아 있지만 실제 처리가 멈춘 상태 감지 |
-| `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket` | DB persist, status update, notification 처리 구간 |
+| `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket` | Worker DB persist / status update, notification-worker insert 구간 |
 | `Accepted To Persisted Lag` | `messaging_event_persist_lag_seconds_bucket` | API accepted부터 PostgreSQL persisted까지의 async lag |
 | `Queue Wait Time` | `messaging_queue_wait_seconds_bucket` | Kafka consume 전까지 대기한 시간에 가까운 Worker-side wait 지표 |
 | `DB Pool In Use` | `messaging_db_pool_in_use` | API / Worker / DLQ Replayer의 DB connection checkout 압력 |
@@ -149,6 +149,7 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 - `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA가 생성한 HPA의 desired replica 수입니다.
 
 자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md), readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 장애 대응 절차는 [RUNBOOK.md](RUNBOOK.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리되어 있습니다.
+
 ## Alert Probe
 
 Prometheus alert rule과 Grafana 운영 패널이 실제 metric 변화에 연결되어 있는지는 아래 스크립트로 확인합니다.
@@ -158,6 +159,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -Sk
 ```
 
 이 검증은 `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 실제 `firing` 상태까지 관찰하고, `MessagingDeploymentUnavailableReplicas`가 `pending` 또는 `firing`으로 전환되는지 확인합니다. 성능 수치를 측정하는 suite가 아니라 metric scrape, alert evaluation, Kubernetes 상태 지표 배선을 확인하는 운영성 테스트입니다.
+
 ## DLQ Summary 해석
 
 DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 reason과 replay 가능 상태를 먼저 나눕니다.
@@ -169,6 +171,7 @@ DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 rea
 - `by_stream`: 특정 stream에 DLQ가 몰리는지 확인합니다.
 
 이 API는 Prometheus counter보다 payload에 가까운 운영 조회입니다. 알림은 “증가했다”를 알려주고, summary API는 “무엇이 왜 쌓였는가”를 확인합니다.
+
 ## Dashboard Operator Links
 
 Grafana dashboard에는 `DLQ Operator Links` 패널을 둡니다. `DLQ Events And Replay` 패널에서 변화가 보이면 해당 링크 패널의 summary endpoint와 Runbook을 따라갑니다.
@@ -176,6 +179,7 @@ Grafana dashboard에는 `DLQ Operator Links` 패널을 둡니다. `DLQ Events An
 - Summary: `GET /v1/dlq/ingress/summary?limit=200&sample_limit=5`
 - Samples: `GET /v1/dlq/ingress?limit=20`
 - Runbook: `DLQ Summary Triage`
+
 ## Kafka Exporter Panels
 
 Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.

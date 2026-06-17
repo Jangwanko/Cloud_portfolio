@@ -27,7 +27,7 @@ Kafka 이벤트 스트림 포트폴리오는 사용자가 겪는 문제와 운�
 
 | 사용자 | 관심사 | 시스템 기준 |
 | --- | --- | --- |
-| 메시지를 보내는 사용자 | 요청이 빠르게 수락되고 중복 처리되지 않음 | API `202 Accepted`, DB snapshot materialized cache, idempotency guard |
+| 메시지를 보내는 사용자 | 요청이 빠르게 수락되고 중복 처리되지 않음 | API `202 Accepted`, Worker persistence 단계 idempotency guard, DB snapshot materialized cache |
 | 같은 stream을 보는 사용자 | 같은 stream message가 순서대로 보임 | Kafka `stream_id` key, partition ordering boundary, Worker inline retry |
 | 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
 | 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, replay count guard |

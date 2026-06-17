@@ -4,17 +4,16 @@ Kafka Event Stream Systems 포트폴리오의 로컬 Kubernetes/kind 검증 결�
 
 ## 핵심 요약
 
-| 영역 | 결과 | 핵심 근거 |
+| 검증 항목 | 테스트한 이유 | 결과 |
 | --- | --- | --- |
-| Kafka intake | 통과 | API가 PostgreSQL 선행 write 없이 Kafka append-first path로 event 수락 |
-| 성능 기준선 | 통과 | 100 VU / 30s, `31676` requests, error `0.00%`, avg `44.13ms`, p95 `80.65ms`, p99 `103.57ms` |
-| 비동기 영속화 | 통과 | accepted-to-persisted p95 `7.67ms` |
-| 같은 stream 순서 보장 | 통과 | `stream_seq 1..100`, body 순서 일치 |
-| DB 장애 중 intake | 통과 | Pgpool 장애 주입 중 accepted request 유실 없음 |
-| DLQ / replay guard | 통과 | poison event 격리, `replayable=false`, `blocked` 상태 확인 |
-| DB snapshot cache read | 통과 | `source=cache`, `degraded=true`, `snapshot_age_seconds` 확인 |
-| GitOps / observability | 통과 | Argo CD `Synced / Healthy`, kafka-exporter, Prometheus, Grafana 확인 |
-| Unit tests | 통과 | `.venv\Scripts\python.exe -m pytest -q`, `58 passed` |
+| Kafka intake | DB write path와 API request 수락을 분리했는지 확인하기 위해 100 VU / 30s 부하를 걸었습니다. | `31676` requests, error `0.00%`, p95 `80.65ms`로 Kafka append-first path 기준선을 통과했습니다. |
+| 비동기 영속화 | API가 `202 Accepted`를 반환한 뒤 Worker가 PostgreSQL에 실제로 저장하는 지연을 확인했습니다. | accepted-to-persisted p95 `7.67ms`를 기록했습니다. |
+| Stream ordering | 같은 stream 안에서 뒤 event가 앞 event를 추월하지 않는지 확인했습니다. | 100개 event가 `stream_seq 1..100`과 body 순서 일치로 저장됐습니다. |
+| DB 장애 중 intake / recovery | Pgpool write path가 잠시 막혀도 Kafka가 request를 받아두고 복구 후 저장하는지 확인했습니다. | Pgpool outage 실험에서 accepted=persisted, missing/duplicate/mixed/DLQ `0`을 확인했습니다. |
+| DLQ / replay guard | 처리 불가능한 event가 무한 재시도되지 않고 격리 / 차단 상태로 보이는지 확인했습니다. | poison event는 DLQ로 격리되고, replay 한도 초과 event는 `replayable=false`, `blocked`로 표시됐습니다. |
+| DB snapshot cache read | DB failover 중에도 이미 commit된 read snapshot으로 degraded read가 가능한지 확인했습니다. | fresh cache read는 `source=cache`, `degraded=false`; DB down stale fallback은 `source=cache`, `degraded=true`, `snapshot_age_seconds`로 확인했습니다. |
+| GitOps / observability | 배포 상태와 운영 지표가 실제 runtime 상태를 설명하는지 확인했습니다. | Argo CD `Synced / Healthy`, kafka-exporter, Prometheus, Grafana, status check가 연결됐습니다. |
+| Unit / contract tests | API 계약, 문서 정합성, 주요 코드 경로가 깨지지 않았는지 확인했습니다. | `.venv\Scripts\python.exe -m pytest -q` 기준 `60 passed`입니다. |
 
 ## Measurement Validity
 
@@ -148,6 +147,148 @@ Kafka Event Stream Systems 포트폴리오의 로컬 Kubernetes/kind 검증 결�
 - 2차 baseline에서는 `503` 없이 100 VU / 30s를 통과했다.
 - 같은 stream 순서 보장은 Kafka partition key뿐 아니라 Worker failure handling까지 함께 맞아야 한다는 점을 확인했다.
 - inline retry는 같은 partition의 뒤 event를 막기 때문에 순서 보장에는 유리하지만, 앞 event가 오래 막히면 같은 stream 경계의 뒤 event도 함께 대기한다.
+
+## 2026-06-09 재실행: 정합성 재확인과 backlog drain 관측
+
+목적:
+
+- 기존 2차 baseline 수치가 현재 클러스터에서도 크게 흔들리는지 확인한다.
+- k6 API intake latency뿐 아니라, 부하 직후 Worker consumer lag가 어떻게 drain되는지 함께 본다.
+
+실행 명령:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
+```
+
+결과:
+
+| 지표 | 2차 baseline | 2026-06-09 재실행 |
+| --- | ---: | ---: |
+| 전체 HTTP 요청 수 | `31676` | `34284` |
+| Event status 200 | `31672` | `34280` |
+| Event status 503 | `0` | `0` |
+| 오류율 | `0.00%` | `0.00%` |
+| 평균 latency | `44.13ms` | `36.86ms` |
+| p95 latency | `80.65ms` | `66.06ms` |
+| p99 latency | `103.57ms` | `104.99ms` |
+| 비동기 accept 평균 / p95 / 최대 | `53.34ms` / `63.59ms` / `75.22ms` | `58.36ms` / `59.26ms` / `168.02ms` |
+| Accepted-to-persisted 평균 / p95 / 최대 | `7.29ms` / `7.67ms` / `8.14ms` | `14.50ms` / `73.50ms` / `120.72ms` |
+| API HPA | `6 replicas` | max `8 replicas`, final reset 후 `3 replicas` |
+| Worker KEDA | `4 replicas` | max `8 replicas` |
+| 부하 직후 Worker lag | 기록 없음 | `36394` |
+| 최종 drain 확인 | consumer lag `0` | 약 14분 후 consumer lag `0` |
+
+해석:
+
+- API intake 수치만 보면 요청 수가 늘고 avg / p95 latency는 개선됐다.
+- p99는 거의 동일하고, accepted-to-persisted p95는 `73.50ms`로 튀었다.
+- 더 중요한 변화는 부하 직후 `message-worker` consumer lag가 `36394`까지 쌓였고, KEDA가 Worker를 max `8`까지 확장한 뒤 약 14분에 걸쳐 drain했다는 점이다.
+- 따라서 이 재실행은 기존 2차 baseline을 단순히 대체하기보다, API intake와 Worker persistence capacity를 분리해서 봐야 한다는 운영 신호로 기록한다.
+- 포트폴리오 상단의 안정 기준선은 기존 2차 baseline을 유지하고, capacity tuning 후보는 Worker 처리량 / DB persistence path / consumer lag drain time으로 본다.
+
+### 2026-06-09 Kafka 정합성 검증
+
+같은 suite 안에서 API intake 부하만 본 것이 아니라 Kafka append 이후 Worker persistence까지 이어지는 기본 정합성도 다시 확인했습니다.
+
+| 검증 항목 | 확인 방법 | 결과 |
+| --- | --- | --- |
+| Same-stream ordering | `stream_id` `30`에 `ordering-event-0001..0100`을 public API로 전송한 뒤 영속화된 row를 `stream_seq`로 정렬 | `event_count=100`, `first_stream_seq=1`, `last_stream_seq=100`, `first_body=ordering-event-0001`, `last_body=ordering-event-0100`, ordering `pass` |
+| Async persistence completion | `stream_id` `31`에 50개 event를 전송하고 request status가 `persisted`가 될 때까지 polling | 50개 모두 timeout 전에 persisted |
+| Async persistence latency | API accept latency와 accepted-to-persisted latency를 분리 측정 | accept p95 `59.26ms`, accepted-to-persisted p95 `73.50ms` |
+| Worker backlog drain | 부하 직후부터 `message-worker` consumer lag를 반복 확인 | `36394 -> 33274 -> 23563 -> 11971 -> 0`, KEDA max `8` |
+
+이 검증은 PostgreSQL 장애 주입 실험은 아니며, 오늘 클러스터 상태에서 Kafka intake, same-stream ordering, Worker persistence, backlog drain이 서로 이어지는지 확인한 정합성 재검증입니다.
+
+### Worker transaction 통합 튜닝
+
+2026-06-09 backlog drain 관측 이후 Worker 성공 경로의 DB transaction 수를 줄였습니다.
+
+변경 내용:
+
+- Worker success path를 `persist_ingress_job()`으로 묶었습니다.
+- message persistence와 request status update를 하나의 PostgreSQL transaction 안에서 처리합니다.
+- notification attempt 기록은 DB commit 이후 `message-notifications` topic으로 넘기고 별도 `notification-worker`가 처리합니다.
+- Kafka `message-request-status` publish와 `message-snapshots` publish는 DB commit 이후에 수행합니다.
+- 이 변경은 Worker 1건 처리당 DB commit 횟수를 줄이는 튜닝입니다.
+
+검증:
+
+- fake DB cursor 기반 단위 테스트에서 success path commit이 `1`회인지 확인했습니다.
+- 같은 테스트에서 `notification_attempts` insert가 핵심 transaction에 포함되지 않고 `publish_notification_job()`으로 분리되는지 확인했습니다.
+- 전체 unit / contract test는 `.venv\Scripts\python.exe -m pytest -q` 기준 `60 passed`입니다.
+
+Post-tuning performance suite:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
+```
+
+| 지표 | 2026-06-09 재실행 | transaction 통합 이후 |
+| --- | ---: | ---: |
+| 전체 HTTP 요청 수 | `34284` | `28839` |
+| Event status 200 | `34280` | `28835` |
+| Event status 503 | `0` | `0` |
+| 오류율 | `0.00%` | `0.00%` |
+| 평균 latency | `36.86ms` | `53.47ms` |
+| p95 latency | `66.06ms` | `108.68ms` |
+| p99 latency | `104.99ms` | `134.53ms` |
+| 비동기 accept p95 | `59.26ms` | `57.79ms` |
+| Accepted-to-persisted p95 | `73.50ms` | `8.08ms` |
+| 부하 직후 Worker lag | `36394` | `29204` |
+| drain 경로 | `36394 -> 33274 -> 23563 -> 11971 -> 0` | `29204 -> 23597 -> 15111 -> 6893 -> 0` |
+| Worker KEDA max replica | `8` | `8` |
+| 최종 drain | 약 14분 후 consumer lag `0` | 약 10분 후 consumer lag `0` |
+
+해석:
+
+- transaction 통합 후 accepted-to-persisted p95는 `73.50ms -> 8.08ms`로 개선됐습니다.
+- 부하 직후 Worker lag peak도 `36394 -> 29204`로 낮아졌고, drain time은 약 14분에서 약 10분으로 줄었습니다.
+- 반면 k6 API intake 수치는 `34284 -> 28839` requests로 낮아지고 p95도 `66.06ms -> 108.68ms`로 악화됐습니다.
+- 따라서 이 튜닝은 Worker persistence lag에는 효과가 있었지만, API intake throughput 기준선으로는 채택 근거가 부족합니다. 다음 측정은 notification path 분리 이후 API/Kafka publish path 영향과 notification-worker backlog를 분리해서 봐야 합니다.
+
+### Notification path 분리 후 재실행
+
+2026-06-18에는 notification attempt 기록을 핵심 Worker transaction에서 분리했습니다. Worker는 DB commit 이후 `message-notifications` topic으로 알림 작업을 publish하고, 별도 `notification-worker`가 `notification_attempts`를 기록합니다.
+
+검증:
+
+- `message-notifications` topic을 partitions `8`, replication factor `3`, `min.insync.replicas=2`로 생성했습니다.
+- `notification-worker` Deployment / Service를 추가했습니다.
+- Prometheus scrape job에 `notification-worker`를 추가했습니다.
+- `check_portfolio_status.ps1`가 `notification-worker` readiness와 scrape 상태를 함께 확인하도록 수정했습니다.
+- fake DB cursor 기반 단위 테스트에서 `notification_attempts` insert가 핵심 transaction에 포함되지 않고 `publish_notification_job()`으로 분리되는지 확인했습니다.
+
+Performance suite:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
+```
+
+| 지표 | transaction 통합 이후 | notification path 분리 이후 |
+| --- | ---: | ---: |
+| 실행 시각 | `2026-06-09T02:17:11+09:00` | `2026-06-18T03:29:47+09:00` |
+| 전체 HTTP 요청 수 | `28839` | `27795` |
+| Event status 200 | `28835` | `27791` |
+| Event status 503 | `0` | `0` |
+| 오류율 | `0.00%` | `0.00%` |
+| 평균 latency | `53.47ms` | `57.64ms` |
+| p95 latency | `108.68ms` | `119.28ms` |
+| p99 latency | `134.53ms` | `150.60ms` |
+| Same-stream ordering | `stream_id=34`, `100/100 pass` | `stream_id=38`, `100/100 pass` |
+| Async persistence sample | `stream_id=35`, 50 events | `stream_id=39`, 50 events |
+| Accepted-to-persisted p95 | `8.08ms` | `22.13ms` |
+| Worker KEDA max replica | `8` | `8` |
+| message-worker lag drain | 약 10분 후 `0` | 약 16분 후 `0` |
+| notification-worker lag | 측정 대상 아님 | `0` |
+
+해석:
+
+- notification path 분리는 장애 범위 분리에는 의미가 있습니다. 알림 기록 실패가 핵심 message persistence transaction을 rollback시키지 않습니다.
+- 반면 이번 재실행에서는 k6 API intake request count와 latency가 개선되지 않았습니다.
+- accepted-to-persisted p95도 `8.08ms -> 22.13ms`로 악화됐고, message-worker drain time도 길어졌습니다.
+- 따라서 이 변경은 성능 개선 수치가 아니라 운영 경계 분리와 장애 격리 개선으로 해석합니다.
+- 다음 성능 튜닝은 notification 분리보다 Worker DB write throughput, Kafka consumer batch 처리, PostgreSQL lock/commit 비용을 분리해서 측정해야 합니다.
 
 ## 측정 방법
 
@@ -368,7 +509,7 @@ Kafka broker/topic/consumer group 상태를 직접 보기 위해 kafka-exporter�
 | exporter deployment | `kafka-exporter` Deployment / Service 추가 |
 | Prometheus scrape | `kafka-exporter:9308` scrape target 추가 |
 | broker count | `kafka_brokers` 패널 추가 |
-| consumer lag | `kafka_consumergroup_lag{consumergroup="message-worker"}` 패널 추가 |
+| consumer lag | `kafka_consumergroup_lag{consumergroup="message-worker"}`, `kafka_consumergroup_lag{consumergroup="notification-worker"}` 패널 추가 |
 | topic partitions | `kafka_topic_partition_current_offset` 기반 partition 패널 추가 |
 | alert | `MessagingKafkaExporterDown`, `MessagingKafkaConsumerLagHigh` 추가 |
 
@@ -379,6 +520,7 @@ Kafka broker/topic/consumer group 상태를 직접 보기 위해 kafka-exporter�
 | `up{job="kafka-exporter"}` | `1` |
 | `kafka_brokers` | `3` |
 | `sum(kafka_consumergroup_lag{consumergroup="message-worker"})` | `0` |
+| `sum(kafka_consumergroup_lag{consumergroup="notification-worker"}) or vector(0)` | `0` |
 | Grafana panels | `Kafka Broker Count`, `Kafka Consumer Group Lag`, `Kafka Topic Partitions` 반영 확인 |
 
 ## GitOps / Argo CD 확인
@@ -404,8 +546,8 @@ Kafka broker/topic/consumer group 상태를 직접 보기 위해 kafka-exporter�
 | --- | --- |
 | API readiness | `ready` |
 | Argo CD Application | `Synced / Healthy`, revision `9f7fc62be6f202abf98e12c8c108075502cd29a6` |
-| Core workloads | API `3/3`, Worker `2/2`, Kafka `3/3`, PostgreSQL `3/3`, Pgpool `2/2` |
+| Core workloads | API `3/3`, Worker ready, notification-worker `1/1`, Kafka `3/3`, PostgreSQL `3/3`, Pgpool `2/2` |
 | KEDA | `worker-keda` Ready |
-| Prometheus scrape | `api`, `worker`, `dlq-replayer`, `kafka-exporter`, `kube-state-metrics` 모두 `up=1` |
-| Kafka exporter | `kafka_brokers=3`, `message-worker consumer_lag=0` |
+| Prometheus scrape | `api`, `worker`, `notification-worker`, `dlq-replayer`, `kafka-exporter`, `kube-state-metrics` 모두 `up=1` |
+| Kafka exporter | `kafka_brokers=3`, `message-worker consumer_lag=0`, `notification-worker consumer_lag=0` |
 | Backup PVC | `postgres-backups`는 첫 backup CronJob consumer 전까지 `WaitForFirstConsumer`일 수 있음 |

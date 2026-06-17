@@ -15,20 +15,24 @@ def fallback_idem_key(route: str, idem_key: str) -> str:
     return f"message_request_idem:{route}:{idem_key}"
 
 
+def upsert_request_status(cur, request_id: str, payload: dict) -> None:
+    cur.execute(
+        """
+        INSERT INTO request_statuses (request_id, user_id, status_json)
+        VALUES (%s, %s, %s::jsonb)
+        ON CONFLICT (request_id) DO UPDATE SET
+            user_id = EXCLUDED.user_id,
+            status_json = EXCLUDED.status_json,
+            updated_at = NOW()
+        """,
+        (request_id, payload.get("user_id"), json.dumps(payload)),
+    )
+
+
 def store_request_status(request_id: str, payload: dict) -> None:
     with get_conn() as conn:
         with get_cursor(conn) as cur:
-            cur.execute(
-                """
-                INSERT INTO request_statuses (request_id, user_id, status_json)
-                VALUES (%s, %s, %s::jsonb)
-                ON CONFLICT (request_id) DO UPDATE SET
-                    user_id = EXCLUDED.user_id,
-                    status_json = EXCLUDED.status_json,
-                    updated_at = NOW()
-                """,
-                (request_id, payload.get("user_id"), json.dumps(payload)),
-            )
+            upsert_request_status(cur, request_id, payload)
         conn.commit()
 
 
