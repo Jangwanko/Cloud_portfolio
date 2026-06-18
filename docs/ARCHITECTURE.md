@@ -2,12 +2,12 @@
 
 ## 서비스 문제
 
-이 구조는 실시간 협업 메시징을 가정합니다. 사용자는 같은 stream 안에서 message 순서를 기대하고, 운영자는 DB write 지연이나 일시 장애가 생겨도 request intake, persistence, DLQ, replay 상태를 분리해서 판단해야 합니다.
+이 구조는 쇼핑몰 주문 이후 이벤트 처리를 가정합니다. 사용자는 결제 완료와 주문 완료를 빠르게 확인하고, 운영자는 DB write 지연이나 일시 장애가 생겨도 event intake, persistence, 분류, 알림, DLQ, replay 상태를 분리해서 판단해야 합니다.
 
 따라서 설계 기준은 단순 처리량이 아니라 아래 네 가지입니다.
 
-- Kafka append 중심의 빠른 request 수락
-- 같은 stream ordering boundary 유지
+- Kafka append 중심의 빠른 주문 이후 event 수락
+- 같은 주문 / 업무 stream ordering boundary 유지
 - PostgreSQL write path 장애 시 DLQ / replay 기반 복구
 - Prometheus / Grafana / Runbook으로 장애 위치를 설명할 수 있는 운영성
 
@@ -15,13 +15,13 @@
 
 ## 구성 요소
 - API (`FastAPI`)
-  - event request 수락
+  - 주문 이후 event request 수락
   - Kafka ingress topic append
   - DB snapshot local materialized cache
   - health / readiness / metrics 노출
 - Kafka
   - ingress event log
-  - stream 단위 partition ordering boundary
+  - 주문 / 업무 stream 단위 partition ordering boundary
   - DLQ topic
   - request status compacted topic
   - message / stream snapshot compacted topics
@@ -62,14 +62,15 @@
 Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각 서비스로 라우팅합니다. 기본 문서와 데모 경로는 HTTP 기준이며, HTTPS는 self-signed certificate 기반 TLS 종료를 확인하는 보조 경로입니다.
 
 ## 요청 처리 흐름
-1. 클라이언트가 API로 event request를 보냅니다.
+1. 클라이언트가 결제 완료, 주문 생성, 배송 시작, 환불 요청 같은 주문 이후 event request를 보냅니다.
 2. API는 요청을 바로 DB에 쓰지 않고 Kafka ingress topic에 append합니다.
-3. Kafka message key는 `stream_id`를 사용합니다.
+3. Kafka message key는 현재 구현 기준 `stream_id`를 사용하며, 주문 도메인에서는 `order_id`에 대응되는 ordering key로 해석합니다.
 4. Worker consumer group이 partition을 나눠 소비합니다.
 5. Worker가 PostgreSQL에 event를 영속화합니다.
-6. 실패하면 retry를 수행합니다.
-7. retry 한도를 넘기면 Kafka DLQ topic으로 이동합니다.
-8. DLQ Replayer가 복구 조건이 맞으면 ingress topic으로 재주입합니다.
+6. Worker는 event를 운영 카테고리로 분류하고, DB commit 이후 snapshot과 notification event를 발행합니다.
+7. 실패하면 retry를 수행합니다.
+8. retry 한도를 넘기면 Kafka DLQ topic으로 이동합니다.
+9. DLQ Replayer가 복구 조건이 맞으면 ingress topic으로 재주입합니다.
 
 정상 event 흐름:
 
@@ -81,15 +82,16 @@ sequenceDiagram
     participant Worker
     participant DB as PostgreSQL HA
 
-    Client->>API: event request
-    API->>Kafka: append with stream_id key
-    API-->>Client: 202 Accepted
+    Client->>API: order event request
+    API->>Kafka: append with order stream key
+    API-->>Client: 202 Accepted / order completed response
     Worker->>Kafka: consume partition
-    Worker->>DB: persist event and stream_seq
+    Worker->>DB: persist order event and stream_seq
     Worker->>DB: update request status
+    Worker->>Worker: classify event category
     Worker->>Kafka: publish message-snapshots after DB commit
     Kafka-->>API: materialized cache consumes DB snapshot
-    Client->>API: GET stream events
+    Client->>API: GET order history
     API-->>Client: source=cache, degraded=false
 ```
 
@@ -134,14 +136,15 @@ sequenceDiagram
 ```
 
 ## Kafka 설계 선택
-Kafka를 request intake 경로에 둔 이유는 단순 queue buffer보다 event stream processing 특성을 더 명확히 검증하기 위해서입니다.
+Kafka를 request intake 경로에 둔 이유는 queue buffer 역할과 함께 event stream processing 특성을 검증하기 위해서입니다.
 
-- `stream_id` key 기반 partitioning으로 같은 stream의 ordering boundary를 명확히 둡니다.
+- `stream_id` key 기반 partitioning으로 같은 주문 / 업무 stream의 ordering boundary를 명확히 둡니다.
 - Worker는 consumer group으로 partition을 분산 소비합니다.
 - 처리 성공 후 offset commit을 수행해 재처리 가능성을 유지합니다.
 - DLQ도 topic으로 분리해 실패 이벤트를 보존하고 replay합니다.
 - Worker scaling은 queue length가 아니라 consumer lag를 기준으로 판단합니다.
 - Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리합니다. 알림 처리는 DB commit 이후 `message-notifications` topic으로 넘기고 별도 `notification-worker`가 `notification_attempts`를 기록합니다.
+- 운영 분류는 1차 범위에서 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 같은 큰 업무 단위로 둡니다. AI 기반 세부 분류와 자동 응답은 후속 과제입니다.
 
 설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 event 처리 경로를 확보합니다.
 

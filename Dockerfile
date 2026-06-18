@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY portfolio ./portfolio
 COPY worker ./worker
 COPY observer ./observer
+COPY demo ./demo
 COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 

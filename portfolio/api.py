@@ -15,6 +15,7 @@ from portfolio.materialized_cache import (
     list_cached_events,
 )
 from portfolio.metrics import observe_api_stage
+from portfolio.order_events import classify_order_event
 from portfolio.schemas import (
     DlqListResponse,
     DlqSummaryResponse,
@@ -24,6 +25,8 @@ from portfolio.schemas import (
     EventRequestStatusResponse,
     EventResponse,
     LoginRequest,
+    OrderEventAcceptedResponse,
+    OrderEventCreate,
     ReadReceiptCreate,
     ReadReceiptResponse,
     StreamCreate,
@@ -297,6 +300,58 @@ def create_event(
                 "queued_at": queued_at,
                 "retry_count": 0,
                 "next_retry_at": None,
+            },
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
+    return accepted_response
+
+
+@router.post("/orders/{order_id}/events", response_model=OrderEventAcceptedResponse)
+def create_order_event(
+    order_id: int,
+    payload: OrderEventCreate,
+    x_idempotency_key: str | None = Header(default=None),
+    current_user: dict = Depends(get_current_user),
+):
+    actor_user_id = int(current_user["id"])
+    request_id = str(uuid4())
+    category = classify_order_event(payload.event_type)
+    queued_at = datetime.now(timezone.utc).isoformat()
+    route = f"POST:/v1/orders/{order_id}/events"
+
+    accepted_response = {
+        "request_id": request_id,
+        "status": "accepted",
+        "persistence": "queued",
+        "order_id": order_id,
+        "stream_id": order_id,
+        "user_id": actor_user_id,
+        "event_type": payload.event_type,
+        "category": category,
+        "body": payload.body,
+        "payment_id": payload.payment_id,
+        "queued_at": queued_at,
+    }
+    try:
+        _store_request_and_queue_job(
+            request_id,
+            accepted_response,
+            {
+                "request_id": request_id,
+                "route": route,
+                "room_id": order_id,
+                "user_id": actor_user_id,
+                "body": payload.body,
+                "room_seq": None,
+                "x_idempotency_key": x_idempotency_key,
+                "queued_at": queued_at,
+                "retry_count": 0,
+                "next_retry_at": None,
+                "order_id": order_id,
+                "event_type": payload.event_type,
+                "category": category,
+                "payment_id": payload.payment_id,
             },
         )
     except Exception as exc:  # noqa: BLE001

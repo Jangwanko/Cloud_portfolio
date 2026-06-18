@@ -6,6 +6,7 @@
 ```text
 .
 ├─ alembic/                   # DB schema version scripts
+├─ demo/                      # 브라우저로 여는 정적 데모 화면
 ├─ docs/                      # 프로젝트 문서
 ├─ infra/                     # AWS IaC(Terraform) 코드
 ├─ k8s/                       # Kubernetes 배포/검증 리소스
@@ -21,6 +22,7 @@
 ## 폴더 설명
 - `portfolio/`: API 엔드포인트, 설정, Kafka publish, DB/state 연결 로직
 - `worker/`: Kafka consume, DB 저장, 재시도, DLQ 재처리
+- `demo/`: 사용자 주문 완료 흐름과 운영자 이벤트 큐를 보여주는 정적 화면
 - `scripts/`: quick start, 장애 재현, 성능 측정, 백업/복구 스크립트
 - `infra/`: AWS 배포용 Terraform 환경/모듈
 - `monitoring/`: Prometheus 규칙, Grafana 대시보드 설정
@@ -39,6 +41,7 @@
 - `alembic.ini`: Alembic 실행 설정
 - `.env.example`: 환경변수 샘플
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
+- `demo/order-dashboard.html`: 주문 이후 이벤트 처리 흐름을 보여주는 브라우저 데모
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
 - `scripts/ordering_failure_injection.py`: single/multi stream ordering, Pgpool 장애 주입, PostgreSQL row evidence 검증
 - `monitoring/prometheus/alerts.yml`: 장애 감지 임계치 알람 규칙

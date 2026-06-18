@@ -21,8 +21,9 @@ class TestOperationalDocumentation:
         for token in (
             "실시간 협업 메시징",
             "적용 가능한 서비스 관점",
-            "주문 / 결제 이벤트",
+            "주문 이후 이벤트 처리",
             "알림 발송 파이프라인",
+            "고객 문의 / CS 이벤트",
             "감사 로그 / 활동 로그",
             "IoT / 센서 수집",
             "사용자와 관심사",
@@ -45,8 +46,8 @@ class TestOperationalDocumentation:
         for document in (readme, architecture, reliability, repository_structure, test_results):
             assert "SERVICE_REQUIREMENTS.md" in document
 
-        assert "순서가 중요하고 유실되면 안 되는 event request" in readme
-        assert "주문 처리, 알림 발송, 감사 로그, IoT 수집" in readme
+        assert "쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트" in readme
+        assert "AWS Managed Service Mapping" in readme
         assert "## TL;DR" in readme
         assert "## Trade-off" in readme
         assert "서비스 문제" in architecture
@@ -377,6 +378,118 @@ class TestOperationalDocumentation:
         assert "Docker Desktop만 설치하고 실행" in quick_start
         assert "tools/kubectl.exe" in gitignore
         assert "tools/downloads/" in gitignore
+
+    def test_static_order_dashboard_demo_exists(self):
+        demo = read_text("demo/order-dashboard.html")
+        readme = read_text("README.md")
+        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
+        main = read_text("portfolio/main.py")
+        dockerfile = read_text("Dockerfile")
+
+        for token in (
+            "Post-Order Event Console",
+            "결제 완료",
+            "주문 완료",
+            "운영자 이벤트 큐",
+            "/v1/orders/",
+            "/v1/dlq/ingress/summary",
+            "payment_completed",
+            "delivery_started",
+            "needs_review",
+            "Pipeline Evidence",
+            "API accepted",
+            "Kafka appended",
+            "Worker persisted",
+            "1. API 접수됨",
+            "2. Kafka 적재됨",
+            "3. Worker 처리 중",
+            "4. DB 저장됨",
+            "DLQ summary",
+            "/v1/event-requests/",
+            "/v1/streams",
+            "createDemoOrderStream",
+            "샘플 1개 추가",
+            "샘플 10개 추가",
+            "샘플 100개 추가",
+            "주문 이후 업무 이벤트 종류입니다.",
+            "API가 노출된 주소입니다.",
+            "데모 주문 stream id로 자동 갱신됩니다.",
+            "운영자 이벤트 큐 비우기",
+            "clear-event-list",
+            "sample-actions",
+            "send-action",
+            "처리 증거",
+            "처리 현황",
+            "예약 건수",
+            "Kafka 적재",
+            "DB 저장",
+            "총 소요시간",
+            "처리량/sec",
+            "queue-metrics",
+            "height: 280px",
+            "align-content: start",
+            "height: 160px",
+            "max-height: 160px",
+            "queued-count",
+            "processed-count",
+            "db-persisted-count",
+            "elapsed-seconds",
+            "throughput-rate",
+            "recordQueueEnqueued",
+            "recordQueueProcessed",
+            "recordKafkaAppended",
+            "recordDbPersisted",
+            "updateQueueMetrics",
+            "startProcessingRun",
+            "runStartedAt",
+            "runCompletedAt",
+            "runProcessed",
+            "이번 처리 시퀀스",
+            "markEventStatus",
+            "db_row",
+            "pollRequestStatus(baseUrl, token, event)",
+            "샘플은 전송 전 예약 큐에 추가됩니다.",
+            "Kafka 적재와 DB 저장을 분리해서 집계합니다.",
+            "processReservedEvents",
+            "buildFormEvent",
+            "sendQueuedEvent",
+            "예약 큐 처리 시작",
+            "proof-grid",
+            "Kafka topic",
+            "DB row",
+            "운영 링크는 확인용 보조 링크입니다.",
+            "/health/ready",
+            "브라우저가 API 요청을 막았습니다.",
+            "http://localhost/demo/order-dashboard.html",
+            "deriveDefaultBaseUrl",
+            "describeFetchFailure",
+            "addSampleBatch",
+            "clearEvents",
+        ):
+            assert token in demo
+
+        assert "../docs/RUNBOOK.md" not in demo
+        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function addSample()", 1)[0]
+        assert "recordQueueEnqueued(count)" in sample_batch
+        assert "startQueueDrain" not in sample_batch
+        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
+        assert "reservedEvents.length === 0" in process_reserved
+        assert "recordQueueEnqueued(1)" in process_reserved
+        assert "startProcessingRun(reservedEvents.length)" in process_reserved
+        assert "const token = await ensureToken" in process_reserved
+        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
+        assert "for (const event of reservedEvents)" in process_reserved
+        assert "await sendQueuedEvent" in process_reserved
+        assert "recordKafkaAppended(1)" in process_reserved
+        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event))" in process_reserved
+        assert "await Promise.all(pollTasks)" in process_reserved
+        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
+        assert "processReservedEvents" in send_order_event
+
+        assert "demo/order-dashboard.html" in readme
+        assert "demo/order-dashboard.html" in repository_structure
+        assert 'app.mount("/demo"' in main
+        assert "COPY demo ./demo" in dockerfile
 
 
 class TestManifestContracts:

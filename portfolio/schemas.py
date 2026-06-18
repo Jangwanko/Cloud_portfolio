@@ -28,6 +28,26 @@ class EventCreate(BaseModel):
     body: str = Field(min_length=1, max_length=1000)
 
 
+class OrderEventCreate(BaseModel):
+    event_type: str = Field(min_length=1, max_length=50)
+    body: str = Field(min_length=1, max_length=1000)
+    payment_id: str | None = Field(default=None, max_length=80)
+
+
+class OrderEventAcceptedResponse(BaseModel):
+    request_id: str
+    status: str
+    persistence: str
+    order_id: int
+    stream_id: int
+    user_id: int
+    event_type: str
+    category: str
+    body: str
+    payment_id: str | None = None
+    queued_at: str
+
+
 class EventResponse(BaseModel):
     id: int
     request_id: str | None = None

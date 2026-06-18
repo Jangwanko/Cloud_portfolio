@@ -1,36 +1,74 @@
-# Kafka 이벤트 스트림 시스템 포트폴리오
+# 주문 이후 이벤트 처리 시스템 포트폴리오
 
-순서가 중요하고 유실되면 안 되는 event request를 먼저 안전하게 받아두고, 뒤에서 비동기로 처리 / 복구 / 관측하는 Kafka event stream pipeline입니다.
+쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
 
-대표 도메인은 실시간 협업 메시징이지만, 같은 구조는 주문 처리, 알림 발송, 감사 로그, IoT 수집처럼 `order_id`, `user_id`, `device_id`, `stream_id` 단위 순서와 복구가 중요한 서비스에도 적용할 수 있습니다.
+사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
 
 ## TL;DR
 
-Kafka 기반 event intake pipeline입니다.
+Kafka 기반 주문 이후 이벤트 처리 시스템입니다.
 
-- API는 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
-- Worker consumer group이 PostgreSQL HA에 비동기 persistence를 수행합니다.
+- API는 결제 / 주문 완료 이후 이벤트를 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
+- Worker consumer group이 PostgreSQL HA에 주문 이벤트를 비동기 persistence합니다.
+- 이벤트는 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 같은 운영 카테고리로 분류할 수 있습니다.
 - 실패 event는 inline retry 후 Kafka DLQ로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
 - KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
 - kafka-exporter / Prometheus / Grafana / Runbook으로 broker, lag, DLQ, replica, GitOps 상태를 확인합니다.
+- README는 시스템의 개념과 운영 관점을 설명합니다. 세부 구현, API 계약, 검증 조건은 `docs/` 문서에 분리합니다.
 
 ## Problem
 
-DB 동기 write 중심 구조에서는 event request가 아래 문제에 취약합니다.
+주문 완료 이후에도 쇼핑몰에는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 알림 발행 같은 후속 이벤트가 계속 발생합니다. 이 경로를 DB 동기 write 중심으로 처리하면 아래 문제에 취약합니다.
 
-- DB 장애가 API request 실패로 바로 전파됩니다.
+- DB 장애가 주문 이후 이벤트 처리 실패로 바로 전파됩니다.
 - write path 병목이 API latency와 timeout으로 드러납니다.
-- 실패 request를 보존하고 복구하기 어렵습니다.
+- 실패 event를 보존하고 복구하기 어렵습니다.
 - backlog, DLQ, consumer lag를 운영자가 한눈에 보기 어렵습니다.
+- 사용자에게 보여줄 완료 응답과 내부 운영 처리 상태가 섞이면 서비스 경계가 흐려집니다.
 
 ## Solution
 
-Kafka 기반 event log를 request intake 경로에 두고, persistence를 Worker consumer group으로 분리했습니다.
+Kafka 기반 event log를 주문 이후 이벤트 intake 경로에 두고, persistence / 분류 / 알림 / 재처리를 Worker 경로로 분리했습니다.
 
-- API는 event request를 Kafka ingress topic에 append하고 빠르게 응답합니다.
-- Kafka는 `stream_id` key를 기준으로 같은 stream event를 같은 partition boundary에 둡니다.
-- Worker는 partition을 소비해 PostgreSQL HA에 최종 영속화합니다.
+- API는 주문 이벤트를 Kafka ingress topic에 append하고 빠르게 응답합니다.
+- 사용자는 결제 완료와 주문 완료만 확인하며, Kafka 처리 상태는 운영자 추적 경로로 둡니다.
+- Kafka는 `stream_id` key를 기준으로 같은 주문 / 업무 흐름의 event를 같은 partition boundary에 둡니다.
+- Worker는 partition을 소비해 PostgreSQL HA에 최종 영속화하고, DB commit 이후 snapshot과 notification event를 발행합니다.
 - 실패 event는 retry / DLQ / replay guard를 거쳐 복구 가능한 상태로 남깁니다.
+
+## Service Scope
+
+사용자 관점:
+- 결제 완료 응답
+- 주문 완료 응답
+- 주문 번호 또는 request id 확인
+- 필요한 경우 주문 내역 조회
+
+운영자 관점:
+- 주문 이후 event 처리 상태 추적
+- `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 기준 분류 확인
+- DLQ summary와 replay 대상 확인
+- Kafka consumer lag, accepted-to-persisted lag, backlog drain time 관측
+
+후속 과제:
+- AI 기반 세부 분류
+- 자동 답변 / 자동 CS 처리
+- 주문 확인 페이지의 추천 / upsell 최적화
+- idempotency state의 Kafka compacted topic 또는 별도 state backend 분리
+
+## AWS Managed Service Mapping
+
+실제 AWS 환경에서는 managed service로 구성할 수 있는 구조를 로컬 Kubernetes 환경에서 직접 조립하고 검증했습니다.
+
+| 이 프로젝트 | AWS에서 비슷한 역할 |
+| --- | --- |
+| Kafka 3-broker KRaft | Amazon MSK |
+| PostgreSQL HA + Pgpool | Amazon RDS PostgreSQL / Aurora PostgreSQL |
+| Worker consumer group | EKS / ECS worker, Lambda consumer |
+| `message-notifications` topic | SNS / SQS / EventBridge |
+| Kafka DLQ topic + Replayer | SQS DLQ / EventBridge retry 경로 |
+| Prometheus / Grafana | CloudWatch / Amazon Managed Prometheus / Managed Grafana |
+| Argo CD GitOps | Argo CD on EKS / 배포 파이프라인 |
 
 ## Architecture Boundary
 
@@ -248,7 +286,7 @@ sequenceDiagram
 - 핵심 운영 API는 FastAPI `response_model`, `/docs`, `/openapi.json`, API contract test로 응답 형태를 고정합니다.
 
 ## 서비스 기준
-이 포트폴리오는 실시간 협업 메시징을 가정합니다. 같은 stream의 message 순서, 빠른 request 수락, PostgreSQL write 지연 중 복구 가능성, 운영자가 장애 위치를 판단할 수 있는 관측성을 핵심 요구로 둡니다.
+이 포트폴리오는 쇼핑몰 주문 이후 이벤트 처리를 기준으로 합니다. 사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka / Worker / PostgreSQL / DLQ / Grafana 경로에서 영속화 지연, 분류, 알림, 장애 위치를 판단합니다.
 
 상세한 사용자, 기능 요구, 비기능 요구, SLO guardrail은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md)에 정리했습니다.
 
@@ -335,6 +373,15 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 ```
 
 이 스크립트는 API readiness, Argo CD `Synced / Healthy`, 핵심 workload replica, KEDA, Prometheus scrape, kafka-exporter broker / consumer lag 지표를 확인합니다. `postgres-backups` PVC는 local-path `WaitForFirstConsumer` 정책 때문에 첫 backup CronJob 전까지 `Pending`일 수 있으며, 이 경우는 warning으로만 표시합니다.
+
+## 데모 화면
+서비스 흐름을 화면으로 확인하려면 [order-dashboard.html](demo/order-dashboard.html)을 브라우저에서 엽니다.
+
+- 사용자 관점: 결제 완료, 주문 완료, 주문 번호 확인
+- 운영자 관점: 주문 이후 이벤트, 업무 분류, request id, Kafka 수락 상태 확인
+- 운영 링크: Swagger `/docs`, Grafana, DLQ summary, Runbook
+
+API가 `http://localhost`에서 실행 중이면 화면에서 `POST /v1/orders/{order_id}/events`를 직접 호출합니다. API가 꺼져 있어도 샘플 이벤트로 사용자 / 운영자 경계를 확인할 수 있습니다.
 
 ## 빠른 실행
 Windows PowerShell:

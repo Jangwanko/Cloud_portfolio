@@ -121,6 +121,23 @@ class TestWorkerUtils:
         assert issubclass(RoomSequenceGapError, RuntimeError)
 
 
+class TestOrderEventClassification:
+    """Order-domain event classification for operator queues."""
+
+    def test_known_order_events_map_to_operational_categories(self):
+        from portfolio.order_events import classify_order_event
+
+        assert classify_order_event("payment_completed") == "payment"
+        assert classify_order_event("delivery_started") == "delivery"
+        assert classify_order_event("refund_requested") == "refund"
+        assert classify_order_event("support_requested") == "support"
+
+    def test_unknown_order_event_needs_review(self):
+        from portfolio.order_events import classify_order_event
+
+        assert classify_order_event("unknown_event") == "needs_review"
+
+
 class TestDlqHelpers:
     """DLQ API payload shaping and replay guard checks."""
 
@@ -466,3 +483,23 @@ class TestOpenApiContract:
             "recent_samples",
         ):
             assert field in dlq_summary
+
+
+class TestOrderEventApiContract:
+    """Order-domain routes make the service scenario visible."""
+
+    def test_openapi_contains_order_event_intake_contract(self):
+        from portfolio.main import app
+
+        schema = app.openapi()
+        components = schema["components"]["schemas"]
+        paths = schema["paths"]
+
+        assert "OrderEventCreate" in components
+        assert "OrderEventAcceptedResponse" in components
+        assert "/v1/orders/{order_id}/events" in paths
+
+        response_schema = paths["/v1/orders/{order_id}/events"]["post"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]
+        assert response_schema["$ref"] == "#/components/schemas/OrderEventAcceptedResponse"

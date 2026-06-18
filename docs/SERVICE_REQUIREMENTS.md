@@ -1,25 +1,28 @@
 # 서비스 요구사항
 
-Kafka 이벤트 스트림 포트폴리오는 사용자가 겪는 문제와 운영자가 지켜야 하는 기준을 Kafka / Worker / PostgreSQL HA / DLQ / 관측성으로 연결합니다.
+주문 이후 이벤트 처리 포트폴리오는 쇼핑몰 사용자가 확인하는 완료 응답과 운영자가 관리하는 후속 처리 경로를 Kafka / Worker / PostgreSQL HA / DLQ / 관측성으로 연결합니다.
 
 ## 서비스 가정
 
-기본 가정 서비스는 실시간 협업 메시징입니다. 다만 이 구조의 핵심은 특정 메시징 화면보다 “순서가 중요하고 유실되면 안 되는 event request를 먼저 받아두고, 뒤에서 처리 / 복구 / 관측하는 방식”입니다.
+기본 가정 서비스는 쇼핑몰 주문 이후 이벤트 처리입니다. 사용자는 결제 완료와 주문 완료 응답을 확인하고, 이후 저장 / 분류 / 알림 / 재처리 상태는 운영자가 관리합니다.
 
-- 사용자는 여러 stream 또는 room에 참여하고 짧은 message event를 계속 보냅니다.
-- 같은 stream 안에서는 message 순서가 사용자 경험에 직접 영향을 줍니다.
-- 순간적인 트래픽 증가나 PostgreSQL write 지연이 있어도 API는 가능한 한 request를 수락해야 합니다.
+- 사용자는 결제 성공과 주문 생성 결과를 빠르게 확인해야 합니다.
+- 주문 이후에는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 주문 관련 문의 같은 event가 발생합니다.
+- 같은 `order_id` 또는 업무 stream 안에서는 후속 event 순서가 운영 처리와 복구에 영향을 줍니다.
+- 순간적인 트래픽 증가나 PostgreSQL write 지연이 있어도 API는 가능한 한 event를 수락해야 합니다.
 - 영속화가 늦어지는 event는 추적 가능해야 하며, 실패 event는 DLQ와 replay 경로로 복구할 수 있어야 합니다.
+- 분류는 큰 업무 단위로 시작합니다. 세부 AI 분류와 자동 응답은 후속 과제로 둡니다.
 
-이 포트폴리오의 핵심 질문은 “DB write path가 흔들릴 때도 메시지 수락, 순서, 복구, 관측을 어떻게 유지할 것인가”입니다.
+이 포트폴리오의 핵심 질문은 “DB write path가 흔들릴 때도 주문 이후 이벤트 수락, 순서, 복구, 관측을 어떻게 유지할 것인가”입니다.
 
 ## 적용 가능한 서비스 관점
 
 | 서비스 관점 | ordering key 예시 | 이 구조가 맞는 이유 |
 | --- | --- | --- |
-| 실시간 협업 메시징 | `stream_id`, `room_id` | 같은 stream message 순서와 unread / status 갱신이 중요 |
-| 주문 / 결제 이벤트 | `order_id` | 주문 생성, 결제 승인, 재고 차감 같은 단계가 순서와 복구를 요구 |
+| 주문 이후 이벤트 처리 | `order_id`, `payment_id` | 결제 승인, 주문 생성, 배송, 환불 이벤트가 순서와 복구를 요구 |
 | 알림 발송 파이프라인 | `user_id`, `notification_id` | 발송 요청을 빠르게 수락하고 실패 발송을 DLQ / replay로 다룸 |
+| 고객 문의 / CS 이벤트 | `order_id`, `ticket_id` | 주문 관련 문의를 업무 카테고리로 분류하고 운영 큐에서 처리 |
+| 실시간 협업 메시징 | `stream_id`, `room_id` | 같은 stream message 순서와 unread / status 갱신이 중요 |
 | 감사 로그 / 활동 로그 | `actor_id`, `resource_id` | 이벤트 유실 방지와 장애 후 재처리가 중요 |
 | IoT / 센서 수집 | `device_id` | 같은 장비의 시계열 이벤트 순서와 backlog 관측이 중요 |
 
@@ -27,18 +30,22 @@ Kafka 이벤트 스트림 포트폴리오는 사용자가 겪는 문제와 운�
 
 | 사용자 | 관심사 | 시스템 기준 |
 | --- | --- | --- |
-| 메시지를 보내는 사용자 | 요청이 빠르게 수락되고 중복 처리되지 않음 | API `202 Accepted`, Worker persistence 단계 idempotency guard, DB snapshot materialized cache |
-| 같은 stream을 보는 사용자 | 같은 stream message가 순서대로 보임 | Kafka `stream_id` key, partition ordering boundary, Worker inline retry |
-| 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
+| 쇼핑몰 사용자 | 결제 완료와 주문 완료를 빠르게 확인 | API `202 Accepted`, order / payment response, 내부 Kafka 상태 비노출 |
+| 서비스 운영자 | 주문 이후 event 처리 상태와 업무 분류 확인 | request status, event category, DB snapshot materialized cache |
+| CS / 정산 담당자 | 결제 / 배송 / 환불 / 문의 이벤트를 큰 분류로 확인 | `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` |
+| 장애 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
 | 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, replay count guard |
 | 플랫폼 담당자 | 배포 상태와 runtime 상태를 분리해서 확인 | Argo CD `Synced / Healthy`, workload readiness, kafka-exporter |
 
 ## 기능 요구
 
-- API는 정상 request를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
+- API는 정상 주문 이후 event를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
+- 사용자 응답은 결제 완료, 주문 완료, 주문 번호 같은 비즈니스 결과를 중심으로 구성합니다.
+- Kafka append 이후의 `accepted`, `persisted`, `notified`, `dlq` 같은 내부 상태는 운영자 추적용으로 둡니다.
+- event는 운영 카테고리로 분류할 수 있어야 합니다. 1차 범위는 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`입니다.
 - 기본 read fallback은 Kafka ingress event가 아니라 DB commit 이후 snapshot 기반 local materialized cache로 조회할 수 있어야 합니다.
 - message read는 fresh snapshot cache를 먼저 사용하고, cache miss / stale / DB failure 상태를 응답 메타데이터로 구분해야 합니다.
-- 같은 stream event는 같은 Kafka partition boundary 안에 유지합니다.
+- 같은 주문 또는 업무 stream event는 같은 Kafka partition boundary 안에 유지합니다.
 - Worker는 Kafka consumer group으로 event를 처리하고 PostgreSQL에 최종 영속화합니다.
 - transient DB failure는 같은 offset에서 inline retry하여 뒤 event가 앞 event를 추월하지 않게 합니다.
 - retry 한도를 넘긴 event는 Kafka DLQ topic으로 격리합니다.
@@ -92,15 +99,15 @@ Kafka 이벤트 스트림 포트폴리오는 사용자가 겪는 문제와 운�
 - Worker lag이 증가하면 먼저 Worker replica, KEDA desired replica, PostgreSQL write latency를 함께 봅니다.
 - read cache hit ratio가 급락하거나 `snapshot_age_seconds`가 증가하면 snapshot consumer lag, API pod restart, compacted topic consume 상태를 먼저 확인합니다.
 - `degraded=true`, `source=cache` 응답이 증가하면 PostgreSQL read path 장애가 사용자 read 경험에 전파되기 시작한 것으로 보고 DB primary / Pgpool / membership snapshot 상태를 함께 봅니다.
-- 같은 stream 순서가 깨졌다면 Kafka key뿐 아니라 Worker retry와 offset commit 경계를 확인합니다.
+- 같은 주문 또는 업무 stream 순서가 깨졌다면 Kafka key뿐 아니라 Worker retry와 offset commit 경계를 확인합니다.
 - DLQ가 증가하면 reason 분포를 보고 poison data, schema mismatch, DB transient failure를 분리합니다.
 - `oldest_age_seconds`가 계속 증가하면 자동 replay가 되지 않는 운영 부채로 보고 replay 조건, blocked count, 원인 수정 여부를 먼저 확인합니다.
 - GitOps가 `Synced / Healthy`가 아니면 runtime 장애 분석 전에 원하는 manifest와 live state 차이를 먼저 확인합니다.
 
 ## 구조 연결
 
-- 빠른 request 수락: API는 PostgreSQL write보다 Kafka append를 우선합니다.
-- 같은 stream ordering: `stream_id` key와 Worker inline retry가 같은 ordering boundary를 유지합니다.
+- 빠른 event 수락: API는 PostgreSQL write보다 Kafka append를 우선합니다.
+- 같은 주문 / 업무 stream ordering: `stream_id` key와 Worker inline retry가 같은 ordering boundary를 유지합니다.
 - 장애 격리: Worker retry 한도 초과 event는 Kafka DLQ topic으로 이동합니다.
 - 복구 가능성: DLQ Replayer가 replay guard 안에서 event를 재주입합니다.
 - 운영 가시성: Prometheus alert, Grafana dashboard, kafka-exporter, status check script가 같은 신호를 바라봅니다.

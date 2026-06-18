@@ -5,6 +5,7 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from portfolio.api import router as api_router
 from portfolio.config import settings
@@ -66,6 +67,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan)
 app.include_router(api_router)
+app.mount("/demo", StaticFiles(directory="demo", html=True), name="demo")
 
 
 @app.middleware("http")

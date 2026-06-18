@@ -4,8 +4,11 @@
 
 ## Current Project Identity
 
-- 현재 최종 포트폴리오는 Kafka 기반 event stream pipeline입니다.
+- 현재 최종 포트폴리오는 쇼핑몰 주문 이후 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
+- 사용자는 결제 완료와 주문 완료 응답까지만 직접 확인하며, Kafka 처리 상태는 사용자 화면에 노출하지 않습니다.
+- Kafka / Worker / DLQ / materialized cache / observability는 주문 이후 운영 이벤트 처리와 장애 대응을 위한 내부 경로입니다.
 - 현재 최종 브랜치는 `master`입니다. `dev-kafka`는 Kafka 전환 작업 브랜치였고, 같은 최종 commit이 `master`에 병합되어 있습니다.
+- 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 실제 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 작업 시작 전 현재 브랜치를 확인하고, 개발성 변경은 `dev-kafka`에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
 - 실패 event는 retry 후 `message-ingress-dlq`에 격리하며, replay guard와 DLQ API가 있습니다.
@@ -132,3 +135,4 @@ Latest ordering / failure injection result after fixing local client skew:
 - Redis 성능 수치는 Redis 프로젝트의 이전 scaling/tuning 성과로만 설명합니다.
 - Kafka 성능 수치는 append-first intake baseline과 ordering/recovery validation으로 설명합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
+- 문서와 답변에서 "단순히 A가 아니라 B"처럼 AI 말투가 강한 대비 문장을 피합니다. 필요하면 "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 자연스럽게 씁니다.
