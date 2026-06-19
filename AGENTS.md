@@ -129,7 +129,9 @@ Latest ordering / failure injection result after fixing local client skew:
 
 ## Documentation Rules
 
+- git commit, merge, push, PR 생성은 항상 사용자에게 먼저 확인받습니다. 테스트가 통과했더라도 확인 없이 커밋하거나 병합하지 않습니다.
 - README는 포트폴리오 첫 화면 역할로 유지합니다. 모든 세부 내용을 README에 넣지 말고, 핵심 요약 / 데모 진입 / 대표 검증 결과 / 문서 지도만 남깁니다.
+- README의 기본 설명과 사용법은 외국인 리크루터도 볼 수 있게 한국어와 영어를 함께 사용합니다. 전체 문서를 완전 번역하지는 않더라도, project summary, demo usage, AWS migration blueprint는 영어 문장을 같이 둡니다.
 - README에서 자세한 내용을 docs로 넘길 때는 링크만 던지지 않습니다. 각 주제마다 2~4줄 요약, 왜 중요한지 한 문장, 관련 docs 링크를 함께 제공합니다.
 - 세부 구현, 실험 과정, 운영 절차, 장애 대응, Terraform AWS migration blueprint는 docs 문서로 분리합니다.
 - changelog, patch notes, test results, migration plan처럼 시간 흐름이 중요한 문서는 최신 항목을 위에 둡니다. 과거 기록은 아래쪽 historical section으로 보냅니다.

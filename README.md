@@ -1,8 +1,12 @@
 # 주문 이후 이벤트 처리 시스템 포트폴리오
 
+Post-Order Event Pipeline Portfolio
+
 쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
 
 사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
+
+This project demonstrates a Kafka-centered post-order event pipeline. The customer-facing path returns payment/order completion quickly, while persistence, classification, notification, DLQ isolation, replay, and backlog drain are handled through the internal Kafka / Worker path.
 
 ## TL;DR
 
@@ -18,6 +22,8 @@
 ## Local Demo
 
 브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.
+
+The browser demo shows real local processing through API intake, Kafka append, Worker persistence, and PostgreSQL storage.
 
 - Demo UI: `http://localhost/demo/order-dashboard.html`
 - API docs: `http://localhost/docs`
@@ -40,6 +46,17 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
 ```
 
 데모 화면에서는 `샘플 1개/10개/100개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, 처리량/sec를 분리해서 보여줍니다.
+
+In the demo UI, add 1, 10, or 100 reserved sample events, then send the post-order event batch. The screen separates reserved events, Kafka appended events, DB persisted events, total elapsed time, and persisted throughput.
+
+English demo script:
+
+1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.
+2. Open `http://localhost/demo/order-dashboard.html`.
+3. Click `EN` if you want to run the demo in English.
+4. Click `Add 1 Sample`, `Add 10 Samples`, or `Add 100 Samples` to reserve post-order events.
+5. Click `Send Post-Order Events` and watch the counters move from Reserved to Kafka Appended to DB Persisted.
+6. Open Swagger, Grafana, DLQ summary, or Readiness from the operations links when you want to show supporting evidence.
 
 실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
 

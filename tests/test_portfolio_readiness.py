@@ -55,6 +55,7 @@ class TestOperationalDocumentation:
 
     def test_readme_is_interview_friendly_about_boundary_and_tradeoffs(self):
         readme = read_text("README.md")
+        agents = read_text("AGENTS.md")
         readme_lines = readme.splitlines()
 
         assert len(readme_lines) <= 260
@@ -87,8 +88,22 @@ class TestOperationalDocumentation:
             "## Documentation Map",
             "AWS migration blueprint",
             "자세한 내용은",
+            "Post-Order Event Pipeline Portfolio",
+            "This project demonstrates a Kafka-centered post-order event pipeline",
+            "In the demo UI, add 1, 10, or 100 reserved sample events",
+            "English demo script",
+            "Start Docker Desktop and run `scripts/quick_start_all.ps1`",
+            "Click `EN` if you want to run the demo in English",
+            "watch the counters move from Reserved to Kafka Appended to DB Persisted",
         ):
             assert token in readme
+
+        for token in (
+            "git commit, merge, push, PR 생성은 항상 사용자에게 먼저 확인받습니다",
+            "README의 기본 설명과 사용법은",
+            "project summary, demo usage, AWS migration blueprint",
+        ):
+            assert token in agents
 
     def test_db_snapshot_materialized_cache_is_declared(self):
         config = read_text("portfolio/config.py")
