@@ -3,6 +3,40 @@
 로컬 `kind + Kubernetes` 검증 환경과 AWS `production-like` 환경의 대응 관계를 정리한 문서입니다.
 목표는 단순히 "AWS에 올린다"가 아니라, 프로젝트의 핵심인 `async intake`, `failure recovery`, `autoscaling`, `observability`, `backup / restore`를 AWS에서도 자연스럽게 이어 가는 것입니다.
 
+## Current Migration Blueprint
+
+이 문서는 실제 AWS 배포 완료 보고서가 아니라, 로컬에서 검증한 Kafka-centered order event pipeline을 AWS managed architecture로 옮길 때의 책임 대응을 보여주는 blueprint입니다.
+
+핵심 대응:
+
+| 로컬 검증 구조 | AWS managed architecture |
+| --- | --- |
+| `kind` Kubernetes | Amazon EKS |
+| `ingress-nginx` | AWS Load Balancer Controller + ALB |
+| local self-signed TLS | ACM + Route 53 |
+| Kafka 3-broker KRaft | Amazon MSK |
+| PostgreSQL HA + Pgpool | RDS PostgreSQL Multi-AZ / Aurora PostgreSQL |
+| runtime Kubernetes secret | AWS Secrets Manager |
+| local image build/load | Amazon ECR + EKS deploy |
+| Prometheus / Grafana in cluster | EKS 유지 또는 AMP / AMG |
+
+유지되는 책임:
+
+- API는 Kafka append 후 `202 Accepted`를 반환합니다.
+- Worker는 Kafka consumer group으로 event를 consume하고 PostgreSQL에 persistence합니다.
+- 실패 event는 retry / DLQ / replay guard로 격리합니다.
+- Worker autoscaling은 CPU가 아니라 Kafka consumer lag와 backlog drain time으로 해석합니다.
+- 운영자는 readiness, DLQ summary, consumer lag, accepted-to-persisted lag를 기준으로 장애 위치를 좁힙니다.
+
+바뀌는 책임:
+
+- 로컬 Kafka / PostgreSQL runtime 운영 부담은 MSK / RDS managed service로 넘깁니다.
+- local self-signed TLS는 ACM 기반 HTTPS 종료로 바꿉니다.
+- Kubernetes secret 직접 주입은 Secrets Manager 연동 구조로 바꿉니다.
+- 로컬 backup CronJob은 RDS automated backup / snapshot / point-in-time recovery로 치환합니다.
+
+첫 번째 구현 목표는 `terraform validate` 가능한 dev 환경 골격입니다. 실제 `terraform apply`는 MSK, RDS, EKS 비용이 발생하므로 선택 작업으로 둡니다.
+
 ## 목표
 - 로컬 검증 구조를 AWS에서도 비슷한 책임 분리로 유지
 - 수동 설정보다 `IaC`로 재현 가능한 인프라 구성

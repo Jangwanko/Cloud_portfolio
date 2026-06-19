@@ -55,6 +55,9 @@ class TestOperationalDocumentation:
 
     def test_readme_is_interview_friendly_about_boundary_and_tradeoffs(self):
         readme = read_text("README.md")
+        readme_lines = readme.splitlines()
+
+        assert len(readme_lines) <= 260
 
         for token in (
             "## TL;DR",
@@ -81,6 +84,9 @@ class TestOperationalDocumentation:
             "## Next Improvements",
             "Kafka compacted topic",
             "consumer group rebalance",
+            "## Documentation Map",
+            "AWS migration blueprint",
+            "자세한 내용은",
         ):
             assert token in readme
 
@@ -255,6 +261,10 @@ class TestOperationalDocumentation:
         ):
             assert token in patch_notes
 
+        assert patch_notes.index("2026-06-19 업데이트") < patch_notes.index("1차 실험: Kafka 이벤트 스트림 기준선")
+        assert test_results.index("## Latest Validation Snapshot") < test_results.index("## 핵심 요약")
+        assert test_results.index("## Latest Validation Snapshot") < test_results.index("## 1차 실험: Kafka 이벤트 스트림 기준선")
+
         for token in (
             "Ordering / Failure Injection 검증",
             "single_no_failure",
@@ -289,6 +299,7 @@ class TestOperationalDocumentation:
             "ordering `pass`",
             "stream_id` `31",
             "36394 -> 33274 -> 23563 -> 11971 -> 0",
+            "64 passed",
         ):
             assert token in test_results
 
@@ -574,12 +585,19 @@ class TestManifestContracts:
             for path in (ROOT / "infra" / "terraform").rglob("*.tf")
         ]
         combined = "\n".join(terraform_files)
+        aws_plan = read_text("docs/AWS_IAC_PLAN.md")
+        terraform_readme = read_text("infra/terraform/README.md")
 
         assert "aws_msk_cluster" in combined
         assert "module \"msk_kafka\"" in combined
         assert "kafka_bootstrap_servers" in combined
         assert "aws_elasticache" not in combined
         assert "redis" not in combined
+        assert "## Current Migration Blueprint" in aws_plan
+        assert aws_plan.index("## Current Migration Blueprint") < aws_plan.index("## 목표")
+        assert "Terraform AWS Migration Blueprint" in terraform_readme
+        assert "terraform validate" in terraform_readme
+        assert "실제 apply는 선택 작업" in terraform_readme
 
     def test_kafka_exporter_is_wired_to_prometheus_and_manifests(self):
         prometheus = read_text("monitoring/prometheus/prometheus.yml")

@@ -4,16 +4,27 @@
 
 사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
 
-## 로컬 데모 설치와 사용
+## TL;DR
 
-이 저장소는 쇼핑몰 주문 이후 이벤트가 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 브라우저에서 확인할 수 있는 데모 화면을 포함합니다.
+- API는 주문 이후 이벤트를 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
+- Worker consumer group이 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
+- 실패 event는 inline retry 후 Kafka DLQ topic으로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
+- KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
+- API read path는 DB commit 이후 publish된 `message-snapshots`, `stream-snapshots`를 API local materialized cache로 소비해 cache-first read를 제공합니다.
+- 로컬에서 검증한 구조를 Terraform 기반 AWS migration blueprint로 정리해 EKS, MSK, RDS PostgreSQL, ALB, ACM, Secrets Manager로 이전 가능한 구조를 보여줍니다.
 
-- 데모 화면: `http://localhost/demo/order-dashboard.html`
-- API 문서: `http://localhost/docs`
+자세한 서비스 기준은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md), 구조는 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 최신 검증 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 정리했습니다.
+
+## Local Demo
+
+브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.
+
+- Demo UI: `http://localhost/demo/order-dashboard.html`
+- API docs: `http://localhost/docs`
 - Grafana: `http://localhost/grafana`
 - Readiness: `http://localhost/health/ready`
 
-처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다.
+처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다. Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 `scripts/bootstrap_tools.ps1`이 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 준비합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
@@ -28,99 +39,37 @@ kubectl rollout restart deployment/api -n messaging-app
 kubectl rollout status deployment/api -n messaging-app --timeout=180s
 ```
 
-데모 화면에서 `샘플 1개/10개/100개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누르면 API가 Kafka에 append하고 Worker가 PostgreSQL에 저장합니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, 처리량/sec를 분리해서 보여줍니다.
+데모 화면에서는 `샘플 1개/10개/100개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, 처리량/sec를 분리해서 보여줍니다.
 
-## Local Demo Setup and Usage
+실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
 
-This repository includes a browser demo that shows post-order commerce events flowing through the local Kubernetes runtime: API intake, Kafka append, Worker processing, and PostgreSQL persistence.
+## What This Proves
 
-- Demo UI: `http://localhost/demo/order-dashboard.html`
-- API docs: `http://localhost/docs`
-- Grafana: `http://localhost/grafana`
-- Readiness: `http://localhost/health/ready`
+이 프로젝트는 주문 완료 이후에도 계속 발생하는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 알림 발행 같은 이벤트를 운영 가능한 pipeline으로 처리하는 것을 목표로 합니다.
 
-For a first local run, start Docker Desktop and run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
-```
-
-If the local `kind` cluster already exists and you only need to refresh the demo UI, run:
-
-```powershell
-docker build -t messaging-portfolio:local .
-tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
-kubectl rollout restart deployment/api -n messaging-app
-kubectl rollout status deployment/api -n messaging-app --timeout=180s
-```
-
-In the demo UI, add `1`, `10`, or `100` sample events to the reserved queue, then click `결제 완료 / 주문 완료 이벤트 보내기`. The UI shows the local event pipeline with separate counters for reserved events, Kafka appended events, PostgreSQL persisted events, total elapsed time, and persisted throughput per second.
-
-## TL;DR
-
-Kafka 기반 주문 이후 이벤트 처리 시스템입니다.
-
-- API는 결제 / 주문 완료 이후 이벤트를 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
-- Worker consumer group이 PostgreSQL HA에 주문 이벤트를 비동기 persistence합니다.
-- 이벤트는 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 같은 운영 카테고리로 분류할 수 있습니다.
-- 실패 event는 inline retry 후 Kafka DLQ로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
-- KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
-- kafka-exporter / Prometheus / Grafana / Runbook으로 broker, lag, DLQ, replica, GitOps 상태를 확인합니다.
-- README는 시스템의 개념과 운영 관점을 설명합니다. 세부 구현, API 계약, 검증 조건은 `docs/` 문서에 분리합니다.
+- DB 장애가 API intake 실패로 바로 전파되지 않도록 Kafka append-first 경계를 둡니다.
+- 같은 `stream_id`는 Kafka partition ordering boundary와 Worker inline retry로 순서를 지킵니다.
+- DLQ summary는 `/v1/dlq/ingress/summary`에서 `by_reason`, `replayable`, `blocked`를 기준으로 운영자가 먼저 판단할 수 있게 합니다.
+- `check_portfolio_status.ps1`로 readiness, Argo CD `Synced / Healthy`, kafka-exporter lag, KEDA, backup PVC 상태를 한 번에 확인합니다.
+- 정상 event 흐름과 장애 / DLQ 흐름의 상세 `sequenceDiagram`은 [ARCHITECTURE.md](docs/ARCHITECTURE.md)에 둡니다.
 
 ## Problem
 
-주문 완료 이후에도 쇼핑몰에는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 알림 발행 같은 후속 이벤트가 계속 발생합니다. 이 경로를 DB 동기 write 중심으로 처리하면 아래 문제에 취약합니다.
+주문 완료 이후 이벤트를 DB 동기 write 중심으로 처리하면 write 병목, timeout, 장애 전파, 실패 event 유실 위험이 커집니다. 사용자에게 보여줄 완료 응답과 내부 운영 처리 상태가 섞이면 서비스 경계도 흐려집니다.
 
-- DB 장애가 주문 이후 이벤트 처리 실패로 바로 전파됩니다.
-- write path 병목이 API latency와 timeout으로 드러납니다.
-- 실패 event를 보존하고 복구하기 어렵습니다.
-- backlog, DLQ, consumer lag를 운영자가 한눈에 보기 어렵습니다.
-- 사용자에게 보여줄 완료 응답과 내부 운영 처리 상태가 섞이면 서비스 경계가 흐려집니다.
+상세한 사용자 관점, 기능 요구, 비기능 요구, SLO guardrail은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md)에 정리했습니다.
 
 ## Solution
 
 Kafka 기반 event log를 주문 이후 이벤트 intake 경로에 두고, persistence / 분류 / 알림 / 재처리를 Worker 경로로 분리했습니다.
 
-- API는 주문 이벤트를 Kafka ingress topic에 append하고 빠르게 응답합니다.
-- 사용자는 결제 완료와 주문 완료만 확인하며, Kafka 처리 상태는 운영자 추적 경로로 둡니다.
-- Kafka는 `stream_id` key를 기준으로 같은 주문 / 업무 흐름의 event를 같은 partition boundary에 둡니다.
-- Worker는 partition을 소비해 PostgreSQL HA에 최종 영속화하고, DB commit 이후 snapshot과 notification event를 발행합니다.
+- API는 Kafka ingress topic에 append하고 빠르게 응답합니다.
+- Worker는 PostgreSQL HA에 최종 영속화하고 request status를 갱신합니다.
+- DB commit 이후 snapshot을 Kafka compacted topic에 publish해 cache-first read 원본으로 사용합니다.
+- 알림은 `message-notifications` topic과 별도 `notification-worker`로 분리합니다.
 - 실패 event는 retry / DLQ / replay guard를 거쳐 복구 가능한 상태로 남깁니다.
 
-## Service Scope
-
-사용자 관점:
-- 결제 완료 응답
-- 주문 완료 응답
-- 주문 번호 또는 request id 확인
-- 필요한 경우 주문 내역 조회
-
-운영자 관점:
-- 주문 이후 event 처리 상태 추적
-- `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 기준 분류 확인
-- DLQ summary와 replay 대상 확인
-- Kafka consumer lag, accepted-to-persisted lag, backlog drain time 관측
-
-후속 과제:
-- AI 기반 세부 분류
-- 자동 답변 / 자동 CS 처리
-- 주문 확인 페이지의 추천 / upsell 최적화
-- idempotency state의 Kafka compacted topic 또는 별도 state backend 분리
-
-## AWS Managed Service Mapping
-
-실제 AWS 환경에서는 managed service로 구성할 수 있는 구조를 로컬 Kubernetes 환경에서 직접 조립하고 검증했습니다.
-
-| 이 프로젝트 | AWS에서 비슷한 역할 |
-| --- | --- |
-| Kafka 3-broker KRaft | Amazon MSK |
-| PostgreSQL HA + Pgpool | Amazon RDS PostgreSQL / Aurora PostgreSQL |
-| Worker consumer group | EKS / ECS worker, Lambda consumer |
-| `message-notifications` topic | SNS / SQS / EventBridge |
-| Kafka DLQ topic + Replayer | SQS DLQ / EventBridge retry 경로 |
-| Prometheus / Grafana | CloudWatch / Amazon Managed Prometheus / Managed Grafana |
-| Argo CD GitOps | Argo CD on EKS / 배포 파이프라인 |
+구현 세부와 처리 흐름은 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 장애 대응은 [RUNBOOK.md](docs/RUNBOOK.md)에 정리했습니다.
 
 ## Architecture Boundary
 
@@ -133,7 +82,6 @@ Kafka 중심:
 - retry / DLQ / replay
 - lag based autoscaling
 - DB snapshot compacted topics / local materialized cache
-- kafka-exporter observability
 
 PostgreSQL state path:
 - auth / membership
@@ -141,17 +89,15 @@ PostgreSQL state path:
 - stream sequence
 - read model
 
-현재 경계:
-- API event intake는 stream membership / idempotency 확인을 위해 PostgreSQL을 먼저 조회하지 않습니다.
-- `X-Idempotency-Key`는 Kafka payload에 포함되고, 최종 deduplication은 Worker persistence 단계에서 처리합니다.
-- DB commit 이후의 message snapshot은 Kafka compacted topic `message-snapshots`에 publish되고, API pod는 이를 local materialized cache로 복구합니다.
-- stream membership snapshot은 DB commit 이후 `stream-snapshots`에 publish되어 DB failover 중 cached read 권한 확인에 사용됩니다.
-- message read는 cache-first로 동작합니다. fresh snapshot hit이면 cache에서 응답하고, cache miss / stale이면 DB를 조회하며, DB 실패 시 stale cache를 `degraded=true`로 반환합니다.
-- API pod는 PostgreSQL startup 실패만으로 종료하지 않아 DB failover 중에도 Kafka intake / status cache 경로를 먼저 살릴 수 있습니다.
-- request lifecycle status는 `message-request-status`에 보조 기록하지만, DB read fallback은 DB commit 이후 snapshot만 사용합니다.
-- 다음 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
+`X-Idempotency-Key`는 Kafka payload에 포함되고, 최종 deduplication은 Worker persistence 단계에서 처리합니다. API event intake 기준선은 Kafka append 전에 PostgreSQL claim을 만들지 않는 경로입니다. DB read fallback은 Kafka ingress event가 아니라 Worker가 PostgreSQL commit 이후 publish한 DB snapshot을 기준으로 합니다.
+
+## Intake Boundary: Idempotency State Path
+
+현재 event intake 기준선은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다. `X-Idempotency-Key`는 Worker persistence 단계의 최종 deduplication에 사용하고, 남은 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
 
 ## Validation Summary
+
+대표 Kafka baseline:
 
 | 항목 | 결과 |
 | --- | ---: |
@@ -162,17 +108,17 @@ PostgreSQL state path:
 | p95 latency | `80.65ms` |
 | p99 latency | `103.57ms` |
 | Same-stream ordering | `100/100 pass` |
-| Ordering failure injection | single/multi stream, Pgpool outage, accepted=persisted, missing/duplicate/mixed/DLQ `0` |
-| Fresh cache read | `source=cache`, `degraded=False`, `snapshot_age_seconds=0.507` |
-| DB down stale cache fallback | `source=cache`, `degraded=True`, `snapshot_age_seconds=11.798` |
-| API HPA | `6 replicas` |
-| Worker KEDA | `4 replicas` |
+| Accepted-to-persisted latest p95 | `7.67ms` |
 
-2026-06-09 k6 재실행에서는 100 VU / 30초 기준 `34284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`를 확인했습니다. 같은 실행에서 `stream_id=30`의 100개 event가 `stream_seq 1..100`, `ordering-event-0001..0100`, ordering `pass`로 영속화되는 것도 재확인했습니다. 다만 부하 직후 Worker consumer lag가 `36394`까지 쌓인 뒤 약 14분에 걸쳐 `0`으로 drain되어, 최신 재실행 결과는 API intake 개선과 Worker persistence capacity를 분리해서 해석합니다.
+최근 운영 경계 검증:
+- 2026-06-09 재실행: `34,284` requests, error `0.00%`, Worker lag `36394 -> 33274 -> 23563 -> 11971 -> 0`
+- Post-tuning suite: accepted-to-persisted p95 `8.08ms`, Worker lag `29204 -> 23597 -> 15111 -> 6893 -> 0`
+- Notification path split suite: notification-worker lag `0`, 운영 경계 개선으로 해석
+- Ordering / failure injection: single/multi stream, Pgpool outage, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`
 
-이후 Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 묶었습니다. DB commit 이후에는 request status / DB snapshot을 Kafka로 publish하고, 알림 처리는 `message-notifications` topic과 별도 `notification-worker`로 분리합니다. Post-tuning 재실행에서는 accepted-to-persisted p95가 `73.50ms -> 8.08ms`, Worker lag peak가 `36394 -> 29204`, drain time이 약 14분에서 약 10분으로 개선됐습니다. 반면 k6 API intake는 `34284 -> 28839` requests, p95 `66.06ms -> 108.68ms`로 악화되어, 이 튜닝은 persistence path 개선으로만 해석하고 전체 intake 기준선 대체 수치로는 사용하지 않습니다.
+측정 환경은 AMD Ryzen 5 5600, Docker Desktop 12 CPU, 약 15.6GiB memory, kind single-node 기준입니다. 최신 수치와 측정 조건은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 둡니다.
 
-2026-06-18 notification path 분리 후 재실행에서는 `27795` requests, error `0.00%`, p95 `119.28ms`, accepted-to-persisted p95 `22.13ms`였습니다. 이 결과는 알림 실패가 핵심 persistence transaction을 망가뜨리지 않도록 경계를 분리한 운영 개선으로 해석하며, 성능 기준선 개선 수치로 사용하지 않습니다.
+Cache-first read 검증에서는 fresh cache read `source=cache`, DB down stale fallback `degraded=true`, `snapshot_age_seconds` 응답 메타데이터를 확인했습니다.
 
 ## Trade-off
 
@@ -184,42 +130,28 @@ PostgreSQL state path:
 | DLQ replay | 실패 event 복구 | 운영 판단 필요 |
 | PostgreSQL read model 유지 | 조회 / 영속성 단순화 | state path 일부 DB 의존 |
 
+Kafka Worker KEDA 효과는 API throughput 증가로 단정하지 않습니다. Worker scaling 효과는 consumer lag, accepted-to-persisted lag, backlog drain time으로 봅니다.
+
 ## Ordering Guarantee
 
-- 같은 `stream_id`는 같은 Kafka partition으로 라우팅됩니다.
-- Kafka는 partition 내부 순서를 보장합니다.
-- Worker는 transient failure에서 tail 재발행이 아니라 inline retry를 사용합니다.
-- 따라서 같은 stream의 event가 실패 event를 추월하지 않도록 설계했습니다.
-- 단, multi-partition 전체 global ordering은 보장하지 않습니다.
-
-## Intake Boundary: Idempotency State Path
-
-현재 event intake 기준선은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다.
-
-`X-Idempotency-Key`를 켜도 API가 Kafka append 전에 PostgreSQL claim / status 저장을 수행하지 않습니다.
-
-Idempotency key는 Kafka event payload에 포함되고, Worker persistence 단계에서 최종 deduplication을 처리합니다. DB read fallback은 Kafka ingress event가 아니라 Worker가 PostgreSQL commit 이후 발행한 DB snapshot compacted topic만 사용합니다. 남은 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
-
-## What I Learned
-
-- Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / replay 경계로 쓰는 것이 적합했습니다.
-- 장애 대응에서 중요한 것은 실패를 없애는 것이 아니라 실패를 격리하고 복구 가능하게 만드는 것입니다.
-- CPU 기반 scaling보다 consumer lag 기반 scaling이 event pipeline에 더 자연스럽습니다.
-- read cache는 Kafka ingress event가 아니라 DB commit 이후 발행한 snapshot을 원본으로 둬야 하며, cache-first read에는 `source`, `degraded`, `snapshot_age_seconds` 같은 응답 메타데이터가 필요합니다.
+같은 `stream_id`는 같은 Kafka partition으로 라우팅되고, Worker는 transient failure에서 tail 재발행이 아니라 inline retry를 사용합니다. 따라서 같은 stream의 event가 실패 event를 추월하지 않도록 설계했습니다. multi-partition 전체 global ordering은 보장하지 않습니다.
 
 ## Current Bottleneck
 
-최근 튜닝 결과, Worker replica 수와 notification path 분리만으로는 backlog drain과 accepted-to-persisted latency가 안정적으로 개선되지 않았습니다.
+현재 병목 후보는 Worker replica 수보다 다음 구간에 가깝습니다.
 
-현재 병목 후보는 Worker 개수보다 다음 구간에 더 가깝습니다.
+- Worker DB write throughput
+- PostgreSQL insert / commit latency
+- `room_sequences` lock wait
+- record-by-record Worker loop
+- Pgpool / DB connection pool
+- consumer group rebalance / partition imbalance
 
-- PostgreSQL insert / commit 처리량
-- `room_sequences FOR UPDATE` 기반 stream sequence lock
-- Kafka record를 1건씩 처리하고 commit하는 Worker loop
-- Pgpool / DB connection pool과 PostgreSQL lock wait
-- 같은 stream 순서 보장과 병렬 처리량 사이의 trade-off
+다음 개선 후보는 Kafka consumer batch 처리, offset commit 전략, `room_sequences` lock 완화, idempotency state의 Kafka compacted topic 또는 별도 state backend 분리입니다.
 
-따라서 다음 단계는 replica를 더 늘리는 것이 아니라, Worker 1/2/4/8개별 persist throughput, DB commit latency, lock wait, stream 분산 수에 따른 drain time을 분리 측정하는 것입니다.
+## What I Learned
+
+Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / replay 경계로 쓰는 것이 적합했습니다. 장애 대응에서 중요한 것은 실패를 없애는 것이 아니라 실패를 격리하고 복구 가능하게 만드는 것입니다.
 
 ## Next Improvements
 
@@ -229,297 +161,52 @@ Idempotency key는 Kafka event payload에 포함되고, Worker persistence 단�
 4. idempotency state를 Kafka compacted topic 또는 별도 state backend로 분리
 5. consumer group rebalance / partition imbalance 시나리오 추가
 
-## 아키텍처
-```mermaid
-flowchart LR
-    Client[Client] --> Ingress[Ingress nginx]
-    Ingress --> API[FastAPI API]
-    API -->|202 Accepted| Client
-    API --> Kafka[Kafka ingress topic]
-    Kafka --> Worker[Worker consumer group]
-    Worker --> Pgpool[Pgpool]
-    Pgpool --> DB[(PostgreSQL HA)]
-    Worker --> MessageSnapshots[message-snapshots compacted topic]
-    API --> StreamSnapshots[stream-snapshots compacted topic]
-    MessageSnapshots --> Cache[API local materialized cache]
-    StreamSnapshots --> Cache
-    Cache -->|cache-first read| API
+## AWS Managed Service Mapping
 
-    Worker --> DLQ[Kafka DLQ topic]
-    DLQ --> Replayer[DLQ Replayer]
-    Replayer --> Kafka
+로컬에서 검증한 구조를 AWS로 옮기면 아래 책임으로 대응됩니다.
 
-    API --> Metrics[Metrics]
-    Worker --> Metrics
-    Metrics --> Prometheus[Prometheus]
-    Prometheus --> Grafana[Grafana]
-    Kafka -->|consumer group lag| KEDA[KEDA Kafka scaler]
-    KEDA --> Worker
-    Kafka --> KafkaExporter[kafka-exporter]
-    KafkaExporter --> Prometheus
-
-    GitHub[GitHub Actions] --> Argo[Argo CD GitOps path]
-    Argo --> K8s[Kubernetes sync]
-```
-
-정상 event 흐름:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Kafka as Kafka ingress topic
-    participant Worker
-    participant DB as PostgreSQL HA
-
-    Client->>API: event request
-    API->>Kafka: append with stream_id key
-    API-->>Client: 202 Accepted
-    Worker->>Kafka: consume partition
-    Worker->>DB: persist event and stream_seq
-    Worker->>DB: update request status
-    Worker->>Kafka: publish message-snapshots after DB commit
-    Kafka-->>API: materialized cache consumes DB snapshot
-    Client->>API: GET stream events
-    API-->>Client: source=cache, degraded=false
-```
-
-DB 장애 중 cache-first read:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Cache as API local materialized cache
-    participant DB as PostgreSQL HA
-
-    Client->>API: GET stream events
-    API->>Cache: read DB snapshot
-    API->>DB: fallback read / membership check
-    DB--xAPI: unavailable
-    API-->>Client: source=cache, degraded=true, snapshot_age_seconds
-```
-
-장애 / DLQ 흐름:
-
-```mermaid
-sequenceDiagram
-    participant Kafka as Kafka ingress topic
-    participant Worker
-    participant DLQ as Kafka DLQ topic
-    participant Replayer as DLQ Replayer
-    participant DB as PostgreSQL HA
-
-    Worker->>Kafka: consume event
-    Worker->>Worker: inline retry on transient failure
-    Worker->>DLQ: publish after retry limit
-    Replayer->>DLQ: consume replayable event
-    Replayer->>Kafka: re-append until max replay count
-    Worker->>DB: persist after recovery
-```
-
-처리 흐름:
-- API는 event request를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
-- Kafka message key는 `stream_id`로 두어 같은 stream 이벤트의 ordering boundary를 partition 단위로 유지합니다.
-- Worker consumer group은 Kafka partition을 나눠 소비하고 PostgreSQL HA에 영속화합니다.
-- 실패한 job은 retry 후 Kafka DLQ topic으로 이동하고, DLQ Replayer가 복구 조건에서 ingress topic으로 재주입합니다.
-- Prometheus는 API / Worker metrics를 수집하고, Grafana는 latency, consumer lag, replica 변화를 보여줍니다.
-- Worker는 CPU나 Prometheus query가 아니라 KEDA Kafka scaler가 Kafka의 `message-worker` consumer group lag를 직접 확인해 scale-out합니다.
-- Prometheus의 `kafka_consumergroup_lag`는 kafka-exporter가 노출한 관측 / alert용 지표이며, scaling trigger 자체는 KEDA `type: kafka`입니다.
-
-설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 partition ordering, consumer group scale-out, DLQ replay 기반 복구 경로를 확보합니다.
-
-## 운영 포인트
-- API는 Kafka append 중심의 빠른 intake path를 유지하고, PostgreSQL persistence는 Worker가 비동기로 처리합니다.
-- 같은 stream은 Kafka key와 Worker inline retry로 순서를 지키며, 실패 event는 DLQ와 replay guard로 격리합니다.
-- Prometheus alert, Grafana dashboard, Runbook, incident signal script가 같은 운영 신호를 바라봅니다.
-- kafka-exporter로 broker count, topic partition, `message-worker` consumer group lag를 직접 관측합니다.
-- DLQ 운영자는 `GET /v1/dlq/ingress/summary`로 `by_reason`, replayable, blocked, stream 분포를 먼저 확인합니다.
-- 핵심 운영 API는 FastAPI `response_model`, `/docs`, `/openapi.json`, API contract test로 응답 형태를 고정합니다.
-
-## 서비스 기준
-이 포트폴리오는 쇼핑몰 주문 이후 이벤트 처리를 기준으로 합니다. 사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka / Worker / PostgreSQL / DLQ / Grafana 경로에서 영속화 지연, 분류, 알림, 장애 위치를 판단합니다.
-
-상세한 사용자, 기능 요구, 비기능 요구, SLO guardrail은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md)에 정리했습니다.
-
-## 핵심 기능
-- Kafka-backed async event intake
-- Partition key 기반 stream ordering boundary
-- Worker consumer group processing
-- Kafka DLQ topic / DLQ Replayer
-- DLQ replay count guard
-- Kafka consumer lag based KEDA autoscaling
-- PostgreSQL HA + Pgpool
-- API CPU HPA
-- Prometheus / Grafana observability
-- kafka-exporter broker / topic / consumer group lag observability
-- PostgreSQL backup / restore
-- Ingress nginx + local self-signed TLS
-- Runtime secret separation
-- Argo CD GitOps sync path
-- AWS Terraform IaC extension path
-
-## 검증한 시나리오
-로컬 `kind` 환경에서 아래 시나리오를 검증했습니다. 최신 수치는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 기록합니다.
-
-- Portfolio status check for Kubernetes / Argo CD / Prometheus / Kafka exporter
-- Kafka mode smoke test
-- Kafka ingress topic append / Worker consume / PostgreSQL persisted
-- Kafka DLQ topic listing through `GET /v1/dlq/ingress`
-- DLQ operating summary through `GET /v1/dlq/ingress/summary`
-- API contract validation for auth, stream membership, request status, unread count, and DLQ summary
-- KEDA Kafka scaler readiness and external metric lookup
-- API HPA scaling
-- PostgreSQL backup / restore
-- Argo CD GitOps sync
-
-상세 결과와 Kafka-native 설계 trade-off는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)와 [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md)에 정리했습니다.
-
-## 성능 요약
-Kafka 포트폴리오의 성능 기준은 기능 테스트와 분리해서 봅니다. 기능 검증은 `quick_start_all.ps1`에서 확인하고, 성능 기준선은 아래 suite로 측정합니다.
-
-측정 / 재현 환경:
-
-| 항목 | 값 |
+| 로컬 구성 | AWS migration blueprint |
 | --- | --- |
-| Host CPU | AMD Ryzen 5 5600, 6 cores / 12 threads, max 3.5GHz |
-| Host memory | 약 32GiB |
-| Docker Desktop 노출 사양 | 12 CPU, 약 15.6GiB memory |
-| Kubernetes node | kind single-node, `messaging-ha-control-plane` |
-| Kubernetes allocatable | 12 CPU, `16338128Ki` memory |
-| Pod resource requests | 5.1 CPU, `6768Mi` memory |
-| Pod resource limits | 13.725 CPU, `14782Mi` memory |
+| `kind` cluster | Amazon EKS |
+| `ingress-nginx` | AWS Load Balancer Controller + ALB |
+| local self-signed TLS | ACM + Route 53 |
+| Kafka 3-broker KRaft | Amazon MSK |
+| PostgreSQL HA + Pgpool | RDS PostgreSQL Multi-AZ / Aurora PostgreSQL |
+| runtime secret | AWS Secrets Manager |
+| local image build/load | Amazon ECR push + EKS deploy |
+| Prometheus / Grafana | EKS 유지 또는 AMP / AMG |
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
-```
+이 Terraform 경로는 AWS에 이미 배포했다는 의미가 아니라, 로컬 검증 구조를 AWS managed architecture로 이전할 수 있게 설계한 migration blueprint입니다. 자세한 내용은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 있습니다.
 
-이 suite는 Kafka-native 구조를 기준으로 아래 값을 함께 확인합니다.
+## Operations
 
-| 기준 | 결과 | 해석 |
-| --- | --- | --- |
-| Kafka smoke | 통과 | event accepted -> Kafka ingress topic -> Worker -> PostgreSQL persisted |
-| Kafka DLQ listing | 통과 | `GET /v1/dlq/ingress`로 DLQ topic 최근 메시지 조회 |
-| DLQ operating summary | 통과 | `GET /v1/dlq/ingress/summary`로 reason / replayable / blocked / stream 분포 조회 |
-| 같은 stream 순차 보증 | 통과 | 100개 순차 이벤트, `stream_seq 1..100` 및 body 순서 일치 |
-| Kafka 비동기 영속화 latency | 통과 | 50 events, accept avg `53.34ms`, accept p95 `63.59ms`, persist p95 `7.67ms` |
-| Kafka intake 부하 | 통과 | 100 VU / 30s, `31676` requests, `0.00%` error, avg `44.13ms`, p95 `80.65ms`, p99 `103.57ms` |
-| HPA와 metrics 점검 | 통과 | 부하 중 API HPA 6 replicas, Worker KEDA 4 replicas까지 증가 |
+운영자는 아래 경로로 상태를 확인합니다.
 
-Latency는 k6 `http_req_duration` 기준으로, event request가 intake path에서 수락되고 API 응답을 받을 때까지의 시간입니다. PostgreSQL persisted 완료까지의 lag는 `messaging_event_persist_lag_seconds`로 별도 관측합니다.
-현재 Kafka intake load baseline은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다. Idempotency header를 켜도 key는 Kafka payload에 포함되며, 최종 deduplication은 Worker persistence 단계에서 처리합니다.
+- Readiness: `http://localhost/health/ready`
+- Swagger / OpenAPI: `http://localhost/docs`, `/openapi.json`
+- Grafana: `http://localhost/grafana`
+- Prometheus: `http://localhost/prometheus/`
+- DLQ summary: `GET /v1/dlq/ingress/summary`
 
-Kafka 실험의 핵심 결과:
-- Kafka ingress / DLQ transport는 동작했습니다.
-- DLQ topic listing과 replay 흐름도 확인했습니다.
-- API intake path는 Kafka append 중심으로 동작합니다.
-- Worker가 persistence 시점에 sequence를 배정하고 request status를 갱신합니다.
-
-성능 suite 결과는 실행 후 `results/kafka-performance/latest.txt`에 남습니다. Kafka 설계 검증 내용은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)와 [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md)에 정리했습니다.
-
-## 운영 상태 확인
-현재 클러스터가 포트폴리오 데모 가능한 상태인지 빠르게 확인하려면 아래 스크립트를 사용합니다.
+운영 상태 점검:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 ```
 
-이 스크립트는 API readiness, Argo CD `Synced / Healthy`, 핵심 workload replica, KEDA, Prometheus scrape, kafka-exporter broker / consumer lag 지표를 확인합니다. `postgres-backups` PVC는 local-path `WaitForFirstConsumer` 정책 때문에 첫 backup CronJob 전까지 `Pending`일 수 있으며, 이 경우는 warning으로만 표시합니다.
+전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](docs/SERVICE_PROCESS_CHECKLIST.md), 관측 지표는 [OBSERVABILITY.md](docs/OBSERVABILITY.md), 사고 대응은 [RUNBOOK.md](docs/RUNBOOK.md), GitOps 흐름은 [GITOPS.md](docs/GITOPS.md)에 정리했습니다.
 
-## 데모 화면
-서비스 흐름을 화면으로 확인하려면 [order-dashboard.html](demo/order-dashboard.html)을 브라우저에서 엽니다.
+## Documentation Map
 
-- 사용자 관점: 결제 완료, 주문 완료, 주문 번호 확인
-- 운영자 관점: 주문 이후 이벤트, 업무 분류, request id, Kafka 수락 상태 확인
-- 운영 링크: Swagger `/docs`, Grafana, DLQ summary, Runbook
-
-API가 `http://localhost`에서 실행 중이면 화면에서 `POST /v1/orders/{order_id}/events`를 직접 호출합니다. API가 꺼져 있어도 샘플 이벤트로 사용자 / 운영자 경계를 확인할 수 있습니다.
-
-## 빠른 실행
-Windows PowerShell:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
-```
-
-Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 됩니다. `quick_start_all.ps1`은 시작 단계에서 `scripts/bootstrap_tools.ps1`을 호출해 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 자동으로 준비한 뒤 cluster bootstrap을 이어갑니다. 인터넷 연결은 최초 도구 다운로드와 Helm chart 설치에 필요합니다.
-
-Linux:
-
-```bash
-bash scripts/quick_start_all.sh
-```
-
-Kafka runtime:
-
-```powershell
-kubectl apply -f k8s/gitops/base/kafka-ha.yaml
-kubectl rollout status statefulset/kafka -n messaging-app --timeout=600s
-kubectl wait --for=condition=complete job/kafka-topic-bootstrap -n messaging-app --timeout=300s
-kubectl -n messaging-app set env deployment/api KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
-kubectl -n messaging-app set env deployment/worker KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
-kubectl -n messaging-app set env deployment/dlq-replayer KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
-```
-
-기본 접근 경로:
-- API: `http://localhost`
-- Grafana: `http://localhost/grafana`
-- Prometheus: `http://localhost/prometheus/`
-
-Grafana 기본 계정:
-- ID: `admin`
-- 비밀번호: `1q2w3e4r`
-
-자세한 실행 방법은 [QUICK_START.md](docs/QUICK_START.md)를 참고합니다.
-
-## GitOps / CI
-이 저장소는 직접 배포 경로와 Argo CD 기반 GitOps 경로를 함께 포함합니다.
-
-- GitOps sync path: `k8s/gitops/overlays/local-ha`
-- Argo CD bootstrap scripts:
-  - `k8s/scripts/install-argocd.ps1`
-  - `k8s/scripts/bootstrap-argocd-app.ps1`
-- GitHub Actions CI:
-  - Python compile check
-  - Docker image build check
-  - Kustomize manifest render check
-
-자세한 내용은 [GITOPS.md](docs/GITOPS.md)에 정리했습니다.
-
-## AWS IaC 경로
-현재 로컬 검증 구조를 AWS로 확장하기 위한 Terraform 골격도 포함되어 있습니다.
-
-포함된 AWS 구성:
-- VPC
-- EKS
-- ECR
-- RDS PostgreSQL
-- Amazon MSK Kafka
-- Secrets Manager
-- optional Route 53 + ACM
-
-현재 AWS IaC는 실제 리소스 운영 배포가 아니라 로컬 코드 검증 단계입니다. 설계 의도와 구성은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 정리했습니다.
-
-## 운영 메모
-- Kafka broker는 로컬 기준 3-broker KRaft StatefulSet으로 실행합니다.
-- 최신 Kafka intake baseline은 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`입니다.
-- HTTPS는 production certificate가 아니라 local self-signed TLS 검증용입니다.
-- Grafana / Prometheus는 로컬 포트폴리오 확인을 위해 ingress로 노출합니다.
-- AWS IaC 문서는 운영형 확장 설계를 설명합니다.
-
-## 문서
-- [AGENTS.md](AGENTS.md): 새 Codex 세션용 프로젝트 컨텍스트와 수치 해석 경계
 - [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
 - [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md): 구조와 처리 흐름
-- [KAFKA_EXPERIMENT.md](docs/KAFKA_EXPERIMENT.md): Kafka 설계와 검증 기록
-- [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침
-- [RUNBOOK.md](docs/RUNBOOK.md): 장애 대응 절차
-- [SERVICE_PROCESS_CHECKLIST.md](docs/SERVICE_PROCESS_CHECKLIST.md): 서비스 전체 프로세스 점검표
-- [OBSERVABILITY.md](docs/OBSERVABILITY.md): 지표, 대시보드, 병목 해석
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md): Kafka-centered 구조와 sequenceDiagram
+- [TEST_RESULTS.md](docs/TEST_RESULTS.md): 최신 검증 결과와 과거 baseline
+- [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침, secret, backup, 데모 운영 작업
+- [RUNBOOK.md](docs/RUNBOOK.md): Kafka Intake, PostgreSQL / Pgpool, Worker Consumer Lag, DLQ, API Contract, Resource Contention 대응
+- [OBSERVABILITY.md](docs/OBSERVABILITY.md): Prometheus / Grafana / kafka-exporter 지표
 - [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md): readiness / degraded / not_ready 정책
-- [TEST_RESULTS.md](docs/TEST_RESULTS.md): 검증 결과
 - [GITOPS.md](docs/GITOPS.md): Argo CD GitOps
-- [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md): AWS 확장 설계
-- [PATCH_NOTES.md](docs/PATCH_NOTES.md): 변경 이력
+- [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md): AWS migration blueprint
+- [PATCH_NOTES.md](docs/PATCH_NOTES.md): 최신 변경 이력
 - [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md): 저장소 구조

@@ -2,6 +2,28 @@
 
 Kafka Event Stream Systems 포트폴리오의 로컬 Kubernetes/kind 검증 결과입니다. 테스트 결과는 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)의 서비스 요구와 SLO guardrail을 기준으로 해석합니다.
 
+## Latest Validation Snapshot
+
+현재 포트폴리오를 설명할 때 먼저 사용할 검증 기준입니다. 오래된 실험은 아래 historical section에서 조건과 함께 확인합니다.
+
+| 구분 | 최신 기준 |
+| --- | --- |
+| 안정 baseline | 2차 Kafka baseline: `31,676` requests, error `0.00%`, avg `44.13ms`, p95 `80.65ms`, p99 `103.57ms` |
+| 최신 재실행 | 2026-06-09 k6 rerun: `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms` |
+| persistence lag | accepted-to-persisted latest p95 `7.67ms`; post-tuning p95 `8.08ms` |
+| backlog drain | Worker consumer lag `36394 -> 33274 -> 23563 -> 11971 -> 0` after about 14 minutes |
+| ordering / recovery | single/multi stream, Pgpool outage, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0` |
+| notification split | notification-worker lag `0`; 운영 경계 개선으로 해석하고 성능 개선 수치로 사용하지 않음 |
+| local tests | `.venv\Scripts\python.exe -m pytest -q`: `64 passed` |
+
+해석 기준:
+
+- `31,676` requests / p95 `80.65ms`는 안정적인 Kafka append-first intake baseline으로 사용합니다.
+- `34,284` requests / p95 `66.06ms` 재실행은 intake와 persistence capacity를 함께 보는 보조 신호입니다.
+- Worker KEDA 효과는 API throughput 증가가 아니라 consumer lag, accepted-to-persisted lag, backlog drain time으로 봅니다.
+- notification path split은 장애 격리 개선이며, 성능 개선으로 과장하지 않습니다.
+- post-tuning performance suite는 persistence path 개선 신호이며, 전체 intake 기준선 대체 수치로는 사용하지 않습니다.
+
 ## 핵심 요약
 
 | 검증 항목 | 테스트한 이유 | 결과 |
