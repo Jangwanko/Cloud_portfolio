@@ -129,6 +129,15 @@ Latest ordering / failure injection result after fixing local client skew:
 
 ## Documentation Rules
 
+- README는 포트폴리오 첫 화면 역할로 유지합니다. 모든 세부 내용을 README에 넣지 말고, 핵심 요약 / 데모 진입 / 대표 검증 결과 / 문서 지도만 남깁니다.
+- README에서 자세한 내용을 docs로 넘길 때는 링크만 던지지 않습니다. 각 주제마다 2~4줄 요약, 왜 중요한지 한 문장, 관련 docs 링크를 함께 제공합니다.
+- 세부 구현, 실험 과정, 운영 절차, 장애 대응, Terraform AWS migration blueprint는 docs 문서로 분리합니다.
+- changelog, patch notes, test results, migration plan처럼 시간 흐름이 중요한 문서는 최신 항목을 위에 둡니다. 과거 기록은 아래쪽 historical section으로 보냅니다.
+- `docs/PATCH_NOTES.md`는 최신 변경이 맨 위에 오도록 관리합니다.
+- `docs/TEST_RESULTS.md`는 최신 검증 결과를 먼저 보여주고, 과거 baseline은 historical results로 분리합니다.
+- `docs/AWS_IAC_PLAN.md`는 현재 AWS migration blueprint를 먼저 설명하고, 구현 단계와 모듈 세부 설명은 뒤에 둡니다.
+- `docs/ARCHITECTURE.md`는 현재 최종 Kafka-centered 구조를 먼저 설명하고, 과거 전환 배경은 뒤쪽 또는 별도 문서로 둡니다.
+- Terraform 문서는 "AWS에 이미 배포했다"가 아니라 "로컬 검증 구조를 AWS managed architecture로 이전할 수 있게 설계했다"는 migration blueprint 관점으로 씁니다.
 - 문서에서 Kafka 최종 구조를 Redis에서 이름만 바꾼 것처럼 쓰지 않습니다.
 - Kafka를 Kafka-only라고 과장하지 않습니다. 이 프로젝트는 Kafka-centered 구조이며 PostgreSQL state/read model을 유지합니다.
 - Kafka Worker KEDA 효과를 API throughput 증가로 단정하지 않습니다. Kafka에서 Worker scaling 효과는 consumer lag, accepted-to-persisted lag, drain time으로 봅니다.
