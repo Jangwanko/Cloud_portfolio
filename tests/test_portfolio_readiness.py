@@ -222,6 +222,9 @@ class TestOperationalDocumentation:
         assert "## 보안 기본선" in operations
         assert "dev-secret-change-me" in operations
         assert "외부 secret manager" in operations
+        assert "## 데모 운영 작업" in operations
+        assert "전송 전 예약 비우기" in operations
+        assert "RESET DEMO DB" in operations
 
     def test_test_results_and_patch_notes_keep_experiment_rounds(self):
         test_results = read_text("docs/TEST_RESULTS.md")
@@ -239,6 +242,18 @@ class TestOperationalDocumentation:
             assert "31676" in document
             assert "34284" in document
             assert "36394 -> 33274 -> 23563 -> 11971 -> 0" in document
+
+        for token in (
+            "2026-06-19 업데이트: 운영형 데모 화면과 예약 큐 카운터 안정화",
+            "KO / EN 전환",
+            "전송 전 예약 비우기",
+            "Demo event DB reset",
+            "1건 차이",
+            "event.status = \"sending\"",
+            "64 passed",
+            "kind 클러스터 반영",
+        ):
+            assert token in patch_notes
 
         for token in (
             "Ordering / Failure Injection 검증",
@@ -388,6 +403,45 @@ class TestOperationalDocumentation:
 
         for token in (
             "Post-Order Event Console",
+            "language-toggle",
+            "setLanguage",
+            "translations",
+            "data-i18n",
+            "KO",
+            "EN",
+            "Send Post-Order Events",
+            "Reserved",
+            "Kafka Appended",
+            "DB Persisted",
+            "Total Elapsed",
+            "Persisted/sec",
+            "Operator Event Queue",
+            "defaultBody",
+            "Payment completed and order creation event",
+            "previousDefaultBody",
+            "danger-zone",
+            "Reset Demo Event DB",
+            "RESET DEMO DB",
+            "/v1/admin/demo/reset-events",
+            "resetDemoEventDb",
+            "uiSession",
+            "startUiSession",
+            "isCurrentUiSession",
+            "recordKafkaAppended(1, uiSession)",
+            "recordQueueProcessed(1, uiSession)",
+            "Started jobs are not cancelled",
+            "시작한 작업은 취소되지 않고 계속 추적합니다.",
+            "hasActiveProcessingRun",
+            "active jobs are still being tracked",
+            "진행 중 작업은 계속 추적합니다.",
+            "Clear Pending Reservations",
+            "전송 전 예약 비우기",
+            "Only unsent reservations are removed",
+            "아직 전송하지 않은 예약만 삭제합니다.",
+            "cancelPendingReservations",
+            "event.cancelled",
+            "queueStats.queued = Math.max(queueStats.queued - cancelledCount, 0)",
+            "queueStats.runTarget = Math.max(queueStats.runTarget - cancelledCount, queueStats.runProcessed)",
             "결제 완료",
             "주문 완료",
             "운영자 이벤트 큐",
@@ -414,7 +468,7 @@ class TestOperationalDocumentation:
             "주문 이후 업무 이벤트 종류입니다.",
             "API가 노출된 주소입니다.",
             "데모 주문 stream id로 자동 갱신됩니다.",
-            "운영자 이벤트 큐 비우기",
+            "전송 전 예약 비우기",
             "clear-event-list",
             "sample-actions",
             "send-action",
@@ -447,7 +501,7 @@ class TestOperationalDocumentation:
             "이번 처리 시퀀스",
             "markEventStatus",
             "db_row",
-            "pollRequestStatus(baseUrl, token, event)",
+            "pollRequestStatus(baseUrl, token, event, uiSession)",
             "샘플은 전송 전 예약 큐에 추가됩니다.",
             "Kafka 적재와 DB 저장을 분리해서 집계합니다.",
             "processReservedEvents",
@@ -468,6 +522,10 @@ class TestOperationalDocumentation:
         ):
             assert token in demo
 
+        assert 'document.documentElement.lang = language' in demo
+        assert 'document.querySelectorAll("[data-i18n]")' in demo
+        assert 'document.querySelectorAll("[data-language]")' in demo
+
         assert "../docs/RUNBOOK.md" not in demo
         sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function addSample()", 1)[0]
         assert "recordQueueEnqueued(count)" in sample_batch
@@ -480,8 +538,9 @@ class TestOperationalDocumentation:
         assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
         assert "for (const event of reservedEvents)" in process_reserved
         assert "await sendQueuedEvent" in process_reserved
-        assert "recordKafkaAppended(1)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event))" in process_reserved
+        assert process_reserved.index('event.status = "sending"') < process_reserved.index("await sendQueuedEvent")
+        assert "recordKafkaAppended(1, uiSession)" in process_reserved
+        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession))" in process_reserved
         assert "await Promise.all(pollTasks)" in process_reserved
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event

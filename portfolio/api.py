@@ -17,6 +17,8 @@ from portfolio.materialized_cache import (
 from portfolio.metrics import observe_api_stage
 from portfolio.order_events import classify_order_event
 from portfolio.schemas import (
+    DemoResetRequest,
+    DemoResetResponse,
     DlqListResponse,
     DlqSummaryResponse,
     EventCreate,
@@ -59,6 +61,33 @@ def _queue_unavailable_detail() -> str:
 
 def _load_request_status(request_id: str) -> dict | None:
     return load_request_status(request_id)
+
+
+def _ensure_demo_reset_allowed() -> None:
+    allowed_envs = {"local", "k8s", "k8s-ha", "development", "dev", "test"}
+    if settings.app_env not in allowed_envs:
+        raise HTTPException(status_code=403, detail="Demo reset is disabled in this environment")
+
+
+def _reset_demo_event_data(cur) -> dict:
+    cur.execute("SELECT COUNT(*) AS count FROM messages")
+    message_count = int(cur.fetchone()["count"])
+    cur.execute("SELECT COUNT(*) AS count FROM rooms")
+    stream_count = int(cur.fetchone()["count"])
+    cur.execute("SELECT COUNT(*) AS count FROM request_statuses")
+    request_status_count = int(cur.fetchone()["count"])
+
+    cur.execute("TRUNCATE TABLE notification_attempts RESTART IDENTITY")
+    cur.execute("TRUNCATE TABLE idempotency_keys")
+    cur.execute("TRUNCATE TABLE intake_idempotency_keys")
+    cur.execute("TRUNCATE TABLE request_statuses")
+    cur.execute("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE")
+
+    return {
+        "deleted_messages": message_count,
+        "reset_streams": stream_count,
+        "reset_request_statuses": request_status_count,
+    }
 
 
 def _externalize_request_status(payload: dict) -> dict:
@@ -216,6 +245,30 @@ def login(payload: LoginRequest):
         "access_token": access_token,
         "token_type": "bearer",
         "user": user,
+    }
+
+
+@router.post("/admin/demo/reset-events", response_model=DemoResetResponse)
+def reset_demo_events(payload: DemoResetRequest, current_user: dict = Depends(get_current_user)):
+    _ensure_demo_reset_allowed()
+    if payload.confirmation != "RESET DEMO DB":
+        raise HTTPException(status_code=400, detail="Confirmation must be RESET DEMO DB")
+
+    with get_conn() as conn:
+        with get_cursor(conn) as cur:
+            try:
+                result = _reset_demo_event_data(cur)
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
+    return {
+        "status": "reset",
+        "deleted_messages": result["deleted_messages"],
+        "reset_streams": result["reset_streams"],
+        "reset_request_statuses": result["reset_request_statuses"],
+        "note": f"Demo event data reset by user_id={current_user['id']}. Users were kept.",
     }
 
 

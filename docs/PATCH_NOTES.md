@@ -281,6 +281,53 @@ Performance suite:
 - 반면 이번 성능 suite에서는 API intake와 accepted-to-persisted latency가 개선되지 않았습니다.
 - 다음 튜닝 후보는 Worker DB write throughput, Kafka consumer batch 처리, PostgreSQL lock/commit 비용 분리 측정입니다.
 
+## 2026-06-19 업데이트: 운영형 데모 화면과 예약 큐 카운터 안정화
+
+목표:
+
+- 포트폴리오 데모가 개념 설명에 머무르지 않고, 로컬 Kubernetes 위에서 Kafka / Worker / PostgreSQL 처리 흐름을 눈으로 확인할 수 있게 한다.
+- 외국인 리크루터도 볼 수 있도록 README 상단과 데모 화면에 KO / EN 전환을 제공한다.
+- 샘플 이벤트를 1건, 10건, 100건 단위로 예약하고 한 번에 전송하는 흐름을 만들되, Kafka 적재와 DB 저장을 별도 지표로 보여준다.
+- 운영자가 혼동하기 쉬운 예약 큐 비우기, DB 초기화, 처리 중 카운터의 의미를 화면과 문서에 고정한다.
+
+변경 내용:
+
+- README 상단에 로컬 데모 설치와 사용 방법을 한국어 / 영어로 추가했습니다.
+- `demo/order-dashboard.html`에 KO / EN 전환을 추가하고, EN 선택 시 기본 event body도 영어 문구로 바뀌게 했습니다.
+- 오른쪽 운영자 패널에 `API accepted -> Kafka appended -> Worker persisted -> DB 저장` 흐름을 단계별로 표시했습니다.
+- 처리 현황을 `예약 건수`, `Kafka 적재`, `DB 저장`, `총 소요시간`, `처리량/sec`로 분리했습니다.
+- `샘플 1개 추가`, `샘플 10개 추가`, `샘플 100개 추가`와 `결제 완료 / 주문 완료 이벤트 보내기` 버튼 배치를 데모 흐름에 맞춰 정리했습니다.
+- 운영 로그와 이벤트 목록은 높이를 고정해 이벤트가 많아져도 화면이 끝없이 늘어나지 않게 했습니다.
+- 운영 링크 영역에 `Demo event DB reset` 작업을 추가했습니다. 사용자가 `RESET DEMO DB`를 입력해야 `/v1/admin/demo/reset-events`가 실행됩니다.
+- `DemoResetRequest`, `DemoResetResponse` schema와 reset API 계약 테스트를 추가했습니다.
+
+버그 수정:
+
+- `운영자 이벤트 큐 비우기`라는 이름이 실제 동작과 다르게 보였기 때문에 `전송 전 예약 비우기`로 바꿨습니다.
+- 버튼 동작을 "아직 Kafka로 보내지 않은 `reserved` 이벤트만 취소"로 정리했습니다.
+- 이미 시작한 작업은 취소하지 않고 Kafka 적재 / DB 저장까지 계속 추적합니다.
+- 처리 중 버튼을 누르면 이전 비동기 polling이 현재 화면 카운터를 덮어쓰는 문제가 있어 `uiSession`으로 화면 세션을 분리했습니다.
+- 예약 리스트만 사라지고 예약 건수가 유지되는 문제를 고쳤습니다. 취소된 예약 수만큼 `queueStats.queued`와 `runTarget`을 함께 줄입니다.
+- 1건 차이 버그를 고쳤습니다. API 전송 직전에 `event.status = "sending"`으로 바꿔, 이미 전송 중인 1건이 `전송 전 예약 비우기` 대상에 들어가지 않게 했습니다.
+- API 전송 자체가 실패하면 `sending` 이벤트를 다시 `reserved`로 돌려 재시도 가능한 예약으로 남깁니다.
+
+검증:
+
+- `.venv\Scripts\python.exe -m pytest -q`: `64 passed`
+- Docker image: `messaging-portfolio:local` 재빌드 완료
+- kind 클러스터 반영: `tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha`
+- API rollout: `kubectl rollout restart deployment/api -n messaging-app` 후 정상 완료
+- readiness: `http://localhost/health/ready` 기준 `status=ready`, Kafka reachable, PostgreSQL primary reachable
+- 배포된 데모 HTML에서 `event.status = "sending"`, `cancelPendingReservations`, `pending reservation skipped` 반영 확인
+
+해석:
+
+- 이 업데이트는 Kafka 처리 성능 개선보다 포트폴리오 시연성과 운영 의미 전달을 강화한 변경입니다.
+- 화면 카운터는 사용자 주문 완료 응답이 아니라 운영자 관점의 내부 처리 흐름을 보여줍니다.
+- `예약 건수`는 아직 DB 저장 완료 전인 데모 예약 / 진행 중 작업의 남은 수를 의미합니다.
+- `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료가 같은 단계가 아니라는 점을 보여줍니다.
+- `전송 전 예약 비우기`는 시작 전 예약 취소입니다. 이미 시작한 Kafka / Worker 작업을 취소하는 기능은 아닙니다.
+
 ## 남은 튜닝 항목
 
 - idempotency-enabled write load에서 Worker deduplication과 Kafka append-first 계약을 재검증

@@ -164,6 +164,18 @@ class DlqSummaryResponse(BaseModel):
     recent_samples: list[DlqItemResponse]
 
 
+class DemoResetRequest(BaseModel):
+    confirmation: str = Field(min_length=1, max_length=40)
+
+
+class DemoResetResponse(BaseModel):
+    status: str
+    deleted_messages: int
+    reset_streams: int
+    reset_request_statuses: int
+    note: str
+
+
 class KafkaHealthResponse(BaseModel):
     bootstrap_reachable: bool
 

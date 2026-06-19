@@ -459,6 +459,8 @@ class TestOpenApiContract:
             "EventRequestStatusResponse",
             "DlqListResponse",
             "DlqSummaryResponse",
+            "DemoResetRequest",
+            "DemoResetResponse",
         ):
             assert model in components
 
@@ -467,9 +469,11 @@ class TestOpenApiContract:
             "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
+            "/v1/admin/demo/reset-events": "DemoResetResponse",
         }
         for path, model in expected_refs.items():
-            response_schema = paths[path]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+            method = "post" if path == "/v1/admin/demo/reset-events" else "get"
+            response_schema = paths[path][method]["responses"]["200"]["content"]["application/json"]["schema"]
             assert response_schema["$ref"] == f"#/components/schemas/{model}"
 
         dlq_summary = components["DlqSummaryResponse"]["properties"]

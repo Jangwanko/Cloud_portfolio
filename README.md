@@ -4,6 +4,58 @@
 
 사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
 
+## 로컬 데모 설치와 사용
+
+이 저장소는 쇼핑몰 주문 이후 이벤트가 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 브라우저에서 확인할 수 있는 데모 화면을 포함합니다.
+
+- 데모 화면: `http://localhost/demo/order-dashboard.html`
+- API 문서: `http://localhost/docs`
+- Grafana: `http://localhost/grafana`
+- Readiness: `http://localhost/health/ready`
+
+처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
+```
+
+이미 로컬 `kind` 클러스터가 있고 화면 변경만 반영하려면 아래 순서로 갱신합니다.
+
+```powershell
+docker build -t messaging-portfolio:local .
+tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
+kubectl rollout restart deployment/api -n messaging-app
+kubectl rollout status deployment/api -n messaging-app --timeout=180s
+```
+
+데모 화면에서 `샘플 1개/10개/100개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누르면 API가 Kafka에 append하고 Worker가 PostgreSQL에 저장합니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, 처리량/sec를 분리해서 보여줍니다.
+
+## Local Demo Setup and Usage
+
+This repository includes a browser demo that shows post-order commerce events flowing through the local Kubernetes runtime: API intake, Kafka append, Worker processing, and PostgreSQL persistence.
+
+- Demo UI: `http://localhost/demo/order-dashboard.html`
+- API docs: `http://localhost/docs`
+- Grafana: `http://localhost/grafana`
+- Readiness: `http://localhost/health/ready`
+
+For a first local run, start Docker Desktop and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
+```
+
+If the local `kind` cluster already exists and you only need to refresh the demo UI, run:
+
+```powershell
+docker build -t messaging-portfolio:local .
+tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
+kubectl rollout restart deployment/api -n messaging-app
+kubectl rollout status deployment/api -n messaging-app --timeout=180s
+```
+
+In the demo UI, add `1`, `10`, or `100` sample events to the reserved queue, then click `결제 완료 / 주문 완료 이벤트 보내기`. The UI shows the local event pipeline with separate counters for reserved events, Kafka appended events, PostgreSQL persisted events, total elapsed time, and persisted throughput per second.
+
 ## TL;DR
 
 Kafka 기반 주문 이후 이벤트 처리 시스템입니다.

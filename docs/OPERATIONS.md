@@ -95,6 +95,23 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 기본 운영 문서와 데모 경로는 `http://localhost` 기준입니다.
 - HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 처음 한 번 표시될 수 있습니다.
 
+## 데모 운영 작업
+
+데모 화면의 운영자 이벤트 큐는 실제 Kafka / Worker / PostgreSQL 흐름을 보여주기 위한 로컬 운영 패널입니다.
+
+`전송 전 예약 비우기`:
+- 아직 Kafka로 보내지 않은 `reserved` 이벤트만 취소합니다.
+- 이미 API 전송이 시작된 작업은 취소하지 않습니다.
+- 시작된 작업은 Kafka 적재와 DB 저장까지 계속 추적합니다.
+- 버튼을 누른 시점에 전송 중인 이벤트는 `sending` 상태로 분리되어 예약 취소 대상에 들어가지 않습니다.
+
+`Demo event DB reset`:
+- 화면에서 `RESET DEMO DB`를 입력한 뒤 실행합니다.
+- API endpoint는 `POST /v1/admin/demo/reset-events`입니다.
+- 사용자 계정은 유지하고 데모 주문 stream, messages, request status, idempotency state, notification attempt 데이터를 초기화합니다.
+- 로컬 / 개발 / 테스트 성격의 `APP_ENV`에서만 허용합니다.
+- 포트폴리오 시연 전 누적된 데모 이벤트를 비울 때 사용합니다.
+
 ## 접근 정책
 현재 운영 경로는 일반 서비스 경로와 구분하되, 포트폴리오 데모 기준으로 쉽게 접근할 수 있게 유지합니다.
 
