@@ -169,8 +169,8 @@ if host:
         is_ip = False
 
     if is_ip:
-        text = text.replace("    - host: localhost\n      http:", "    - http:")
-        text = text.replace("    - localhost", "    - localhost")
+        text = text.replace("  rules:\n    - host: localhost\n      http:", "  rules:\n    - http:")
+        text = text.replace("  tls:\n    - hosts:\n        - localhost\n      secretName: messaging-local-tls\n", "")
     else:
         text = text.replace("host: localhost", f"host: {host}")
         text = text.replace("- localhost", f"- {host}")

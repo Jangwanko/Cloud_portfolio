@@ -1,0 +1,7 @@
+- op: replace
+  path: /spec/ingressClassName
+  value: traefik
+- op: remove
+  path: /spec/rules/0/host
+- op: remove
+  path: /spec/tls

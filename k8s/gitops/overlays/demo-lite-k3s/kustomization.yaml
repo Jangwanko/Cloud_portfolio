@@ -5,4 +5,24 @@ resources:
   - ../demo-lite
 
 patches:
-  - path: patches/ingress-k3s.yaml
+  - path: patches/ingress-api-k3s.yaml
+    target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: api
+      namespace: messaging-app
+  - path: patches/ingress-grafana-k3s.yaml
+    target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: grafana
+      namespace: messaging-app
+  - path: patches/ingress-prometheus-k3s.yaml
+    target:
+      group: networking.k8s.io
+      version: v1
+      kind: Ingress
+      name: prometheus
+      namespace: messaging-app
