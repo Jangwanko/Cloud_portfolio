@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/Jangwanko/Cloud_portfolio.git}"
+REPO_URL="${REPO_URL:-${REPO_REPO_URL:-https://github.com/Jangwanko/Cloud_portfolio.git}}"
 REVISION="${REVISION:-demo-lite}"
 APP_NAME="${APP_NAME:-messaging-portfolio-demo-lite}"
 ARGO_NAMESPACE="${ARGO_NAMESPACE:-argocd}"
@@ -25,9 +25,20 @@ require_command() {
 
 require_command kubectl
 
+argocd_installed() {
+  kubectl get crd applications.argoproj.io >/dev/null 2>&1 &&
+    kubectl get deployment argocd-server -n "$ARGO_NAMESPACE" >/dev/null 2>&1 &&
+    kubectl get deployment argocd-repo-server -n "$ARGO_NAMESPACE" >/dev/null 2>&1 &&
+    kubectl get statefulset argocd-application-controller -n "$ARGO_NAMESPACE" >/dev/null 2>&1
+}
+
 log "Installing Argo CD if needed"
 kubectl create namespace "$ARGO_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n "$ARGO_NAMESPACE" -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+if argocd_installed; then
+  printf '[ok] Argo CD is already installed. Skipping install manifest apply.\n'
+else
+  kubectl apply --server-side -n "$ARGO_NAMESPACE" -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+fi
 kubectl rollout status deployment/argocd-server -n "$ARGO_NAMESPACE" --timeout=600s
 kubectl rollout status deployment/argocd-repo-server -n "$ARGO_NAMESPACE" --timeout=600s
 kubectl rollout status statefulset/argocd-application-controller -n "$ARGO_NAMESPACE" --timeout=600s
