@@ -510,6 +510,8 @@ class TestOperationalDocumentation:
             "refreshOpsStatus",
             "restartOpsAutoRefresh",
             "window.setInterval(refreshOpsStatus, intervalMs)",
+            "updateOperationLinks",
+            'document.querySelector("#base-url").addEventListener("input", updateOperationLinks)',
             "updateReadinessPanel",
             "updateDlqSummaryPanel",
             "queueStats.runTarget > 0 ? `${queueStats.queued}/${queueStats.runTarget}` : String(queueStats.queued)",
@@ -561,8 +563,10 @@ class TestOperationalDocumentation:
         result_panel_markup = demo.split('<section class="stack result-panel waiting" id="result-panel">', 1)[1].split("</section>", 1)[0]
         assert result_panel_markup.index("operations-advisor") < result_panel_markup.index("resultTitle")
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
-        assert "http://localhost/docs" in links_markup
-        assert "http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" in links_markup
+        assert 'data-ops-link="/docs"' in links_markup
+        assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup
+        assert "http://localhost/docs" not in links_markup
+        assert "http://localhost/grafana" not in links_markup
         assert "/v1/dlq/ingress/summary" not in links_markup
         assert "/health/ready" not in links_markup
 
@@ -694,6 +698,14 @@ class TestManifestContracts:
         assert "secretRef:" in manifest
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
+
+    def test_lite_deploy_preserves_existing_runtime_auth_secret(self):
+        script = read_text("scripts/deploy_lite_k3s.sh")
+
+        assert "existing_auth_secret" in script
+        assert "Reusing existing AUTH_SECRET_KEY" in script
+        assert "kubectl_cmd create secret generic messaging-runtime-secrets" in script
+        assert "openssl rand -base64 48" in script
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [

@@ -65,7 +65,17 @@ helm_chart_source() {
 
 create_runtime_secret() {
   local auth_secret
-  if command -v openssl >/dev/null 2>&1; then
+  local existing_auth_secret
+
+  existing_auth_secret="$(
+    kubectl_cmd -n "$NAMESPACE" get secret messaging-runtime-secrets \
+      -o jsonpath='{.data.AUTH_SECRET_KEY}' 2>/dev/null | base64 -d 2>/dev/null || true
+  )"
+
+  if [[ -n "$existing_auth_secret" ]]; then
+    auth_secret="$existing_auth_secret"
+    ok "Reusing existing AUTH_SECRET_KEY from messaging-runtime-secrets"
+  elif command -v openssl >/dev/null 2>&1; then
     auth_secret="$(openssl rand -base64 48 | tr -d '\n')"
   else
     auth_secret="lite-demo-auth-secret-$(date +%s)"
