@@ -12,6 +12,8 @@
   - HA 애플리케이션 매니페스트를 GitOps 진입점으로 묶는 `Kustomize base`
 - `k8s/gitops/overlays/local-ha`
   - 로컬 `kind` HA 환경에서 Argo CD가 바라보는 sync path
+- `k8s/gitops/overlays/demo-lite-k3s`
+  - 2코어 k3s 서버에서 Argo CD가 바라보는 저사양 demo-lite sync path
 - `k8s/argocd/project-messaging-portfolio.yaml`
   - Argo CD `AppProject`
 - `k8s/argocd/application-messaging-portfolio-local-ha.example.yaml`
@@ -48,6 +50,8 @@ GitOps 검증은 Git remote의 특정 revision을 Argo CD `Application`이 바�
 
 현재 로컬 GitOps 기준 revision은 `master`입니다. `Application`에는 HPA가 관리하는 Deployment replica 차이를 drift로 보지 않도록 `RespectIgnoreDifferences=true`와 `/spec/replicas` ignore rule을 둡니다.
 
+`demo-lite` 서버 배포에서는 revision을 `demo-lite`, path를 `k8s/gitops/overlays/demo-lite-k3s`로 둡니다. 이 overlay는 k3s 기본 ingress controller인 Traefik을 사용하고, IP 접속이 가능하도록 host 없는 ingress rule을 사용합니다.
+
 Argo CD 설치 스크립트는 로컬 `kind`의 `local-path` storage class 특성도 함께 처리합니다. `postgres-backups` PVC는 주간 backup `CronJob`이 처음 실행될 때 consumer가 생기므로, 그 전까지 `WaitForFirstConsumer` 상태로 남는 것이 정상입니다. 이 PVC 때문에 Application health가 계속 `Progressing`으로 남지 않도록 Argo CD health customization을 설치 단계에서 적용합니다.
 
 ## 로컬 실행 방법
@@ -59,6 +63,25 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -RepoUrl https://github.com/<your-account>/<your-repo>.git `
   -Revision master
 ```
+
+## demo-lite k3s GitOps
+
+2코어 Ubuntu 서버에서는 처음 한 번 bootstrap이 필요합니다. PostgreSQL Helm chart, runtime secret, kube-state-metrics, KEDA는 Argo CD Application 밖에서 준비하고, Kafka / API / Worker / Grafana / Prometheus runtime은 Argo CD가 `demo-lite` 브랜치를 바라보게 합니다.
+
+```bash
+REPO_URL=https://github.com/Jangwanko/Cloud_portfolio.git \
+REVISION=demo-lite \
+bash scripts/bootstrap_argocd_lite_k3s.sh
+```
+
+확인:
+
+```bash
+kubectl get application messaging-portfolio-demo-lite -n argocd
+kubectl get pods -n messaging-app
+```
+
+이후에는 `demo-lite` 브랜치에 commit/push하면 Argo CD automated sync로 서버에 반영됩니다.
 
 3. 스크립트는 아래 작업을 순서대로 수행합니다.
 - local cluster bootstrap

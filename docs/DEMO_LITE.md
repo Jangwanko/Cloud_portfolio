@@ -40,6 +40,24 @@ HOST_NAME=your.domain.example BASE_URL=http://your.domain.example bash scripts/d
 
 If you access the server by public IP, set `HOST_NAME` to that IP or leave it empty and use the server-local `localhost` path through SSH port forwarding.
 
+GitOps on k3s:
+
+First bootstrap the non-GitOps dependencies once: PostgreSQL lite profile, runtime secret, kube-state-metrics, and KEDA. `deploy_lite_k3s.sh` already does that direct bootstrap. After that, Argo CD can manage the application runtime from Git.
+
+```bash
+REPO_URL=https://github.com/Jangwanko/Cloud_portfolio.git \
+REVISION=demo-lite \
+bash scripts/bootstrap_argocd_lite_k3s.sh
+```
+
+Argo CD watches:
+
+```text
+k8s/gitops/overlays/demo-lite-k3s
+```
+
+After this, pushing a new commit to `demo-lite` updates the demo stack through Argo CD automated sync.
+
 After completion:
 
 - Demo UI: `http://localhost/demo/order-dashboard.html`

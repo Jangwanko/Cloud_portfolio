@@ -17,6 +17,7 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - `k8s/values/postgresql-lite-values.yaml`을 추가했습니다.
 - `scripts/quick_start_lite.ps1`를 추가했습니다.
 - `scripts/deploy_lite_k3s.sh`를 추가해 2코어 Linux 서버의 k3s 배포 흐름을 분리했습니다.
+- `k8s/gitops/overlays/demo-lite-k3s`와 `scripts/bootstrap_argocd_lite_k3s.sh`를 추가해 2코어 k3s 서버에서도 Argo CD가 `demo-lite` 브랜치를 직접 동기화할 수 있게 했습니다.
 - `k8s/scripts/install-ha.ps1`에 `-ValuesFile` 파라미터를 추가해 HA / lite PostgreSQL values를 선택할 수 있게 했습니다.
 - README, `docs/DEMO_GUIDE.md`, `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 full-ha와 demo-lite의 차이를 정리했습니다.
 
