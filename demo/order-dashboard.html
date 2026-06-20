@@ -675,8 +675,8 @@
         <h2 data-i18n="opsLinks">운영 링크</h2>
         <p class="subtitle" data-i18n="opsLinksSubtitle">운영 링크는 확인용 보조 링크입니다. 핵심 증거는 옆 처리 증거에서 확인합니다.</p>
         <div class="links">
-          <a href="http://localhost/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
-          <a href="http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
+          <a href="/docs" data-ops-link="/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
+          <a href="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
         </div>
         <div class="ops-checks">
           <div>
@@ -1038,6 +1038,13 @@
 
     function currentBaseUrl() {
       return document.querySelector("#base-url").value.replace(/\/$/, "");
+    }
+
+    function updateOperationLinks() {
+      const baseUrl = currentBaseUrl() || deriveDefaultBaseUrl();
+      document.querySelectorAll("[data-ops-link]").forEach((link) => {
+        link.href = `${baseUrl}${link.dataset.opsLink}`;
+      });
     }
 
     function describeFetchFailure(error) {
@@ -1727,7 +1734,9 @@
     document.querySelector("#body").addEventListener("input", (event) => {
       event.currentTarget.dataset.touched = "true";
     });
+    document.querySelector("#base-url").addEventListener("input", updateOperationLinks);
     document.querySelector("#base-url").value = deriveDefaultBaseUrl();
+    updateOperationLinks();
     setLanguage("ko");
     resetPipeline();
     updateQueueMetrics();
