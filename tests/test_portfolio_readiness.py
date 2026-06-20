@@ -707,6 +707,22 @@ class TestManifestContracts:
         assert "kubectl_cmd create secret generic messaging-runtime-secrets" in script
         assert "openssl rand -base64 48" in script
 
+    def test_demo_lite_gitops_uses_registry_image_and_action_tag_update(self):
+        kustomization = read_text("k8s/gitops/overlays/demo-lite/kustomization.yaml")
+        workflow = read_text(".github/workflows/demo-lite-image.yml")
+
+        assert "images:" in kustomization
+        assert "name: messaging-portfolio" in kustomization
+        assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
+        assert "newTag:" in kustomization
+
+        assert "branches: [demo-lite]" in workflow
+        assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
+        assert "[skip demo-lite image]" in workflow
+        assert "docker/build-push-action" in workflow
+        assert "yq -i" in workflow
+        assert "k8s/gitops/overlays/demo-lite/kustomization.yaml" in workflow
+
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
             path.read_text(encoding="utf-8").lower()

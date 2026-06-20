@@ -56,7 +56,14 @@ Argo CD watches:
 k8s/gitops/overlays/demo-lite-k3s
 ```
 
-After this, pushing a new commit to `demo-lite` updates the demo stack through Argo CD automated sync.
+After this, `demo-lite` changes are reflected through the GitOps image path:
+
+1. Push application code or demo UI changes to `demo-lite`.
+2. GitHub Actions builds `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>`.
+3. The workflow updates the `demo-lite` kustomize image tag and pushes that manifest commit.
+4. Argo CD sees the manifest tag change and syncs the server.
+
+The GHCR container package should be public for this demo server, or the cluster needs an image pull secret. For the portfolio demo, public GHCR is the simpler path because no private registry credential has to be stored in the k3s cluster.
 
 After completion:
 
@@ -79,7 +86,7 @@ For the k3s deployment script, prepare:
 - curl, python3, openssl
 - inbound HTTP `80` open on the server firewall or cloud security group
 
-The script builds the local Docker image and imports it into k3s containerd, so it does not require pushing the image to a registry.
+The script can still build and import a local image for first-time manual bootstrap. For GitOps updates, the server should use the GHCR image tag committed by GitHub Actions instead of a manually imported `messaging-portfolio:local` image.
 
 On a fresh k3s server, configure kubectl before deployment:
 

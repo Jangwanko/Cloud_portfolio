@@ -81,7 +81,13 @@ kubectl get application messaging-portfolio-demo-lite -n argocd
 kubectl get pods -n messaging-app
 ```
 
-이후에는 `demo-lite` 브랜치에 commit/push하면 Argo CD automated sync로 서버에 반영됩니다.
+이후에는 `demo-lite` 브랜치에 commit/push하면 GitHub Actions가 GHCR 이미지를 빌드하고 kustomize image tag commit을 다시 push합니다. Argo CD는 이 image tag 변경을 보고 서버에 반영합니다. 코드만 바뀌고 manifest가 그대로인 상태에서는 Argo CD가 새 컨테이너 이미지를 알 수 없기 때문에, `messaging-portfolio:local` 수동 import가 아니라 registry image tag를 Git에 남기는 흐름을 사용합니다.
+
+English:
+
+After bootstrap, a push to `demo-lite` triggers GitHub Actions. The workflow builds `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>`, updates the kustomize image tag, and pushes that manifest commit back to `demo-lite`. Argo CD syncs the server from that image tag change.
+
+GHCR package visibility must match the cluster pull model. The demo server assumes the package is public. If the package remains private, add a Kubernetes `imagePullSecret` for GHCR before expecting Argo CD to roll out the image.
 
 3. 스크립트는 아래 작업을 순서대로 수행합니다.
 - local cluster bootstrap
@@ -117,6 +123,8 @@ EKS까지 확장할 때는 보통 아래 단계가 이어집니다.
 - image registry / ECR push
 - 이미지 태그 갱신
 - Argo CD 자동 동기화
+
+For the k3s `demo-lite` server, this repository uses GHCR first. ECR is the AWS migration equivalent described in `docs/AWS_IAC_PLAN.md`.
 
 ## 운영 메모
 - 로컬 데모에서는 앱 이미지를 build 한 뒤 kind 에 load 합니다.
