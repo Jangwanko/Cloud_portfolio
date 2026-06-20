@@ -173,6 +173,7 @@ class DemoResetResponse(BaseModel):
     deleted_messages: int
     reset_streams: int
     reset_request_statuses: int
+    reset_dlq_topic: str
     note: str
 
 
@@ -191,6 +192,7 @@ class WorkerHealthResponse(BaseModel):
     desired_replicas: int | None = None
     available_replicas: int | None = None
     hpa_desired_replicas: int | None = None
+    max_replicas: int | None = None
     source: str
     error: str | None = None
 

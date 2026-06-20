@@ -74,7 +74,7 @@ Worker autoscaling은 `k8s/app/manifests-ha.yaml`에 포함된 Kafka lag 기준 
 - Kafka request status compacted topic: `message-request-status`
 - Kafka DB snapshot compacted topics: `message-snapshots`, `stream-snapshots`
 - Consumer group: `message-worker`
-- KEDA lag threshold: `400`
+- KEDA lag threshold: `100` for the local demo cluster
 - Message key: `stream_id`
 - Offset commit: Worker 처리 성공 후 commit
 - DLQ listing: `GET /v1/dlq/ingress?limit=5`

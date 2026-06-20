@@ -412,6 +412,26 @@
       grid-template-columns: 1fr auto;
     }
 
+    .advisor {
+      background: #effaf2;
+      border: 1px solid #afe4bf;
+      border-radius: 8px;
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .advisor h3 {
+      margin-bottom: 0;
+    }
+
+    .advisor p {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
     .danger-zone {
       background: #fff1f0;
       border: 1px solid #ffb4ab;
@@ -652,7 +672,7 @@
         <p class="subtitle" data-i18n="opsLinksSubtitle">운영 링크는 확인용 보조 링크입니다. 핵심 증거는 옆 처리 증거에서 확인합니다.</p>
         <div class="links">
           <a href="http://localhost/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
-          <a href="http://localhost/grafana" target="_blank" rel="noreferrer">Grafana</a>
+          <a href="http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
         </div>
         <div class="ops-checks">
           <div>
@@ -674,6 +694,15 @@
             <div class="proof"><strong data-i18n="dlqIsolated">DLQ</strong><span id="ops-dlq-status">-</span></div>
             <div class="proof"><strong data-i18n="lastChecked">마지막 확인</strong><span id="ops-last-checked">-</span></div>
           </div>
+        </div>
+        <div class="advisor" id="operations-advisor">
+          <h3>Operations Advisor</h3>
+          <p data-i18n="advisorHelp">정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.</p>
+          <div class="proof-grid">
+            <div class="proof"><strong data-i18n="advisorStatus">상태</strong><span id="advisor-status">-</span></div>
+            <div class="proof"><strong data-i18n="advisorReason">판단 근거</strong><span id="advisor-reason">-</span></div>
+          </div>
+          <p id="advisor-next-step" data-i18n="advisorNextDefault">상태 새로고침 후 다음 확인 항목을 표시합니다.</p>
         </div>
         <div class="danger-zone">
           <h3 data-i18n="dangerTitle">위험 작업</h3>
@@ -762,12 +791,30 @@
         kafkaUnreachable: "연결 안 됨",
         postgresReady: "primary 연결됨, standby {count}개",
         postgresNotReady: "primary 연결 안 됨",
-        workerReady: "{available}/{desired} 실행 중, KEDA 목표 {hpa}",
-        workerReadyNoHpa: "{available}/{desired} 실행 중",
+        workerReady: "{available}/{max} 실행 중, HPA 목표 {hpa}",
+        workerReadyNoHpa: "{available}개 실행 중",
         workerUnknown: "확인 불가",
         dlqEmpty: "격리 이벤트 없음",
         dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
         opsRefreshFailed: "운영 상태 확인 실패",
+        advisorHelp: "정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.",
+        advisorStatus: "상태",
+        advisorReason: "판단 근거",
+        advisorNormal: "정상",
+        advisorAttention: "확인 필요",
+        advisorCritical: "즉시 확인",
+        advisorWaiting: "확인 전",
+        advisorNextDefault: "상태 새로고침 후 다음 확인 항목을 표시합니다.",
+        advisorNormalReason: "서비스, Kafka, DB, DLQ 신호가 안정적입니다.",
+        advisorDlqReason: "DLQ에 격리 이벤트가 남아 있습니다.",
+        advisorBlockedReason: "DLQ replay guard에 걸린 이벤트가 있습니다.",
+        advisorReadinessReason: "서비스 readiness가 ready가 아닙니다.",
+        advisorWorkerReason: "Worker replica 정보를 확인하지 못했습니다.",
+        advisorNormalNext: "샘플을 전송해 Kafka 적재와 DB 저장 흐름을 시연할 수 있습니다.",
+        advisorDlqNext: "DLQ reason과 sample payload를 확인하고 replay 또는 원인 수정을 결정합니다.",
+        advisorBlockedNext: "자동 replay 대상에서 제외된 이벤트입니다. 수동 처리 또는 데이터 보정이 필요합니다.",
+        advisorReadinessNext: "Readiness reason, Kafka, PostgreSQL 상태를 먼저 확인합니다.",
+        advisorWorkerNext: "Worker deployment와 KEDA HPA 상태를 확인합니다.",
         dangerTitle: "위험 작업",
         dangerHelp: "데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.",
         resetDemoDb: "데모 이벤트 DB 초기화",
@@ -855,12 +902,30 @@
         kafkaUnreachable: "unreachable",
         postgresReady: "primary reachable, {count} standby",
         postgresNotReady: "primary unreachable",
-        workerReady: "{available}/{desired} running, KEDA target {hpa}",
-        workerReadyNoHpa: "{available}/{desired} running",
+        workerReady: "{available}/{max} running, HPA target {hpa}",
+        workerReadyNoHpa: "{available} running",
         workerUnknown: "Unavailable",
         dlqEmpty: "No isolated events",
         dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
         opsRefreshFailed: "Operational status refresh failed",
+        advisorHelp: "Interprets operational signals with deterministic rules. No AI API is called.",
+        advisorStatus: "Status",
+        advisorReason: "Reason",
+        advisorNormal: "Normal",
+        advisorAttention: "Needs attention",
+        advisorCritical: "Immediate check",
+        advisorWaiting: "Not checked",
+        advisorNextDefault: "Refresh status to show the next operator check.",
+        advisorNormalReason: "Service, Kafka, DB, and DLQ signals are stable.",
+        advisorDlqReason: "Isolated events remain in DLQ.",
+        advisorBlockedReason: "Some DLQ events hit the replay guard.",
+        advisorReadinessReason: "Service readiness is not ready.",
+        advisorWorkerReason: "Worker replica information is unavailable.",
+        advisorNormalNext: "Send samples to demonstrate Kafka append and DB persistence.",
+        advisorDlqNext: "Check DLQ reason and sample payload, then decide replay or root-cause fix.",
+        advisorBlockedNext: "These events are excluded from automatic replay. Manual handling or data correction is required.",
+        advisorReadinessNext: "Check readiness reason, Kafka, and PostgreSQL first.",
+        advisorWorkerNext: "Check the Worker deployment and KEDA HPA status.",
         dangerTitle: "Danger Zone",
         dangerHelp: "Resets demo event data. User accounts are kept; order streams, messages, and request statuses are deleted.",
         resetDemoDb: "Reset Demo Event DB",
@@ -1183,6 +1248,7 @@
       setText("#ops-worker-status", t("checkPending"));
       setText("#ops-dlq-status", t("checkPending"));
       setText("#ops-last-checked", "-");
+      updateOperationsAdvisor(null, null);
     }
 
     function updateDlqSummaryPanel(summary) {
@@ -1212,11 +1278,12 @@
       if (Number.isFinite(readiness.worker?.available_replicas) && Number.isFinite(readiness.worker?.desired_replicas)) {
         setText(
           "#ops-worker-status",
-          Number.isFinite(readiness.worker?.hpa_desired_replicas)
+          Number.isFinite(readiness.worker?.hpa_desired_replicas) && Number.isFinite(readiness.worker?.max_replicas)
             ? formatText("workerReady", {
                 available: readiness.worker.available_replicas,
                 desired: readiness.worker.desired_replicas,
-                hpa: readiness.worker.hpa_desired_replicas
+                hpa: readiness.worker.hpa_desired_replicas,
+                max: readiness.worker.max_replicas
               })
             : formatText("workerReadyNoHpa", {
                 available: readiness.worker.available_replicas,
@@ -1226,6 +1293,42 @@
       } else {
         setText("#ops-worker-status", t("workerUnknown"));
       }
+    }
+
+    function updateOperationsAdvisor(readiness, dlqSummary) {
+      let statusKey = "advisorWaiting";
+      let reasonKey = "advisorNextDefault";
+      let nextKey = "advisorNextDefault";
+      const dlqTotal = Number(dlqSummary?.total || 0);
+      const dlqBlocked = Number(dlqSummary?.blocked || 0);
+
+      if (!readiness || !dlqSummary) {
+        statusKey = "advisorWaiting";
+      } else if (readiness.status !== "ready") {
+        statusKey = "advisorCritical";
+        reasonKey = "advisorReadinessReason";
+        nextKey = "advisorReadinessNext";
+      } else if (!Number.isFinite(readiness.worker?.available_replicas)) {
+        statusKey = "advisorAttention";
+        reasonKey = "advisorWorkerReason";
+        nextKey = "advisorWorkerNext";
+      } else if (dlqBlocked > 0) {
+        statusKey = "advisorCritical";
+        reasonKey = "advisorBlockedReason";
+        nextKey = "advisorBlockedNext";
+      } else if (dlqTotal > 0) {
+        statusKey = "advisorAttention";
+        reasonKey = "advisorDlqReason";
+        nextKey = "advisorDlqNext";
+      } else {
+        statusKey = "advisorNormal";
+        reasonKey = "advisorNormalReason";
+        nextKey = "advisorNormalNext";
+      }
+
+      setText("#advisor-status", t(statusKey));
+      setText("#advisor-reason", t(reasonKey));
+      setText("#advisor-next-step", t(nextKey));
     }
 
     let opsRefreshTimer = null;
@@ -1259,11 +1362,14 @@
         if (!dlqResponse.ok) {
           throw new Error(`dlq HTTP ${dlqResponse.status}`);
         }
-        updateDlqSummaryPanel(await dlqResponse.json());
+        const dlqSummary = await dlqResponse.json();
+        updateDlqSummaryPanel(dlqSummary);
+        updateOperationsAdvisor(readiness, dlqSummary);
         setText("#ops-last-checked", new Date().toLocaleTimeString());
       } catch (error) {
         setText("#ops-ready-status", t("notReadySummaryPrefix"));
         setText("#ops-dlq-status", t("notReadySummaryPrefix"));
+        updateOperationsAdvisor({ status: "not_ready" }, { total: 0 });
         log(`${t("opsRefreshFailed")}: ${describeFetchFailure(error)}`);
       } finally {
         button.disabled = false;
@@ -1593,7 +1699,7 @@
         renderEvents();
         resetPipeline();
         confirmationInput.value = "";
-        log(`demo event DB reset deleted_messages=${result.deleted_messages} reset_streams=${result.reset_streams}`);
+        log(`demo event DB reset deleted_messages=${result.deleted_messages} reset_streams=${result.reset_streams} reset_dlq_topic=${result.reset_dlq_topic || "-"}`);
       } catch (error) {
         log(`demo event DB reset failed: ${describeFetchFailure(error)}`);
       } finally {

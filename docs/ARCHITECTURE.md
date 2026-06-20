@@ -205,7 +205,7 @@ Kafka를 request intake 경로에 둔 이유는 queue buffer 역할과 함께 ev
   - bootstrap servers: `kafka.messaging-app.svc.cluster.local:9092`
   - consumer group: `message-worker`
   - topic: `message-ingress`
-  - lag threshold: `400`
+  - lag threshold: `100` for the local demo cluster
 
 Worker를 CPU나 Prometheus query가 아니라 KEDA Kafka scaler 기준으로 스케일링한 이유는, 이 프로젝트의 병목이 pure CPU보다 ingress rate와 downstream persistence 처리량의 차이에서 먼저 드러나기 때문입니다. KEDA는 Kafka broker의 `message-ingress` topic과 `message-worker` consumer group lag를 직접 확인해 `worker-keda-hpa` external metric을 만들고, Prometheus / kafka-exporter는 같은 lag를 운영자가 관측하고 alerting하기 위한 별도 경로입니다.
 

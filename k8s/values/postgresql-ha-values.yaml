@@ -31,7 +31,7 @@ pgpool:
   pdb:
     create: true
     minAvailable: 1
-  numInitChildren: 64
+  numInitChildren: 32
   maxPool: 2
   childMaxConnections: 100
   reservedConnections: 4

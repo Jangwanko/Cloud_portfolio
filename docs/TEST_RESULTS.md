@@ -139,7 +139,7 @@ Kafka Event Stream Systems 포트폴리오의 로컬 Kubernetes/kind 검증 결�
 - Pgpool `replicaCount`: `1 -> 2`
 - Pgpool PDB: `minAvailable=1`
 - PostgreSQL PDB: `minAvailable=2`
-- Pgpool `numInitChildren`: `128 -> 64`
+- Pgpool `numInitChildren`: `128 -> 64 -> 32` for local kind memory stability
 - Pgpool `maxPool`: `4 -> 2`
 - Pgpool `childMaxConnections`: `200 -> 100`
 - Worker retry: Kafka tail 재발행 대신 같은 offset에서 inline retry

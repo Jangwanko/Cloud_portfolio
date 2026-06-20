@@ -2095,5 +2095,5 @@ spec:
         bootstrapServers: kafka.messaging-app.svc.cluster.local:9092
         consumerGroup: message-worker
         topic: message-ingress
-        lagThreshold: "400"
+        lagThreshold: "100"
         offsetResetPolicy: earliest

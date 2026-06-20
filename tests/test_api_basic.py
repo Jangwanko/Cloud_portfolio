@@ -488,6 +488,12 @@ class TestOpenApiContract:
         ):
             assert field in dlq_summary
 
+        demo_reset = components["DemoResetResponse"]["properties"]
+        assert "reset_dlq_topic" in demo_reset
+
+        worker_health = components["WorkerHealthResponse"]["properties"]
+        assert "max_replicas" in worker_health
+
 
 class TestOrderEventApiContract:
     """Order-domain routes make the service scenario visible."""

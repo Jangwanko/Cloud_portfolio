@@ -127,7 +127,7 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - Pgpool `replicaCount`: `1 -> 2`
 - Pgpool PDB 추가: `minAvailable=1`
 - PostgreSQL PDB 명시: `minAvailable=2`
-- Pgpool `numInitChildren`: `128 -> 64`
+- Pgpool `numInitChildren`: `128 -> 64 -> 32` for local kind memory stability
 - Pgpool `maxPool`: `4 -> 2`
 - Pgpool `childMaxConnections`: `200 -> 100`
 - Pgpool `reservedConnections`: `2 -> 4`

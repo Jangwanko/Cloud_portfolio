@@ -173,6 +173,44 @@ def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
         consumer.close()
 
 
+def reset_topic(topic: str, partitions: int = 8, replication_factor: int = 3, configs: dict[str, str] | None = None) -> None:
+    from kafka import KafkaAdminClient
+    from kafka.admin import NewTopic
+    from kafka.errors import TopicAlreadyExistsError, UnknownTopicOrPartitionError
+
+    client = KafkaAdminClient(
+        bootstrap_servers=_bootstrap_servers(),
+        request_timeout_ms=3000,
+        api_version_auto_timeout_ms=3000,
+    )
+    try:
+        try:
+            client.delete_topics([topic], timeout_ms=5000)
+        except UnknownTopicOrPartitionError:
+            pass
+
+        deadline = time.monotonic() + 10
+        while topic in client.list_topics() and time.monotonic() < deadline:
+            time.sleep(0.2)
+
+        try:
+            client.create_topics(
+                [
+                    NewTopic(
+                        name=topic,
+                        num_partitions=partitions,
+                        replication_factor=replication_factor,
+                        topic_configs=configs or {},
+                    )
+                ],
+                timeout_ms=5000,
+            )
+        except TopicAlreadyExistsError:
+            pass
+    finally:
+        client.close()
+
+
 def ping_kafka() -> bool:
     try:
         from kafka import KafkaAdminClient

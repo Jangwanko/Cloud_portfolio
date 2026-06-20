@@ -497,11 +497,20 @@ class TestOperationalDocumentation:
             "ops-worker-status",
             "ops-dlq-status",
             "ops-last-checked",
+            "Operations Advisor",
+            "operations-advisor",
+            "advisor-status",
+            "advisor-reason",
+            "advisor-next-step",
+            "updateOperationsAdvisor",
+            "AI API는 호출하지 않습니다.",
+            "No AI API is called.",
             "refreshOpsStatus",
             "restartOpsAutoRefresh",
             "window.setInterval(refreshOpsStatus, intervalMs)",
             "updateReadinessPanel",
             "updateDlqSummaryPanel",
+            "reset_dlq_topic",
             "/health/ready",
             "브라우저가 API 요청을 막았습니다.",
             "http://localhost/demo/order-dashboard.html",
@@ -543,7 +552,7 @@ class TestOperationalDocumentation:
         assert "events.length = 0" not in clear_events
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
         assert "http://localhost/docs" in links_markup
-        assert "http://localhost/grafana" in links_markup
+        assert "http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" in links_markup
         assert "/v1/dlq/ingress/summary" not in links_markup
         assert "/health/ready" not in links_markup
 
@@ -728,6 +737,23 @@ class TestManifestContracts:
         assert "WaitForFirstConsumer" in install_script
         assert "postgres-backups" in install_script
         assert "Synced / Healthy" in gitops_docs
+
+    def test_worker_keda_demo_threshold_is_visible_in_manifests_and_docs(self):
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
+        architecture = read_text("docs/ARCHITECTURE.md")
+        kafka_experiment = read_text("docs/KAFKA_EXPERIMENT.md")
+
+        for manifest in (app_manifest, gitops_manifest):
+            assert "name: worker-keda" in manifest
+            assert "consumerGroup: message-worker" in manifest
+            assert "topic: message-ingress" in manifest
+            assert 'lagThreshold: "100"' in manifest
+            assert "minReplicaCount: 2" in manifest
+            assert "maxReplicaCount: 8" in manifest
+
+        assert "lag threshold: `100` for the local demo cluster" in architecture
+        assert "KEDA lag threshold: `100` for the local demo cluster" in kafka_experiment
 
     def test_portfolio_status_check_covers_runtime_control_plane(self):
         script = read_text("scripts/check_portfolio_status.ps1")

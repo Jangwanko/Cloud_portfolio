@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
-from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job, publish_stream_snapshot
+from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job, publish_stream_snapshot, reset_topic
 from portfolio.materialized_cache import (
     cache_stream_snapshot,
     get_cached_request_status,
@@ -88,6 +88,16 @@ def _reset_demo_event_data(cur) -> dict:
         "reset_streams": stream_count,
         "reset_request_statuses": request_status_count,
     }
+
+
+def _reset_demo_kafka_dlq() -> str:
+    reset_topic(
+        settings.kafka_dlq_topic,
+        partitions=8,
+        replication_factor=3,
+        configs={"min.insync.replicas": "2"},
+    )
+    return settings.kafka_dlq_topic
 
 
 def _externalize_request_status(payload: dict) -> dict:
@@ -262,13 +272,18 @@ def reset_demo_events(payload: DemoResetRequest, current_user: dict = Depends(ge
             except Exception:
                 conn.rollback()
                 raise
+    try:
+        reset_dlq_topic = _reset_demo_kafka_dlq()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Demo DB reset completed, but Kafka DLQ reset failed") from exc
 
     return {
         "status": "reset",
         "deleted_messages": result["deleted_messages"],
         "reset_streams": result["reset_streams"],
         "reset_request_statuses": result["reset_request_statuses"],
-        "note": f"Demo event data reset by user_id={current_user['id']}. Users were kept.",
+        "reset_dlq_topic": reset_dlq_topic,
+        "note": f"Demo event data and DLQ topic reset by user_id={current_user['id']}. Users were kept.",
     }
 
 

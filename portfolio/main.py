@@ -163,11 +163,15 @@ def _worker_runtime_status() -> dict:
         hpa_desired = _prometheus_query_value(
             f'kube_horizontalpodautoscaler_status_desired_replicas{{namespace="{namespace}",horizontalpodautoscaler="{hpa}"}}'
         )
+        hpa_max = _prometheus_query_value(
+            f'kube_horizontalpodautoscaler_spec_max_replicas{{namespace="{namespace}",horizontalpodautoscaler="{hpa}"}}'
+        )
         return {
             "deployment": deployment,
             "desired_replicas": desired,
             "available_replicas": available,
             "hpa_desired_replicas": hpa_desired,
+            "max_replicas": hpa_max,
             "source": "prometheus",
             "error": None,
         }
@@ -177,6 +181,7 @@ def _worker_runtime_status() -> dict:
             "desired_replicas": None,
             "available_replicas": None,
             "hpa_desired_replicas": None,
+            "max_replicas": None,
             "source": "unavailable",
             "error": type(exc).__name__,
         }
