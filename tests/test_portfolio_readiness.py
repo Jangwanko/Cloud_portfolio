@@ -388,6 +388,173 @@ class TestOperationalDocumentation:
 
         for token in (
             "Post-Order Event Console",
+            "language-toggle",
+            "setLanguage",
+            "translations",
+            "data-i18n",
+            "KO",
+            "EN",
+            "결제 완료",
+            "주문 완료",
+            "운영자 이벤트 큐",
+            "/v1/orders/",
+            "/v1/dlq/ingress/summary",
+            "payment_completed",
+            "delivery_started",
+            "needs_review",
+            "Pipeline Evidence",
+            "API accepted",
+            "Kafka appended",
+            "Worker persisted",
+            "1. API 접수됨",
+            "2. Kafka 적재됨",
+            "3. Worker 처리 중",
+            "4. DB 저장됨",
+            "DLQ summary",
+            "/v1/event-requests/",
+            "/v1/streams",
+            "createDemoOrderStream",
+            "10개 추가",
+            "100개 추가",
+            "1000개 추가",
+            "Add 10",
+            "Add 100",
+            "Add 1000",
+            "주문 이후 업무 이벤트 종류입니다.",
+            "API가 노출된 주소입니다.",
+            "데모 주문 stream id로 자동 갱신됩니다.",
+            "전송 전 예약 비우기",
+            "clear-event-list",
+            "sample-actions",
+            "send-action",
+            "처리 증거",
+            "처리 현황",
+            "예약 건수",
+            "Kafka 적재",
+            "DB 저장",
+            "총 소요시간",
+            "queue-metrics",
+            "grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1fr) minmax(300px, 0.78fr) minmax(300px, 0.78fr)",
+            "height: 250px",
+            "height: 190px",
+            "max-height: 190px",
+            "queued-count",
+            "processed-count",
+            "db-persisted-count",
+            "elapsed-seconds",
+            "result-panel",
+            "result-requested",
+            "result-kafka",
+            "result-persisted",
+            "result-cancelled",
+            "result-status",
+            "결과 정리",
+            "Result Summary",
+            "recordQueueEnqueued",
+            "recordQueueProcessed",
+            "recordKafkaAppended",
+            "recordDbPersisted",
+            "updateQueueMetrics",
+            "startProcessingRun",
+            "runStartedAt",
+            "runCompletedAt",
+            "runProcessed",
+            "markEventStatus",
+            "db_row",
+            "pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length)",
+            "아직 시작하지 않은 예약은 취소할 수 있고, 시작된 작업은 계속 추적합니다.",
+            "processReservedEvents",
+            "buildFormEvent",
+            "sendQueuedEvent",
+            "SEND_CONCURRENCY",
+            "sendNextReservedEvent",
+            "activeEvents",
+            "shouldRenderBatchProgress",
+            "Array.from({ length: senderCount }, () => sendNextReservedEvent())",
+            "예약 큐 처리 시작",
+            "cancelPendingReservations",
+            "events.splice(index, 1)",
+            "queueStats.cancelled += cancelledCount",
+            "queueStats.runTarget = Math.max(queueStats.runTarget - cancelledCount, queueStats.runProcessed)",
+            "proof-grid",
+            "Kafka topic",
+            "DB row",
+            "운영 링크는 확인용 보조 링크입니다.",
+            "운영 상태 확인",
+            "Readiness와 DLQ summary를 페이지 이동 없이 요약합니다.",
+            "상태 새로고침",
+            "5초마다",
+            "10초마다",
+            "Every 5s",
+            "Every 10s",
+            "Operational Checks",
+            "Refresh status",
+            "refresh-ops-status",
+            "ops-refresh-interval",
+            "ops-ready-status",
+            "ops-kafka-status",
+            "ops-postgres-status",
+            "ops-worker-status",
+            "ops-dlq-status",
+            "ops-last-checked",
+            "refreshOpsStatus",
+            "restartOpsAutoRefresh",
+            "window.setInterval(refreshOpsStatus, intervalMs)",
+            "updateReadinessPanel",
+            "updateDlqSummaryPanel",
+            "/health/ready",
+            "브라우저가 API 요청을 막았습니다.",
+            "http://localhost/demo/order-dashboard.html",
+            "deriveDefaultBaseUrl",
+            "describeFetchFailure",
+            "addSampleBatch",
+            "add-sample-1000",
+            "add1000",
+            "clearEvents",
+        ):
+            assert token in demo
+
+        assert 'document.documentElement.lang = language' in demo
+        assert 'document.querySelectorAll("[data-i18n]")' in demo
+        assert 'document.querySelectorAll("[data-language]")' in demo
+        assert "../docs/RUNBOOK.md" not in demo
+        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function cancelPendingReservations()", 1)[0]
+        assert "recordQueueEnqueued(count)" in sample_batch
+        assert "startQueueDrain" not in sample_batch
+        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
+        assert "reservedEvents.length === 0" in process_reserved
+        assert "recordQueueEnqueued(1)" in process_reserved
+        assert "startProcessingRun(reservedEvents.length)" in process_reserved
+        assert "const token = await ensureToken" in process_reserved
+        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
+        assert "const activeEvents = reservedEvents.filter" in process_reserved
+        assert "async function sendNextReservedEvent()" in process_reserved
+        assert "await sendQueuedEvent" in process_reserved
+        assert process_reserved.index('event.status = "sending"') < process_reserved.index("await sendQueuedEvent")
+        assert "recordKafkaAppended(1, uiSession)" in process_reserved
+        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length))" in process_reserved
+        assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
+        assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
+        assert "await Promise.all(pollTasks)" in process_reserved
+        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
+        assert "processReservedEvents" in send_order_event
+        clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
+        assert "cancelPendingReservations()" in clear_events
+        assert "events.length = 0" not in clear_events
+        links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
+        assert "http://localhost/docs" in links_markup
+        assert "http://localhost/grafana" in links_markup
+        assert "/v1/dlq/ingress/summary" not in links_markup
+        assert "/health/ready" not in links_markup
+
+        assert "demo/order-dashboard.html" in readme
+        assert "demo/order-dashboard.html" in repository_structure
+        assert 'app.mount("/demo"' in main
+        assert "COPY demo ./demo" in dockerfile
+        return
+
+        for token in (
+            "Post-Order Event Console",
             "결제 완료",
             "주문 완료",
             "운영자 이벤트 큐",
