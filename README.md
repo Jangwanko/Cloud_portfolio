@@ -27,7 +27,7 @@ The browser demo shows real local processing through API intake, Kafka append, W
 
 - Demo UI: `http://localhost/demo/order-dashboard.html`
 - API docs: `http://localhost/docs`
-- Grafana: `http://localhost/grafana`
+- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
 - Readiness: `http://localhost/health/ready`
 
 처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다. Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 `scripts/bootstrap_tools.ps1`이 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 준비합니다.
@@ -45,9 +45,13 @@ kubectl rollout restart deployment/api -n messaging-app
 kubectl rollout status deployment/api -n messaging-app --timeout=180s
 ```
 
-데모 화면에서는 `샘플 1개/10개/100개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, 처리량/sec를 분리해서 보여줍니다.
+데모 화면에서는 `샘플 10개/100개/1000개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, Worker 현재/최대 replica를 분리해서 보여줍니다.
 
-In the demo UI, add 1, 10, or 100 reserved sample events, then send the post-order event batch. The screen separates reserved events, Kafka appended events, DB persisted events, total elapsed time, and persisted throughput.
+In the demo UI, add 10, 100, or 1000 reserved sample events, then send the post-order event batch. The screen separates reserved events, Kafka appended events, DB persisted events, total elapsed time, and current/max Worker replicas.
+
+`예약 건수`는 전송 시작 후 `남은 예약/전체 예약` 형식으로 보이며, Kafka append가 성공한 시점에 줄어듭니다. `DB 저장`은 Worker가 PostgreSQL에 persistence한 수를 따로 보여줍니다.
+
+`Reserved` is shown as `remaining/total` after the send run starts. It decreases when the API appends an event to Kafka. `DB Persisted` is counted separately after Worker persistence succeeds.
 
 The demo also includes a lightweight rule-based Operations Advisor. It does not call an AI API. Instead, it interprets queue, Kafka append, DB persistence, and DLQ signals with deterministic rules. A future AI worker can consume the same advisor signals and produce richer operator-facing summaries outside the core persistence path.
 
@@ -56,11 +60,11 @@ English demo script:
 1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.
 2. Open `http://localhost/demo/order-dashboard.html`.
 3. Click `EN` if you want to run the demo in English.
-4. Click `Add 1 Sample`, `Add 10 Samples`, or `Add 100 Samples` to reserve post-order events.
+4. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples` to reserve post-order events.
 5. Click `Send Post-Order Events` and watch the counters move from Reserved to Kafka Appended to DB Persisted.
-6. Open Swagger, Grafana, DLQ summary, or Readiness from the operations links when you want to show supporting evidence.
+6. Use Swagger, Grafana, Readiness, DLQ summary, and Reset Demo DB from the operations panel when you want to show supporting evidence.
 
-실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
+실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 시연 순서는 [DEMO_GUIDE.md](docs/DEMO_GUIDE.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
 
 ## What This Proves
 
@@ -203,7 +207,7 @@ Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / 
 
 - Readiness: `http://localhost/health/ready`
 - Swagger / OpenAPI: `http://localhost/docs`, `/openapi.json`
-- Grafana: `http://localhost/grafana`
+- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
 - Prometheus: `http://localhost/prometheus/`
 - DLQ summary: `GET /v1/dlq/ingress/summary`
 
@@ -218,6 +222,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 ## Documentation Map
 
 - [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
+- [DEMO_GUIDE.md](docs/DEMO_GUIDE.md): 데모 화면 사용법과 시연 스크립트
 - [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): Kafka-centered 구조와 sequenceDiagram
 - [TEST_RESULTS.md](docs/TEST_RESULTS.md): 최신 검증 결과와 과거 baseline

@@ -2,6 +2,37 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-06-21 업데이트: 데모 운영 신호와 문서 기준 정리
+
+목표:
+
+- 현재 데모 화면의 실제 동작과 README / 운영 문서의 설명을 맞춘다.
+- 예약 건수, Kafka 적재, DB 저장, Worker replica 표시의 의미를 포트폴리오 시연 기준으로 고정한다.
+- 롤백 기준과 문서 운영 규칙을 `AGENTS.md`에 남겨 이후 작업에서 같은 혼선을 줄인다.
+
+변경 내용:
+
+- README의 Local Demo 설명을 현재 화면 기준으로 갱신했습니다.
+- 데모 샘플 단위를 `10개`, `100개`, `1000개`로 정리했습니다.
+- Grafana 링크를 운영 overview dashboard deep link로 바꿨습니다.
+- `처리량/sec` 설명을 제거하고 `총 소요시간`, Worker 현재/최대 replica 기준으로 설명했습니다.
+- `docs/DEMO_GUIDE.md`를 추가해 데모 URL, 실행 절차, counter 의미, Operations Advisor, reset 동작, 인터뷰용 설명을 분리했습니다.
+- `AGENTS.md`에 demo UI 변경 안전 규칙과 rollback 기준을 추가했습니다.
+- `AGENTS.md`의 KEDA Kafka scaler lag threshold를 현재 local demo 기준인 `100`으로 맞췄습니다.
+
+운영 의미:
+
+- `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
+- `Kafka 적재`는 API가 `message-ingress` topic에 append한 수입니다.
+- `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
+- Worker 표시는 `현재 replica/최대 replica`입니다. 예: `2/8`, `6/8`.
+- Operations Advisor는 rule-based AX 보조 영역이며 AI API를 호출하지 않습니다.
+- `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다.
+
+검증:
+
+- `.venv\Scripts\python.exe -m pytest -q`: `65 passed`
+
 ## 2026-06-19 업데이트: 운영형 데모 화면과 예약 큐 카운터 안정화
 
 목표:

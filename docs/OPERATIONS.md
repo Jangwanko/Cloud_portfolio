@@ -87,7 +87,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 
 ## 데모 접근
 로컬 데모 기준 운영 UI 경로:
-- Grafana: `http://localhost/grafana`
+- Grafana overview: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
 - Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
 
@@ -105,10 +105,18 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - 시작된 작업은 Kafka 적재와 DB 저장까지 계속 추적합니다.
 - 버튼을 누른 시점에 전송 중인 이벤트는 `sending` 상태로 분리되어 예약 취소 대상에 들어가지 않습니다.
 
+데모 counter 기준:
+- `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시하며, Kafka append 성공 시 줄어듭니다.
+- `Kafka 적재`는 API가 ingress topic append를 완료한 수입니다.
+- `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
+- `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
+- Worker 표시는 현재 replica와 최대 replica입니다. 예: `2/8`, `6/8`.
+
 `Demo event DB reset`:
 - 화면에서 `RESET DEMO DB`를 입력한 뒤 실행합니다.
 - API endpoint는 `POST /v1/admin/demo/reset-events`입니다.
 - 사용자 계정은 유지하고 데모 주문 stream, messages, request status, idempotency state, notification attempt 데이터를 초기화합니다.
+- `message-ingress-dlq` topic도 삭제 후 다시 만들어 DLQ summary를 함께 비웁니다.
 - 로컬 / 개발 / 테스트 성격의 `APP_ENV`에서만 허용합니다.
 - 포트폴리오 시연 전 누적된 데모 이벤트를 비울 때 사용합니다.
 

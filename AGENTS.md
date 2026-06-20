@@ -62,10 +62,10 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Ordering / failure injection verifies final persistence by querying PostgreSQL `messages` rows from inside the API pod, not by trusting Kafka accept alone.
 - Cache fallback validation: fresh read `source=cache`, DB down stale fallback `source=cache`, `degraded=true`.
 - Local HA topology: Kafka `3`, PostgreSQL `3`, Pgpool `2`, API min `3`, Worker min `2`, DLQ replayer `1`.
-- KEDA Kafka trigger: topic `message-ingress`, consumer group `message-worker`, lag threshold `400`, min replicas `2`, max replicas `8`.
+- KEDA Kafka trigger: topic `message-ingress`, consumer group `message-worker`, lag threshold `100` for the local demo cluster, min replicas `2`, max replicas `8`.
 - API HPA: CPU target `65%`, min replicas `3`, max replicas `8`.
 - Pgpool SPOF is reduced, not fully eliminated: Pgpool has `2` replicas and PDB `minAvailable=1`, but local kind remains a single-node demo environment.
-- Unit tests: `.venv\Scripts\python.exe -m pytest -q` => `60 passed` at the last documented verification.
+- Unit tests: `.venv\Scripts\python.exe -m pytest -q` => `65 passed` at the last documented verification.
 - GitOps status at last documented verification: Argo CD `Synced / Healthy`.
 
 ## Important Docs
@@ -147,3 +147,25 @@ Latest ordering / failure injection result after fixing local client skew:
 - Kafka 성능 수치는 append-first intake baseline과 ordering/recovery validation으로 설명합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
 - 문서와 답변에서 "단순히 A가 아니라 B"처럼 AI 말투가 강한 대비 문장을 피합니다. 필요하면 "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 자연스럽게 씁니다.
+
+## Demo UI Rules
+
+- 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
+- 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
+- `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
+- `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
+- `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
+- `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
+- Worker 표시는 `현재 replica/최대 replica` 형식으로 둡니다. 예: `2/8`, `6/8`. 화면에는 `HPA 목표`처럼 여러 의미로 읽히는 표현을 쓰지 않습니다.
+- Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
+- AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.
+- `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
+- 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
+
+## Rollback Rules
+
+- 사용자가 "롤백", "실행취소", "이전 상태", "N번 전"이라고 말하면 새로 비슷하게 재코딩하지 않습니다. 먼저 현재 `git status`, 최근 commit, 작업 diff를 확인하고 어느 변경을 되돌릴지 특정합니다.
+- uncommitted 변경은 해당 변경 범위만 되돌립니다. unrelated user change는 건드리지 않습니다.
+- committed 변경은 대상 commit이 명확할 때 `git revert` 또는 명시된 baseline으로의 선택적 되돌리기를 우선 검토합니다. `git reset --hard`, 전체 `git checkout -- .`, `git clean` 같은 광범위한 삭제성 명령은 사용자가 명확히 승인한 경우에만 씁니다.
+- 사용자가 "4번째 패널 전", "5번 전"처럼 UI 기준을 말하면, 최근 patch notes / commit log / diff에서 그 기준점을 먼저 찾아 설명한 뒤 되돌립니다.
+- rollback 요청 중에는 기능 개선을 함께 섞지 않습니다. 요청한 상태로 되돌린 뒤 별도 수정이 필요하면 그 다음 단계에서 처리합니다.
