@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-messaging-app}"
-IMAGE_NAME="${IMAGE_NAME:-messaging-portfolio:lite}"
+IMAGE_NAME="${IMAGE_NAME:-messaging-portfolio:local}"
 HOST_NAME="${HOST_NAME:-}"
 BASE_URL="${BASE_URL:-http://${HOST_NAME:-localhost}}"
 GRAFANA_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
