@@ -36,6 +36,22 @@ The browser demo shows real local processing through API intake, Kafka append, W
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
+2코어 2스레드급 서버에서는 full HA 구성을 그대로 올리기보다 `demo-lite` 프로파일을 사용합니다. 이 모드는 Kafka / PostgreSQL HA를 축소하고 API -> Kafka -> Worker -> DB 흐름 시연에 집중합니다.
+
+On a 2-core demo host, use the `demo-lite` profile instead of the full HA profile. It reduces Kafka and PostgreSQL HA capacity while keeping the visible API -> Kafka -> Worker -> DB flow.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_lite.ps1
+```
+
+서버에 실제 배포할 때는 k3s 기준 스크립트를 사용합니다.
+
+For a real 2-core Linux server deployment, use the k3s deployment script.
+
+```bash
+HOST_NAME=your.domain.example BASE_URL=http://your.domain.example bash scripts/deploy_lite_k3s.sh
+```
+
 이미 로컬 `kind` 클러스터가 있고 화면 변경만 반영하려면 아래 순서로 갱신합니다.
 
 ```powershell
@@ -223,6 +239,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 
 - [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
 - [DEMO_GUIDE.md](docs/DEMO_GUIDE.md): 데모 화면 사용법과 시연 스크립트
+- [DEMO_LITE.md](docs/DEMO_LITE.md): 2코어 저사양 서버용 demo-lite 프로파일
 - [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md): Kafka-centered 구조와 sequenceDiagram
 - [TEST_RESULTS.md](docs/TEST_RESULTS.md): 최신 검증 결과와 과거 baseline

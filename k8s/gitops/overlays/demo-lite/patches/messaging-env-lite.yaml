@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: messaging-env
+  namespace: messaging-app
+stringData:
+  APP_ENV: "k8s-demo-lite"
+  DB_POOL_MIN_CONN: "1"
+  DB_POOL_MAX_CONN: "4"
+  POSTGRES_MIN_READY_STANDBYS: "0"
+  POSTGRES_MIN_SYNC_STANDBYS: "0"
+  UVICORN_WORKERS: "1"

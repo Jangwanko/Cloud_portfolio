@@ -22,6 +22,12 @@ The browser demo shows the post-order event path from API intake to Kafka append
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
+2코어 2스레드급 서버에서는 full HA 대신 lite profile을 사용합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_lite.ps1
+```
+
 이미 클러스터가 있고 데모 화면 변경만 반영하려면 이미지를 다시 빌드하고 API deployment를 재시작합니다.
 
 ```powershell

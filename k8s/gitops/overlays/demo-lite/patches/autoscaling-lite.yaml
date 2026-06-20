@@ -1,0 +1,26 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-hpa
+  namespace: messaging-app
+spec:
+  minReplicas: 1
+  maxReplicas: 2
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker-keda
+  namespace: messaging-app
+spec:
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  cooldownPeriod: 180
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka.messaging-app.svc.cluster.local:9092
+        consumerGroup: message-worker
+        topic: message-ingress
+        lagThreshold: "100"
+        offsetResetPolicy: earliest

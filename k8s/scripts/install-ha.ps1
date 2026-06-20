@@ -1,5 +1,6 @@
 param(
   [string]$Namespace = "messaging-app",
+  [string]$ValuesFile = "k8s/values/postgresql-ha-values.yaml",
   [switch]$PrepareImages
 )
 
@@ -117,7 +118,7 @@ $pgHaSource = if ($pgHaChart) { $pgHaChart.FullName } else { "bitnami/postgresql
 
 & $helm upgrade --install messaging-postgresql-ha $pgHaSource `
   -n $Namespace `
-  -f k8s/values/postgresql-ha-values.yaml `
+  -f $ValuesFile `
   --wait --timeout 15m
 
 Grant-PostgresMonitorRole -Namespace $Namespace

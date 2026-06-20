@@ -2,6 +2,39 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-06-21 업데이트: 2코어 서버용 demo-lite 프로파일 추가
+
+목표:
+
+- 2코어 2스레드급 서버에서 포트폴리오 데모를 실행할 수 있는 축소 profile을 제공한다.
+- 기존 full-ha 기준은 유지하고, 저사양 서버에서는 API -> Kafka -> Worker -> DB 흐름 시연에 집중한다.
+- demo-lite 결과가 full-ha Kafka baseline과 섞이지 않도록 문서 경계를 둔다.
+
+변경 내용:
+
+- `demo-lite` 브랜치를 만들고 저사양 서버용 설정을 분리했습니다.
+- `k8s/gitops/overlays/demo-lite` kustomize overlay를 추가했습니다.
+- `k8s/values/postgresql-lite-values.yaml`을 추가했습니다.
+- `scripts/quick_start_lite.ps1`를 추가했습니다.
+- `scripts/deploy_lite_k3s.sh`를 추가해 2코어 Linux 서버의 k3s 배포 흐름을 분리했습니다.
+- `k8s/scripts/install-ha.ps1`에 `-ValuesFile` 파라미터를 추가해 HA / lite PostgreSQL values를 선택할 수 있게 했습니다.
+- README, `docs/DEMO_GUIDE.md`, `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 full-ha와 demo-lite의 차이를 정리했습니다.
+
+demo-lite 기준:
+
+- Kafka: `1 broker`, replication factor `1`, min ISR `1`, partitions `3`
+- PostgreSQL: `1 PostgreSQL`, `1 Pgpool`
+- API: min `1`, max `2`
+- Worker: min `1`, max `2`
+- notification-worker / dlq-replayer: `0` replica
+- Prometheus / Grafana: 유지하되 resource request를 낮춤
+
+해석:
+
+- demo-lite는 HA 성능 증명이 아니라 저사양 서버용 시연 profile입니다.
+- 장애 허용성, Kafka 3 broker, PostgreSQL HA, KEDA scale-out baseline은 full-ha profile에서 설명합니다.
+- demo-lite 성능 수치는 `docs/TEST_RESULTS.md`의 Kafka baseline과 섞지 않습니다.
+
 ## 2026-06-21 업데이트: 데모 운영 신호와 문서 기준 정리
 
 목표:
