@@ -152,6 +152,7 @@ render_manifest_for_k3s() {
 
   python3 - "$RENDERED_MANIFEST" "$HOST_NAME" <<'PY'
 import sys
+import ipaddress
 from pathlib import Path
 
 path = Path(sys.argv[1])
@@ -160,8 +161,19 @@ text = path.read_text(encoding="utf-8")
 
 text = text.replace("ingressClassName: nginx", "ingressClassName: traefik")
 if host:
-    text = text.replace("host: localhost", f"host: {host}")
-    text = text.replace("- localhost", f"- {host}")
+    is_ip = False
+    try:
+        ipaddress.ip_address(host)
+        is_ip = True
+    except ValueError:
+        is_ip = False
+
+    if is_ip:
+        text = text.replace("    - host: localhost\n      http:", "    - http:")
+        text = text.replace("    - localhost", "    - localhost")
+    else:
+        text = text.replace("host: localhost", f"host: {host}")
+        text = text.replace("- localhost", f"- {host}")
 
 path.write_text(text, encoding="utf-8")
 PY
