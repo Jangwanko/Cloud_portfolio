@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
+import json
 import logging
 import threading
 import time
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -132,9 +135,57 @@ def _degraded_grace_remaining(status: str) -> int | None:
     return max(0, settings.readiness_degraded_grace_seconds - elapsed)
 
 
+def _prometheus_query_value(query: str) -> int | None:
+    url = f"{settings.prometheus_base_url.rstrip('/')}/api/v1/query?{urlencode({'query': query})}"
+    with urlopen(url, timeout=2) as response:  # noqa: S310 - URL is local cluster configuration.
+        payload = json.loads(response.read().decode("utf-8"))
+
+    results = payload.get("data", {}).get("result", [])
+    if not results:
+        return None
+    value = results[0].get("value", [None, None])[1]
+    if value is None:
+        return None
+    return int(float(value))
+
+
+def _worker_runtime_status() -> dict:
+    namespace = settings.k8s_namespace
+    deployment = settings.worker_deployment_name
+    hpa = settings.worker_hpa_name
+    try:
+        desired = _prometheus_query_value(
+            f'kube_deployment_spec_replicas{{namespace="{namespace}",deployment="{deployment}"}}'
+        )
+        available = _prometheus_query_value(
+            f'kube_deployment_status_replicas_available{{namespace="{namespace}",deployment="{deployment}"}}'
+        )
+        hpa_desired = _prometheus_query_value(
+            f'kube_horizontalpodautoscaler_status_desired_replicas{{namespace="{namespace}",horizontalpodautoscaler="{hpa}"}}'
+        )
+        return {
+            "deployment": deployment,
+            "desired_replicas": desired,
+            "available_replicas": available,
+            "hpa_desired_replicas": hpa_desired,
+            "source": "prometheus",
+            "error": None,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "deployment": deployment,
+            "desired_replicas": None,
+            "available_replicas": None,
+            "hpa_desired_replicas": None,
+            "source": "unavailable",
+            "error": type(exc).__name__,
+        }
+
+
 def _build_readiness_payload() -> tuple[int, dict]:
     postgres_status = get_postgres_runtime_status()
     kafka_reachable = ping_kafka()
+    worker_status = _worker_runtime_status()
     reasons: list[str] = []
     status_code = 200
     overall_status = "ready"
@@ -165,6 +216,7 @@ def _build_readiness_payload() -> tuple[int, dict]:
             "standby_count": postgres_status["standby_count"],
             "sync_standby_count": postgres_status["sync_standby_count"],
         },
+        "worker": worker_status,
     }
     return status_code, payload
 

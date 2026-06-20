@@ -21,6 +21,7 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - 운영 로그와 이벤트 목록은 높이를 고정해 이벤트가 많아져도 화면이 끝없이 늘어나지 않게 했습니다.
 - 운영 링크 영역에 `Demo event DB reset` 작업을 추가했습니다. 사용자가 `RESET DEMO DB`를 입력해야 `/v1/admin/demo/reset-events`가 실행됩니다.
 - `DemoResetRequest`, `DemoResetResponse` schema와 reset API 계약 테스트를 추가했습니다.
+- `Operations Advisor` 카드를 추가했습니다. 현재는 AI API를 호출하지 않고, 예약 건수 / Kafka 적재 / DB 저장 차이를 정해진 규칙으로 해석해 운영자에게 다음 확인 항목을 제시합니다.
 
 버그 수정:
 
@@ -48,6 +49,7 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 - `예약 건수`는 아직 DB 저장 완료 전인 데모 예약 / 진행 중 작업의 남은 수를 의미합니다.
 - `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료가 같은 단계가 아니라는 점을 보여줍니다.
 - `전송 전 예약 비우기`는 시작 전 예약 취소입니다. 이미 시작한 Kafka / Worker 작업을 취소하는 기능은 아닙니다.
+- `Operations Advisor`는 AX 확장 지점을 보여주기 위한 rule-based 단계입니다. 향후 별도 AI Worker가 같은 운영 신호를 소비해 더 풍부한 요약을 생성할 수 있지만, 핵심 persistence path에는 들어가지 않습니다.
 
 ## 1차 실험: Kafka 이벤트 스트림 기준선
 

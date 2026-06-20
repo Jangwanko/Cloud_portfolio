@@ -186,6 +186,15 @@ class PostgresHealthResponse(BaseModel):
     sync_standby_count: int
 
 
+class WorkerHealthResponse(BaseModel):
+    deployment: str
+    desired_replicas: int | None = None
+    available_replicas: int | None = None
+    hpa_desired_replicas: int | None = None
+    source: str
+    error: str | None = None
+
+
 class ReadinessResponse(BaseModel):
     status: str
     reason: list[str]
@@ -193,6 +202,7 @@ class ReadinessResponse(BaseModel):
     queue_backend: str
     kafka: KafkaHealthResponse
     postgres: PostgresHealthResponse
+    worker: WorkerHealthResponse
 
 
 class LiveHealthResponse(BaseModel):

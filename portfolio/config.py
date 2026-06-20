@@ -58,6 +58,10 @@ class Settings:
     kafka_notification_consumer_group: str = os.getenv(
         "KAFKA_NOTIFICATION_CONSUMER_GROUP", "notification-worker"
     )
+    prometheus_base_url: str = os.getenv("PROMETHEUS_BASE_URL", "http://prometheus:9090/prometheus")
+    k8s_namespace: str = os.getenv("K8S_NAMESPACE", "messaging-app")
+    worker_deployment_name: str = os.getenv("WORKER_DEPLOYMENT_NAME", "worker")
+    worker_hpa_name: str = os.getenv("WORKER_HPA_NAME", "worker-keda-hpa")
     worker_mode: str = os.getenv("WORKER_MODE", "ingress")
     snapshot_cache_fresh_seconds: float = float(os.getenv("SNAPSHOT_CACHE_FRESH_SECONDS", "5"))
 

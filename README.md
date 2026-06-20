@@ -49,6 +49,8 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
 
 In the demo UI, add 1, 10, or 100 reserved sample events, then send the post-order event batch. The screen separates reserved events, Kafka appended events, DB persisted events, total elapsed time, and persisted throughput.
 
+The demo also includes a lightweight rule-based Operations Advisor. It does not call an AI API. Instead, it interprets queue, Kafka append, DB persistence, and DLQ signals with deterministic rules. A future AI worker can consume the same advisor signals and produce richer operator-facing summaries outside the core persistence path.
+
 English demo script:
 
 1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.

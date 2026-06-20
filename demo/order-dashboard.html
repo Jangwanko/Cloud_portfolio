@@ -32,12 +32,8 @@
     }
 
     header {
-      align-items: center;
       border-bottom: 1px solid var(--line);
       background: var(--panel);
-      display: flex;
-      gap: 16px;
-      justify-content: space-between;
       padding: 20px 28px;
     }
 
@@ -131,24 +127,6 @@
     button.secondary {
       background: #edf2f7;
       color: var(--ink);
-    }
-
-    .language-toggle {
-      align-items: center;
-      display: inline-flex;
-      gap: 4px;
-      white-space: nowrap;
-    }
-
-    .language-toggle button {
-      background: #edf2f7;
-      color: var(--ink);
-      padding: 8px 10px;
-    }
-
-    .language-toggle button.active {
-      background: var(--accent);
-      color: #fff;
     }
 
     button:disabled {
@@ -341,31 +319,6 @@
       white-space: pre-wrap;
     }
 
-    .danger-zone {
-      background: #fff1f0;
-      border: 1px solid #ffb4ab;
-      border-radius: 8px;
-      display: grid;
-      gap: 10px;
-      padding: 12px;
-    }
-
-    .danger-zone h3 {
-      color: var(--danger);
-      margin-bottom: 0;
-    }
-
-    .danger-actions {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-    }
-
-    button.danger {
-      background: var(--danger);
-      color: #fff;
-    }
-
     .pipeline {
       display: grid;
       gap: 10px;
@@ -421,15 +374,9 @@
     }
 
     @media (max-width: 860px) {
-      header {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
       .grid,
       .row,
       .sample-actions,
-      .danger-actions,
       .queue-metrics,
       .proof-grid,
       .status-strip {
@@ -444,31 +391,25 @@
 </head>
 <body>
   <header>
-    <div>
-      <h1>Post-Order Event Console</h1>
-      <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
-    </div>
-    <div class="language-toggle" aria-label="Language">
-      <button class="active" data-language="ko" type="button">KO</button>
-      <button data-language="en" type="button">EN</button>
-    </div>
+    <h1>Post-Order Event Console</h1>
+    <p class="subtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
   </header>
 
   <main class="stack">
     <div class="status-strip">
-      <div class="status"><strong data-i18n="customerResponse">사용자 응답</strong><span id="customer-status">주문 대기</span></div>
+      <div class="status"><strong>사용자 응답</strong><span id="customer-status">주문 대기</span></div>
       <div class="status"><strong>Kafka intake</strong><span id="kafka-status">미전송</span></div>
-      <div class="status"><strong data-i18n="operatorCategory">운영 분류</strong><span id="category-status">-</span></div>
+      <div class="status"><strong>운영 분류</strong><span id="category-status">-</span></div>
     </div>
 
     <div class="grid">
       <section class="stack">
         <div>
-          <h2 data-i18n="customerFlow">사용자 주문 흐름</h2>
-          <p class="subtitle" data-i18n="customerFlowSubtitle">결제 완료, 주문 완료 응답만 사용자에게 보여준다.</p>
+          <h2>사용자 주문 흐름</h2>
+          <p class="subtitle">결제 완료, 주문 완료 응답만 사용자에게 보여준다.</p>
         </div>
 
-        <div class="notice" data-i18n="notice">
+        <div class="notice">
           결제 완료와 주문 완료 이후의 저장, 분류, 알림, DLQ 처리는 내부 이벤트 파이프라인에서 이어진다. 실제 Worker persistence 증거를 보기 위해 전송 전 데모 주문 stream을 준비한다.
         </div>
 
@@ -476,12 +417,12 @@
           <div>
             <label for="base-url">API Base URL</label>
             <input id="base-url" value="http://localhost" autocomplete="off">
-            <p class="field-help" data-i18n="baseUrlHelp">API가 노출된 주소입니다.</p>
+            <p class="field-help">API가 노출된 주소입니다.</p>
           </div>
           <div>
             <label for="order-id">Order ID</label>
             <input id="order-id" type="number" value="1001">
-            <p class="field-help" data-i18n="orderIdHelp">데모 주문 stream id로 자동 갱신됩니다.</p>
+            <p class="field-help">데모 주문 stream id로 자동 갱신됩니다.</p>
           </div>
         </div>
 
@@ -489,12 +430,12 @@
           <div>
             <label for="username">Demo username</label>
             <input id="username" value="demo-order-user">
-            <p class="field-help" data-i18n="usernameHelp">데모 인증에 사용할 계정입니다.</p>
+            <p class="field-help">데모 인증에 사용할 계정입니다.</p>
           </div>
           <div>
             <label for="password">Demo password</label>
             <input id="password" type="password" value="Password123!">
-            <p class="field-help" data-i18n="passwordHelp">로컬 데모 로그인용 비밀번호입니다.</p>
+            <p class="field-help">로컬 데모 로그인용 비밀번호입니다.</p>
           </div>
         </div>
 
@@ -509,59 +450,58 @@
               <option value="support_requested">support_requested</option>
               <option value="manual_exception">manual_exception</option>
             </select>
-            <p class="field-help" data-i18n="eventTypeHelp">주문 이후 업무 이벤트 종류입니다.</p>
+            <p class="field-help">주문 이후 업무 이벤트 종류입니다.</p>
           </div>
           <div>
             <label for="payment-id">Payment ID</label>
             <input id="payment-id" value="pay-demo-1001">
-            <p class="field-help" data-i18n="paymentIdHelp">결제 추적용 외부 식별자입니다.</p>
+            <p class="field-help">결제 추적용 외부 식별자입니다.</p>
           </div>
         </div>
 
         <div>
           <label for="body">Event body</label>
           <textarea id="body">결제 완료 후 주문 생성 이벤트</textarea>
-          <p class="field-help" data-i18n="bodyHelp">운영자가 확인할 이벤트 내용입니다.</p>
+          <p class="field-help">운영자가 확인할 이벤트 내용입니다.</p>
         </div>
 
         <div class="sample-actions">
-          <button class="secondary" id="add-sample" data-i18n="addSample1">샘플 1개 추가</button>
-          <button class="secondary" id="add-sample-10" data-i18n="addSample10">샘플 10개 추가</button>
-          <button class="secondary" id="add-sample-100" data-i18n="addSample100">샘플 100개 추가</button>
+          <button class="secondary" id="add-sample">샘플 1개 추가</button>
+          <button class="secondary" id="add-sample-10">샘플 10개 추가</button>
+          <button class="secondary" id="add-sample-100">샘플 100개 추가</button>
         </div>
         <div class="send-action">
-          <button id="send-event" data-i18n="sendEvents">결제 완료 / 주문 완료 이벤트 보내기</button>
+          <button id="send-event">결제 완료 / 주문 완료 이벤트 보내기</button>
         </div>
       </section>
 
       <section class="stack">
         <div class="section-head">
           <div>
-            <h2 data-i18n="operatorQueue">운영자 이벤트 큐</h2>
-            <p class="subtitle" data-i18n="operatorQueueSubtitle">분류, request id, Kafka 수락 상태를 한 화면에서 확인한다.</p>
+            <h2>운영자 이벤트 큐</h2>
+            <p class="subtitle">분류, request id, Kafka 수락 상태를 한 화면에서 확인한다.</p>
           </div>
-          <button class="secondary compact-button" id="clear-event-list" data-i18n="clearQueue">전송 전 예약 비우기</button>
+          <button class="secondary compact-button" id="clear-event-list">운영자 이벤트 큐 비우기</button>
         </div>
         <div>
-          <h3 data-i18n="processingStatus">처리 현황</h3>
-          <p class="field-help" data-i18n="queueHelp">샘플은 전송 전 예약 큐에 추가됩니다. Kafka 적재와 DB 저장을 분리해서 집계합니다.</p>
-          <p class="field-help" data-i18n="clearQueueHelp">아직 전송하지 않은 예약만 삭제합니다. 시작한 작업은 취소되지 않고 계속 추적합니다.</p>
+          <h3>처리 현황</h3>
+          <p class="field-help">샘플은 전송 전 예약 큐에 추가됩니다. Kafka 적재와 DB 저장을 분리해서 집계합니다.</p>
           <div class="queue-metrics">
-            <div class="queue-metric"><strong data-i18n="reserved">예약 건수</strong><span id="queued-count">0</span></div>
-            <div class="queue-metric"><strong data-i18n="kafkaAppended">Kafka 적재</strong><span id="processed-count">0</span></div>
-            <div class="queue-metric"><strong data-i18n="dbPersisted">DB 저장</strong><span id="db-persisted-count">0</span></div>
-            <div class="queue-metric"><strong data-i18n="totalElapsed">총 소요시간</strong><span id="elapsed-seconds">0.0s</span></div>
-            <div class="queue-metric"><strong data-i18n="persistedPerSec">처리량/sec</strong><span id="throughput-rate">0.0</span></div>
+            <div class="queue-metric"><strong>예약 건수</strong><span id="queued-count">0</span></div>
+            <div class="queue-metric"><strong>Kafka 적재</strong><span id="processed-count">0</span></div>
+            <div class="queue-metric"><strong>DB 저장</strong><span id="db-persisted-count">0</span></div>
+            <div class="queue-metric"><strong>총 소요시간</strong><span id="elapsed-seconds">0.0s</span></div>
+            <div class="queue-metric"><strong>처리량/sec</strong><span id="throughput-rate">0.0</span></div>
           </div>
         </div>
         <div class="event-list" id="event-list"></div>
 
         <div>
           <h2>Pipeline Evidence</h2>
-          <p class="subtitle" data-i18n="pipelineSubtitle">API accepted -> Kafka appended -> Worker persisted -> DB 저장 흐름을 추적.</p>
+          <p class="subtitle">API accepted -> Kafka appended -> Worker persisted -> DB 저장 흐름을 추적한다.</p>
         </div>
         <div>
-          <h3 data-i18n="proofTitle">처리 증거</h3>
+          <h3>처리 증거</h3>
           <div class="proof-grid">
             <div class="proof"><strong>Request ID</strong><span id="proof-request">-</span></div>
             <div class="proof"><strong>Kafka topic</strong><span id="proof-topic">-</span></div>
@@ -573,35 +513,35 @@
           <div class="step" data-step="api">
             <span class="dot">1</span>
             <div>
-              <div class="step-title" data-i18n="stepApi">1. API 접수됨</div>
+              <div class="step-title">1. API 접수됨</div>
               <div class="evidence">아직 전송된 이벤트가 없습니다.</div>
             </div>
           </div>
           <div class="step" data-step="kafka">
             <span class="dot">2</span>
             <div>
-              <div class="step-title" data-i18n="stepKafka">2. Kafka 적재됨</div>
+              <div class="step-title">2. Kafka 적재됨</div>
               <div class="evidence">API accepted는 ingress topic append 성공을 의미합니다.</div>
             </div>
           </div>
           <div class="step" data-step="worker">
             <span class="dot">3</span>
             <div>
-              <div class="step-title" data-i18n="stepWorker">3. Worker 처리 중</div>
+              <div class="step-title">3. Worker 처리 중</div>
               <div class="evidence">request status polling 대기 중</div>
             </div>
           </div>
           <div class="step" data-step="db">
             <span class="dot">4</span>
             <div>
-              <div class="step-title" data-i18n="stepDb">4. DB 저장됨</div>
+              <div class="step-title">4. DB 저장됨</div>
               <div class="evidence">Worker persistence 완료 전</div>
             </div>
           </div>
           <div class="step" data-step="dlq">
             <span class="dot">5</span>
             <div>
-              <div class="step-title" data-i18n="stepDlq">5. DLQ 확인</div>
+              <div class="step-title">5. DLQ 확인</div>
               <div class="evidence">DLQ summary 조회 전</div>
             </div>
           </div>
@@ -610,225 +550,19 @@
     </div>
 
     <section class="stack">
-      <h2 data-i18n="opsLinks">운영 링크</h2>
-      <p class="subtitle" data-i18n="opsLinksSubtitle">운영 링크는 확인용 보조 링크입니다. 데모의 핵심 증거는 위 처리 증거와 Pipeline Evidence에서 봅니다.</p>
+      <h2>운영 링크</h2>
+      <p class="subtitle">운영 링크는 확인용 보조 링크입니다. 데모의 핵심 증거는 위 처리 증거와 Pipeline Evidence에서 봅니다.</p>
       <div class="links">
         <a href="http://localhost/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
         <a href="http://localhost/grafana" target="_blank" rel="noreferrer">Grafana</a>
         <a href="http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5" target="_blank" rel="noreferrer">DLQ summary</a>
         <a href="http://localhost/health/ready" target="_blank" rel="noreferrer">Readiness /health/ready</a>
       </div>
-      <div class="danger-zone">
-        <h3 data-i18n="dangerTitle">위험 작업</h3>
-        <p class="field-help" data-i18n="dangerHelp">데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.</p>
-        <div class="danger-actions">
-          <input id="reset-confirmation" autocomplete="off" placeholder="RESET DEMO DB">
-          <button class="danger" id="reset-demo-db" data-i18n="resetDemoDb">데모 이벤트 DB 초기화</button>
-        </div>
-      </div>
       <div class="log" id="log">ready</div>
     </section>
   </main>
 
   <script>
-    let currentLanguage = "ko";
-    const translations = {
-      ko: {
-        pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
-        customerResponse: "사용자 응답",
-        operatorCategory: "운영 분류",
-        customerFlow: "사용자 주문 흐름",
-        customerFlowSubtitle: "결제 완료, 주문 완료 응답만 사용자에게 보여준다.",
-        notice: "결제 완료와 주문 완료 이후의 저장, 분류, 알림, DLQ 처리는 내부 이벤트 파이프라인에서 이어진다. 실제 Worker persistence 증거를 보기 위해 전송 전 데모 주문 stream을 준비한다.",
-        baseUrlHelp: "API가 노출된 주소입니다.",
-        orderIdHelp: "데모 주문 stream id로 자동 갱신됩니다.",
-        usernameHelp: "데모 인증에 사용할 계정입니다.",
-        passwordHelp: "로컬 데모 로그인용 비밀번호입니다.",
-        eventTypeHelp: "주문 이후 업무 이벤트 종류입니다.",
-        paymentIdHelp: "결제 추적용 외부 식별자입니다.",
-        bodyHelp: "운영자가 확인할 이벤트 내용입니다.",
-        addSample1: "샘플 1개 추가",
-        addSample10: "샘플 10개 추가",
-        addSample100: "샘플 100개 추가",
-        sendEvents: "결제 완료 / 주문 완료 이벤트 보내기",
-        operatorQueue: "운영자 이벤트 큐",
-        operatorQueueSubtitle: "분류, request id, Kafka 수락 상태를 한 화면에서 확인한다.",
-        clearQueue: "전송 전 예약 비우기",
-        processingStatus: "처리 현황",
-        queueHelp: "샘플은 전송 전 예약 큐에 추가됩니다. Kafka 적재와 DB 저장을 분리해서 집계합니다.",
-        clearQueueHelp: "아직 전송하지 않은 예약만 삭제합니다. 시작한 작업은 취소되지 않고 계속 추적합니다.",
-        reserved: "예약 건수",
-        kafkaAppended: "Kafka 적재",
-        dbPersisted: "DB 저장",
-        totalElapsed: "총 소요시간",
-        persistedPerSec: "처리량/sec",
-        pipelineSubtitle: "API accepted -> Kafka appended -> Worker persisted -> DB 저장 흐름을 추적.",
-        proofTitle: "처리 증거",
-        stepApi: "1. API 접수됨",
-        stepKafka: "2. Kafka 적재됨",
-        stepWorker: "3. Worker 처리 중",
-        stepDb: "4. DB 저장됨",
-        stepDlq: "5. DLQ 확인",
-        opsLinks: "운영 링크",
-        opsLinksSubtitle: "운영 링크는 확인용 보조 링크입니다. 데모의 핵심 증거는 위 처리 증거와 Pipeline Evidence에서 봅니다.",
-        dangerTitle: "위험 작업",
-        dangerHelp: "데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.",
-        resetDemoDb: "데모 이벤트 DB 초기화",
-        waitingOrder: "주문 대기",
-        notSent: "미전송",
-        emptyTitle: "아직 이벤트가 없습니다.",
-        emptyMeta: "샘플을 추가하거나 API로 이벤트를 보내세요.",
-        noEventSent: "아직 전송된 이벤트가 없습니다.",
-        kafkaAcceptedMeaning: "API accepted는 ingress topic append 성공을 의미합니다.",
-        workerPollingReady: "request status polling 대기 중",
-        dbBeforePersistence: "Worker persistence 완료 전",
-        dlqBeforeSummary: "DLQ summary 조회 전",
-        dbSavedPrefix: "DB 저장됨",
-        waiting: "대기 중",
-        beforeSave: "저장 전",
-        sendBlocked: "브라우저가 API 요청을 막았습니다. http://localhost/demo/order-dashboard.html 주소로 열었는지 확인하세요.",
-        paymentDone: "결제 완료",
-        orderDone: "주문 완료",
-        sending: "전송 중",
-        beforeSend: "전송 전",
-        apiCheckRequired: "API 확인 필요",
-        timeoutWorker: "아직 persisted 확인 전입니다. Worker lag 또는 DB 상태를 확인하세요.",
-        timeoutDb: "DB 저장 완료를 아직 확인하지 못했습니다.",
-        notConfirmed: "확인 전",
-        queueApiWaiting: "예약 큐 {count}건 API 접수 대기",
-        dbCheckWaiting: "DB 저장 확인 대기",
-        sendWaiting: "전송 대기",
-        queueStart: "예약 큐 처리 시작",
-        workerConsumeWaiting: "Worker가 request_id={requestId} consume 대기",
-        dbDoneWaiting: "DB 저장 완료 대기",
-        queueKept: "예약 큐는 보존됨",
-        workerAfterApi: "API 전송 성공 후 처리됨",
-        dbBeforeSave: "DB 저장 전",
-        sendFailed: "전송 실패",
-        reservedAdded: "예약 큐 {count}건 추가",
-        kafkaBeforeSend: "아직 Kafka 전송 전",
-        workerAfterSend: "전송 버튼을 누르면 Worker 처리 확인",
-        dbAfterSend: "전송 후 DB 저장 확인",
-        dlqAfterSend: "전송 후 DLQ summary 조회",
-        samplePreview: "전송 대기",
-        defaultBody: "결제 완료 후 주문 생성 이벤트"
-      },
-      en: {
-        pageSubtitle: "Users see payment and order completion, while operators track the Kafka-backed processing path.",
-        customerResponse: "User Response",
-        operatorCategory: "Operator Category",
-        customerFlow: "Customer Order Flow",
-        customerFlowSubtitle: "Only payment and order completion are shown to the customer.",
-        notice: "After payment and order completion, persistence, classification, notifications, DLQ isolation, and replay continue inside the event pipeline.",
-        baseUrlHelp: "The exposed API endpoint for the local demo.",
-        orderIdHelp: "Automatically refreshed with a demo order stream id.",
-        usernameHelp: "Demo account used for local authentication.",
-        passwordHelp: "Password for the local demo login.",
-        eventTypeHelp: "Business event type emitted after an order.",
-        paymentIdHelp: "External identifier used for payment tracing.",
-        bodyHelp: "Event content visible to the operator.",
-        addSample1: "Add 1 Sample",
-        addSample10: "Add 10 Samples",
-        addSample100: "Add 100 Samples",
-        sendEvents: "Send Post-Order Events",
-        operatorQueue: "Operator Event Queue",
-        operatorQueueSubtitle: "Track classification, request id, and Kafka acceptance in one view.",
-        clearQueue: "Clear Pending Reservations",
-        processingStatus: "Processing Status",
-        queueHelp: "Samples are reserved before sending. Kafka appended and DB persisted counts are tracked separately.",
-        clearQueueHelp: "Only unsent reservations are removed. Started jobs are not cancelled and remain tracked.",
-        reserved: "Reserved",
-        kafkaAppended: "Kafka Appended",
-        dbPersisted: "DB Persisted",
-        totalElapsed: "Total Elapsed",
-        persistedPerSec: "Persisted/sec",
-        pipelineSubtitle: "Tracks API accepted -> Kafka appended -> Worker persisted -> DB persisted.",
-        proofTitle: "Processing Evidence",
-        stepApi: "1. API Accepted",
-        stepKafka: "2. Kafka Appended",
-        stepWorker: "3. Worker Processing",
-        stepDb: "4. DB Persisted",
-        stepDlq: "5. DLQ Check",
-        opsLinks: "Operations Links",
-        opsLinksSubtitle: "These links are supporting checks. The main demo evidence is shown above.",
-        dangerTitle: "Danger Zone",
-        dangerHelp: "Resets demo event data. User accounts are kept; order streams, messages, and request statuses are deleted.",
-        resetDemoDb: "Reset Demo Event DB",
-        waitingOrder: "Order Waiting",
-        notSent: "Not Sent",
-        emptyTitle: "No events yet.",
-        emptyMeta: "Add samples or send events through the API.",
-        noEventSent: "No event has been sent yet.",
-        kafkaAcceptedMeaning: "API accepted means the ingress topic append succeeded.",
-        workerPollingReady: "Waiting for request status polling",
-        dbBeforePersistence: "Before Worker persistence",
-        dlqBeforeSummary: "Before DLQ summary",
-        dbSavedPrefix: "DB persisted",
-        waiting: "waiting",
-        beforeSave: "before save",
-        sendBlocked: "The browser blocked the API request. Open http://localhost/demo/order-dashboard.html and try again.",
-        paymentDone: "Payment Completed",
-        orderDone: "Order Completed",
-        sending: "Sending",
-        beforeSend: "Before Send",
-        apiCheckRequired: "Check API",
-        timeoutWorker: "Persisted status is not confirmed yet. Check Worker lag or DB status.",
-        timeoutDb: "DB persistence has not been confirmed yet.",
-        notConfirmed: "not confirmed",
-        queueApiWaiting: "Waiting for API acceptance of {count} reserved events",
-        dbCheckWaiting: "Waiting for DB persistence",
-        sendWaiting: "waiting to send",
-        queueStart: "reserved queue processing started",
-        workerConsumeWaiting: "Worker waiting to consume request_id={requestId}",
-        dbDoneWaiting: "Waiting for DB persistence",
-        queueKept: "Reserved queue kept",
-        workerAfterApi: "Processed after successful API send",
-        dbBeforeSave: "Before DB persistence",
-        sendFailed: "Send failed",
-        reservedAdded: "{count} reserved events added",
-        kafkaBeforeSend: "Before Kafka send",
-        workerAfterSend: "Send events to verify Worker processing",
-        dbAfterSend: "Verify DB persistence after sending",
-        dlqAfterSend: "Check DLQ summary after sending",
-        samplePreview: "Waiting to send",
-        defaultBody: "Payment completed and order creation event"
-      }
-    };
-
-    function t(key) {
-      return translations[currentLanguage][key] || translations.ko[key] || key;
-    }
-
-    function formatText(key, values = {}) {
-      return Object.entries(values).reduce(
-        (text, [name, value]) => text.replace(`{${name}}`, value),
-        t(key)
-      );
-    }
-
-    function setLanguage(language) {
-      const bodyInput = document.querySelector("#body");
-      const previousDefaultBody = t("defaultBody");
-      currentLanguage = language;
-      document.documentElement.lang = language;
-      document.querySelectorAll("[data-i18n]").forEach((node) => {
-        node.textContent = t(node.dataset.i18n);
-      });
-      document.querySelectorAll("[data-language]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.language === language);
-      });
-      if (bodyInput.value === previousDefaultBody) {
-        bodyInput.value = t("defaultBody");
-      }
-      renderEvents();
-      if (events.length === 0) {
-        setText("#customer-status", t("waitingOrder"));
-        setText("#kafka-status", t("notSent"));
-        setText("#category-status", "-");
-        resetPipeline();
-      }
-    }
-
     const categoryMap = {
       payment_completed: "payment",
       payment_failed: "payment",
@@ -852,8 +586,7 @@
       runCompletedAt: null,
       runProcessed: 0,
       runTarget: 0,
-      drainTimer: null,
-      uiSession: 0
+      drainTimer: null
     };
 
     function categoryFor(eventType) {
@@ -869,7 +602,7 @@
 
     function describeFetchFailure(error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        return t("sendBlocked");
+        return "브라우저가 API 요청을 막았습니다. http://localhost/demo/order-dashboard.html 주소로 열었는지 확인하세요.";
       }
       return error.message;
     }
@@ -890,15 +623,6 @@
       setText("#proof-db", dbRow);
     }
 
-    function isCurrentUiSession(uiSession) {
-      return uiSession === queueStats.uiSession;
-    }
-
-    function startUiSession() {
-      queueStats.uiSession += 1;
-      return queueStats.uiSession;
-    }
-
     function updateQueueMetrics() {
       setText("#queued-count", String(queueStats.queued));
       setText("#processed-count", String(queueStats.kafkaAppended));
@@ -913,14 +637,12 @@
     }
 
     function startProcessingRun(count) {
-      const uiSession = startUiSession();
       queueStats.runStartedAt = Date.now();
       queueStats.runCompletedAt = null;
       queueStats.runProcessed = 0;
       queueStats.runTarget = count;
       updateQueueMetrics();
-      log(`${currentLanguage === "en" ? "processing run started" : "이번 처리 시퀀스 시작"} target=${count}`);
-      return uiSession;
+      log(`이번 처리 시퀀스 시작 target=${count}`);
     }
 
     function recordQueueEnqueued(count) {
@@ -928,18 +650,12 @@
       updateQueueMetrics();
     }
 
-    function recordKafkaAppended(count, uiSession = queueStats.uiSession) {
-      if (!isCurrentUiSession(uiSession)) {
-        return;
-      }
+    function recordKafkaAppended(count) {
       queueStats.kafkaAppended += count;
       updateQueueMetrics();
     }
 
-    function recordDbPersisted(count, uiSession = queueStats.uiSession) {
-      if (!isCurrentUiSession(uiSession)) {
-        return;
-      }
+    function recordDbPersisted(count) {
       const processed = Math.min(count, queueStats.queued);
       queueStats.queued -= processed;
       queueStats.dbPersisted += processed;
@@ -950,17 +666,8 @@
       updateQueueMetrics();
     }
 
-    function recordQueueProcessed(count, uiSession = queueStats.uiSession) {
-      recordDbPersisted(count, uiSession);
-    }
-
-    function hasActiveProcessingRun() {
-      return Boolean(
-        queueStats.runStartedAt
-        && !queueStats.runCompletedAt
-        && queueStats.runTarget > 0
-        && queueStats.runProcessed < queueStats.runTarget
-      );
+    function recordQueueProcessed(count) {
+      recordDbPersisted(count);
     }
 
     function markEventStatus(event, status, dbRow) {
@@ -973,7 +680,7 @@
 
     function renderEvents() {
       if (events.length === 0) {
-        eventList.innerHTML = `<div class="event"><div class="event-title">${t("emptyTitle")}</div><div class="meta">${t("emptyMeta")}</div></div>`;
+        eventList.innerHTML = '<div class="event"><div class="event-title">아직 이벤트가 없습니다.</div><div class="meta">샘플을 추가하거나 API로 이벤트를 보내세요.</div></div>';
         return;
       }
 
@@ -985,7 +692,7 @@
           </div>
           <div>${event.body}</div>
           <div class="meta">order_id=${event.order_id} · status=${event.status} · request_id=${event.request_id}</div>
-          <div class="meta">db_row=${event.db_row || t("beforeSave")}</div>
+          <div class="meta">db_row=${event.db_row || "저장 전"}</div>
           <div class="meta">${event.queued_at}</div>
         </article>
       `).join("");
@@ -1001,24 +708,18 @@
     }
 
     function resetPipeline() {
-      setPipelineStep("api", "", t("noEventSent"));
-      setPipelineStep("kafka", "", t("kafkaAcceptedMeaning"));
-      setPipelineStep("worker", "", t("workerPollingReady"));
-      setPipelineStep("db", "", t("dbBeforePersistence"));
-      setPipelineStep("dlq", "", t("dlqBeforeSummary"));
+      setPipelineStep("api", "", "아직 전송된 이벤트가 없습니다.");
+      setPipelineStep("kafka", "", "API accepted는 ingress topic append 성공을 의미합니다.");
+      setPipelineStep("worker", "", "request status polling 대기 중");
+      setPipelineStep("db", "", "Worker persistence 완료 전");
+      setPipelineStep("dlq", "", "DLQ summary 조회 전");
       setProof("-", "-", "-", "-");
     }
 
-    async function pollRequestStatus(baseUrl, token, event, uiSession) {
+    async function pollRequestStatus(baseUrl, token, event) {
       const requestId = event.request_id;
-      if (!isCurrentUiSession(uiSession)) {
-        return;
-      }
       setPipelineStep("worker", "waiting", `GET /v1/event-requests/${requestId} polling`);
       for (let attempt = 0; attempt < 20; attempt += 1) {
-        if (!isCurrentUiSession(uiSession)) {
-          return;
-        }
         const response = await fetch(`${baseUrl}/v1/event-requests/${requestId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -1027,22 +728,22 @@
           if (status.status === "persisted") {
             const detail = `persisted event_id=${status.event_id} stream_seq=${status.stream_seq} created_at=${status.created_at}`;
             setPipelineStep("worker", "done", detail);
-            setPipelineStep("db", "done", `${t("dbSavedPrefix")} event_id=${status.event_id} stream_seq=${status.stream_seq}`);
+            setPipelineStep("db", "done", `DB 저장됨 event_id=${status.event_id} stream_seq=${status.stream_seq}`);
             setProof(requestId, "message-ingress", "persisted", `event_id=${status.event_id}, stream_seq=${status.stream_seq}`);
             markEventStatus(event, "persisted", `event_id=${status.event_id}, stream_seq=${status.stream_seq}`);
-            recordQueueProcessed(1, uiSession);
+            recordQueueProcessed(1);
             log(`worker persisted request_id=${requestId}`);
             return;
           }
           markEventStatus(event, status.status);
           setPipelineStep("worker", "waiting", `status=${status.status}`);
-          setProof(requestId, "message-ingress", status.status, t("waiting"));
+          setProof(requestId, "message-ingress", status.status, "대기 중");
         }
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
-      setPipelineStep("worker", "waiting", t("timeoutWorker"));
-      setPipelineStep("db", "waiting", t("timeoutDb"));
-      setProof(requestId, "message-ingress", "polling timeout", t("notConfirmed"));
+      setPipelineStep("worker", "waiting", "아직 persisted 확인 전입니다. Worker lag 또는 DB 상태를 확인하세요.");
+      setPipelineStep("db", "waiting", "DB 저장 완료를 아직 확인하지 못했습니다.");
+      setProof(requestId, "message-ingress", "polling timeout", "확인 전");
       markEventStatus(event, "polling timeout");
     }
 
@@ -1161,58 +862,35 @@
         recordQueueEnqueued(1);
         renderEvents();
       }
-      const uiSession = startProcessingRun(reservedEvents.length);
+      startProcessingRun(reservedEvents.length);
 
       const token = await ensureToken(baseUrl, username, password);
       const orderId = await createDemoOrderStream(baseUrl, token);
-      setText("#customer-status", t("paymentDone"));
-      setText("#kafka-status", t("sending"));
+      setText("#customer-status", "결제 완료");
+      setText("#kafka-status", "전송 중");
       setText("#category-status", `${reservedEvents.length} queued`);
-      setPipelineStep("api", "waiting", formatText("queueApiWaiting", { count: reservedEvents.length }));
+      setPipelineStep("api", "waiting", `예약 큐 ${reservedEvents.length}건 API 접수 대기`);
       setPipelineStep("kafka", "waiting", "message-ingress append 대기");
       setPipelineStep("worker", "waiting", "Worker consume 대기");
-      setPipelineStep("db", "waiting", t("dbCheckWaiting"));
-      setProof("reserved-batch", "message-ingress", "queued", t("sendWaiting"));
-      log(`${t("queueStart")} count=${reservedEvents.length}`);
+      setPipelineStep("db", "waiting", "DB 저장 확인 대기");
+      setProof("reserved-batch", "message-ingress", "queued", "전송 대기");
+      log(`예약 큐 처리 시작 count=${reservedEvents.length}`);
       const pollTasks = [];
 
       for (const event of reservedEvents) {
-        if (event.cancelled) {
-          log(`pending reservation skipped request_id=${event.request_id}`);
-          continue;
-        }
-        if (!isCurrentUiSession(uiSession)) {
-          log("processing run detached from visible queue");
-          break;
-        }
-        event.status = "sending";
-        renderEvents();
-        let accepted;
-        try {
-          accepted = await sendQueuedEvent(baseUrl, token, orderId, event);
-        } catch (error) {
-          if (event.status === "sending") {
-            event.status = "reserved";
-            renderEvents();
-          }
-          throw error;
-        }
-        recordKafkaAppended(1, uiSession);
-        if (!isCurrentUiSession(uiSession)) {
-          log(`accepted request_id=${accepted.request_id} after visible queue was cleared`);
-          continue;
-        }
+        const accepted = await sendQueuedEvent(baseUrl, token, orderId, event);
+        recordKafkaAppended(1);
         markEventStatus(event, accepted.status);
-        setText("#customer-status", t("orderDone"));
+        setText("#customer-status", "주문 완료");
         setText("#kafka-status", accepted.status);
         setText("#category-status", accepted.category);
         setPipelineStep("api", "done", `202 Accepted request_id=${accepted.request_id}`);
         setPipelineStep("kafka", "done", `message-ingress append accepted order_id=${accepted.order_id} category=${accepted.category}`);
-        setPipelineStep("worker", "waiting", formatText("workerConsumeWaiting", { requestId: accepted.request_id }));
-        setPipelineStep("db", "waiting", t("dbDoneWaiting"));
-        setProof(accepted.request_id, "message-ingress", "queued", t("waiting"));
+        setPipelineStep("worker", "waiting", `Worker가 request_id=${accepted.request_id} consume 대기`);
+        setPipelineStep("db", "waiting", "DB 저장 완료 대기");
+        setProof(accepted.request_id, "message-ingress", "queued", "대기 중");
         log(`accepted request_id=${accepted.request_id} category=${accepted.category}`);
-        pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession));
+        pollTasks.push(pollRequestStatus(baseUrl, token, event));
       }
 
       await Promise.all(pollTasks);
@@ -1230,12 +908,12 @@
         await processReservedEvents();
       } catch (error) {
         const errorMessage = describeFetchFailure(error);
-        setText("#kafka-status", t("apiCheckRequired"));
+        setText("#kafka-status", "API 확인 필요");
         setPipelineStep("api", "error", errorMessage);
-        setPipelineStep("kafka", "waiting", t("queueKept"));
-        setPipelineStep("worker", "waiting", t("workerAfterApi"));
-        setPipelineStep("db", "waiting", t("dbBeforeSave"));
-        setProof("reserved-batch", t("sendFailed"), "reserved", t("beforeSave"));
+        setPipelineStep("kafka", "waiting", "예약 큐는 보존됨");
+        setPipelineStep("worker", "waiting", "API 전송 성공 후 처리됨");
+        setPipelineStep("db", "waiting", "DB 저장 전");
+        setProof("reserved-batch", "전송 실패", "reserved", "저장 전");
         log(`${errorMessage}. reserved queue kept.`);
       } finally {
         button.disabled = false;
@@ -1243,21 +921,13 @@
     }
 
     function buildSampleEvent(index) {
-      const samplesKo = [
+      const samples = [
         ["payment_completed", "결제 승인 완료"],
         ["order_created", "주문 생성 완료"],
         ["delivery_started", "배송 시작 알림 발행"],
         ["refund_requested", "환불 요청 접수"],
         ["manual_exception", "운영자 검토가 필요한 예외 이벤트"]
       ];
-      const samplesEn = [
-        ["payment_completed", "Payment approval completed"],
-        ["order_created", "Order creation completed"],
-        ["delivery_started", "Delivery started notification published"],
-        ["refund_requested", "Refund request received"],
-        ["manual_exception", "Exception event requiring operator review"]
-      ];
-      const samples = currentLanguage === "en" ? samplesEn : samplesKo;
       const sample = samples[index % samples.length];
       const category = categoryFor(sample[0]);
       return {
@@ -1280,15 +950,15 @@
         events.unshift(sample);
       }
       recordQueueEnqueued(count);
-      setText("#customer-status", t("orderDone"));
-      setText("#kafka-status", t("beforeSend"));
+      setText("#customer-status", "주문 완료");
+      setText("#kafka-status", "전송 전");
       setText("#category-status", count === 1 ? lastCategory : `${count} reserved`);
-      setPipelineStep("api", "waiting", formatText("reservedAdded", { count }));
-      setPipelineStep("kafka", "waiting", t("kafkaBeforeSend"));
-      setPipelineStep("worker", "waiting", t("workerAfterSend"));
-      setPipelineStep("db", "waiting", t("dbAfterSend"));
-      setPipelineStep("dlq", "waiting", t("dlqAfterSend"));
-      setProof("sample-preview", t("samplePreview"), "reserved", t("beforeSave"));
+      setPipelineStep("api", "waiting", `예약 큐 ${count}건 추가`);
+      setPipelineStep("kafka", "waiting", "아직 Kafka 전송 전");
+      setPipelineStep("worker", "waiting", "전송 버튼을 누르면 Worker 처리 확인");
+      setPipelineStep("db", "waiting", "전송 후 DB 저장 확인");
+      setPipelineStep("dlq", "waiting", "전송 후 DLQ summary 조회");
+      setProof("sample-preview", "전송 대기", "reserved", "저장 전");
       renderEvents();
       log(`sample batch added count=${count}`);
     }
@@ -1297,92 +967,26 @@
       addSampleBatch(1);
     }
 
-    function cancelPendingReservations() {
-      let cancelledCount = 0;
-      for (const event of events) {
-        if (event.status === "reserved") {
-          event.cancelled = true;
-          event.status = "cancelled";
-          cancelledCount += 1;
-        }
-      }
-      queueStats.queued = Math.max(queueStats.queued - cancelledCount, 0);
-      if (queueStats.runTarget > 0) {
-        queueStats.runTarget = Math.max(queueStats.runTarget - cancelledCount, queueStats.runProcessed);
-        if (queueStats.runProcessed >= queueStats.runTarget && !queueStats.runCompletedAt) {
-          queueStats.runCompletedAt = Date.now();
-        }
-      }
-      return cancelledCount;
-    }
-
     function clearEvents() {
-      const keepTrackingActiveRun = hasActiveProcessingRun();
-      const cancelledCount = cancelPendingReservations();
-      if (!keepTrackingActiveRun) {
-        startUiSession();
-      }
       events.length = 0;
       if (queueStats.drainTimer) {
         window.clearInterval(queueStats.drainTimer);
         queueStats.drainTimer = null;
       }
-      if (!keepTrackingActiveRun) {
-        queueStats.queued = 0;
-        queueStats.kafkaAppended = 0;
-        queueStats.dbPersisted = 0;
-        queueStats.runStartedAt = null;
-        queueStats.runCompletedAt = null;
-        queueStats.runProcessed = 0;
-        queueStats.runTarget = 0;
-      }
+      queueStats.queued = 0;
+      queueStats.kafkaAppended = 0;
+      queueStats.dbPersisted = 0;
+      queueStats.runStartedAt = null;
+      queueStats.runCompletedAt = null;
+      queueStats.runProcessed = 0;
+      queueStats.runTarget = 0;
       updateQueueMetrics();
       renderEvents();
-      if (!keepTrackingActiveRun) {
-        resetPipeline();
-        setText("#customer-status", t("waitingOrder"));
-        setText("#kafka-status", t("notSent"));
-        setText("#category-status", "-");
-      }
-      log(`${currentLanguage === "en" ? "pending reservations cleared" : "전송 전 예약을 비웠습니다"} cancelled=${cancelledCount}. ${currentLanguage === "en" ? "active jobs are still being tracked." : "진행 중 작업은 계속 추적합니다."}`);
-    }
-
-    async function resetDemoEventDb() {
-      const confirmationInput = document.querySelector("#reset-confirmation");
-      const confirmation = confirmationInput.value.trim();
-      if (confirmation !== "RESET DEMO DB") {
-        log("type RESET DEMO DB before resetting demo event data");
-        return;
-      }
-
-      const button = document.querySelector("#reset-demo-db");
-      const baseUrl = document.querySelector("#base-url").value.replace(/\/$/, "");
-      const username = document.querySelector("#username").value;
-      const password = document.querySelector("#password").value;
-      button.disabled = true;
-
-      try {
-        const token = await ensureToken(baseUrl, username, password);
-        const response = await fetch(`${baseUrl}/v1/admin/demo/reset-events`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ confirmation })
-        });
-        if (!response.ok) {
-          throw new Error(`reset failed: HTTP ${response.status}`);
-        }
-        const result = await response.json();
-        clearEvents();
-        confirmationInput.value = "";
-        log(`demo event DB reset deleted_messages=${result.deleted_messages} reset_streams=${result.reset_streams}`);
-      } catch (error) {
-        log(`demo event DB reset failed: ${describeFetchFailure(error)}`);
-      } finally {
-        button.disabled = false;
-      }
+      resetPipeline();
+      setText("#customer-status", "주문 대기");
+      setText("#kafka-status", "미전송");
+      setText("#category-status", "-");
+      log("operator event queue cleared");
     }
 
     document.querySelector("#send-event").addEventListener("click", sendOrderEvent);
@@ -1390,12 +994,7 @@
     document.querySelector("#add-sample-10").addEventListener("click", () => addSampleBatch(10));
     document.querySelector("#add-sample-100").addEventListener("click", () => addSampleBatch(100));
     document.querySelector("#clear-event-list").addEventListener("click", clearEvents);
-    document.querySelector("#reset-demo-db").addEventListener("click", resetDemoEventDb);
-    document.querySelectorAll("[data-language]").forEach((button) => {
-      button.addEventListener("click", () => setLanguage(button.dataset.language));
-    });
     document.querySelector("#base-url").value = deriveDefaultBaseUrl();
-    setLanguage("ko");
     resetPipeline();
     updateQueueMetrics();
     renderEvents();
