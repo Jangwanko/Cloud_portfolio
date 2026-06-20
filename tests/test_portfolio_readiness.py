@@ -434,10 +434,10 @@ class TestOperationalDocumentation:
             "DB 저장",
             "총 소요시간",
             "queue-metrics",
+            "grid-template-columns: repeat(4, minmax(0, 1fr))",
             "grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1fr) minmax(300px, 0.78fr) minmax(300px, 0.78fr)",
-            "height: 250px",
-            "height: 190px",
-            "max-height: 190px",
+            "height: 170px",
+            "max-height: 170px",
             "queued-count",
             "processed-count",
             "db-persisted-count",
@@ -497,6 +497,8 @@ class TestOperationalDocumentation:
             "ops-worker-status",
             "ops-dlq-status",
             "ops-last-checked",
+            "{available}/{max} 실행 중",
+            "{available}/{max} running",
             "Operations Advisor",
             "operations-advisor",
             "advisor-status",
@@ -510,6 +512,7 @@ class TestOperationalDocumentation:
             "window.setInterval(refreshOpsStatus, intervalMs)",
             "updateReadinessPanel",
             "updateDlqSummaryPanel",
+            "queueStats.runTarget > 0 ? `${queueStats.queued}/${queueStats.runTarget}` : String(queueStats.queued)",
             "reset_dlq_topic",
             "/health/ready",
             "브라우저가 API 요청을 막았습니다.",
@@ -545,11 +548,18 @@ class TestOperationalDocumentation:
         assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
         assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
         assert "await Promise.all(pollTasks)" in process_reserved
+        record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
+        assert "queueStats.queued -= appended" in record_kafka_appended
+        record_db_persisted = demo.split("function recordDbPersisted(count, uiSession) {", 1)[1].split("function recordQueueProcessed", 1)[0]
+        assert "queueStats.queued -=" not in record_db_persisted
+        assert "queueStats.dbPersisted += count" in record_db_persisted
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event
         clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
         assert "cancelPendingReservations()" in clear_events
         assert "events.length = 0" not in clear_events
+        result_panel_markup = demo.split('<section class="stack result-panel waiting" id="result-panel">', 1)[1].split("</section>", 1)[0]
+        assert result_panel_markup.index("operations-advisor") < result_panel_markup.index("resultTitle")
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
         assert "http://localhost/docs" in links_markup
         assert "http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" in links_markup

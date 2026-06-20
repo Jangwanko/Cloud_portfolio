@@ -238,8 +238,8 @@
       align-content: start;
       display: grid;
       gap: 10px;
-      height: 250px;
-      max-height: 250px;
+      height: 170px;
+      max-height: 170px;
       overflow: auto;
       padding-right: 2px;
     }
@@ -291,6 +291,10 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
+    }
+
+    .queue-metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .proof,
@@ -695,15 +699,6 @@
             <div class="proof"><strong data-i18n="lastChecked">마지막 확인</strong><span id="ops-last-checked">-</span></div>
           </div>
         </div>
-        <div class="advisor" id="operations-advisor">
-          <h3>Operations Advisor</h3>
-          <p data-i18n="advisorHelp">정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.</p>
-          <div class="proof-grid">
-            <div class="proof"><strong data-i18n="advisorStatus">상태</strong><span id="advisor-status">-</span></div>
-            <div class="proof"><strong data-i18n="advisorReason">판단 근거</strong><span id="advisor-reason">-</span></div>
-          </div>
-          <p id="advisor-next-step" data-i18n="advisorNextDefault">상태 새로고침 후 다음 확인 항목을 표시합니다.</p>
-        </div>
         <div class="danger-zone">
           <h3 data-i18n="dangerTitle">위험 작업</h3>
           <p class="field-help" data-i18n="dangerHelp">데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.</p>
@@ -716,6 +711,15 @@
       </section>
 
       <section class="stack result-panel waiting" id="result-panel">
+        <div class="advisor" id="operations-advisor">
+          <h3>Operations Advisor</h3>
+          <p data-i18n="advisorHelp">정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.</p>
+          <div class="proof-grid">
+            <div class="proof"><strong data-i18n="advisorStatus">상태</strong><span id="advisor-status">-</span></div>
+            <div class="proof"><strong data-i18n="advisorReason">판단 근거</strong><span id="advisor-reason">-</span></div>
+          </div>
+          <p id="advisor-next-step" data-i18n="advisorNextDefault">상태 새로고침 후 다음 확인 항목을 표시합니다.</p>
+        </div>
         <div>
           <h2 data-i18n="resultTitle">결과 정리</h2>
           <p class="subtitle" data-i18n="resultSubtitle">마지막 전송 작업이 끝나면 요청 수와 DB 저장 결과를 요약합니다.</p>
@@ -791,7 +795,7 @@
         kafkaUnreachable: "연결 안 됨",
         postgresReady: "primary 연결됨, standby {count}개",
         postgresNotReady: "primary 연결 안 됨",
-        workerReady: "{available}/{max} 실행 중, HPA 목표 {hpa}",
+        workerReady: "{available}/{max} 실행 중",
         workerReadyNoHpa: "{available}개 실행 중",
         workerUnknown: "확인 불가",
         dlqEmpty: "격리 이벤트 없음",
@@ -902,7 +906,7 @@
         kafkaUnreachable: "unreachable",
         postgresReady: "primary reachable, {count} standby",
         postgresNotReady: "primary unreachable",
-        workerReady: "{available}/{max} running, HPA target {hpa}",
+        workerReady: "{available}/{max} running",
         workerReadyNoHpa: "{available} running",
         workerUnknown: "Unavailable",
         dlqEmpty: "No isolated events",
@@ -1067,7 +1071,10 @@
     }
 
     function updateQueueMetrics() {
-      setText("#queued-count", String(queueStats.queued));
+      setText(
+        "#queued-count",
+        queueStats.runTarget > 0 ? `${queueStats.queued}/${queueStats.runTarget}` : String(queueStats.queued)
+      );
       setText("#processed-count", String(queueStats.kafkaAppended));
       setText("#db-persisted-count", String(queueStats.dbPersisted));
       const endAt = queueStats.runCompletedAt || Date.now();
@@ -1110,6 +1117,8 @@
       if (!isCurrentUiSession(uiSession)) {
         return;
       }
+      const appended = Math.min(count, queueStats.queued);
+      queueStats.queued -= appended;
       queueStats.kafkaAppended += count;
       updateQueueMetrics();
     }
@@ -1118,10 +1127,8 @@
       if (!isCurrentUiSession(uiSession)) {
         return;
       }
-      const processed = Math.min(count, queueStats.queued);
-      queueStats.queued -= processed;
-      queueStats.dbPersisted += processed;
-      queueStats.runProcessed += processed;
+      queueStats.dbPersisted += count;
+      queueStats.runProcessed += count;
       if (queueStats.runTarget > 0 && queueStats.runProcessed >= queueStats.runTarget && !queueStats.runCompletedAt) {
         queueStats.runCompletedAt = Date.now();
       }
@@ -1282,7 +1289,6 @@
             ? formatText("workerReady", {
                 available: readiness.worker.available_replicas,
                 desired: readiness.worker.desired_replicas,
-                hpa: readiness.worker.hpa_desired_replicas,
                 max: readiness.worker.max_replicas
               })
             : formatText("workerReadyNoHpa", {
