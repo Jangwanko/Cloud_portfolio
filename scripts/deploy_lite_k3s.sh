@@ -36,6 +36,20 @@ kubectl_cmd() {
   kubectl "$@"
 }
 
+docker_cmd() {
+  if docker version >/dev/null 2>&1; then
+    docker "$@"
+    return
+  fi
+
+  if command -v sudo >/dev/null 2>&1 && sudo docker version >/dev/null 2>&1; then
+    sudo docker "$@"
+    return
+  fi
+
+  fail "Docker daemon is unavailable, or the current user cannot access Docker. Try: sudo usermod -aG docker \$USER && newgrp docker"
+}
+
 helm_chart_source() {
   local pattern="$1"
   local fallback="$2"
@@ -129,7 +143,7 @@ import_image_to_k3s() {
   fi
 
   log "Importing image into k3s containerd"
-  docker save "$IMAGE_NAME" | sudo k3s ctr images import -
+  docker_cmd save "$IMAGE_NAME" | sudo k3s ctr images import -
 }
 
 render_manifest_for_k3s() {
@@ -180,14 +194,14 @@ require_command kubectl
 require_command helm
 require_command curl
 require_command python3
-docker version >/dev/null 2>&1 || fail "Docker is not running or Docker CLI is unavailable."
+docker_cmd version >/dev/null
 kubectl_cmd version --client >/dev/null
 kubectl_cmd cluster-info >/dev/null
 
 cd "$ROOT_DIR"
 
 log "Building application image"
-docker build -t "$IMAGE_NAME" .
+docker_cmd build -t "$IMAGE_NAME" .
 import_image_to_k3s
 
 log "Creating runtime secrets"
