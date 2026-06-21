@@ -5,4 +5,4 @@ resources:
 images:
   - name: messaging-portfolio
     newName: ghcr.io/jangwanko/cloud_portfolio
-    newTag: 0b24e3b
+    newTag: 1b70861
