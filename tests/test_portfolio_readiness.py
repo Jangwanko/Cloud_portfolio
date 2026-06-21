@@ -454,8 +454,10 @@ class TestOperationalDocumentation:
             "recordQueueProcessed",
             "recordKafkaAppended",
             "recordDbPersisted",
+            "finishProcessingRun",
             "updateQueueMetrics",
             "startProcessingRun",
+            "lastRunHadFailures",
             "runStartedAt",
             "runCompletedAt",
             "runProcessed",
@@ -470,7 +472,10 @@ class TestOperationalDocumentation:
             "sendNextReservedEvent",
             "activeEvents",
             "shouldRenderBatchProgress",
-            "Array.from({ length: senderCount }, () => sendNextReservedEvent())",
+            "Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))",
+            "await Promise.allSettled(pollTasks)",
+            "sendFailures",
+            "queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget",
             "예약 큐 처리 시작",
             "cancelPendingReservations",
             "events.splice(index, 1)",
@@ -548,13 +553,17 @@ class TestOperationalDocumentation:
         assert "recordKafkaAppended(1, uiSession)" in process_reserved
         assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length))" in process_reserved
         assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
-        assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
-        assert "await Promise.all(pollTasks)" in process_reserved
+        assert "await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
+        assert "const pollResults = await Promise.allSettled(pollTasks)" in process_reserved
+        assert "finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === \"rejected\"))" in process_reserved
         record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
         assert "queueStats.queued -= appended" in record_kafka_appended
         record_db_persisted = demo.split("function recordDbPersisted(count, uiSession) {", 1)[1].split("function recordQueueProcessed", 1)[0]
         assert "queueStats.queued -=" not in record_db_persisted
         assert "queueStats.dbPersisted += count" in record_db_persisted
+        finish_run = demo.split("function finishProcessingRun(uiSession, hadFailures = false) {", 1)[1].split("function markEventStatus", 1)[0]
+        assert "queueStats.lastRunHadFailures = hadFailures" in finish_run
+        assert "queueStats.runCompletedAt = Date.now()" in finish_run
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event
         clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
