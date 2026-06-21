@@ -699,6 +699,22 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
+    def test_dev_kafka_gitops_uses_registry_image_and_action_tag_update(self):
+        kustomization = read_text("k8s/gitops/overlays/local-ha/kustomization.yaml")
+        workflow = read_text(".github/workflows/dev-kafka-image.yml")
+
+        assert "images:" in kustomization
+        assert "name: messaging-portfolio" in kustomization
+        assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
+        assert "newTag:" in kustomization
+
+        assert "branches: [dev-kafka]" in workflow
+        assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
+        assert "[skip dev-kafka image]" in workflow
+        assert "docker/build-push-action" in workflow
+        assert "yq -i" in workflow
+        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in workflow
+
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
             path.read_text(encoding="utf-8").lower()
@@ -737,9 +753,12 @@ class TestManifestContracts:
         app_example = read_text("k8s/argocd/application-messaging-portfolio-local-ha.example.yaml")
         gitops_docs = read_text("docs/GITOPS.md")
 
-        for document in (bootstrap_script, quick_start, app_example, gitops_docs):
+        for document in (bootstrap_script, quick_start, app_example):
             assert "master" in document
             assert "dev-kafka" not in document
+        assert "master" in gitops_docs
+        assert "dev-kafka" in gitops_docs
+        assert "ghcr.io/jangwanko/cloud_portfolio:<commit-sha>" in gitops_docs
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest

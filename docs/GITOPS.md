@@ -60,6 +60,20 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -Revision master
 ```
 
+`master`는 최종 병합 상태를 보여주는 기본 GitOps revision입니다. 개발 브랜치인 `dev-kafka`에서 Argo CD를 직접 확인할 때는 아래처럼 revision만 바꿉니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
+  -RepoUrl https://github.com/<your-account>/<your-repo>.git `
+  -Revision dev-kafka
+```
+
+`dev-kafka`에서 Argo CD를 사용할 때는 demo-lite와 같은 registry-backed GitOps 흐름을 사용합니다. `dev-kafka`에 push하면 GitHub Actions가 `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>` 이미지를 빌드하고, `k8s/gitops/overlays/local-ha/kustomization.yaml`의 image tag를 갱신하는 commit을 다시 push합니다. Argo CD는 그 image tag commit을 보고 local-ha runtime을 sync합니다.
+
+English:
+
+For `dev-kafka`, Argo CD uses the same image-tag GitOps pattern as demo-lite. A push to `dev-kafka` builds `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>`, updates `k8s/gitops/overlays/local-ha/kustomization.yaml`, and lets Argo CD deploy from that manifest change.
+
 3. 스크립트는 아래 작업을 순서대로 수행합니다.
 - local cluster bootstrap
 - HA PostgreSQL / Kafka runtime 설치
@@ -94,6 +108,8 @@ EKS까지 확장할 때는 보통 아래 단계가 이어집니다.
 - image registry / ECR push
 - 이미지 태그 갱신
 - Argo CD 자동 동기화
+
+For local/dev-kafka GitOps, this repository uses GHCR first. ECR is the AWS migration equivalent described in `docs/AWS_IAC_PLAN.md`.
 
 ## 운영 메모
 - 로컬 데모에서는 앱 이미지를 build 한 뒤 kind 에 load 합니다.

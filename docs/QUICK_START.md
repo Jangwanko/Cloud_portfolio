@@ -315,6 +315,8 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -Revision master
 ```
 
+`dev-kafka`에서 Argo CD를 직접 확인하려면 `-Revision dev-kafka`로 실행합니다. `dev-kafka` GitOps updates follow the same image-tag pattern as demo-lite: GitHub Actions builds a GHCR image, commits the new image tag into `k8s/gitops/overlays/local-ha/kustomization.yaml`, and Argo CD syncs that manifest change.
+
 이 흐름은 아래를 수행합니다.
 - local cluster bootstrap
 - HA PostgreSQL / Kafka runtime 설치

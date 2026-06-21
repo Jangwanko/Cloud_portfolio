@@ -3,3 +3,8 @@ kind: Kustomization
 
 resources:
   - ../../base
+
+images:
+  - name: messaging-portfolio
+    newName: ghcr.io/jangwanko/cloud_portfolio
+    newTag: dev-kafka-bootstrap
