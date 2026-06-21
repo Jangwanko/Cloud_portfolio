@@ -162,6 +162,43 @@ Latest ordering / failure injection result after fixing local client skew:
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
 - 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
 
+## GitOps / Deployment Rules
+
+- Argo CD는 코드 변경 자체를 배포하지 않습니다. 컨테이너 안에 들어가는 Python code, HTML, static file 변경은 반드시 registry image build/push와 Git manifest의 image tag 변경으로 이어져야 클러스터에 반영됩니다.
+- `messaging-portfolio:local`은 local kind 또는 수동 bootstrap 전용 이미지입니다. Argo CD 자동 배포 경로에서는 GHCR/ECR 같은 registry image와 commit SHA 기반 tag를 사용합니다.
+- GitOps 자동 반영은 `git push -> image build/push -> kustomize image tag commit -> Argo CD sync` 순서로 설명합니다. 이 순서를 생략하고 "push하면 바로 반영된다"고 쓰지 않습니다.
+- 브랜치별 배포 역할을 섞지 않습니다.
+  - `demo-lite`: 2코어 k3s 서버용 축소 데모 브랜치입니다.
+  - `dev-kafka`: 실제 개발/검증용 Argo CD 브랜치입니다.
+  - `master`: 최종 병합 및 배포 기준 브랜치입니다.
+- 특정 브랜치에서 image tag workflow를 추가하거나 수정할 때는 먼저 해당 브랜치의 Argo CD `targetRevision`, overlay path, 실제 배포 클러스터를 확인합니다.
+- `demo-lite`의 설정을 `dev-kafka`나 `master`에 그대로 복사하지 않습니다. 공통 원칙만 옮기고, overlay path와 배포 대상에 맞게 조정합니다.
+- 배포 자동화 변경 후에는 `kubectl kustomize <overlay>`로 app workloads가 registry image tag로 렌더링되는지 확인합니다.
+- GitHub Actions가 image tag commit을 다시 push하는 브랜치는 원격이 자동으로 앞서갈 수 있습니다. push rejected가 나면 먼저 `git pull --rebase origin <branch>`로 Actions commit을 통합하고 다시 push합니다.
+- GHCR package가 private이면 클러스터가 image를 pull하지 못합니다. 데모 서버는 public GHCR package를 기본으로 보고, private registry를 쓰는 경우에는 imagePullSecret을 별도로 문서화합니다.
+
+## Demo UI Operating Rules
+
+- 데모 UI는 운영 증거를 과장하지 않습니다. Kafka append와 DB persistence는 다른 단계이므로 항상 별도 카운터로 표시합니다.
+- `예약 건수`는 Kafka append 성공 시 감소합니다. `DB 저장`은 Worker가 PostgreSQL commit까지 완료했을 때 증가합니다.
+- 일부 이벤트가 전송 실패하거나 DB 저장 확인이 끝나지 않았으면 결과 상태를 `완료`로 표시하지 않습니다. `일부 미확인` 또는 같은 의미의 상태로 닫습니다.
+- Operations Advisor는 readiness와 DLQ뿐 아니라 남은 예약, Kafka 적재 수, DB 저장 수의 불일치도 확인해야 합니다. 미확인 이벤트가 남아 있으면 `정상`이 아니라 확인 필요 상태로 표시합니다.
+- 운영 링크는 `localhost`를 하드코딩하지 않습니다. 현재 API Base URL 또는 접속 origin을 기준으로 생성합니다.
+- batch 전송 로직은 일부 실패 때문에 전체 UI 상태가 무한 `처리 중`에 남지 않도록 종료 상태를 명시적으로 정리합니다.
+
+## Demo Lite Boundary
+
+- `demo-lite`는 저사양 서버에서 API -> Kafka -> Worker -> DB 흐름을 보여주는 profile입니다. HA/failover/성능 baseline 증명으로 설명하지 않습니다.
+- `demo-lite` PostgreSQL은 단일 primary 기준입니다. primary 연결 실패는 standby failover를 의미하지 않으며, 단일 primary 복구 대기와 Kafka backlog / Worker retry 관점으로 설명합니다.
+- full HA, failover, 성능 baseline은 `local-ha` / full-ha 문서와 테스트 결과에서 설명합니다.
+- demo-lite에서 발견한 운영 경험은 문서화하되, master로 옮길 때는 "일반 운영 원칙"과 "저사양 서버 전용 제약"을 분리합니다.
+
+## Change Scope Rules
+
+- 사용자가 "demo-lite에서 한 것처럼"이라고 말해도 설정을 그대로 복사하지 않습니다. 먼저 대상 브랜치 역할, Argo CD targetRevision, overlay path, 실제 배포 클러스터를 확인합니다.
+- 저사양 편의 방식, 수동 image import, local-only workaround를 GitOps 자동 배포의 기본 방식처럼 설명하지 않습니다.
+- 문서화할 때 demo-lite 전용 현상과 전체 시스템 원칙을 분리합니다. 전체 원칙은 `docs/GITOPS.md`, `docs/OPERATIONS.md`, `docs/ARCHITECTURE.md`로 올리고, demo-lite 제약은 `docs/DEMO_LITE.md`에 둡니다.
+
 ## Rollback Rules
 
 - 사용자가 "롤백", "실행취소", "이전 상태", "N번 전"이라고 말하면 새로 비슷하게 재코딩하지 않습니다. 먼저 현재 `git status`, 최근 commit, 작업 diff를 확인하고 어느 변경을 되돌릴지 특정합니다.
