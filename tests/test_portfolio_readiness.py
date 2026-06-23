@@ -390,8 +390,8 @@ class TestOperationalDocumentation:
             "Post-Order Event Console",
             "demo-version",
             "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.0.2"',
-            "ver. 1.0.2 / api -",
+            'const DEMO_UI_VERSION = "1.1.0"',
+            "ver. 1.1.0 / api -",
             "setDemoVersion",
             "ver.",
             "api",
@@ -418,6 +418,8 @@ class TestOperationalDocumentation:
             "3. Worker 처리 중",
             "4. DB 저장됨",
             "DLQ summary",
+            "GitHub",
+            "https://github.com/Jangwanko/Cloud_portfolio",
             "/v1/event-requests/",
             "/v1/streams",
             "createDemoOrderStream",
@@ -618,6 +620,8 @@ class TestOperationalDocumentation:
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
         assert 'data-ops-link="/docs"' in links_markup
         assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup
+        assert 'href="https://github.com/Jangwanko/Cloud_portfolio"' in links_markup
+        assert ">GitHub<" in links_markup
         assert "http://localhost/docs" not in links_markup
         assert "http://localhost/grafana" not in links_markup
         assert "/v1/dlq/ingress/summary" not in links_markup
