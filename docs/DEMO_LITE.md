@@ -65,6 +65,14 @@ After this, `demo-lite` changes are reflected through the GitOps image path:
 
 The GHCR container package should be public for this demo server, or the cluster needs an image pull secret. For the portfolio demo, public GHCR is the simpler path because no private registry credential has to be stored in the k3s cluster.
 
+Automatic profile reconciliation:
+
+```bash
+bash scripts/reconcile_profile_k3s.sh
+```
+
+This checks the current k3s node CPU and memory, prints the detected server spec, and selects either `demo-lite` or `local-ha`. On a 2-core class host it keeps the `demo-lite` path; on a larger host it can move the Argo CD Application to `k8s/gitops/overlays/local-ha`. Use `--dry-run` to show the decision without changing Argo CD.
+
 After completion:
 
 - Demo UI: `http://localhost/demo/order-dashboard.html`

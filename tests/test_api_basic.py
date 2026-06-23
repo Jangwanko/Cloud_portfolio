@@ -45,6 +45,36 @@ class TestDemoResetGuard:
 
         api._ensure_demo_reset_allowed()
 
+    def test_demo_kafka_dlq_reset_uses_configured_topic_shape(self, monkeypatch):
+        import portfolio.api as api
+
+        calls = []
+        monkeypatch.setattr(
+            api,
+            "settings",
+            SimpleNamespace(
+                kafka_dlq_topic="message-ingress-dlq",
+                kafka_topic_partitions=3,
+                kafka_topic_replication_factor=1,
+                kafka_min_insync_replicas=1,
+            ),
+        )
+        monkeypatch.setattr(api, "reset_topic", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+        topic = api._reset_demo_kafka_dlq()
+
+        assert topic == "message-ingress-dlq"
+        assert calls == [
+            (
+                ("message-ingress-dlq",),
+                {
+                    "partitions": 3,
+                    "replication_factor": 1,
+                    "configs": {"min.insync.replicas": "1"},
+                },
+            )
+        ]
+
 
 class TestReadinessPayload:
     """Readiness includes deployment identity for demo verification."""
@@ -52,7 +82,11 @@ class TestReadinessPayload:
     def test_readiness_payload_exposes_app_version(self, monkeypatch):
         import portfolio.main as main
 
-        monkeypatch.setattr(main, "settings", SimpleNamespace(app_version="demo-sha", postgres_min_ready_standbys=0))
+        monkeypatch.setattr(
+            main,
+            "settings",
+            SimpleNamespace(app_version="demo-sha", app_env="local", postgres_min_ready_standbys=0),
+        )
         monkeypatch.setattr(
             main,
             "get_postgres_runtime_status",
@@ -65,6 +99,7 @@ class TestReadinessPayload:
 
         assert status_code == 200
         assert payload["app_version"] == "demo-sha"
+        assert payload["deployment_profile"] == "local"
 
 
 class TestExternalizeRequestStatus:
@@ -528,6 +563,7 @@ class TestOpenApiContract:
         assert "max_replicas" in worker_health
         readiness = components["ReadinessResponse"]["properties"]
         assert "app_version" in readiness
+        assert "deployment_profile" in readiness
 
 
 class TestOrderEventApiContract:

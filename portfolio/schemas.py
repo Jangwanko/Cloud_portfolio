@@ -200,6 +200,7 @@ class WorkerHealthResponse(BaseModel):
 class ReadinessResponse(BaseModel):
     status: str
     app_version: str
+    deployment_profile: str
     reason: list[str]
     grace_remaining_seconds: int | None
     queue_backend: str

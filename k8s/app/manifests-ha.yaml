@@ -527,9 +527,12 @@ data:
           - alert: MessagingPostgresDegraded
             expr: |
               (
-                messaging_postgres_standby_count{job="api"} <= 1
-                or sum(messaging_postgres_replication_state_count{job="api",state!="streaming"}) > 0
-                or messaging_postgres_replication_delay_bytes_max{job="api"} > 1048576
+                (
+                  messaging_postgres_standby_count{job="api"} <= 1
+                  or sum(messaging_postgres_replication_state_count{job="api",state!="streaming"}) > 0
+                  or messaging_postgres_replication_delay_bytes_max{job="api"} > 1048576
+                )
+                unless on() (messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1)
               )
             for: 30s
             labels:

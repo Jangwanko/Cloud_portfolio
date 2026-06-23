@@ -521,6 +521,11 @@ class TestOperationalDocumentation:
             "advisorOccurrenceCount",
             "advisorSituation",
             "advisorExpectedFix",
+            "advisorDemoLiteReadinessReason",
+            "advisorDemoLiteReadinessNext",
+            "advisorDemoLiteReadinessSituation",
+            "isDemoLiteProfile",
+            "readiness.deployment_profile === \"k8s-demo-lite\"",
             "advisorSignalStats",
             "recordAdvisorSignal",
             "renderAdvisorSignalHistory",
@@ -580,6 +585,9 @@ class TestOperationalDocumentation:
         assert "queueStats.lastRunHadFailures = hadFailures" in finish_run
         assert "queueStats.runCompletedAt = Date.now()" in finish_run
         advisor_logic = demo.split("function updateOperationsAdvisor(readiness, dlqSummary) {", 1)[1].split("let opsRefreshTimer", 1)[0]
+        assert 'readiness.status === "degraded" && isDemoLiteProfile(readiness)' in advisor_logic
+        assert "advisorDemoLiteReadinessReason" in advisor_logic
+        assert "advisorDemoLiteReadinessNext" in advisor_logic
         assert 'statusKey === "advisorAttention" || statusKey === "advisorCritical"' in advisor_logic
         assert "recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary)" in advisor_logic
         assert "lastAdvisorSignalSignature = null" in advisor_logic
@@ -761,6 +769,32 @@ class TestManifestContracts:
         assert "k8s/gitops/overlays/demo-lite/kustomization.yaml" in workflow
         assert "DEMO_LITE_ENV_PATCH" in workflow
         assert ".stringData.APP_VERSION" in workflow
+
+    def test_k3s_profile_reconcile_script_detects_specs_and_updates_argocd(self):
+        script = read_text("scripts/reconcile_profile_k3s.sh")
+        gitops_docs = read_text("docs/GITOPS.md")
+        demo_lite_docs = read_text("docs/DEMO_LITE.md")
+
+        for token in (
+            "detect_node_profile",
+            "LOCAL_HA_MIN_MILLICORES",
+            "LOCAL_HA_MIN_MEMORY_MIB",
+            "Detected server",
+            "Recommended profile",
+            "Current Argo CD path",
+            "k8s/gitops/overlays/demo-lite-k3s",
+            "k8s/gitops/overlays/local-ha",
+            "targetRevision",
+            "kubectl apply -f -",
+            "--dry-run",
+            "--profile",
+        ):
+            assert token in script
+
+        for document in (gitops_docs, demo_lite_docs):
+            assert "scripts/reconcile_profile_k3s.sh" in document
+            assert "demo-lite" in document
+            assert "local-ha" in document
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
@@ -1082,6 +1116,8 @@ class TestAlertPolicy:
             "skipped_max_replay",
             "kube_pod_container_status_restarts_total",
             "kube_deployment_status_replicas_unavailable",
+            'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1',
+            "unless on()",
         ):
             assert threshold in alerts
 
@@ -1090,6 +1126,8 @@ class TestAlertPolicy:
         gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
 
         for manifest in (app_manifest, gitops_manifest):
+            assert 'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1' in manifest
+            assert "unless on()" in manifest
             for alert in (
                 "MessagingApi5xxRateWarning",
                 "MessagingEventPersistLagCritical",

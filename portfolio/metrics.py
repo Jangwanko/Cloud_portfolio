@@ -44,6 +44,13 @@ health_status = Gauge(
     registry=registry,
 )
 
+deployment_profile_info = Gauge(
+    "messaging_deployment_profile_info",
+    "Deployment profile identity for profile-aware operational rules",
+    ["profile"],
+    registry=registry,
+)
+
 db_pool_in_use = Gauge(
     "messaging_db_pool_in_use",
     "DB connections checked out from pool",

@@ -15,7 +15,7 @@ from portfolio.config import settings
 from portfolio.db import close_pool, get_postgres_runtime_status, init_pool_with_retry, run_alembic_migrations
 from portfolio.kafka_client import ping_kafka
 from portfolio.materialized_cache import start_materialized_cache, stop_materialized_cache
-from portfolio.metrics import api_request_latency_seconds, api_requests_total, metrics_response
+from portfolio.metrics import api_request_latency_seconds, api_requests_total, deployment_profile_info, metrics_response
 from portfolio.schemas import LiveHealthResponse, ReadinessResponse, RootResponse
 
 _degraded_started_at: float | None = None
@@ -111,6 +111,7 @@ def root():
 
 @app.get("/metrics")
 def metrics():
+    deployment_profile_info.labels(profile=settings.app_env).set(1)
     ping_kafka()
     get_postgres_runtime_status()
     return metrics_response()
@@ -211,6 +212,7 @@ def _build_readiness_payload() -> tuple[int, dict]:
     payload = {
         "status": overall_status,
         "app_version": settings.app_version,
+        "deployment_profile": settings.app_env,
         "reason": reasons,
         "grace_remaining_seconds": grace_remaining_seconds,
         "queue_backend": "kafka",

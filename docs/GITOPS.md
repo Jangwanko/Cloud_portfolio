@@ -89,6 +89,21 @@ After bootstrap, a push to `demo-lite` triggers GitHub Actions. The workflow bui
 
 GHCR package visibility must match the cluster pull model. The demo server assumes the package is public. If the package remains private, add a Kubernetes `imagePullSecret` for GHCR before expecting Argo CD to roll out the image.
 
+## Automatic profile reconciliation
+
+When this repository is installed on a different k3s host, run:
+
+```bash
+bash scripts/reconcile_profile_k3s.sh
+```
+
+The script reads the current Kubernetes node CPU and memory, prints the detected server spec, selects `demo-lite` or `local-ha`, and reconciles the Argo CD Application `targetRevision` and `path`.
+
+- `demo-lite`: `demo-lite` revision, `k8s/gitops/overlays/demo-lite-k3s`, Kafka RF 1, PostgreSQL standby check disabled.
+- `local-ha`: `master` revision, `k8s/gitops/overlays/local-ha`, Kafka RF 3, PostgreSQL standby checks enabled.
+
+Use `--dry-run` to show the selected profile without changing Argo CD. Use `--profile demo-lite` or `--profile local-ha` when the installer wants to override automatic detection.
+
 3. 스크립트는 아래 작업을 순서대로 수행합니다.
 - local cluster bootstrap
 - HA PostgreSQL / Kafka runtime 설치

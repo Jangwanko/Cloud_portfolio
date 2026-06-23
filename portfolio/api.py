@@ -93,9 +93,9 @@ def _reset_demo_event_data(cur) -> dict:
 def _reset_demo_kafka_dlq() -> str:
     reset_topic(
         settings.kafka_dlq_topic,
-        partitions=8,
-        replication_factor=3,
-        configs={"min.insync.replicas": "2"},
+        partitions=settings.kafka_topic_partitions,
+        replication_factor=settings.kafka_topic_replication_factor,
+        configs={"min.insync.replicas": str(settings.kafka_min_insync_replicas)},
     )
     return settings.kafka_dlq_topic
 

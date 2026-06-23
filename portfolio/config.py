@@ -43,6 +43,9 @@ class Settings:
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
     kafka_ingress_topic: str = os.getenv("KAFKA_INGRESS_TOPIC", "message-ingress")
     kafka_dlq_topic: str = os.getenv("KAFKA_DLQ_TOPIC", "message-ingress-dlq")
+    kafka_topic_partitions: int = int(os.getenv("KAFKA_TOPIC_PARTITIONS", "8"))
+    kafka_topic_replication_factor: int = int(os.getenv("KAFKA_TOPIC_REPLICATION_FACTOR", "3"))
+    kafka_min_insync_replicas: int = int(os.getenv("KAFKA_MIN_INSYNC_REPLICAS", "2"))
     kafka_request_status_topic: str = os.getenv(
         "KAFKA_REQUEST_STATUS_TOPIC", "message-request-status"
     )

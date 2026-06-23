@@ -900,6 +900,7 @@
         advisorBlockedReason: "DLQ replay guard에 걸린 이벤트가 있습니다.",
         advisorReadinessReason: "서비스 readiness가 ready가 아닙니다.",
         advisorWorkerReason: "Worker replica 정보를 확인하지 못했습니다.",
+        advisorDemoLiteReadinessReason: "demo-lite 저사양 구성에서 readiness가 일시적으로 낮아졌습니다.",
         advisorNormalNext: "샘플을 전송해 Kafka 적재와 DB 저장 흐름을 시연할 수 있습니다.",
         advisorPartialReason: "남은 예약 또는 DB 저장 미확인 이벤트가 있습니다.",
         advisorPartialNext: "예약 건수, Kafka 적재, DB 저장 숫자를 비교해 미확인 이벤트를 다시 전송하거나 확인합니다.",
@@ -907,8 +908,10 @@
         advisorBlockedNext: "자동 replay 대상에서 제외된 이벤트입니다. 수동 처리 또는 데이터 보정이 필요합니다.",
         advisorReadinessNext: "Readiness reason, Kafka, PostgreSQL 상태를 먼저 확인합니다.",
         advisorWorkerNext: "Worker deployment와 KEDA HPA 상태를 확인합니다.",
+        advisorDemoLiteReadinessNext: "demo-lite는 단일 DB와 낮은 replica 기준입니다. 잠시 후 재확인하고, Kafka backlog와 DB 저장 증가 여부를 같이 봅니다.",
         advisorReadinessSituation: "서비스 상태 확인이 ready가 아닙니다.",
         advisorWorkerSituation: "Worker replica 상태를 읽지 못했습니다.",
+        advisorDemoLiteReadinessSituation: "저사양 demo-lite 구성에서 degraded readiness가 관측됐습니다.",
         advisorBlockedSituation: "DLQ에 자동 재처리 대상에서 제외된 이벤트가 있습니다.",
         advisorDlqSituation: "DLQ에 격리된 이벤트가 남아 있습니다.",
         advisorPartialSituation: "요청 수와 Kafka 적재 또는 DB 저장 수가 맞지 않습니다.",
@@ -1026,6 +1029,7 @@
         advisorBlockedReason: "Some DLQ events hit the replay guard.",
         advisorReadinessReason: "Service readiness is not ready.",
         advisorWorkerReason: "Worker replica information is unavailable.",
+        advisorDemoLiteReadinessReason: "Readiness degraded under the reduced demo-lite profile.",
         advisorNormalNext: "Send samples to demonstrate Kafka append and DB persistence.",
         advisorPartialReason: "Reserved or unconfirmed DB persistence events remain.",
         advisorPartialNext: "Compare Reserved, Kafka appended, and DB persisted counts, then resend or verify the unconfirmed events.",
@@ -1033,8 +1037,10 @@
         advisorBlockedNext: "These events are excluded from automatic replay. Manual handling or data correction is required.",
         advisorReadinessNext: "Check readiness reason, Kafka, and PostgreSQL first.",
         advisorWorkerNext: "Check the Worker deployment and KEDA HPA status.",
+        advisorDemoLiteReadinessNext: "demo-lite runs with a single DB and lower replica limits. Refresh shortly and compare Kafka backlog with DB persistence progress.",
         advisorReadinessSituation: "Service readiness is not ready.",
         advisorWorkerSituation: "Worker replica status could not be read.",
+        advisorDemoLiteReadinessSituation: "Degraded readiness was observed in the reduced demo-lite profile.",
         advisorBlockedSituation: "DLQ contains events excluded from automatic replay.",
         advisorDlqSituation: "DLQ still contains isolated events.",
         advisorPartialSituation: "Requested, Kafka appended, and DB persisted counts do not match.",
@@ -1104,6 +1110,7 @@
     const advisorSituationKeys = {
       advisorReadinessReason: "advisorReadinessSituation",
       advisorWorkerReason: "advisorWorkerSituation",
+      advisorDemoLiteReadinessReason: "advisorDemoLiteReadinessSituation",
       advisorBlockedReason: "advisorBlockedSituation",
       advisorDlqReason: "advisorDlqSituation",
       advisorPartialReason: "advisorPartialSituation"
@@ -1126,6 +1133,10 @@
 
     function setDemoVersion(apiVersion = "-") {
       setText("#demo-version", `ver. ${DEMO_UI_VERSION} / api ${apiVersion || "-"}`);
+    }
+
+    function isDemoLiteProfile(readiness) {
+      return Boolean(readiness) && readiness.deployment_profile === "k8s-demo-lite";
     }
 
     function setLanguage(language) {
@@ -1551,6 +1562,10 @@
 
       if (!readiness || !dlqSummary) {
         statusKey = "advisorWaiting";
+      } else if (readiness.status === "degraded" && isDemoLiteProfile(readiness)) {
+        statusKey = "advisorAttention";
+        reasonKey = "advisorDemoLiteReadinessReason";
+        nextKey = "advisorDemoLiteReadinessNext";
       } else if (readiness.status !== "ready") {
         statusKey = "advisorCritical";
         reasonKey = "advisorReadinessReason";
@@ -1945,7 +1960,14 @@
           body: JSON.stringify({ confirmation })
         });
         if (!response.ok) {
-          throw new Error(`reset failed: HTTP ${response.status}`);
+          let detail = "";
+          try {
+            const payload = await response.json();
+            detail = payload.detail ? ` ${payload.detail}` : "";
+          } catch (_error) {
+            detail = "";
+          }
+          throw new Error(`reset failed: HTTP ${response.status}${detail}`);
         }
         const result = await response.json();
         events.length = 0;
