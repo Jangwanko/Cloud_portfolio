@@ -509,6 +509,16 @@ class TestOperationalDocumentation:
             "advisor-status",
             "advisor-reason",
             "advisor-next-step",
+            "advisor-signal-count",
+            "advisor-signal-history",
+            "advisorHistoryTitle",
+            "advisorHistoryEmpty",
+            "advisorOccurrenceCount",
+            "advisorSituation",
+            "advisorExpectedFix",
+            "advisorSignalStats",
+            "recordAdvisorSignal",
+            "renderAdvisorSignalHistory",
             "updateOperationsAdvisor",
             "AI API는 호출하지 않습니다.",
             "No AI API is called.",
@@ -564,6 +574,17 @@ class TestOperationalDocumentation:
         finish_run = demo.split("function finishProcessingRun(uiSession, hadFailures = false) {", 1)[1].split("function markEventStatus", 1)[0]
         assert "queueStats.lastRunHadFailures = hadFailures" in finish_run
         assert "queueStats.runCompletedAt = Date.now()" in finish_run
+        advisor_logic = demo.split("function updateOperationsAdvisor(readiness, dlqSummary) {", 1)[1].split("let opsRefreshTimer", 1)[0]
+        assert 'statusKey === "advisorAttention" || statusKey === "advisorCritical"' in advisor_logic
+        assert "recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary)" in advisor_logic
+        assert "lastAdvisorSignalSignature = null" in advisor_logic
+        signal_recorder = demo.split("function recordAdvisorSignal(", 1)[1].split("function renderAdvisorSignalHistory", 1)[0]
+        assert "if (signature === lastAdvisorSignalSignature)" in signal_recorder
+        assert "existing.count += 1" in signal_recorder
+        assert "existing.lastSeenAt = now" in signal_recorder
+        reset_demo_db = demo.split("async function resetDemoEventDb()", 1)[1].split('document.querySelector("#send-event")', 1)[0]
+        assert "advisorSignalStats.clear()" in reset_demo_db
+        assert "renderAdvisorSignalHistory()" in reset_demo_db
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event
         clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
