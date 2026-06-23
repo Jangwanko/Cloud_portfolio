@@ -45,12 +45,32 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _message_row_response(row: dict) -> dict:
+    created_at = row["created_at"]
+    return {
+        "id": row["id"],
+        "request_id": row["request_id"],
+        "status": "persisted",
+        "room_id": row["room_id"],
+        "room_seq": row["room_seq"],
+        "user_id": row["user_id"],
+        "event_type": row.get("event_type"),
+        "category": row.get("category"),
+        "payment_id": row.get("payment_id"),
+        "body": row["body"],
+        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+    }
+
+
 def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
     route = job_payload["route"]
     request_id = job_payload["request_id"]
     room_id = job_payload["room_id"]
     user_id = job_payload["user_id"]
     body = job_payload["body"]
+    event_type = job_payload.get("event_type")
+    category = job_payload.get("category")
+    payment_id = job_payload.get("payment_id")
     room_seq_raw = job_payload.get("room_seq")
     room_seq = int(room_seq_raw) if room_seq_raw is not None else None
     x_idempotency_key = job_payload.get("x_idempotency_key")
@@ -69,7 +89,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
 
     cur.execute(
         """
-        SELECT id, request_id, room_id, user_id, body, room_seq, created_at
+        SELECT id, request_id, room_id, user_id, event_type, category, payment_id, body, room_seq, created_at
         FROM messages
         WHERE request_id=%s
         """,
@@ -77,16 +97,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
     )
     existing = cur.fetchone()
     if existing is not None:
-        return {
-            "id": existing["id"],
-            "request_id": existing["request_id"],
-            "status": "persisted",
-            "room_id": existing["room_id"],
-            "room_seq": existing["room_seq"],
-            "user_id": existing["user_id"],
-            "body": existing["body"],
-            "created_at": existing["created_at"].isoformat(),
-        }
+        return _message_row_response(existing)
 
     cur.execute("SELECT id FROM rooms WHERE id=%s", (room_id,))
     if cur.fetchone() is None:
@@ -125,7 +136,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
     if room_seq <= last_seq:
         cur.execute(
             """
-            SELECT id, request_id, room_id, user_id, body, room_seq, created_at
+            SELECT id, request_id, room_id, user_id, event_type, category, payment_id, body, room_seq, created_at
             FROM messages
             WHERE room_id=%s AND room_seq=%s
             """,
@@ -133,16 +144,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
         )
         duplicate = cur.fetchone()
         if duplicate is not None:
-            return {
-                "id": duplicate["id"],
-                "request_id": duplicate["request_id"],
-                "status": "persisted",
-                "room_id": duplicate["room_id"],
-                "room_seq": duplicate["room_seq"],
-                "user_id": duplicate["user_id"],
-                "body": duplicate["body"],
-                "created_at": duplicate["created_at"].isoformat(),
-            }
+            return _message_row_response(duplicate)
 
     if room_seq > expected_seq:
         raise RoomSequenceGapError(
@@ -151,11 +153,11 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
 
     cur.execute(
         """
-        INSERT INTO messages (request_id, room_id, user_id, body, room_seq)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING id, request_id, room_id, user_id, body, room_seq, created_at
+        INSERT INTO messages (request_id, room_id, user_id, event_type, category, payment_id, body, room_seq)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id, request_id, room_id, user_id, event_type, category, payment_id, body, room_seq, created_at
         """,
-        (request_id, room_id, user_id, body, room_seq),
+        (request_id, room_id, user_id, event_type, category, payment_id, body, room_seq),
     )
     message = cur.fetchone()
     cur.execute(
@@ -167,16 +169,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
         (room_seq, room_id),
     )
 
-    response = {
-        "id": message["id"],
-        "request_id": message["request_id"],
-        "status": "persisted",
-        "room_id": message["room_id"],
-        "room_seq": message["room_seq"],
-        "user_id": message["user_id"],
-        "body": message["body"],
-        "created_at": message["created_at"].isoformat(),
-    }
+    response = _message_row_response(message)
 
     if x_idempotency_key:
         cur.execute(
@@ -208,6 +201,9 @@ def persisted_status_payload(request_id: str, response: dict) -> dict:
         "room_id": response["room_id"],
         "room_seq": response["room_seq"],
         "user_id": response["user_id"],
+        "event_type": response.get("event_type"),
+        "category": response.get("category"),
+        "payment_id": response.get("payment_id"),
         "created_at": response["created_at"],
     }
 
@@ -217,6 +213,8 @@ def notification_attempt_payload(message_response: dict) -> dict:
         "message_id": message_response["id"],
         "room_id": message_response["room_id"],
         "body_preview": message_response["body"][:30],
+        "event_type": message_response.get("event_type"),
+        "category": message_response.get("category"),
     }
 
 
@@ -255,6 +253,9 @@ def publish_persisted_message_snapshot(response: dict) -> None:
         "stream_id": response["room_id"],
         "stream_seq": response["room_seq"],
         "user_id": response["user_id"],
+        "event_type": response.get("event_type"),
+        "category": response.get("category"),
+        "payment_id": response.get("payment_id"),
         "body": response["body"],
         "created_at": response["created_at"],
     }

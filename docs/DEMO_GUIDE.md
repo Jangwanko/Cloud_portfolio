@@ -55,6 +55,22 @@ English demo script:
 5. Watch the counters move from `Reserved` to `Kafka Appended` to `DB Persisted`.
 6. Open Grafana when you want to show consumer lag and Worker scaling evidence.
 
+## DB Storage Evidence
+
+데모 화면의 결과 패널은 PostgreSQL `messages` table에 어떤 구조로 저장되는지도 보여줍니다.
+`event_type`, `category`, `payment_id`, `stream_seq`, `created_at`처럼 분석 파이프라인에서 바로 쓸 수 있는 컬럼을 확인할 수 있습니다.
+
+The result panel also shows how events are stored in the PostgreSQL `messages` table.
+It highlights analytics-friendly columns such as `event_type`, `category`, `payment_id`, `stream_seq`, and `created_at`.
+
+조회 API:
+
+```text
+GET /v1/admin/demo/recent-events?limit=5
+```
+
+이 API는 데모용 보조 증거입니다. 실제 운영 분석 파이프라인에서는 같은 저장 컬럼을 기준으로 batch export, CDC, warehouse load 같은 후속 경로를 붙일 수 있습니다.
+
 ## Counter Meaning
 
 | Counter | Meaning |

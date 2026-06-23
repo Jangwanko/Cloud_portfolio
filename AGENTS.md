@@ -196,6 +196,8 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Change Scope Rules
 
 - `AGENTS.md`는 브랜치별 취향 문서가 아니라 모든 주요 브랜치가 공유하는 운영 기준입니다. `master`, `dev-kafka`, `demo-lite` 중 한 브랜치에서 AGENTS.md를 바꾸면 같은 변경을 나머지 주요 브랜치에도 cherry-pick해 일관성을 유지합니다.
+- README와 `docs/` 문서도 브랜치별 임시 메모가 아니라 포트폴리오 설명과 운영 기준을 공유하는 문서입니다. 어느 브랜치에서든 문서를 변경했다면 변경 의도, 적용 범위, demo-lite 전용 여부를 확인하고 `master`, `dev-kafka`, `demo-lite` 중 관련 브랜치에 cherry-pick 또는 동일 패치로 공유합니다.
+- 문서 변경을 다른 브랜치에 공유할 때는 설정 값을 그대로 복사하지 않습니다. 공통 설명은 공통 문서에 반영하고, 브랜치 전용 제약은 `docs/DEMO_LITE.md`처럼 대상 문서에 분리해서 씁니다.
 - AGENTS.md에 demo-lite 전용 제약을 추가하더라도 전체 운영 규칙과 demo-lite 전용 경계를 분리해서 씁니다. 특정 브랜치만의 임시 상태를 전체 규칙처럼 쓰지 않습니다.
 - 사용자가 "demo-lite에서 한 것처럼"이라고 말해도 설정을 그대로 복사하지 않습니다. 먼저 대상 브랜치 역할, Argo CD targetRevision, overlay path, 실제 배포 클러스터를 확인합니다.
 - 저사양 편의 방식, 수동 image import, local-only workaround를 GitOps 자동 배포의 기본 방식처럼 설명하지 않습니다.

@@ -430,6 +430,9 @@ class TestKafkaIntakeBoundary:
                         "request_id": "req-1",
                         "room_id": 7,
                         "user_id": 3,
+                        "event_type": "payment_completed",
+                        "category": "payment",
+                        "payment_id": "pay-1",
                         "body": "hello",
                         "room_seq": 1,
                         "created_at": CreatedAt(),
@@ -481,13 +484,22 @@ class TestKafkaIntakeBoundary:
                 "room_id": 7,
                 "user_id": 3,
                 "body": "hello",
+                "event_type": "payment_completed",
+                "category": "payment",
+                "payment_id": "pay-1",
             }
         )
 
         executed_sql = "\n".join(cur.executed)
         assert conn.commits == 1
         assert response["room_seq"] == 1
+        assert response["event_type"] == "payment_completed"
+        assert response["category"] == "payment"
+        assert response["payment_id"] == "pay-1"
         assert "INSERT INTO messages" in executed_sql
+        assert "event_type" in executed_sql
+        assert "category" in executed_sql
+        assert "payment_id" in executed_sql
         assert "INSERT INTO request_statuses" in executed_sql
         assert "INSERT INTO notification_attempts" not in executed_sql
         assert published_notifications == [
@@ -497,6 +509,8 @@ class TestKafkaIntakeBoundary:
                     "message_id": 10,
                     "room_id": 7,
                     "body_preview": "hello",
+                    "event_type": "payment_completed",
+                    "category": "payment",
                 },
             )
         ]
@@ -529,6 +543,9 @@ class TestOpenApiContract:
             "DlqSummaryResponse",
             "DemoResetRequest",
             "DemoResetResponse",
+            "DemoRecentEventsResponse",
+            "DemoDbColumnResponse",
+            "DemoRecentEventRow",
         ):
             assert model in components
 
@@ -538,6 +555,7 @@ class TestOpenApiContract:
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
             "/v1/admin/demo/reset-events": "DemoResetResponse",
+            "/v1/admin/demo/recent-events": "DemoRecentEventsResponse",
         }
         for path, model in expected_refs.items():
             method = "post" if path == "/v1/admin/demo/reset-events" else "get"
@@ -564,6 +582,27 @@ class TestOpenApiContract:
         readiness = components["ReadinessResponse"]["properties"]
         assert "app_version" in readiness
         assert "deployment_profile" in readiness
+
+        event_response = components["EventResponse"]["properties"]
+        for field in ("event_type", "category", "payment_id"):
+            assert field in event_response
+
+        demo_recent = components["DemoRecentEventsResponse"]["properties"]
+        assert "columns" in demo_recent
+        assert "rows" in demo_recent
+
+    def test_order_event_columns_migration_exists(self):
+        migration = (ROOT / "alembic/versions/0005_order_event_columns.py").read_text(encoding="utf-8")
+
+        for token in (
+            "event_type",
+            "category",
+            "payment_id",
+            "idx_messages_event_type_created_at",
+            "idx_messages_category_created_at",
+            "idx_messages_payment_id",
+        ):
+            assert token in migration
 
 
 class TestOrderEventApiContract:

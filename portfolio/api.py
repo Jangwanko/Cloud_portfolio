@@ -17,6 +17,7 @@ from portfolio.materialized_cache import (
 from portfolio.metrics import observe_api_stage
 from portfolio.order_events import classify_order_event
 from portfolio.schemas import (
+    DemoRecentEventsResponse,
     DemoResetRequest,
     DemoResetResponse,
     DlqListResponse,
@@ -100,6 +101,60 @@ def _reset_demo_kafka_dlq() -> str:
     return settings.kafka_dlq_topic
 
 
+DEMO_DB_COLUMNS = [
+    {
+        "name": "event_id",
+        "type": "BIGSERIAL",
+        "purpose": "Worker가 PostgreSQL에 저장한 이벤트 row id입니다.",
+    },
+    {
+        "name": "request_id",
+        "type": "TEXT",
+        "purpose": "API가 Kafka append 요청에 부여한 추적 id입니다.",
+    },
+    {
+        "name": "stream_id",
+        "type": "BIGINT",
+        "purpose": "주문 이후 이벤트를 묶는 주문 stream id입니다.",
+    },
+    {
+        "name": "stream_seq",
+        "type": "BIGINT",
+        "purpose": "같은 stream 안에서 Worker가 DB 저장 시 확정한 순서입니다.",
+    },
+    {
+        "name": "user_id",
+        "type": "BIGINT",
+        "purpose": "이벤트를 보낸 사용자 또는 운영 demo 계정 id입니다.",
+    },
+    {
+        "name": "event_type",
+        "type": "TEXT",
+        "purpose": "주문 이후 업무 이벤트 종류입니다.",
+    },
+    {
+        "name": "category",
+        "type": "TEXT",
+        "purpose": "운영자가 볼 수 있게 분류한 업무 카테고리입니다.",
+    },
+    {
+        "name": "payment_id",
+        "type": "TEXT",
+        "purpose": "결제 추적에 쓰는 외부 식별자입니다.",
+    },
+    {
+        "name": "body",
+        "type": "TEXT",
+        "purpose": "운영자가 읽는 이벤트 내용입니다.",
+    },
+    {
+        "name": "created_at",
+        "type": "TIMESTAMPTZ",
+        "purpose": "Worker가 DB commit으로 영속화한 시각입니다.",
+    },
+]
+
+
 def _externalize_request_status(payload: dict) -> dict:
     status = dict(payload)
     if "message_id" in status:
@@ -109,6 +164,22 @@ def _externalize_request_status(payload: dict) -> dict:
     if "room_seq" in status:
         status["stream_seq"] = status.pop("room_seq")
     return status
+
+
+def _demo_recent_row_to_response(row: dict) -> dict:
+    created_at = row["created_at"]
+    return {
+        "event_id": row["id"],
+        "request_id": row["request_id"],
+        "stream_id": row["room_id"],
+        "stream_seq": row["room_seq"],
+        "user_id": row["user_id"],
+        "event_type": row["event_type"],
+        "category": row["category"],
+        "payment_id": row["payment_id"],
+        "body": row["body"],
+        "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
+    }
 
 
 def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
@@ -284,6 +355,33 @@ def reset_demo_events(payload: DemoResetRequest, current_user: dict = Depends(ge
         "reset_request_statuses": result["reset_request_statuses"],
         "reset_dlq_topic": reset_dlq_topic,
         "note": f"Demo event data and DLQ topic reset by user_id={current_user['id']}. Users were kept.",
+    }
+
+
+@router.get("/admin/demo/recent-events", response_model=DemoRecentEventsResponse)
+def get_demo_recent_events(
+    limit: int = Query(default=5, ge=1, le=20),
+    current_user: dict = Depends(get_current_user),
+):
+    _ensure_demo_reset_allowed()
+    with get_conn() as conn:
+        with get_cursor(conn) as cur:
+            cur.execute(
+                """
+                SELECT id, request_id, room_id, room_seq, user_id,
+                       event_type, category, payment_id, body, created_at
+                FROM messages
+                ORDER BY id DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+
+    return {
+        "table": "messages",
+        "columns": DEMO_DB_COLUMNS,
+        "rows": [_demo_recent_row_to_response(row) for row in rows],
     }
 
 
@@ -489,6 +587,9 @@ def _event_row_to_response(row: dict) -> dict:
         "stream_id": row["room_id"],
         "stream_seq": row["room_seq"],
         "user_id": row["user_id"],
+        "event_type": row["event_type"],
+        "category": row["category"],
+        "payment_id": row["payment_id"],
         "body": row["body"],
         "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
     }
@@ -535,7 +636,7 @@ def list_events(
         raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
     sql = """
-        SELECT id, request_id, room_id, room_seq, user_id, body, created_at
+        SELECT id, request_id, room_id, room_seq, user_id, event_type, category, payment_id, body, created_at
         FROM messages
         WHERE room_id=%s
     """
