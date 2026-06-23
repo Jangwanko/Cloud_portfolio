@@ -63,13 +63,8 @@ English demo script:
 The result panel also shows how events are stored in the PostgreSQL `messages` table.
 It highlights analytics-friendly columns such as `event_type`, `category`, `payment_id`, `stream_seq`, and `created_at`.
 
-조회 API:
-
-```text
-GET /v1/admin/demo/recent-events?limit=5
-```
-
-이 API는 데모용 보조 증거입니다. 실제 운영 분석 파이프라인에서는 같은 저장 컬럼을 기준으로 batch export, CDC, warehouse load 같은 후속 경로를 붙일 수 있습니다.
+최근 row 값은 화면에 직접 노출하지 않습니다. 데모에서는 raw id나 본문보다 저장 구조를 보여주는 편이 더 읽기 쉽습니다.
+실제 운영 분석 파이프라인에서는 같은 저장 컬럼을 기준으로 batch export, CDC, warehouse load 같은 후속 경로를 붙일 수 있습니다.
 
 ## Counter Meaning
 

@@ -2,7 +2,7 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
-## 2026-06-24 업데이트: DB 저장 구조와 최근 저장 데이터 노출
+## 2026-06-24 업데이트: DB 저장 구조 노출
 
 목표:
 
@@ -13,14 +13,15 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 
 - `messages` table에 `event_type`, `category`, `payment_id` 컬럼과 분석 조회용 index를 추가했다.
 - Worker persistence가 Kafka payload의 `event_type`, `category`, `payment_id`를 DB row, request status, snapshot payload에 함께 반영한다.
-- `GET /v1/admin/demo/recent-events?limit=5` API를 추가해 DB 저장 컬럼 설명과 최근 저장 row를 반환한다.
-- 데모 화면 결과 패널에 `DB 저장 컬럼` / `Recent DB Rows` 섹션을 추가했다.
+- 데모 화면 결과 패널에 `DB 저장 컬럼` / `Stored DB Columns` 섹션을 추가했다.
+- 최근 DB row 목록은 raw 데이터 노출과 화면 복잡도를 줄이기 위해 표시하지 않는다.
+- 데모 UI 변경에 맞춰 화면 버전을 `1.0.2`로 올렸다.
 - `docs/DEMO_GUIDE.md`에 DB storage evidence 설명을 추가했다.
 - `AGENTS.md`에 README와 `docs/` 변경도 관련 브랜치에 공유해야 한다는 운영 규칙을 추가했다.
 
 해석:
 
-- 이제 포트폴리오 시연에서 Kafka 처리 흐름뿐 아니라, 분석 가능한 DB 저장 형태까지 한 화면에서 설명할 수 있다.
+- 이제 포트폴리오 시연에서 Kafka 처리 흐름뿐 아니라, 분석 가능한 DB 저장 구조까지 한 화면에서 설명할 수 있다.
 - 이 구조는 향후 batch export, CDC, warehouse load, 운영 통계 대시보드 같은 데이터 분석 파이프라인으로 이어질 수 있다.
 
 ## 2026-06-21 업데이트: 2코어 서버용 demo-lite 프로파일 추가

@@ -543,9 +543,6 @@ class TestOpenApiContract:
             "DlqSummaryResponse",
             "DemoResetRequest",
             "DemoResetResponse",
-            "DemoRecentEventsResponse",
-            "DemoDbColumnResponse",
-            "DemoRecentEventRow",
         ):
             assert model in components
 
@@ -555,7 +552,6 @@ class TestOpenApiContract:
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
             "/v1/admin/demo/reset-events": "DemoResetResponse",
-            "/v1/admin/demo/recent-events": "DemoRecentEventsResponse",
         }
         for path, model in expected_refs.items():
             method = "post" if path == "/v1/admin/demo/reset-events" else "get"
@@ -586,10 +582,6 @@ class TestOpenApiContract:
         event_response = components["EventResponse"]["properties"]
         for field in ("event_type", "category", "payment_id"):
             assert field in event_response
-
-        demo_recent = components["DemoRecentEventsResponse"]["properties"]
-        assert "columns" in demo_recent
-        assert "rows" in demo_recent
 
     def test_order_event_columns_migration_exists(self):
         migration = (ROOT / "alembic/versions/0005_order_event_columns.py").read_text(encoding="utf-8")

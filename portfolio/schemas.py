@@ -180,31 +180,6 @@ class DemoResetResponse(BaseModel):
     note: str
 
 
-class DemoDbColumnResponse(BaseModel):
-    name: str
-    type: str
-    purpose: str
-
-
-class DemoRecentEventRow(BaseModel):
-    event_id: int
-    request_id: str | None = None
-    stream_id: int
-    stream_seq: int | None = None
-    user_id: int
-    event_type: str | None = None
-    category: str | None = None
-    payment_id: str | None = None
-    body: str
-    created_at: str
-
-
-class DemoRecentEventsResponse(BaseModel):
-    table: str
-    columns: list[DemoDbColumnResponse]
-    rows: list[DemoRecentEventRow]
-
-
 class KafkaHealthResponse(BaseModel):
     bootstrap_reachable: bool
 

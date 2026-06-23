@@ -160,6 +160,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
+- 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 가벼운 수정은 세 번째 숫자(patch), 시스템의 동작이나 구조가 바뀌는 변경은 두 번째 숫자(minor), 화면/서비스가 새롭게 리뉴얼되는 수준은 첫 번째 숫자(major)를 올립니다.
 - 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
 
 ## GitOps / Deployment Rules

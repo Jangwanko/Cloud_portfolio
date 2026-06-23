@@ -427,16 +427,14 @@
       gap: 10px;
     }
 
-    .db-column-list,
-    .recent-db-events {
+    .db-column-list {
       display: grid;
       gap: 8px;
       max-height: 180px;
       overflow: auto;
     }
 
-    .db-column,
-    .db-row {
+    .db-column {
       background: #fff;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -445,8 +443,7 @@
       padding: 9px;
     }
 
-    .db-column strong,
-    .db-row strong {
+    .db-column strong {
       overflow-wrap: anywhere;
     }
 
@@ -605,7 +602,7 @@
     <div>
       <div class="title-row">
         <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.0.1 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 1.0.2 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
@@ -843,11 +840,6 @@
             <p class="subtitle" data-i18n="dbColumnsSubtitle">Worker가 PostgreSQL messages 테이블에 남기는 분석용 구조입니다.</p>
           </div>
           <div class="db-column-list" id="db-column-list"></div>
-          <div>
-            <h2 data-i18n="recentDbRowsTitle">최근 DB 저장 데이터</h2>
-            <p class="subtitle" data-i18n="recentDbRowsSubtitle">최근 저장된 row를 보면 event_type, category, payment_id가 body와 분리되어 남는지 확인할 수 있습니다.</p>
-          </div>
-          <div class="recent-db-events" id="recent-db-events"></div>
         </div>
       </section>
     </div>
@@ -855,7 +847,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.0.1";
+    const DEMO_UI_VERSION = "1.0.2";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
@@ -972,9 +964,6 @@
         resultPartial: "일부 미확인",
         dbColumnsTitle: "DB 저장 컬럼",
         dbColumnsSubtitle: "Worker가 PostgreSQL messages 테이블에 남기는 분석용 구조입니다.",
-        recentDbRowsTitle: "최근 DB 저장 데이터",
-        recentDbRowsSubtitle: "최근 저장된 row를 보면 event_type, category, payment_id가 body와 분리되어 남는지 확인할 수 있습니다.",
-        recentDbEmpty: "아직 저장된 DB row가 없습니다.",
         dbColumnsUnavailable: "DB 저장 구조를 아직 불러오지 못했습니다.",
         emptyTitle: "아직 이벤트가 없습니다.",
         emptyMeta: "10개, 100개, 1000개 샘플을 추가하거나 API로 이벤트를 보내세요.",
@@ -1107,9 +1096,6 @@
         resultPartial: "Partially confirmed",
         dbColumnsTitle: "Stored DB Columns",
         dbColumnsSubtitle: "Analytics-friendly structure persisted by the Worker into the PostgreSQL messages table.",
-        recentDbRowsTitle: "Recent DB Rows",
-        recentDbRowsSubtitle: "Recent rows show event_type, category, and payment_id stored separately from body.",
-        recentDbEmpty: "No persisted DB rows yet.",
         dbColumnsUnavailable: "DB storage shape has not been loaded yet.",
         emptyTitle: "No events yet.",
         emptyMeta: "Add 10, 100, or 1000 samples, or send an event through the API.",
@@ -1158,7 +1144,6 @@
       uiSession: 0
     };
     const advisorSignalStats = new Map();
-    let latestDbEventsPayload = null;
     let lastAdvisorSignalSignature = null;
     const advisorSituationKeys = {
       advisorReadinessReason: "advisorReadinessSituation",
@@ -1208,7 +1193,7 @@
         resetOpsStatusIfPending();
         updateQueueMetrics();
         renderAdvisorSignalHistory();
-        renderRecentDbEvents();
+        renderDbColumns();
       }
       renderEvents();
     }
@@ -1380,64 +1365,37 @@
       `).join("");
     }
 
-    function renderRecentDbEvents(payload = latestDbEventsPayload) {
+    const dbStorageColumns = [
+      ["event_id", "BIGSERIAL", "Worker가 PostgreSQL에 저장한 이벤트 row id입니다."],
+      ["request_id", "TEXT", "API가 Kafka append 요청에 부여한 추적 id입니다."],
+      ["stream_id", "BIGINT", "주문 이후 이벤트를 묶는 주문 stream id입니다."],
+      ["stream_seq", "BIGINT", "같은 stream 안에서 Worker가 DB 저장 시 확정한 순서입니다."],
+      ["user_id", "BIGINT", "이벤트를 보낸 사용자 또는 운영 demo 계정 id입니다."],
+      ["event_type", "TEXT", "주문 이후 업무 이벤트 종류입니다."],
+      ["category", "TEXT", "운영자가 볼 수 있게 분류한 업무 카테고리입니다."],
+      ["payment_id", "TEXT", "결제 추적에 쓰는 외부 식별자입니다."],
+      ["body", "TEXT", "운영자가 읽는 이벤트 내용입니다."],
+      ["created_at", "TIMESTAMPTZ", "Worker가 DB commit으로 영속화한 시각입니다."]
+    ];
+
+    function renderDbColumns() {
       const columnList = document.querySelector("#db-column-list");
-      const rowList = document.querySelector("#recent-db-events");
-      if (!columnList || !rowList) {
+      if (!columnList) {
         return;
       }
 
       columnList.replaceChildren();
-      rowList.replaceChildren();
-
-      const columns = payload?.columns || [];
-      if (columns.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = t("dbColumnsUnavailable");
-        columnList.appendChild(empty);
-      } else {
-        columns.forEach((column) => {
-          const item = document.createElement("div");
-          item.className = "db-column";
-          const title = document.createElement("strong");
-          title.textContent = `${column.name} (${column.type})`;
-          const purpose = document.createElement("span");
-          purpose.className = "meta";
-          purpose.textContent = column.purpose;
-          item.append(title, purpose);
-          columnList.appendChild(item);
-        });
-      }
-
-      const rows = payload?.rows || [];
-      if (rows.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = t("recentDbEmpty");
-        rowList.appendChild(empty);
-        return;
-      }
-
-      rows.forEach((row) => {
+      dbStorageColumns.forEach(([name, type, purpose]) => {
         const item = document.createElement("div");
-        item.className = "db-row";
+        item.className = "db-column";
         const title = document.createElement("strong");
-        title.textContent = `event_id=${row.event_id} stream_seq=${row.stream_seq ?? "-"}`;
-        const type = document.createElement("span");
-        type.className = "meta";
-        type.textContent = `event_type=${row.event_type || "-"} category=${row.category || "-"} payment_id=${row.payment_id || "-"}`;
-        const body = document.createElement("span");
-        body.textContent = row.body;
-        const created = document.createElement("span");
-        created.className = "meta";
-        created.textContent = `created_at=${row.created_at}`;
-        item.append(title, type, body, created);
-        rowList.appendChild(item);
+        title.textContent = `${name} (${type})`;
+        const description = document.createElement("span");
+        description.className = "meta";
+        description.textContent = purpose;
+        item.append(title, description);
+        columnList.appendChild(item);
       });
-    }
-
-    function updateRecentDbEventsPanel(payload) {
-      latestDbEventsPayload = payload;
-      renderRecentDbEvents(payload);
     }
 
     function setPipelineStep(step, state, text) {
@@ -1751,17 +1709,6 @@
         }
         const dlqSummary = await dlqResponse.json();
         updateDlqSummaryPanel(dlqSummary);
-        try {
-          const dbEventsResponse = await fetch(`${baseUrl}/v1/admin/demo/recent-events?limit=5`, {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-          if (!dbEventsResponse.ok) {
-            throw new Error(`recent DB events HTTP ${dbEventsResponse.status}`);
-          }
-          updateRecentDbEventsPanel(await dbEventsResponse.json());
-        } catch (error) {
-          log(`recent DB events refresh failed: ${describeFetchFailure(error)}`);
-        }
         updateOperationsAdvisor(readiness, dlqSummary);
         setText("#ops-last-checked", new Date().toLocaleTimeString());
       } catch (error) {
@@ -2106,10 +2053,9 @@
         queueStats.cancelled = 0;
         advisorSignalStats.clear();
         lastAdvisorSignalSignature = null;
-        latestDbEventsPayload = null;
         updateQueueMetrics();
         renderAdvisorSignalHistory();
-        renderRecentDbEvents();
+        renderDbColumns();
         renderEvents();
         resetPipeline();
         confirmationInput.value = "";
@@ -2142,7 +2088,7 @@
     resetPipeline();
     updateQueueMetrics();
     renderEvents();
-    renderRecentDbEvents();
+    renderDbColumns();
     resetOpsStatusIfPending();
     refreshOpsStatus();
     restartOpsAutoRefresh();
