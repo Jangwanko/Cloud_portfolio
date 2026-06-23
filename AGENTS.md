@@ -8,7 +8,7 @@
 - 사용자는 결제 완료와 주문 완료 응답까지만 직접 확인하며, Kafka 처리 상태는 사용자 화면에 노출하지 않습니다.
 - Kafka / Worker / DLQ / materialized cache / observability는 주문 이후 운영 이벤트 처리와 장애 대응을 위한 내부 경로입니다.
 - 현재 최종 브랜치는 `master`입니다. `dev-kafka`는 Kafka 전환 작업 브랜치였고, 같은 최종 commit이 `master`에 병합되어 있습니다.
-- 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 실제 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 작업 시작 전 현재 브랜치를 확인하고, 개발성 변경은 `dev-kafka`에서 진행합니다.
+- 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 일반 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 저사양 데모 관련 개발 작업은 `demo-dev`에서 진행합니다. 작업 시작 전 현재 브랜치를 확인하고, 대상 역할에 맞는 브랜치에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
 - 실패 event는 retry 후 `message-ingress-dlq`에 격리하며, replay guard와 DLQ API가 있습니다.
@@ -160,7 +160,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
-- 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 가벼운 수정은 세 번째 숫자(patch), 시스템의 동작이나 구조가 바뀌는 변경은 두 번째 숫자(minor), 화면/서비스가 새롭게 리뉴얼되는 수준은 첫 번째 숫자(major)를 올립니다.
+- 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 외형적 변경이 없는 내부 수정은 세 번째 숫자(patch), 사용자가 보는 화면이나 흐름에 변화가 있으면 두 번째 숫자(minor), 시스템이나 서비스 컨셉이 크게 바뀌는 수준이면 첫 번째 숫자(major)를 올립니다. 대부분의 일상 변경은 세 번째 숫자 변경으로 처리합니다.
 - 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
 
 ## GitOps / Deployment Rules
@@ -169,7 +169,8 @@ Latest ordering / failure injection result after fixing local client skew:
 - `messaging-portfolio:local`은 local kind 또는 수동 bootstrap 전용 이미지입니다. Argo CD 자동 배포 경로에서는 GHCR/ECR 같은 registry image와 commit SHA 기반 tag를 사용합니다.
 - GitOps 자동 반영은 `git push -> image build/push -> kustomize image tag commit -> Argo CD sync` 순서로 설명합니다. 이 순서를 생략하고 "push하면 바로 반영된다"고 쓰지 않습니다.
 - 브랜치별 배포 역할을 섞지 않습니다.
-  - `demo-lite`: 2코어 k3s 서버용 축소 데모 브랜치입니다.
+  - `demo-dev`: 저사양 데모 기능과 문서 변경을 사람이 작업하는 개발 브랜치입니다.
+  - `demo-lite`: 2코어 k3s 서버용 축소 데모 배포 브랜치입니다. 현재 GitOps / Actions image tag commit이 섞일 수 있으므로 일반 개발 작업 브랜치로 쓰지 않습니다.
   - `dev-kafka`: 실제 개발/검증용 Argo CD 브랜치입니다.
   - `master`: 최종 병합 및 배포 기준 브랜치입니다.
 - 특정 브랜치에서 image tag workflow를 추가하거나 수정할 때는 먼저 해당 브랜치의 Argo CD `targetRevision`, overlay path, 실제 배포 클러스터를 확인합니다.
@@ -196,8 +197,8 @@ Latest ordering / failure injection result after fixing local client skew:
 
 ## Change Scope Rules
 
-- `AGENTS.md`는 브랜치별 취향 문서가 아니라 모든 주요 브랜치가 공유하는 운영 기준입니다. `master`, `dev-kafka`, `demo-lite` 중 한 브랜치에서 AGENTS.md를 바꾸면 같은 변경을 나머지 주요 브랜치에도 cherry-pick해 일관성을 유지합니다.
-- README와 `docs/` 문서도 브랜치별 임시 메모가 아니라 포트폴리오 설명과 운영 기준을 공유하는 문서입니다. 어느 브랜치에서든 문서를 변경했다면 변경 의도, 적용 범위, demo-lite 전용 여부를 확인하고 `master`, `dev-kafka`, `demo-lite` 중 관련 브랜치에 cherry-pick 또는 동일 패치로 공유합니다.
+- `AGENTS.md`는 브랜치별 취향 문서가 아니라 모든 주요 브랜치가 공유하는 운영 기준입니다. `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 한 브랜치에서 AGENTS.md를 바꾸면 같은 변경을 나머지 주요 브랜치에도 cherry-pick해 일관성을 유지합니다.
+- README와 `docs/` 문서도 브랜치별 임시 메모가 아니라 포트폴리오 설명과 운영 기준을 공유하는 문서입니다. 어느 브랜치에서든 문서를 변경했다면 변경 의도, 적용 범위, demo-lite 전용 여부를 확인하고 `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 관련 브랜치에 cherry-pick 또는 동일 패치로 공유합니다.
 - 문서 변경을 다른 브랜치에 공유할 때는 설정 값을 그대로 복사하지 않습니다. 공통 설명은 공통 문서에 반영하고, 브랜치 전용 제약은 `docs/DEMO_LITE.md`처럼 대상 문서에 분리해서 씁니다.
 - AGENTS.md에 demo-lite 전용 제약을 추가하더라도 전체 운영 규칙과 demo-lite 전용 경계를 분리해서 씁니다. 특정 브랜치만의 임시 상태를 전체 규칙처럼 쓰지 않습니다.
 - 사용자가 "demo-lite에서 한 것처럼"이라고 말해도 설정을 그대로 복사하지 않습니다. 먼저 대상 브랜치 역할, Argo CD targetRevision, overlay path, 실제 배포 클러스터를 확인합니다.
