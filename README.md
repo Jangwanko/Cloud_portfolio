@@ -19,6 +19,19 @@ This project demonstrates a Kafka-centered post-order event pipeline. The custom
 
 자세한 서비스 기준은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md), 구조는 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 최신 검증 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 정리했습니다.
 
+## Full System vs Demo Lite
+
+이 포트폴리오는 본래 검증용 시스템과 저사양 공개 데모를 나누어 설명합니다.
+
+| Mode | Purpose | How to read it |
+| --- | --- | --- |
+| Full system / 본래 시스템 | Kafka 3 broker, PostgreSQL HA, Pgpool, KEDA scale-out, Grafana, DLQ replay까지 포함한 검증 기준입니다. | HA, ordering, failure recovery, performance baseline은 이 기준으로 설명합니다. |
+| Demo lite / 저사양 데모 | 2코어급 서버에서 API -> Kafka -> Worker -> DB 흐름을 직접 보여주는 축소 실행 모드입니다. | 성능 증명보다 실제 서비스 흐름과 운영 증거를 보여주는 데 집중합니다. |
+
+`demo-lite`는 full HA를 흉내 내기 위한 구성이 아니라, 제한된 서버에서도 같은 이벤트 처리 개념을 실행해 볼 수 있게 만든 profile입니다.
+
+`demo-lite` is not the HA or performance proof. It is a constrained runtime that makes the same event-driven flow visible on a small server.
+
 ## Local Demo
 
 브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.
@@ -26,6 +39,7 @@ This project demonstrates a Kafka-centered post-order event pipeline. The custom
 The browser demo shows real local processing through API intake, Kafka append, Worker persistence, and PostgreSQL storage.
 
 - Demo UI: `http://localhost/demo/order-dashboard.html`
+- GitHub: `https://github.com/Jangwanko/Cloud_portfolio`
 - API docs: `http://localhost/docs`
 - Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
 - Readiness: `http://localhost/health/ready`
