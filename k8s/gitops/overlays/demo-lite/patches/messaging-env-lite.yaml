@@ -5,7 +5,7 @@ metadata:
   namespace: messaging-app
 stringData:
   APP_ENV: "k8s-demo-lite"
-  APP_VERSION: "aeaf648"
+  APP_VERSION: "2bd5dda"
   KAFKA_TOPIC_PARTITIONS: "3"
   KAFKA_TOPIC_REPLICATION_FACTOR: "1"
   KAFKA_MIN_INSYNC_REPLICAS: "1"
