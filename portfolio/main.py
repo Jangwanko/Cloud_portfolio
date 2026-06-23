@@ -210,6 +210,7 @@ def _build_readiness_payload() -> tuple[int, dict]:
     grace_remaining_seconds = _degraded_grace_remaining(overall_status)
     payload = {
         "status": overall_status,
+        "app_version": settings.app_version,
         "reason": reasons,
         "grace_remaining_seconds": grace_remaining_seconds,
         "queue_backend": "kafka",

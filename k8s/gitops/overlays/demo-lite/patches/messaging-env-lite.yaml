@@ -5,6 +5,7 @@ metadata:
   namespace: messaging-app
 stringData:
   APP_ENV: "k8s-demo-lite"
+  APP_VERSION: "demo-lite-local"
   DB_POOL_MIN_CONN: "1"
   DB_POOL_MAX_CONN: "4"
   POSTGRES_MIN_READY_STANDBYS: "0"

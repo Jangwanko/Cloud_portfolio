@@ -64,7 +64,7 @@ def _load_request_status(request_id: str) -> dict | None:
 
 
 def _ensure_demo_reset_allowed() -> None:
-    allowed_envs = {"local", "k8s", "k8s-ha", "development", "dev", "test"}
+    allowed_envs = {"local", "k8s", "k8s-ha", "k8s-demo-lite", "development", "dev", "test"}
     if settings.app_env not in allowed_envs:
         raise HTTPException(status_code=403, detail="Demo reset is disabled in this environment")
 

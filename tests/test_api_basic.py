@@ -7,6 +7,7 @@ can run as a fast compile/import sanity check.
 
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,38 @@ class TestRequestStatusKey:
         key = _fallback_idem_key("send_event", "idem-xyz")
         assert "send_event" in key
         assert "idem-xyz" in key
+
+
+class TestDemoResetGuard:
+    """Demo reset is enabled for demo deployment profiles only."""
+
+    def test_demo_lite_environment_allows_demo_reset(self, monkeypatch):
+        import portfolio.api as api
+
+        monkeypatch.setattr(api, "settings", SimpleNamespace(app_env="k8s-demo-lite"))
+
+        api._ensure_demo_reset_allowed()
+
+
+class TestReadinessPayload:
+    """Readiness includes deployment identity for demo verification."""
+
+    def test_readiness_payload_exposes_app_version(self, monkeypatch):
+        import portfolio.main as main
+
+        monkeypatch.setattr(main, "settings", SimpleNamespace(app_version="demo-sha", postgres_min_ready_standbys=0))
+        monkeypatch.setattr(
+            main,
+            "get_postgres_runtime_status",
+            lambda: {"write_available": True, "standby_count": 0, "sync_standby_count": 0},
+        )
+        monkeypatch.setattr(main, "ping_kafka", lambda: True)
+        monkeypatch.setattr(main, "_worker_runtime_status", lambda: {"source": "test"})
+
+        status_code, payload = main._build_readiness_payload()
+
+        assert status_code == 200
+        assert payload["app_version"] == "demo-sha"
 
 
 class TestExternalizeRequestStatus:
@@ -493,6 +526,8 @@ class TestOpenApiContract:
 
         worker_health = components["WorkerHealthResponse"]["properties"]
         assert "max_replicas" in worker_health
+        readiness = components["ReadinessResponse"]["properties"]
+        assert "app_version" in readiness
 
 
 class TestOrderEventApiContract:

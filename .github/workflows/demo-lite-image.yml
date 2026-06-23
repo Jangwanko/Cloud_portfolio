@@ -16,6 +16,7 @@ jobs:
     env:
       IMAGE_NAME: ghcr.io/jangwanko/cloud_portfolio
       KUSTOMIZATION: k8s/gitops/overlays/demo-lite/kustomization.yaml
+      DEMO_LITE_ENV_PATCH: k8s/gitops/overlays/demo-lite/patches/messaging-env-lite.yaml
 
     steps:
       - name: Checkout demo-lite
@@ -58,16 +59,17 @@ jobs:
           sudo chmod +x /usr/local/bin/yq
           yq -i '(.images[] | select(.name == "messaging-portfolio") | .newName) = "ghcr.io/jangwanko/cloud_portfolio"' "$KUSTOMIZATION"
           yq -i '(.images[] | select(.name == "messaging-portfolio") | .newTag) = "${{ steps.image.outputs.tag }}"' "$KUSTOMIZATION"
+          yq -i '.stringData.APP_VERSION = "${{ steps.image.outputs.tag }}"' "$DEMO_LITE_ENV_PATCH"
 
       - name: Commit GitOps image tag
         shell: bash
         run: |
-          if git diff --quiet "$KUSTOMIZATION"; then
+          if git diff --quiet "$KUSTOMIZATION" "$DEMO_LITE_ENV_PATCH"; then
             echo "GitOps image tag already points to ${{ steps.image.outputs.tag }}"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$KUSTOMIZATION"
+          git add "$KUSTOMIZATION" "$DEMO_LITE_ENV_PATCH"
           git commit -m "ci: update demo-lite image to ${{ steps.image.outputs.tag }} [skip demo-lite image]"
           git push origin HEAD:demo-lite

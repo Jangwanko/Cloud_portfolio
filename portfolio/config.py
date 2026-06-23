@@ -5,6 +5,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "Event Stream Portfolio API")
+    app_version: str = os.getenv("APP_VERSION", "dev")
     app_env: str = os.getenv("APP_ENV", "local")
     app_port: int = int(os.getenv("APP_PORT", "8000"))
 

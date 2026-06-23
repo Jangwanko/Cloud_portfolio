@@ -388,6 +388,11 @@ class TestOperationalDocumentation:
 
         for token in (
             "Post-Order Event Console",
+            "demo-version",
+            "DEMO_UI_VERSION",
+            "setDemoVersion",
+            "ver.",
+            "api",
             "language-toggle",
             "setLanguage",
             "translations",
@@ -739,12 +744,14 @@ class TestManifestContracts:
 
     def test_demo_lite_gitops_uses_registry_image_and_action_tag_update(self):
         kustomization = read_text("k8s/gitops/overlays/demo-lite/kustomization.yaml")
+        env_patch = read_text("k8s/gitops/overlays/demo-lite/patches/messaging-env-lite.yaml")
         workflow = read_text(".github/workflows/demo-lite-image.yml")
 
         assert "images:" in kustomization
         assert "name: messaging-portfolio" in kustomization
         assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
         assert "newTag:" in kustomization
+        assert "APP_VERSION:" in env_patch
 
         assert "branches: [demo-lite]" in workflow
         assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
@@ -752,6 +759,8 @@ class TestManifestContracts:
         assert "docker/build-push-action" in workflow
         assert "yq -i" in workflow
         assert "k8s/gitops/overlays/demo-lite/kustomization.yaml" in workflow
+        assert "DEMO_LITE_ENV_PATCH" in workflow
+        assert ".stringData.APP_VERSION" in workflow
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
