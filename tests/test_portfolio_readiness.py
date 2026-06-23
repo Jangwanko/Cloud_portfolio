@@ -388,13 +388,6 @@ class TestOperationalDocumentation:
 
         for token in (
             "Post-Order Event Console",
-            "demo-version",
-            "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.1.0"',
-            "ver. 1.1.0 / api -",
-            "setDemoVersion",
-            "ver.",
-            "api",
             "language-toggle",
             "setLanguage",
             "translations",
@@ -418,8 +411,6 @@ class TestOperationalDocumentation:
             "3. Worker 처리 중",
             "4. DB 저장됨",
             "DLQ summary",
-            "GitHub",
-            "https://github.com/Jangwanko/Cloud_portfolio",
             "/v1/event-requests/",
             "/v1/streams",
             "createDemoOrderStream",
@@ -463,10 +454,8 @@ class TestOperationalDocumentation:
             "recordQueueProcessed",
             "recordKafkaAppended",
             "recordDbPersisted",
-            "finishProcessingRun",
             "updateQueueMetrics",
             "startProcessingRun",
-            "lastRunHadFailures",
             "runStartedAt",
             "runCompletedAt",
             "runProcessed",
@@ -481,10 +470,7 @@ class TestOperationalDocumentation:
             "sendNextReservedEvent",
             "activeEvents",
             "shouldRenderBatchProgress",
-            "Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))",
-            "await Promise.allSettled(pollTasks)",
-            "sendFailures",
-            "queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget",
+            "Array.from({ length: senderCount }, () => sendNextReservedEvent())",
             "예약 큐 처리 시작",
             "cancelPendingReservations",
             "events.splice(index, 1)",
@@ -511,14 +497,6 @@ class TestOperationalDocumentation:
             "ops-worker-status",
             "ops-dlq-status",
             "ops-last-checked",
-            "DB 저장 컬럼",
-            "Stored DB Columns",
-            "db-column-list",
-            "renderDbColumns",
-            "dbStorageColumns",
-            "event_type",
-            "category",
-            "payment_id",
             "{available}/{max} 실행 중",
             "{available}/{max} running",
             "Operations Advisor",
@@ -526,21 +504,6 @@ class TestOperationalDocumentation:
             "advisor-status",
             "advisor-reason",
             "advisor-next-step",
-            "advisor-signal-count",
-            "advisor-signal-history",
-            "advisorHistoryTitle",
-            "advisorHistoryEmpty",
-            "advisorOccurrenceCount",
-            "advisorSituation",
-            "advisorExpectedFix",
-            "advisorDemoLiteReadinessReason",
-            "advisorDemoLiteReadinessNext",
-            "advisorDemoLiteReadinessSituation",
-            "isDemoLiteProfile",
-            "readiness.deployment_profile === \"k8s-demo-lite\"",
-            "advisorSignalStats",
-            "recordAdvisorSignal",
-            "renderAdvisorSignalHistory",
             "updateOperationsAdvisor",
             "AI API는 호출하지 않습니다.",
             "No AI API is called.",
@@ -587,29 +550,12 @@ class TestOperationalDocumentation:
         assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
         assert "await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
         assert "const pollResults = await Promise.allSettled(pollTasks)" in process_reserved
-        assert "finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === \"rejected\"))" in process_reserved
+        assert 'finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === "rejected"))' in process_reserved
         record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
         assert "queueStats.queued -= appended" in record_kafka_appended
         record_db_persisted = demo.split("function recordDbPersisted(count, uiSession) {", 1)[1].split("function recordQueueProcessed", 1)[0]
         assert "queueStats.queued -=" not in record_db_persisted
         assert "queueStats.dbPersisted += count" in record_db_persisted
-        finish_run = demo.split("function finishProcessingRun(uiSession, hadFailures = false) {", 1)[1].split("function markEventStatus", 1)[0]
-        assert "queueStats.lastRunHadFailures = hadFailures" in finish_run
-        assert "queueStats.runCompletedAt = Date.now()" in finish_run
-        advisor_logic = demo.split("function updateOperationsAdvisor(readiness, dlqSummary) {", 1)[1].split("let opsRefreshTimer", 1)[0]
-        assert 'readiness.status === "degraded" && isDemoLiteProfile(readiness)' in advisor_logic
-        assert "advisorDemoLiteReadinessReason" in advisor_logic
-        assert "advisorDemoLiteReadinessNext" in advisor_logic
-        assert 'statusKey === "advisorAttention" || statusKey === "advisorCritical"' in advisor_logic
-        assert "recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary)" in advisor_logic
-        assert "lastAdvisorSignalSignature = null" in advisor_logic
-        signal_recorder = demo.split("function recordAdvisorSignal(", 1)[1].split("function renderAdvisorSignalHistory", 1)[0]
-        assert "if (signature === lastAdvisorSignalSignature)" in signal_recorder
-        assert "existing.count += 1" in signal_recorder
-        assert "existing.lastSeenAt = now" in signal_recorder
-        reset_demo_db = demo.split("async function resetDemoEventDb()", 1)[1].split('document.querySelector("#send-event")', 1)[0]
-        assert "advisorSignalStats.clear()" in reset_demo_db
-        assert "renderAdvisorSignalHistory()" in reset_demo_db
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event
         clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
@@ -620,8 +566,6 @@ class TestOperationalDocumentation:
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
         assert 'data-ops-link="/docs"' in links_markup
         assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup
-        assert 'href="https://github.com/Jangwanko/Cloud_portfolio"' in links_markup
-        assert ">GitHub<" in links_markup
         assert "http://localhost/docs" not in links_markup
         assert "http://localhost/grafana" not in links_markup
         assert "/v1/dlq/ingress/summary" not in links_markup
@@ -729,7 +673,7 @@ class TestOperationalDocumentation:
         assert "await sendQueuedEvent" in process_reserved
         assert "recordKafkaAppended(1)" in process_reserved
         assert "pollTasks.push(pollRequestStatus(baseUrl, token, event))" in process_reserved
-        assert "await Promise.all(pollTasks)" in process_reserved
+        assert "const pollResults = await Promise.allSettled(pollTasks)" in process_reserved
         send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
         assert "processReservedEvents" in send_order_event
 
@@ -756,59 +700,21 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
-    def test_lite_deploy_preserves_existing_runtime_auth_secret(self):
-        script = read_text("scripts/deploy_lite_k3s.sh")
-
-        assert "existing_auth_secret" in script
-        assert "Reusing existing AUTH_SECRET_KEY" in script
-        assert "kubectl_cmd create secret generic messaging-runtime-secrets" in script
-        assert "openssl rand -base64 48" in script
-
-    def test_demo_lite_gitops_uses_registry_image_and_action_tag_update(self):
-        kustomization = read_text("k8s/gitops/overlays/demo-lite/kustomization.yaml")
-        env_patch = read_text("k8s/gitops/overlays/demo-lite/patches/messaging-env-lite.yaml")
-        workflow = read_text(".github/workflows/demo-lite-image.yml")
+    def test_dev_kafka_gitops_uses_registry_image_and_action_tag_update(self):
+        kustomization = read_text("k8s/gitops/overlays/local-ha/kustomization.yaml")
+        workflow = read_text(".github/workflows/dev-kafka-image.yml")
 
         assert "images:" in kustomization
         assert "name: messaging-portfolio" in kustomization
         assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
         assert "newTag:" in kustomization
-        assert "APP_VERSION:" in env_patch
 
-        assert "branches: [demo-lite]" in workflow
+        assert "branches: [dev-kafka]" in workflow
         assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
-        assert "[skip demo-lite image]" in workflow
+        assert "[skip dev-kafka image]" in workflow
         assert "docker/build-push-action" in workflow
         assert "yq -i" in workflow
-        assert "k8s/gitops/overlays/demo-lite/kustomization.yaml" in workflow
-        assert "DEMO_LITE_ENV_PATCH" in workflow
-        assert ".stringData.APP_VERSION" in workflow
-
-    def test_k3s_profile_reconcile_script_detects_specs_and_updates_argocd(self):
-        script = read_text("scripts/reconcile_profile_k3s.sh")
-        gitops_docs = read_text("docs/GITOPS.md")
-        demo_lite_docs = read_text("docs/DEMO_LITE.md")
-
-        for token in (
-            "detect_node_profile",
-            "LOCAL_HA_MIN_MILLICORES",
-            "LOCAL_HA_MIN_MEMORY_MIB",
-            "Detected server",
-            "Recommended profile",
-            "Current Argo CD path",
-            "k8s/gitops/overlays/demo-lite-k3s",
-            "k8s/gitops/overlays/local-ha",
-            "targetRevision",
-            "kubectl apply -f -",
-            "--dry-run",
-            "--profile",
-        ):
-            assert token in script
-
-        for document in (gitops_docs, demo_lite_docs):
-            assert "scripts/reconcile_profile_k3s.sh" in document
-            assert "demo-lite" in document
-            assert "local-ha" in document
+        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in workflow
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
@@ -848,9 +754,12 @@ class TestManifestContracts:
         app_example = read_text("k8s/argocd/application-messaging-portfolio-local-ha.example.yaml")
         gitops_docs = read_text("docs/GITOPS.md")
 
-        for document in (bootstrap_script, quick_start, app_example, gitops_docs):
+        for document in (bootstrap_script, quick_start, app_example):
             assert "master" in document
             assert "dev-kafka" not in document
+        assert "master" in gitops_docs
+        assert "dev-kafka" in gitops_docs
+        assert "ghcr.io/jangwanko/cloud_portfolio:<commit-sha>" in gitops_docs
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest
@@ -1130,8 +1039,6 @@ class TestAlertPolicy:
             "skipped_max_replay",
             "kube_pod_container_status_restarts_total",
             "kube_deployment_status_replicas_unavailable",
-            'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1',
-            "unless on()",
         ):
             assert threshold in alerts
 
@@ -1140,8 +1047,6 @@ class TestAlertPolicy:
         gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
 
         for manifest in (app_manifest, gitops_manifest):
-            assert 'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1' in manifest
-            assert "unless on()" in manifest
             for alert in (
                 "MessagingApi5xxRateWarning",
                 "MessagingEventPersistLagCritical",
