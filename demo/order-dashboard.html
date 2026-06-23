@@ -510,7 +510,10 @@
 <body>
   <header>
     <div>
-      <h1>Post-Order Event Console</h1>
+      <div class="title-row">
+        <h1>Post-Order Event Console</h1>
+        <span class="version-badge" id="demo-version">ver. 1.1.0 / api -</span>
+      </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
     <div class="language-toggle" aria-label="Language">
@@ -677,6 +680,7 @@
         <div class="links">
           <a href="/docs" data-ops-link="/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
           <a href="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
+          <a href="https://github.com/Jangwanko/Cloud_portfolio" target="_blank" rel="noreferrer">GitHub</a>
         </div>
         <div class="ops-checks">
           <div>
@@ -738,6 +742,7 @@
 
   <script>
     let currentLanguage = "ko";
+    const DEMO_UI_VERSION = "1.1.0";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",

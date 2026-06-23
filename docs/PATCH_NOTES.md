@@ -2,6 +2,89 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-06-24 업데이트: README 데모 경계와 GitHub 링크
+
+변경 내용:
+
+- README에서 본래 검증 시스템과 저사양 `demo-lite` 실행 환경을 가볍게 분리해 설명했습니다.
+- 데모 화면 운영 링크에 GitHub repository 진입점을 추가했습니다.
+- 사용자에게 보이는 데모 화면 변경이므로 화면 버전을 `1.1.0`으로 올렸습니다.
+
+## 2026-06-24 업데이트: demo-dev 개발 브랜치 분리
+
+변경 내용:
+
+- `demo-dev` 브랜치를 저사양 데모 기능과 문서 변경을 사람이 작업하는 개발 브랜치로 추가했다.
+- `demo-lite`는 2코어 k3s 서버용 축소 데모 배포 브랜치로 정리했다.
+- `demo-lite`에는 GitHub Actions image tag commit이 섞일 수 있으므로 일반 개발 작업은 `demo-dev`에서 진행한다.
+- `AGENTS.md`의 브랜치 역할, 문서 공유 대상, Change Scope 규칙에 `demo-dev`를 추가했다.
+
+## 2026-06-24 업데이트: 데모 화면 버전 기준 조정
+
+변경 내용:
+
+- `AGENTS.md`의 데모 화면 버전 규칙을 조정했다.
+- 외형적 변경이 없는 내부 수정은 세 번째 숫자(patch)를 올린다.
+- 사용자가 보는 화면이나 흐름에 변화가 있으면 두 번째 숫자(minor)를 올린다.
+- 시스템이나 서비스 컨셉이 크게 바뀌는 수준이면 첫 번째 숫자(major)를 올린다.
+- 대부분의 일상 변경은 세 번째 숫자 변경으로 처리한다.
+
+## 2026-06-24 업데이트: DB 저장 구조 노출
+
+목표:
+
+- Kafka append 이후 Worker가 PostgreSQL에 어떤 컬럼으로 저장하는지 데모 화면에서 바로 확인할 수 있게 한다.
+- 주문 이후 이벤트를 나중에 데이터 분석 파이프라인으로 확장할 수 있도록 `messages` table에 구조화 컬럼을 추가한다.
+
+변경 내용:
+
+- `messages` table에 `event_type`, `category`, `payment_id` 컬럼과 분석 조회용 index를 추가했다.
+- Worker persistence가 Kafka payload의 `event_type`, `category`, `payment_id`를 DB row, request status, snapshot payload에 함께 반영한다.
+- 데모 화면 결과 패널에 `DB 저장 컬럼` / `Stored DB Columns` 섹션을 추가했다.
+- 최근 DB row 목록은 raw 데이터 노출과 화면 복잡도를 줄이기 위해 표시하지 않는다.
+- 데모 UI 변경에 맞춰 화면 버전을 `1.0.2`로 올렸다.
+- `docs/DEMO_GUIDE.md`에 DB storage evidence 설명을 추가했다.
+- `AGENTS.md`에 README와 `docs/` 변경도 관련 브랜치에 공유해야 한다는 운영 규칙을 추가했다.
+
+해석:
+
+- 이제 포트폴리오 시연에서 Kafka 처리 흐름뿐 아니라, 분석 가능한 DB 저장 구조까지 한 화면에서 설명할 수 있다.
+- 이 구조는 향후 batch export, CDC, warehouse load, 운영 통계 대시보드 같은 데이터 분석 파이프라인으로 이어질 수 있다.
+
+## 2026-06-21 업데이트: 2코어 서버용 demo-lite 프로파일 추가
+
+목표:
+
+- 2코어 2스레드급 서버에서 포트폴리오 데모를 실행할 수 있는 축소 profile을 제공한다.
+- 기존 full-ha 기준은 유지하고, 저사양 서버에서는 API -> Kafka -> Worker -> DB 흐름 시연에 집중한다.
+- demo-lite 결과가 full-ha Kafka baseline과 섞이지 않도록 문서 경계를 둔다.
+
+변경 내용:
+
+- `demo-lite` 브랜치를 만들고 저사양 서버용 설정을 분리했습니다.
+- `k8s/gitops/overlays/demo-lite` kustomize overlay를 추가했습니다.
+- `k8s/values/postgresql-lite-values.yaml`을 추가했습니다.
+- `scripts/quick_start_lite.ps1`를 추가했습니다.
+- `scripts/deploy_lite_k3s.sh`를 추가해 2코어 Linux 서버의 k3s 배포 흐름을 분리했습니다.
+- `k8s/gitops/overlays/demo-lite-k3s`와 `scripts/bootstrap_argocd_lite_k3s.sh`를 추가해 2코어 k3s 서버에서도 Argo CD가 `demo-lite` 브랜치를 직접 동기화할 수 있게 했습니다.
+- `k8s/scripts/install-ha.ps1`에 `-ValuesFile` 파라미터를 추가해 HA / lite PostgreSQL values를 선택할 수 있게 했습니다.
+- README, `docs/DEMO_GUIDE.md`, `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 full-ha와 demo-lite의 차이를 정리했습니다.
+
+demo-lite 기준:
+
+- Kafka: `1 broker`, replication factor `1`, min ISR `1`, partitions `3`
+- PostgreSQL: `1 PostgreSQL`, `1 Pgpool`
+- API: min `1`, max `2`
+- Worker: min `1`, max `2`
+- notification-worker / dlq-replayer: `0` replica
+- Prometheus / Grafana: 유지하되 resource request를 낮춤
+
+해석:
+
+- demo-lite는 HA 성능 증명이 아니라 저사양 서버용 시연 profile입니다.
+- 장애 허용성, Kafka 3 broker, PostgreSQL HA, KEDA scale-out baseline은 full-ha profile에서 설명합니다.
+- demo-lite 성능 수치는 `docs/TEST_RESULTS.md`의 Kafka baseline과 섞지 않습니다.
+
 ## 2026-06-21 업데이트: 데모 운영 신호와 문서 기준 정리
 
 목표:
