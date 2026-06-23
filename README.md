@@ -19,6 +19,18 @@ This project demonstrates a Kafka-centered post-order event pipeline. The custom
 
 자세한 서비스 기준은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md), 구조는 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 최신 검증 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 정리했습니다.
 
+## What To Look For
+
+이 프로젝트는 "Kafka를 붙였다"보다, 주문 이후 업무를 어떤 경계로 나누고 어떻게 운영 가능하게 만들었는지를 보여주는 데 초점이 있습니다.
+
+- **설계 관점**: 고객 응답 경로와 내부 운영 경로를 분리했습니다. 사용자는 결제/주문 완료만 보고, 저장/분류/알림/DLQ/replay는 내부 pipeline이 처리합니다.
+- **파이프라인 관점**: API가 Kafka에 append하고 `202 Accepted`를 반환하면, Worker가 PostgreSQL에 저장하고 운영 상태를 갱신합니다.
+- **데모 관점**: 화면에서 `예약 건수 -> Kafka 적재 -> DB 저장`이 따로 움직이기 때문에 비동기 처리 경계가 눈에 보입니다.
+- **운영 관점**: Operations Advisor가 Worker, DB, DLQ, backlog 신호를 규칙 기반으로 해석합니다. 현재는 AI API를 호출하지 않고, 나중에 AX/AI 요약 Worker를 붙일 수 있는 위치를 남겨두었습니다.
+- **확장 관점**: `demo-lite`는 2코어 서버에서 같은 흐름을 보여주고, AWS blueprint는 이 구조를 EKS / MSK / RDS / ALB로 옮기는 방향을 설명합니다.
+
+Start with the demo if you want to see the flow move. Open the architecture and GitOps docs if you want to see why the boundary exists.
+
 ## Full System vs Demo Lite
 
 이 포트폴리오는 본래 검증용 시스템과 저사양 공개 데모를 나누어 설명합니다.
