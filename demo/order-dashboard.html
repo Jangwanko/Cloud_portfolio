@@ -1011,6 +1011,10 @@
       document.querySelector(selector).textContent = value;
     }
 
+    function setDemoVersion(apiVersion = "-") {
+      setText("#demo-version", `ver. ${DEMO_UI_VERSION} / api ${apiVersion || "-"}`);
+    }
+
     function setLanguage(language) {
       currentLanguage = language;
       document.documentElement.lang = language;
@@ -1367,6 +1371,7 @@
           throw new Error(`readiness HTTP ${readinessResponse.status}`);
         }
         const readiness = await readinessResponse.json();
+        setDemoVersion(readiness.app_version);
         updateReadinessPanel(readiness);
 
         const token = await ensureToken(
