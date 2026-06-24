@@ -4,7 +4,8 @@ Post-Order Event Pipeline Portfolio
 
 쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
 
-사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
+사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다.
+ 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
 
 This project demonstrates a Kafka-centered post-order event pipeline. The customer-facing path returns payment/order completion quickly, while persistence, classification, notification, DLQ isolation, replay, and backlog drain are handled through the internal Kafka / Worker path.
 
@@ -13,7 +14,7 @@ This project demonstrates a Kafka-centered post-order event pipeline. The custom
 - API는 주문 이후 이벤트를 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group이 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
 - 실패 event는 inline retry 후 Kafka DLQ topic으로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
-- KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
+- KEDA는 Kafka consumer lag 기준으로 Worker를 Scailing합니다.
 - API read path는 DB commit 이후 publish된 `message-snapshots`, `stream-snapshots`를 API local materialized cache로 소비해 cache-first read를 제공합니다.
 - 로컬에서 검증한 구조를 Terraform 기반 AWS migration blueprint로 정리해 EKS, MSK, RDS PostgreSQL, ALB, ACM, Secrets Manager로 이전 가능한 구조를 보여줍니다.
 
@@ -21,15 +22,10 @@ This project demonstrates a Kafka-centered post-order event pipeline. The custom
 
 ## What To Look For
 
-이 프로젝트는 "Kafka를 붙였다"보다, 주문 이후 업무를 어떤 경계로 나누고 어떻게 운영 가능하게 만들었는지를 보여주는 데 초점이 있습니다.
-
-- **설계 관점**: 고객 응답 경로와 내부 운영 경로를 분리했습니다. 사용자는 결제/주문 완료만 보고, 저장/분류/알림/DLQ/replay는 내부 pipeline이 처리합니다.
-- **파이프라인 관점**: API가 Kafka에 append하고 `202 Accepted`를 반환하면, Worker가 PostgreSQL에 저장하고 운영 상태를 갱신합니다.
-- **데모 관점**: 화면에서 `예약 건수 -> Kafka 적재 -> DB 저장`이 따로 움직이기 때문에 비동기 처리 경계가 눈에 보입니다.
-- **운영 관점**: Operations Advisor가 Worker, DB, DLQ, backlog 신호를 규칙 기반으로 해석합니다. 현재는 AI API를 호출하지 않고, 나중에 AX/AI 요약 Worker를 붙일 수 있는 위치를 남겨두었습니다.
-- **확장 관점**: `demo-lite`는 2코어 서버에서 같은 흐름을 보여주고, AWS blueprint는 이 구조를 EKS / MSK / RDS / ALB로 옮기는 방향을 설명합니다.
-
-Start with the demo if you want to see the flow move. Open the architecture and GitOps docs if you want to see why the boundary exists.
+- 결제/주문 완료 응답은 빠르게 끝납니다. 그 뒤의 저장, 분류, 알림, 실패 격리는 Kafka 이후 내부 처리로 넘깁니다.
+- 데모 화면은 이 흐름을 직관적으로 보여주기 위해 `예약 건수`, `Kafka 적재`, `DB 저장`을 따로 보여줍니다.
+- Operations Advisor는 규칙을 정한 위험 및 해결 알림 입니다. 현재 AI API는 사용하지 않고있으며 나중에 AI 서비스를 붙일 수 있는 여지를 남겨두었습니다.
+- `demo-lite`는 작은 서버에서도 같은 흐름을 보여주기 위한 축소판이고, AWS 문서는 이 구조를 managed service로 옮기는 설계도입니다.
 
 ## Full System vs Demo Lite
 
@@ -38,12 +34,11 @@ Start with the demo if you want to see the flow move. Open the architecture and 
 | Mode | Purpose | How to read it |
 | --- | --- | --- |
 | Full system / 본래 시스템 | Kafka 3 broker, PostgreSQL HA, Pgpool, KEDA scale-out, Grafana, DLQ replay까지 포함한 검증 기준입니다. | HA, ordering, failure recovery, performance baseline은 이 기준으로 설명합니다. |
-| Demo lite / 저사양 데모 | 2코어급 서버에서 API -> Kafka -> Worker -> DB 흐름을 직접 보여주는 축소 실행 모드입니다. | 성능 증명보다 실제 서비스 흐름과 운영 증거를 보여주는 데 집중합니다. |
+| Demo lite / 저사양 데모 | 2코어급 서버에서 API -> Kafka -> Worker -> DB 흐름을 직접 보여주는 축소 실행 모드입니다. | 성능 증명보다 실제 서비스 흐름을 보여주고 있습니다. |
 
-`demo-lite`는 full HA를 흉내 내기 위한 구성이 아니라, 제한된 서버에서도 같은 이벤트 처리 개념을 실행해 볼 수 있게 만든 profile입니다.
+`demo-lite`는 포트폴리오의 이벤트 처리 개념을 볼 수 있게 만든 데모 사이트입니다.
 
-`demo-lite` is not the HA or performance proof. It is a constrained runtime that makes the same event-driven flow visible on a small server.
-
+`demo-lite` is a demo site built to show the event-processing concept of this portfolio.
 ## Local Demo
 
 브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.

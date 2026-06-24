@@ -147,6 +147,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - Kafka 성능 수치는 append-first intake baseline과 ordering/recovery validation으로 설명합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
 - 문서와 답변에서 "단순히 A가 아니라 B"처럼 AI 말투가 강한 대비 문장을 피합니다. 필요하면 "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 자연스럽게 씁니다.
+- 영어 문서와 답변에서도 `not only`, `not merely`, `not just` 같은 대비형 표현을 쓰지 않습니다. 같은 의미가 필요하면 직접적인 문장으로 나눠 씁니다.
 
 ## Demo UI Rules
 
