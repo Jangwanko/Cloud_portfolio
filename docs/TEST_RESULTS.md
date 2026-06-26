@@ -206,7 +206,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
 - API intake 수치만 보면 요청 수가 늘고 avg / p95 latency는 개선됐다.
 - p99는 거의 동일하고, accepted-to-persisted p95는 `73.50ms`로 튀었다.
 - 더 중요한 변화는 부하 직후 `message-worker` consumer lag가 `36394`까지 쌓였고, KEDA가 Worker를 max `8`까지 확장한 뒤 약 14분에 걸쳐 drain했다는 점이다.
-- 따라서 이 재실행은 기존 2차 baseline을 단순히 대체하기보다, API intake와 Worker persistence capacity를 분리해서 봐야 한다는 운영 신호로 기록한다.
+- 이 재실행은 기존 2차 baseline 대체값이 아니라, API intake와 Worker persistence capacity를 분리해서 봐야 한다는 운영 신호로 기록한다.
 - 포트폴리오 상단의 안정 기준선은 기존 2차 baseline을 유지하고, capacity tuning 후보는 Worker 처리량 / DB persistence path / consumer lag drain time으로 본다.
 
 ### 2026-06-09 Kafka 정합성 검증

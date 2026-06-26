@@ -1,19 +1,29 @@
 # 서비스 요구사항
 
-주문 이후 이벤트 처리 포트폴리오는 쇼핑몰 사용자가 확인하는 완료 응답과 운영자가 관리하는 후속 처리 경로를 Kafka / Worker / PostgreSQL HA / DLQ / 관측성으로 연결합니다.
+- 대상 서비스: 쇼핑몰 주문 이후 이벤트 처리
+- 사용자 화면: 결제 완료 / 주문 완료 응답
+- 내부 경로: Kafka / Worker / PostgreSQL HA / DLQ / 관측성
+- 운영 목적: 저장, 분류, 알림, 실패 격리, 재처리 확인
 
 ## 서비스 가정
 
-기본 가정 서비스는 쇼핑몰 주문 이후 이벤트 처리입니다. 사용자는 결제 완료와 주문 완료 응답을 확인하고, 이후 저장 / 분류 / 알림 / 재처리 상태는 운영자가 관리합니다.
+기본 가정 서비스:
 
-- 사용자는 결제 성공과 주문 생성 결과를 빠르게 확인해야 합니다.
-- 주문 이후에는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 주문 관련 문의 같은 event가 발생합니다.
-- 같은 `order_id` 또는 업무 stream 안에서는 후속 event 순서가 운영 처리와 복구에 영향을 줍니다.
-- 순간적인 트래픽 증가나 PostgreSQL write 지연이 있어도 API는 가능한 한 event를 수락해야 합니다.
-- 영속화가 늦어지는 event는 추적 가능해야 하며, 실패 event는 DLQ와 replay 경로로 복구할 수 있어야 합니다.
-- 분류는 큰 업무 단위로 시작합니다. 세부 AI 분류와 자동 응답은 후속 과제로 둡니다.
+- 결제 성공과 주문 생성 결과 빠른 확인
+- 주문 이후 결제 승인, 주문 생성, 배송 시작, 환불 요청, 주문 관련 문의 event 발생
+- 같은 `order_id` 또는 업무 stream 안의 event 순서가 운영 처리와 복구에 영향
+- 순간 트래픽 증가나 PostgreSQL write 지연 중에도 가능한 event 수락
+- 영속화 지연 event 추적
+- 실패 event DLQ 격리와 replay 복구
+- 1차 분류 범위: 큰 업무 단위
+- 세부 AI 분류와 자동 응답: 후속 과제
 
-이 포트폴리오의 핵심 질문은 “DB write path가 흔들릴 때도 주문 이후 이벤트 수락, 순서, 복구, 관측을 어떻게 유지할 것인가”입니다.
+핵심 질문:
+
+- DB write path 장애 중 주문 이후 이벤트 수락 유지
+- 같은 stream 순서 유지
+- 실패 event 복구 경로 유지
+- 운영자가 볼 수 있는 관측 신호 유지
 
 ## 적용 가능한 서비스 관점
 
@@ -39,19 +49,19 @@
 
 ## 기능 요구
 
-- API는 정상 주문 이후 event를 Kafka ingress topic에 append하고 `202 Accepted`를 반환합니다.
-- 사용자 응답은 결제 완료, 주문 완료, 주문 번호 같은 비즈니스 결과를 중심으로 구성합니다.
-- Kafka append 이후의 `accepted`, `persisted`, `notified`, `dlq` 같은 내부 상태는 운영자 추적용으로 둡니다.
-- event는 운영 카테고리로 분류할 수 있어야 합니다. 1차 범위는 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`입니다.
-- 기본 read fallback은 Kafka ingress event가 아니라 DB commit 이후 snapshot 기반 local materialized cache로 조회할 수 있어야 합니다.
-- message read는 fresh snapshot cache를 먼저 사용하고, cache miss / stale / DB failure 상태를 응답 메타데이터로 구분해야 합니다.
-- 같은 주문 또는 업무 stream event는 같은 Kafka partition boundary 안에 유지합니다.
-- Worker는 Kafka consumer group으로 event를 처리하고 PostgreSQL에 최종 영속화합니다.
-- transient DB failure는 같은 offset에서 inline retry하여 뒤 event가 앞 event를 추월하지 않게 합니다.
-- retry 한도를 넘긴 event는 Kafka DLQ topic으로 격리합니다.
-- DLQ Replayer는 replay count guard를 지키며 복구 가능한 event만 ingress topic으로 재주입합니다.
-- 운영자는 DLQ summary API로 reason, replayable, blocked, stream 분포를 확인할 수 있습니다.
-- 운영자는 Prometheus / Grafana / status check script로 intake, persistence, lag, DLQ, replica 상태를 확인할 수 있습니다.
+- API: 정상 주문 이후 event를 Kafka ingress topic에 append, `202 Accepted` 반환
+- 사용자 응답: 결제 완료, 주문 완료, 주문 번호 중심
+- 내부 상태: `accepted`, `persisted`, `notified`, `dlq` 운영자 추적용
+- 운영 카테고리: `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`
+- read fallback: Kafka ingress event 제외, DB commit 이후 snapshot 기반 local materialized cache 사용
+- message read: fresh snapshot cache 우선, cache miss / stale / DB failure 응답 메타데이터 구분
+- 같은 주문 또는 업무 stream event: 같은 Kafka partition boundary 안에 유지
+- Worker: Kafka consumer group event 처리, PostgreSQL 최종 영속화
+- transient DB failure: 같은 offset에서 inline retry, 뒤 event 추월 방지
+- retry 한도 초과 event: Kafka DLQ topic 격리
+- DLQ Replayer: replay count guard 유지, 복구 가능한 event만 ingress topic 재주입
+- DLQ summary API: reason, replayable, blocked, stream 분포 확인
+- 운영 확인: Prometheus / Grafana / status check script 기반 intake, persistence, lag, DLQ, replica 상태 확인
 
 ## 비기능 요구
 
@@ -75,7 +85,11 @@
 
 ## SLO 가드레일
 
-아래 값은 장기 운영 SLA가 아니라, 운영형 데모에서 정상과 이상을 구분하기 위한 1차 SLO guardrail입니다.
+아래 값의 성격:
+
+- 장기 운영 SLA 제외
+- 운영형 데모에서 정상 / 이상 구분
+- 1차 SLO guardrail
 
 | 신호 | Warning | Critical |
 | --- | ---: | ---: |
@@ -94,21 +108,21 @@
 
 ## 운영 판단 기준
 
-- Kafka가 unavailable이면 request intake path 중단이므로 즉시 critical입니다.
-- PostgreSQL primary가 흔들리더라도 Kafka append가 가능하면 API intake는 degraded로 볼 수 있습니다.
-- Worker lag이 증가하면 먼저 Worker replica, KEDA desired replica, PostgreSQL write latency를 함께 봅니다.
-- read cache hit ratio가 급락하거나 `snapshot_age_seconds`가 증가하면 snapshot consumer lag, API pod restart, compacted topic consume 상태를 먼저 확인합니다.
-- `degraded=true`, `source=cache` 응답이 증가하면 PostgreSQL read path 장애가 사용자 read 경험에 전파되기 시작한 것으로 보고 DB primary / Pgpool / membership snapshot 상태를 함께 봅니다.
-- 같은 주문 또는 업무 stream 순서가 깨졌다면 Kafka key뿐 아니라 Worker retry와 offset commit 경계를 확인합니다.
-- DLQ가 증가하면 reason 분포를 보고 poison data, schema mismatch, DB transient failure를 분리합니다.
-- `oldest_age_seconds`가 계속 증가하면 자동 replay가 되지 않는 운영 부채로 보고 replay 조건, blocked count, 원인 수정 여부를 먼저 확인합니다.
-- GitOps가 `Synced / Healthy`가 아니면 runtime 장애 분석 전에 원하는 manifest와 live state 차이를 먼저 확인합니다.
+- Kafka unavailable: request intake path 중단, 즉시 critical
+- PostgreSQL primary 불안정 + Kafka append 가능: API intake degraded
+- Worker lag 증가: Worker replica, KEDA desired replica, PostgreSQL write latency 동시 확인
+- read cache hit ratio 급락 또는 `snapshot_age_seconds` 증가: snapshot consumer lag, API pod restart, compacted topic consume 상태 확인
+- `degraded=true`, `source=cache` 증가: DB primary / Pgpool / membership snapshot 상태 확인
+- 같은 주문 또는 업무 stream 순서 이상: Kafka key, Worker retry, offset commit 경계 확인
+- DLQ 증가: reason 분포 기준 poison data, schema mismatch, DB transient failure 분리
+- `oldest_age_seconds` 지속 증가: replay 조건, blocked count, 원인 수정 여부 확인
+- GitOps `Synced / Healthy` 불일치: manifest와 live state 차이 먼저 확인
 
 ## 구조 연결
 
-- 빠른 event 수락: API는 PostgreSQL write보다 Kafka append를 우선합니다.
-- 같은 주문 / 업무 stream ordering: `stream_id` key와 Worker inline retry가 같은 ordering boundary를 유지합니다.
-- 장애 격리: Worker retry 한도 초과 event는 Kafka DLQ topic으로 이동합니다.
-- 복구 가능성: DLQ Replayer가 replay guard 안에서 event를 재주입합니다.
-- 운영 가시성: Prometheus alert, Grafana dashboard, kafka-exporter, status check script가 같은 신호를 바라봅니다.
-- 배포 일관성: Argo CD GitOps가 runtime manifest를 선언형으로 유지합니다.
+- 빠른 event 수락: PostgreSQL write보다 Kafka append 우선
+- 같은 주문 / 업무 stream ordering: `stream_id` key와 Worker inline retry로 ordering boundary 유지
+- 장애 격리: Worker retry 한도 초과 event Kafka DLQ topic 이동
+- 복구 가능성: DLQ Replayer replay guard 안에서 event 재주입
+- 운영 가시성: Prometheus alert, Grafana dashboard, kafka-exporter, status check script 신호 공유
+- 배포 일관성: Argo CD GitOps로 runtime manifest 선언형 유지

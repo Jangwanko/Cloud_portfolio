@@ -2,6 +2,19 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-06-27 업데이트: 핵심 문서 불렛형 정리
+
+변경 내용:
+
+- `AGENTS.md`: 불렛 문서 끝맺이 기준 추가. `~합니다`형보다 `~ 확인`, `~ 대기`, `~ 분리`, `~ 유지`형 우선
+- `README.md`: 포트폴리오 입구 역할에 맞춰 핵심 요약, 데모, 검증, 문서 지도를 불렛형으로 재정리
+- `docs/DEMO_GUIDE.md`: 데모 URL, 실행 순서, 카운터 의미, reset 동작 중심 정리
+- `docs/GITOPS.md`: 목적, 구성 요소, sync 전략, 확인 명령 중심 정리
+- `docs/AWS_IAC_PLAN.md`: AWS managed service mapping과 Terraform 구조 중심 정리
+- `docs/SERVICE_REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/RELIABILITY_POLICY.md`: 서비스 기준, 구조 경계, readiness 판단 기준 불렛형 정리
+- `docs/OBSERVABILITY.md`, `docs/RUNBOOK.md`, `docs/OPERATIONS.md`, `docs/METRICS_REFERENCE.md`: 운영 신호, 장애 절차, 지표 해석 문장 축약
+- `docs/KAFKA_EXPERIMENT.md`: `단순히` 표현 제거, Kafka append path 분리 기준 직접 표현
+
 ## 2026-06-24 업데이트: README 소개 문구 톤 조정
 
 변경 내용:
@@ -79,14 +92,12 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 
 변경 내용:
 
-- `demo-lite` 브랜치를 만들고 저사양 서버용 설정을 분리했습니다.
-- `k8s/gitops/overlays/demo-lite` kustomize overlay를 추가했습니다.
-- `k8s/values/postgresql-lite-values.yaml`을 추가했습니다.
-- `scripts/quick_start_lite.ps1`를 추가했습니다.
-- `scripts/deploy_lite_k3s.sh`를 추가해 2코어 Linux 서버의 k3s 배포 흐름을 분리했습니다.
-- `k8s/gitops/overlays/demo-lite-k3s`와 `scripts/bootstrap_argocd_lite_k3s.sh`를 추가해 2코어 k3s 서버에서도 Argo CD가 `demo-lite` 브랜치를 직접 동기화할 수 있게 했습니다.
-- `k8s/scripts/install-ha.ps1`에 `-ValuesFile` 파라미터를 추가해 HA / lite PostgreSQL values를 선택할 수 있게 했습니다.
-- README, `docs/DEMO_GUIDE.md`, `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 full-ha와 demo-lite의 차이를 정리했습니다.
+- `demo-lite` 브랜치를 만들고 저사양 서버용 설정 분리
+- demo-lite 전용 kustomize overlay, PostgreSQL lite values, quick start, k3s 배포 스크립트 분리
+- demo-lite k3s 서버에서도 Argo CD가 `demo-lite` 브랜치를 동기화하는 경로 추가
+- `k8s/scripts/install-ha.ps1`에 `-ValuesFile` 파라미터 추가
+- README, `docs/DEMO_GUIDE.md`, `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 full-ha와 demo-lite 차이 정리
+- 현재 `master`에서는 demo-lite 전용 파일을 실행 경로로 보지 않고, 브랜치 전용 기록으로 해석
 
 demo-lite 기준:
 

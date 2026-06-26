@@ -2,16 +2,21 @@
 
 ## 서비스 문제
 
-이 구조는 쇼핑몰 주문 이후 이벤트 처리를 가정합니다. 사용자는 결제 완료와 주문 완료를 빠르게 확인하고, 운영자는 DB write 지연이나 일시 장애가 생겨도 event intake, persistence, 분류, 알림, DLQ, replay 상태를 분리해서 판단해야 합니다.
+서비스 기준:
 
-따라서 설계 기준은 단순 처리량이 아니라 아래 네 가지입니다.
+- 대상: 쇼핑몰 주문 이후 이벤트 처리
+- 사용자 관심: 결제 완료와 주문 완료 빠른 확인
+- 운영자 관심: DB write 지연, 일시 장애, event 상태 분리 확인
+- 분리 대상: intake, persistence, 분류, 알림, DLQ, replay
+
+설계 기준:
 
 - Kafka append 중심의 빠른 주문 이후 event 수락
 - 같은 주문 / 업무 stream ordering boundary 유지
 - PostgreSQL write path 장애 시 DLQ / replay 기반 복구
 - Prometheus / Grafana / Runbook으로 장애 위치를 설명할 수 있는 운영성
 
-서비스 요구와 SLO guardrail은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)에 정리합니다.
+서비스 요구와 SLO guardrail: [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)
 
 ## 구성 요소
 - API (`FastAPI`)
@@ -53,24 +58,27 @@
   - 주 1회 backup `CronJob`
 
 ## 외부 진입
-현재 로컬 검증 기준의 기본 진입점은 아래와 같습니다.
+현재 로컬 검증 기준 기본 진입점:
 
 - API: `http://localhost`
 - Grafana: `http://localhost/grafana`
 - Prometheus: `http://localhost/prometheus/`
 
-Service는 `ClusterIP`로 두고, 외부 요청은 `ingress-nginx`가 받아 각 서비스로 라우팅합니다. 기본 문서와 데모 경로는 HTTP 기준이며, HTTPS는 self-signed certificate 기반 TLS 종료를 확인하는 보조 경로입니다.
+- Service: `ClusterIP`
+- 외부 요청: `ingress-nginx` 라우팅
+- 기본 문서와 데모 경로: HTTP 기준
+- HTTPS: self-signed certificate 기반 TLS 종료 확인용 보조 경로
 
 ## 요청 처리 흐름
-1. 클라이언트가 결제 완료, 주문 생성, 배송 시작, 환불 요청 같은 주문 이후 event request를 보냅니다.
-2. API는 요청을 바로 DB에 쓰지 않고 Kafka ingress topic에 append합니다.
-3. Kafka message key는 현재 구현 기준 `stream_id`를 사용하며, 주문 도메인에서는 `order_id`에 대응되는 ordering key로 해석합니다.
-4. Worker consumer group이 partition을 나눠 소비합니다.
-5. Worker가 PostgreSQL에 event를 영속화합니다.
-6. Worker는 event를 운영 카테고리로 분류하고, DB commit 이후 snapshot과 notification event를 발행합니다.
-7. 실패하면 retry를 수행합니다.
-8. retry 한도를 넘기면 Kafka DLQ topic으로 이동합니다.
-9. DLQ Replayer가 복구 조건이 맞으면 ingress topic으로 재주입합니다.
+1. 클라이언트: 결제 완료, 주문 생성, 배송 시작, 환불 요청 event request 전송
+2. API: DB 직접 write 제외, Kafka ingress topic append
+3. Kafka message key: 현재 구현 기준 `stream_id`, 주문 도메인에서는 `order_id` 대응 ordering key
+4. Worker consumer group: partition 분산 consume
+5. Worker: PostgreSQL event 영속화
+6. Worker: 운영 카테고리 분류, DB commit 이후 snapshot과 notification event 발행
+7. 실패 event: retry 수행
+8. retry 한도 초과: Kafka DLQ topic 이동
+9. DLQ Replayer: 복구 조건 충족 시 ingress topic 재주입
 
 정상 event 흐름:
 
@@ -136,15 +144,22 @@ sequenceDiagram
 ```
 
 ## Kafka 설계 선택
-Kafka를 request intake 경로에 둔 이유는 queue buffer 역할과 함께 event stream processing 특성을 검증하기 위해서입니다.
+Kafka를 request intake 경로에 둔 이유:
 
-- `stream_id` key 기반 partitioning으로 같은 주문 / 업무 stream의 ordering boundary를 명확히 둡니다.
-- Worker는 consumer group으로 partition을 분산 소비합니다.
-- 처리 성공 후 offset commit을 수행해 재처리 가능성을 유지합니다.
-- DLQ도 topic으로 분리해 실패 이벤트를 보존하고 replay합니다.
-- Worker scaling은 queue length가 아니라 consumer lag를 기준으로 판단합니다.
-- Worker success path는 message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리합니다. 알림 처리는 DB commit 이후 `message-notifications` topic으로 넘기고 별도 `notification-worker`가 `notification_attempts`를 기록합니다.
-- 운영 분류는 1차 범위에서 `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` 같은 큰 업무 단위로 둡니다. AI 기반 세부 분류와 자동 응답은 후속 과제입니다.
+- queue buffer 역할 확인
+- event stream processing 특성 검증
+- consumer group 기반 Worker 확장 확인
+- DLQ / replay 운영 경로 확인
+
+- `stream_id` key 기반 partitioning으로 같은 주문 / 업무 stream ordering boundary 구분
+- Worker consumer group 기반 partition 분산 소비
+- 처리 성공 후 offset commit, 재처리 가능성 유지
+- DLQ topic 분리, 실패 이벤트 보존과 replay
+- Worker scaling 기준: queue length 제외, consumer lag 사용
+- Worker success path: message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리
+- 알림 처리: DB commit 이후 `message-notifications` topic 전달, 별도 `notification-worker`가 `notification_attempts` 기록
+- 운영 분류 1차 범위: `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`
+- AI 기반 세부 분류와 자동 응답: 후속 과제
 
 설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 event 처리 경로를 확보합니다.
 
@@ -157,39 +172,50 @@ Kafka를 request intake 경로에 둔 이유는 queue buffer 역할과 함께 ev
 - stream membership 검증 적용
 
 중요한 점:
-- 인증은 token payload 기준으로 처리해서 DB down 중에도 인증 경로 자체 때문에 요청이 막히지 않도록 했습니다.
-- Kafka-native intake에서는 membership / idempotency / request status 같은 low-latency state path가 Kafka append 앞에 오지 않아야 합니다. API는 request를 Kafka에 먼저 append하고, Worker persistence 단계에서 최종 검증 / 상태 갱신을 수행합니다.
-- DB read fallback은 Kafka ingress event를 읽지 않습니다. Worker가 PostgreSQL commit 이후 발행한 `message-snapshots` compacted topic과 stream 생성 commit 이후 발행한 `stream-snapshots` compacted topic만 local materialized cache의 원본으로 사용합니다.
-- request lifecycle status는 `message-request-status`에 보조 기록하지만, DB row cache와 같은 의미로 해석하지 않습니다. `accepted`는 Kafka 수락 상태이고, DB snapshot은 아닙니다.
-- `GET /streams/{stream_id}/events`는 cache-first로 동작합니다. fresh snapshot이면 cache 응답을 반환하고, cache miss 또는 stale이면 PostgreSQL을 조회합니다. PostgreSQL 조회가 실패해도 stale snapshot이 있으면 `degraded=true`로 반환하며, 응답에는 `source`, `degraded`, `snapshot_age_seconds`, `items`를 포함합니다.
-- API startup은 PostgreSQL 초기화 실패만으로 process를 종료하지 않습니다. DB failover 중 새 API pod가 떠도 Kafka intake와 materialized cache consumer가 먼저 살아날 수 있게 합니다.
+- 인증: token payload 기준 처리, DB down 중 인증 경로 차단 방지
+- Kafka-native intake: membership / idempotency / request status 같은 low-latency state path를 Kafka append 앞에서 제외
+- API: request를 Kafka에 먼저 append
+- Worker persistence 단계: 최종 검증 / 상태 갱신
+- DB read fallback: Kafka ingress event 읽기 제외
+- local materialized cache 원본: DB commit 이후 `message-snapshots`, stream 생성 commit 이후 `stream-snapshots`
+- request lifecycle status: `message-request-status` 보조 기록
+- `accepted`: Kafka 수락 상태, DB snapshot 아님
+- `GET /streams/{stream_id}/events`: cache-first 동작
+- fresh snapshot: cache 응답
+- cache miss 또는 stale: PostgreSQL 조회
+- PostgreSQL 조회 실패 + stale snapshot 존재: `degraded=true` 반환
+- 응답 필드: `source`, `degraded`, `snapshot_age_seconds`, `items`
+- API startup: PostgreSQL 초기화 실패만으로 process 종료 제외
+- DB failover 중 새 API pod: Kafka intake와 materialized cache consumer 우선 기동
 
 ## 장애 시나리오별 동작
 
 ### PostgreSQL / Pgpool 병목
-- API intake는 Kafka append를 통해 persistence path와 state validation path에서 분리됩니다.
-- Worker는 DB 쓰기 실패 시 retry를 수행합니다.
-- retry 한도를 넘긴 요청은 Kafka DLQ topic으로 이동합니다.
-- DB recovery 후 worker와 replayer가 다시 영속화를 진행합니다.
-- Kafka 모드에서는 API가 sequence를 선점하지 않고, Worker가 persistence 시점에 sequence를 배정합니다. request status도 Worker persistence path에서 갱신해 API intake가 DB hot path에 강하게 묶이지 않도록 했습니다.
+- API intake: Kafka append를 통해 persistence path와 state validation path에서 분리
+- Worker: DB 쓰기 실패 시 retry 수행
+- retry 한도 초과 요청: Kafka DLQ topic 이동
+- DB recovery 후: worker와 replayer 영속화 재진행
+- Kafka 모드: API sequence 선점 제외
+- Worker: persistence 시점 sequence 배정
+- request status: Worker persistence path에서 갱신, API intake DB hot path 결합 방지
 
 ### Kafka broker 장애
-- API가 ingress topic에 append할 수 없으면 event intake는 실패합니다.
+- API ingress topic append 불가: event intake 실패
 - readiness는 Kafka reachable 여부를 반영해 `not_ready`로 내려갈 수 있습니다.
-- Worker는 topic 소비를 중단합니다.
-- Kafka recovery 후 API append와 Worker consume이 정상화됩니다.
+- Worker topic 소비 중단
+- Kafka recovery 후 API append와 Worker consume 정상화
 
 ### Worker backlog 증가
 - API는 Kafka append를 통해 요청을 계속 수락할 수 있습니다.
-- Worker 처리량이 ingress rate보다 낮으면 consumer lag가 증가합니다.
+- Worker 처리량이 ingress rate보다 낮음: consumer lag 증가
 - KEDA Kafka scaler가 lag를 기준으로 Worker replica를 늘립니다.
 - Worker replica 증가 또는 부하 감소 시 lag가 다시 줄어듭니다.
 
 ### DLQ replay
-- Worker가 retry 한도를 넘긴 job을 Kafka DLQ topic에 publish합니다.
-- `GET /v1/dlq/ingress`는 Kafka 모드에서 DLQ topic의 최근 메시지를 조회합니다.
-- DLQ Replayer는 DLQ topic을 소비해 ingress topic으로 재주입합니다.
-- replay된 event는 Worker consumer group에서 다시 처리됩니다.
+- Worker retry 한도 초과 job: Kafka DLQ topic publish
+- `GET /v1/dlq/ingress`: Kafka 모드에서 DLQ topic 최근 메시지 조회
+- DLQ Replayer: DLQ topic 소비 후 ingress topic 재주입
+- replay event: Worker consumer group 재처리
 
 ## 자동 확장
 현재 autoscaling은 API와 Worker가 서로 다른 기준을 사용합니다.
@@ -249,15 +275,25 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
   - cluster PVC `postgres-backups` 사용
 
 ## 운영 기준
-- Kafka broker는 로컬 기준 3-broker KRaft StatefulSet입니다.
-- 최신 Kafka intake baseline은 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`입니다.
-- 2026-06-09 재실행에서는 `34284` requests, error `0.00%`, p95 `66.06ms`를 확인했고, 같은 실행에서 `stream_id=30`의 100개 event가 `stream_seq 1..100`, ordering `pass`로 영속화됐습니다. 다만 Worker consumer lag가 `36394`까지 쌓인 뒤 약 14분에 걸쳐 `0`으로 drain되어, 이 결과는 안정 baseline 대체가 아니라 Worker persistence capacity 신호로 해석합니다.
-- 이후 Worker success path transaction 통합을 적용했습니다. 현재 구조에서는 message persistence와 request status update만 핵심 transaction에 포함하고, notification attempt 기록은 `message-notifications` topic과 별도 `notification-worker`로 분리했습니다. Post-tuning 재실행에서는 accepted-to-persisted p95가 `8.08ms`로 개선됐고 Worker lag는 약 10분 후 `0`으로 drain됐지만, k6 API intake p95는 `108.68ms`로 악화되어 안정 baseline 대체 수치로 사용하지 않습니다.
-- 이 baseline은 `X-Idempotency-Key`를 끈 Kafka append 중심 경로입니다.
-- idempotency header는 API가 PostgreSQL claim을 선점하지 않고 Kafka payload에 포함합니다. 최종 deduplication은 Worker persistence 단계에서 처리합니다. DB read fallback은 DB commit 이후 snapshot topic만 사용하며, idempotency state 분리는 다음 보강 대상입니다.
-- Kafka lag / consumer group metric은 KEDA와 consumer group 상태를 기준으로 해석합니다.
-- 멀티 파드 환경에서도 stream 단위 ordering boundary는 Kafka key와 partition 기준으로 유지합니다.
-- 운영 UI는 로컬 포트폴리오 검증을 위해 ingress로 노출합니다.
+- Kafka broker: 로컬 기준 3-broker KRaft StatefulSet
+- 최신 Kafka intake baseline: 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`
+- 2026-06-09 재실행: `34284` requests, error `0.00%`, p95 `66.06ms`
+- 2026-06-09 ordering: `stream_id=30`, 100개 event, `stream_seq 1..100`, ordering `pass`
+- 2026-06-09 lag: Worker consumer lag `36394`까지 증가, 약 14분 후 `0` drain
+- 2026-06-09 해석: 안정 baseline 대체값 제외, Worker persistence capacity 신호
+- Worker success path transaction 통합 적용
+- 현재 핵심 transaction: message persistence와 request status update
+- notification attempt 기록: `message-notifications` topic과 별도 `notification-worker` 분리
+- Post-tuning 재실행: accepted-to-persisted p95 `8.08ms`, Worker lag 약 10분 후 `0` drain
+- Post-tuning 해석: k6 API intake p95 `108.68ms` 악화, 안정 baseline 대체 수치 제외
+- baseline 조건: `X-Idempotency-Key`를 끈 Kafka append 중심 경로
+- idempotency header: API PostgreSQL claim 선점 제외, Kafka payload 포함
+- 최종 deduplication: Worker persistence 단계 처리
+- DB read fallback: DB commit 이후 snapshot topic만 사용
+- idempotency state 분리: 다음 보강 대상
+- Kafka lag / consumer group metric: KEDA와 consumer group 상태 기준 해석
+- 멀티 파드 stream ordering boundary: Kafka key와 partition 기준 유지
+- 운영 UI: 로컬 포트폴리오 검증용 ingress 노출
 
 ## 신뢰성 상태 모델
 Kafka-native 기준 readiness는 단순 up/down이 아니라 intake path와 persistence path를 분리해 봅니다.
@@ -280,7 +316,8 @@ Kafka-native 기준 readiness는 단순 up/down이 아니라 intake path와 pers
 - PostgreSQL state path가 현재 API 계약상 필수인데 사용할 수 없음
 
 ## readiness와 alert 해석
-- readiness는 현재 intake 가능 여부를 즉시 반영하며, Kafka append 가능 / PostgreSQL primary down 상태는 `degraded`로 유지합니다.
-- `30초`는 readiness 유예가 아니라 alert 승격 유예입니다.
-- Kafka unavailable은 intake write path 중단이므로 즉시 critical로 해석합니다.
-- PostgreSQL persistence 장애는 Worker retry / DLQ replay와 함께 해석합니다.
+- readiness: 현재 intake 가능 여부 즉시 반영
+- Kafka append 가능 / PostgreSQL primary down: `degraded` 유지
+- `30초`: readiness 유예 제외, alert 승격 유예
+- Kafka unavailable: intake write path 중단, 즉시 critical
+- PostgreSQL persistence 장애: Worker retry / DLQ replay와 함께 해석

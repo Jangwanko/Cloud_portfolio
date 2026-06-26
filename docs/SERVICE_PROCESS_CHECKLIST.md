@@ -1,6 +1,6 @@
 # 서비스 프로세스 점검표
 
-Kafka 이벤트 스트림 포트폴리오는 단순히 Pod가 떠 있는지가 아니라 request intake부터 persistence, 장애 격리, 복구, 관측, GitOps 반영까지 전체 흐름이 연결되는지 점검합니다.
+Kafka 이벤트 스트림 포트폴리오는 Pod 상태와 함께 request intake, persistence, 장애 격리, 복구, 관측, GitOps 반영까지 확인합니다.
 
 ## 빠른 전체 점검
 

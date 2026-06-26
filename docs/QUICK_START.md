@@ -159,16 +159,16 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | k6 load test | `scripts/test_k6_load.ps1` | 약 1분 |
 
 ## 선택 실행
-failover alert validation 까지 포함해서 실행하려면:
+운영 alert wiring까지 별도로 확인하려면:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1 -IncludeFailoverAlerts
+powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -SkipReset
 ```
 
 추가로 검증하는 항목:
-- Prometheus alert firing for DB outage
-- Prometheus alert firing for Kafka outage
-- alert resolution after recovery
+- `MessagingDlqEventsIncreasing`
+- `MessagingDlqReplayBlocked`
+- `MessagingDeploymentUnavailableReplicas`
 
 ## 별도 부하 테스트
 Kafka performance suite 는 기능 검증과 분리해서 실행합니다.

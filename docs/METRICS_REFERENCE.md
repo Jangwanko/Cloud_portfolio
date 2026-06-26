@@ -1,10 +1,14 @@
 # Metrics 기준표
 
-Kafka 기반 포트폴리오의 Prometheus / Grafana 지표는 장애별 확인 순서와 함께 해석합니다. 장애 대응 흐름은 [OBSERVABILITY.md](OBSERVABILITY.md)를 기준으로 봅니다.
+Kafka 기반 포트폴리오 지표 해석 기준:
+
+- Prometheus / Grafana 지표
+- 장애별 확인 순서
+- 장애 대응 흐름: [OBSERVABILITY.md](OBSERVABILITY.md)
 
 ## Dashboard 그룹
 
-운영 dashboard는 아래 흐름을 기준으로 봅니다.
+운영 dashboard 확인 흐름:
 
 - API request rate / latency / 5xx ratio
 - API hot path stage latency
@@ -17,13 +21,17 @@ Kafka 기반 포트폴리오의 Prometheus / Grafana 지표는 장애별 확인 
 - Worker / API replica count and HPA desired replicas
 - Pod restart / unavailable replica signal
 
-Kafka broker/topic/consumer group 지표는 kafka-exporter가 제공합니다. dashboard는 `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`를 직접 보고, `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica를 보조 신호로 함께 해석합니다.
+Kafka broker/topic/consumer group 지표:
+
+- 제공: kafka-exporter
+- 직접 확인: `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`
+- 보조 신호: `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica
 
 ## Health
 
 ### `messaging_health_status`
 
-component별 health 신호입니다.
+component별 health 신호:
 
 - `component="kafka"`: Kafka bootstrap reachable
 - `component="db"`: PostgreSQL writable primary 확인 기준
@@ -39,7 +47,7 @@ messaging_health_status{job="worker",component="worker"}
 
 ### `messaging_api_requests_total`
 
-HTTP status별 API request counter입니다.
+HTTP status별 API request counter.
 
 ```promql
 sum(rate(messaging_api_requests_total[1m])) by (status)
@@ -55,7 +63,9 @@ clamp_min(sum(rate(messaging_api_requests_total[5m])), 1)
 
 ### `messaging_api_request_latency_seconds`
 
-API가 request를 받고 response를 반환하기까지의 시간입니다. Worker가 PostgreSQL에 persisted 완료할 때까지의 시간은 포함하지 않습니다.
+API request 수신부터 response 반환까지의 시간.
+
+- Worker PostgreSQL persisted 완료 시간 제외
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))
@@ -63,7 +73,7 @@ histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1
 
 ### `messaging_api_stage_latency_seconds`
 
-API hot path 내부 구간별 latency입니다.
+API hot path 내부 구간별 latency.
 
 주요 stage:
 
@@ -79,7 +89,7 @@ histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m]
 
 ### `messaging_worker_processed_total`
 
-Worker가 event를 처리한 누적 건수입니다.
+Worker event 처리 누적 건수.
 
 ```promql
 sum(rate(messaging_worker_processed_total[1m])) by (result)
@@ -95,24 +105,27 @@ clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1)
 
 ### `messaging_worker_last_success_timestamp`
 
-Worker가 마지막으로 event를 성공 처리한 Unix timestamp입니다.
+Worker 마지막 event 성공 처리 Unix timestamp.
 
 ```promql
 time() - max(messaging_worker_last_success_timestamp{job="worker"})
 ```
 
-값이 계속 증가하면 Worker pod가 살아 있어도 실제 consume / persist 성공이 멈춘 상태일 수 있습니다.
+해석:
+
+- 값 지속 증가: Worker pod 생존 중 실제 consume / persist 성공 중단 가능성
 
 ### `messaging_worker_stage_latency_seconds`
 
-Worker 내부 구간별 latency입니다.
+Worker 내부 구간별 latency.
 
 주요 stage:
 
 - `db_persist`: PostgreSQL transaction으로 event 영속화
 - `request_status_update`: request status 갱신
-- request status는 PostgreSQL 저장과 함께 `message-request-status` compacted topic으로 publish됩니다. DB read fallback은 별도의 DB commit 이후 snapshot topic인 `message-snapshots` / `stream-snapshots`를 원본으로 사용합니다.
-- message read 응답의 `source`, `degraded`, `snapshot_age_seconds`는 cache-first read의 hit / stale fallback 상태를 판단하는 API-level signal입니다.
+- request status: PostgreSQL 저장과 함께 `message-request-status` compacted topic publish
+- DB read fallback: DB commit 이후 snapshot topic `message-snapshots` / `stream-snapshots` 원본 사용
+- message read 응답 `source`, `degraded`, `snapshot_age_seconds`: cache-first read hit / stale fallback 판단용 API-level signal
 - `notification_enqueue`: DB commit 이후 `message-notifications` topic으로 후속 notification 작업 생성
 - `notification_db_insert`: 별도 `notification-worker`가 notification 처리 결과 기록
 
@@ -124,7 +137,7 @@ histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[
 
 ### `messaging_event_persist_lag_seconds`
 
-API가 request를 `accepted` 한 시점부터 Worker가 PostgreSQL에 `persisted` 할 때까지 걸린 end-to-end async lag입니다.
+API request `accepted` 시점부터 Worker PostgreSQL `persisted`까지의 end-to-end async lag.
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))
@@ -132,7 +145,9 @@ histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m]
 
 ### `messaging_queue_wait_seconds`
 
-event가 Worker 처리 전까지 대기한 시간을 해석하는 지표입니다. Kafka-native 관점에서는 consumer-side wait / backlog signal로 봅니다.
+event가 Worker 처리 전까지 대기한 시간 해석 지표.
+
+- Kafka-native 관점: consumer-side wait / backlog signal
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))
@@ -140,7 +155,11 @@ histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (
 
 ## Read cache operating signals
 
-DB snapshot materialized cache는 현재 API 응답 메타데이터로 검증합니다. 아래 항목은 운영 신호로 추적해야 할 기준이며, Prometheus counter / histogram으로 승격하기 좋은 후보입니다.
+DB snapshot materialized cache 현재 검증 기준:
+
+- API 응답 메타데이터
+- 운영 신호 후보
+- Prometheus counter / histogram 승격 후보
 
 | 신호 | 현재 확인 방법 | 운영 해석 |
 | --- | --- | --- |
@@ -151,13 +170,17 @@ DB snapshot materialized cache는 현재 API 응답 메타데이터로 검증합
 | Degraded read count | `degraded=true` 응답 수 | read path가 정상 DB/cache 경로를 벗어난 빈도 |
 | Snapshot consumer lag | `message-snapshots`, `stream-snapshots` consumer group lag | cache freshness와 rebuild 지연의 직접 원인 후보 |
 
-문서 기준상 `source=cache`는 성공을 뜻하지 않습니다. `degraded=false`이면 fresh cache hit이고, `degraded=true`이면 DB failure 또는 stale fallback을 cache가 대신 받친 상태입니다.
+`source=cache` 해석:
+
+- `degraded=false`: fresh cache hit
+- `degraded=true`: DB failure 또는 stale fallback을 cache가 받친 상태
+- `source=cache`만으로 성공 판단 제외
 
 ## DLQ metrics
 
 ### `messaging_dlq_events_total`
 
-Worker가 event를 Kafka DLQ topic으로 보낸 누적 counter입니다.
+Worker가 event를 Kafka DLQ topic으로 보낸 누적 counter.
 
 ```promql
 sum by (reason) (increase(messaging_dlq_events_total[15m]))
@@ -190,8 +213,8 @@ Endpoint: `GET /v1/dlq/ingress/summary`
 
 해석 기준:
 
-- `oldest_age_seconds > 600`: 10분 이상 남은 DLQ event가 있으므로 replay 조건과 `by_reason`을 확인합니다.
-- `oldest_age_seconds > 1800`: 30분 이상 남은 DLQ event가 있으므로 자동 replay만 기다리지 않고 수동 처리 또는 원인 수정을 결정합니다.
+- `oldest_age_seconds > 600`: 10분 이상 남은 DLQ event, replay 조건과 `by_reason` 확인
+- `oldest_age_seconds > 1800`: 30분 이상 남은 DLQ event, 수동 처리 또는 원인 수정 결정
 
 ## PostgreSQL metrics
 

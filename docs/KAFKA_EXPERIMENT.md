@@ -124,7 +124,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 - 초기 진단 구현에서 `X-Idempotency-Key`를 켠 부하에서는 PostgreSQL state-store path가 API hot path로 다시 들어왔습니다.
 - 이 경우 낮은 부하에서도 `503`이 발생했고, 100 VU에서는 Pgpool 재시작 압력과 높은 실패율이 나타났습니다.
-- 따라서 Kafka-native 완성형에서는 idempotency / request status state path를 Kafka append path와 분리하는 설계가 중요합니다.
+- Kafka-native 완성형 기준: idempotency / request status state path와 Kafka append path 분리
 
 ## 2026-06-09 재실행 메모
 
@@ -172,10 +172,10 @@ Worker success path에서 message persistence와 request status update를 하나
 
 변경 해석:
 
-- API는 Kafka 모드에서 stream sequence를 선점하지 않습니다.
-- Worker가 persistence 시점에 sequence를 배정합니다.
-- API의 accepted status store는 기본값에서 synchronous DB hot path에 두지 않습니다.
-- request idempotency claim도 기본값에서는 API hot path에서 수행하지 않고 Worker persistence path가 최종 idempotency를 처리합니다.
+- API: Kafka 모드에서 stream sequence 선점 제외
+- Worker: persistence 시점 sequence 배정
+- API accepted status store: 기본값에서 synchronous DB hot path 제외
+- request idempotency claim: 기본값에서 API hot path 수행 제외, Worker persistence path에서 최종 idempotency 처리
 
 ## 현재 설계 방향
 

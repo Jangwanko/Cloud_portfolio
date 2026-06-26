@@ -1,8 +1,15 @@
 # 관측성
 
-Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persistence, lag, DLQ, replica 상태를 나눠 봅니다.
+Kafka 기반 event stream pipeline 관측 범위:
 
-관측 기준은 단순 Pod 생존 여부가 아니라 아래 질문에 대한 답입니다.
+- intake
+- persistence
+- lag
+- DLQ
+- replica 상태
+- read cache / degraded read
+
+관측 기준:
 
 - API가 요청을 빠르게 `accepted` 하는가?
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
@@ -36,19 +43,24 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 | `PostgreSQL Standbys` | `messaging_postgres_standby_count{job="api"}` | pgpool / replication 기준 standby 수 |
 | `PostgreSQL Replication Delay` | `messaging_postgres_replication_delay_bytes_max{job="api"}` | standby replay delay |
 
-현재 dashboard는 kafka-exporter가 제공하는 `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`를 직접 보고, application-side 보조 신호로 `Queue Wait Time`, Worker throughput, KEDA desired replica를 함께 해석합니다.
+현재 dashboard 기준:
+
+- kafka-exporter 직접 지표: `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`
+- application-side 보조 신호: `Queue Wait Time`, Worker throughput, KEDA desired replica
+- 해석 방식: broker / lag / Worker 처리량 동시 확인
 
 ## 핵심 해석
 
-- Kafka consumer lag 증가: ingress rate가 Worker 처리량보다 빠르거나 downstream persistence path가 막힌 상태입니다.
-- Queue wait 증가: Worker가 backlog를 충분히 빨리 소비하지 못하고 있거나 DB write path가 느린 상태입니다.
-- Accepted-to-persisted lag 증가: API는 요청을 수락하지만 PostgreSQL 영속화가 늦어지는 상태입니다.
-- API latency 증가: Kafka publish 또는 인증 토큰 처리 등 request intake path 병목입니다. Event write path에서 PostgreSQL membership / idempotency 선조회가 보이면 설계 회귀로 봅니다.
-- Worker `db_persist` stage 증가: PostgreSQL / Pgpool / row lock / disk I/O 병목 가능성이 큽니다.
-- Worker replica 증가 후에도 lag가 줄지 않음: 단순 Worker 수 부족보다 PostgreSQL persistence path 병목일 가능성이 높습니다.
-- Worker last success age 증가: Worker pod 상태보다 실제 consume / persist 성공 여부를 우선 확인합니다.
-- DB pool in use 증가: API / Worker / DLQ Replayer 중 어느 process가 DB connection을 오래 붙잡는지 분리해서 봅니다.
-- Pod restart 증가: 낮은 사양, OOMKilled, CrashLoopBackOff, image / readiness 문제를 먼저 확인합니다.
+- Kafka consumer lag 증가: ingress rate가 Worker 처리량보다 빠르거나 downstream persistence path 병목
+- Queue wait 증가: Worker backlog 소비 지연 또는 DB write path 지연
+- Accepted-to-persisted lag 증가: API accepted 이후 PostgreSQL 영속화 지연
+- API latency 증가: Kafka publish, 인증 토큰 처리 등 request intake path 병목
+- PostgreSQL membership / idempotency 선조회 노출: event write path 설계 회귀 후보
+- Worker `db_persist` stage 증가: PostgreSQL / Pgpool / row lock / disk I/O 병목 후보
+- Worker replica 증가 후 lag 유지: PostgreSQL persistence path 병목 우선 확인
+- Worker last success age 증가: pod 상태보다 consume / persist 성공 여부 우선 확인
+- DB pool in use 증가: API / Worker / DLQ Replayer DB connection 점유 분리 확인
+- Pod restart 증가: 낮은 사양, OOMKilled, CrashLoopBackOff, image / readiness 문제 확인
 
 ## 문제 해결 흐름
 
@@ -63,9 +75,9 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 
 해석:
 
-- API stage 중 Kafka publish가 느리면 Kafka broker / network / metadata lookup을 봅니다.
-- state 관련 stage가 느리면 API hot path가 다시 DB에 묶이는지 확인합니다.
-- API latency는 높지만 accepted-to-persisted lag가 낮으면 persistence보다 intake path 문제입니다.
+- Kafka publish stage 지연: Kafka broker / network / metadata lookup 확인
+- state stage 지연: API hot path DB 결합 여부 확인
+- API latency 높음 + accepted-to-persisted lag 낮음: persistence보다 intake path 문제
 
 ### Kafka lag 또는 backlog 증가
 
@@ -79,9 +91,9 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 
 해석:
 
-- Worker replica가 늘지 않으면 KEDA ScaledObject, Kafka trigger, consumer group, HPA 상태를 확인합니다.
-- Worker replica가 늘었는데 lag가 줄지 않으면 `db_persist` stage와 PostgreSQL 상태를 먼저 봅니다.
-- Worker failure가 함께 증가하면 DLQ topic과 retry reason을 확인합니다.
+- Worker replica 미증가: KEDA ScaledObject, Kafka trigger, consumer group, HPA 상태 확인
+- Worker replica 증가 + lag 유지: `db_persist` stage와 PostgreSQL 상태 우선 확인
+- Worker failure 동반 증가: DLQ topic과 retry reason 확인
 
 ### Accepted-to-persisted lag 증가
 
@@ -95,9 +107,9 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 
 해석:
 
-- queue wait도 함께 증가하면 Worker 소비 지연 또는 backlog 상태입니다.
-- queue wait은 낮고 `db_persist`만 높으면 PostgreSQL write path 자체가 느린 상태입니다.
-- API latency는 낮은데 lag만 증가하면 사용자는 빠르게 응답을 받지만 실제 영속화가 늦어지는 상태입니다.
+- queue wait 동반 증가: Worker 소비 지연 또는 backlog 상태
+- queue wait 낮음 + `db_persist` 높음: PostgreSQL write path 지연
+- API latency 낮음 + lag 증가: 사용자 응답은 빠르지만 실제 영속화 지연
 
 ### DLQ 증가
 
@@ -110,43 +122,43 @@ Kafka 기반 event stream pipeline은 Grafana / Prometheus에서 intake, persist
 
 해석:
 
-- retry 한도를 넘긴 event는 Kafka DLQ topic으로 이동합니다.
-- DLQ payload의 `failed_reason`, `retry_count`, `replay_count`를 보고 재처리 가능 여부를 판단합니다.
-- replay 후 같은 이유로 다시 DLQ에 쌓이면 일시 장애가 아니라 데이터 조건 또는 persistence logic 문제일 수 있습니다.
-- `replay_count`가 `max_replay_count` 이상이면 자동 replay 대상에서 제외된 것으로 봅니다.
+- retry 한도 초과 event: Kafka DLQ topic 이동
+- DLQ payload 확인: `failed_reason`, `retry_count`, `replay_count`
+- replay 후 같은 이유 반복: 데이터 조건 또는 persistence logic 문제 후보
+- `replay_count >= max_replay_count`: 자동 replay 대상 제외
 
 ## Metric 메모
 
 ### API
 
-- `messaging_api_requests_total`: HTTP status별 API request counter입니다.
-- `messaging_api_request_latency_seconds`: API가 요청을 받아 응답하기까지의 latency입니다. Worker persistence 완료까지의 시간은 포함하지 않습니다.
+- `messaging_api_requests_total`: HTTP status별 API request counter
+- `messaging_api_request_latency_seconds`: API 요청 수신부터 응답까지의 latency, Worker persistence 완료 시간 제외
 - `messaging_api_stage_latency_seconds`: API hot path를 stage별로 나눠 봅니다.
 
 ### Worker
 
-- `messaging_worker_processed_total`: Worker가 event를 처리한 누적 건수입니다.
-- `messaging_worker_last_success_timestamp`: Worker가 마지막으로 event를 성공 처리한 Unix timestamp입니다.
-- `messaging_worker_failures_total`: Worker loop failure 누적 건수입니다.
+- `messaging_worker_processed_total`: Worker event 처리 누적 건수
+- `messaging_worker_last_success_timestamp`: Worker 마지막 event 성공 처리 Unix timestamp
+- `messaging_worker_failures_total`: Worker loop failure 누적 건수
 - `messaging_worker_stage_latency_seconds`: Worker 내부 병목을 stage별로 봅니다.
-- `messaging_event_persist_lag_seconds`: API accepted부터 PostgreSQL persisted까지의 end-to-end async lag입니다.
-- `messaging_queue_wait_seconds`: event가 Worker에 의해 처리되기 전까지 대기한 시간을 해석하는 지표입니다.
-- `messaging_dlq_events_total`: Worker가 Kafka DLQ로 보낸 event 수입니다.
-- `messaging_dlq_replay_total`: DLQ Replayer의 replay / max replay skip 결과입니다.
+- `messaging_event_persist_lag_seconds`: API accepted부터 PostgreSQL persisted까지의 end-to-end async lag
+- `messaging_queue_wait_seconds`: event가 Worker 처리 전까지 대기한 시간 해석 지표
+- `messaging_dlq_events_total`: Worker가 Kafka DLQ로 보낸 event 수
+- `messaging_dlq_replay_total`: DLQ Replayer replay / max replay skip 결과
 
 ### PostgreSQL
 
-- `messaging_postgres_is_primary`: pgpool 경유 writable primary reachability입니다.
-- `messaging_postgres_standby_count`: standby 수입니다.
-- `messaging_postgres_sync_standby_count`: sync 또는 quorum standby 수입니다.
-- `messaging_postgres_replication_delay_bytes_max`: 가장 큰 replication delay입니다.
-- `messaging_db_failure_total`: DB failure reason별 counter입니다.
+- `messaging_postgres_is_primary`: pgpool 경유 writable primary reachability
+- `messaging_postgres_standby_count`: standby 수
+- `messaging_postgres_sync_standby_count`: sync 또는 quorum standby 수
+- `messaging_postgres_replication_delay_bytes_max`: 가장 큰 replication delay
+- `messaging_db_failure_total`: DB failure reason별 counter
 
 ### Kubernetes / KEDA
 
-- `kube_deployment_spec_replicas`: Deployment가 원하는 Worker replica 수입니다.
-- `kube_deployment_status_replicas_available`: 실제 available Worker replica 수입니다.
-- `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA가 생성한 HPA의 desired replica 수입니다.
+- `kube_deployment_spec_replicas`: Deployment desired Worker replica 수
+- `kube_deployment_status_replicas_available`: 실제 available Worker replica 수
+- `kube_horizontalpodautoscaler_status_desired_replicas`: KEDA 생성 HPA desired replica 수
 
 자세한 metric 설명은 [METRICS_REFERENCE.md](METRICS_REFERENCE.md), readiness 상태 모델은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md), 장애 대응 절차는 [RUNBOOK.md](RUNBOOK.md), 검증 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)에 정리되어 있습니다.
 
@@ -164,11 +176,11 @@ powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -Sk
 
 DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 reason과 replay 가능 상태를 먼저 나눕니다.
 
-- `by_reason`: 실패 원인별 분포입니다.
-- `replayable`: replay guard에 걸리지 않은 event 수입니다.
-- `blocked`: `DLQ_REPLAY_MAX_COUNT`에 도달해 자동 replay에서 제외된 event 수입니다.
-- `oldest_age_seconds`: 오래 남아있는 DLQ가 있는지 확인하는 age 신호입니다.
-- `by_stream`: 특정 stream에 DLQ가 몰리는지 확인합니다.
+- `by_reason`: 실패 원인별 분포
+- `replayable`: replay guard에 걸리지 않은 event 수
+- `blocked`: `DLQ_REPLAY_MAX_COUNT` 도달로 자동 replay에서 제외된 event 수
+- `oldest_age_seconds`: 오래 남아있는 DLQ 확인용 age 신호
+- `by_stream`: 특정 stream DLQ 집중 여부 확인
 
 이 API는 Prometheus counter보다 payload에 가까운 운영 조회입니다. 알림은 “증가했다”를 알려주고, summary API는 “무엇이 왜 쌓였는가”를 확인합니다.
 
