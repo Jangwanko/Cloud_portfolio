@@ -2,6 +2,21 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-06-30 업데이트: demo-lite Pgpool connection budget 조정
+
+변경 내용:
+
+- `demo-lite` Pgpool `numInitChildren`을 `8 -> 16`으로 확대.
+- Pgpool `reservedConnections`를 `1 -> 2`로 확대.
+- API / Worker `DB_POOL_MAX_CONN`을 `4 -> 2`로 축소.
+- Pgpool readiness 실패 원인인 `FATAL: Sorry, too many clients already`를 운영 문서에 기록.
+- 저사양 서버에서는 처리량보다 Pgpool health check, login, 운영 상태 확인이 들어갈 connection 여유를 우선.
+
+반영 방법:
+
+- PostgreSQL / Pgpool은 Argo CD app manifest가 아니라 Helm chart bootstrap 영역.
+- 서버 반영 시 `k8s/values/postgresql-lite-values.yaml`로 `helm upgrade` 실행 필요.
+
 ## 2026-06-24 업데이트: README 흥미 유도 섹션 보강
 
 변경 내용:

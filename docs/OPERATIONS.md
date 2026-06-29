@@ -114,6 +114,12 @@ HOST_NAME=your.domain.example BASE_URL=http://your.domain.example bash scripts/d
 
 `demo-lite`는 Kafka 1 broker, PostgreSQL 1 primary, Pgpool 1 replica, API 1 replica, Worker 1~2 replica 기준입니다. 이 모드는 저사양 서버에서 주문 이후 이벤트 흐름을 보여주기 위한 profile이며, HA 장애 허용성과 성능 baseline 증명은 full-ha profile의 책임입니다.
 
+Pgpool connection budget:
+- `FATAL: Sorry, too many clients already` 발생 시 Pgpool client slot 고갈 확인.
+- Grafana PostgreSQL Primary `0`, readiness `postgres_primary_unreachable`, login `503`이 함께 나타날 수 있음.
+- `demo-lite` 기준 Pgpool `numInitChildren=16`, `reservedConnections=2`, app `DB_POOL_MAX_CONN=2` 유지.
+- 서버 반영은 GitOps app sync가 아니라 PostgreSQL Helm release upgrade 필요.
+
 ## 데모 운영 작업
 
 데모 화면의 운영자 이벤트 큐는 실제 Kafka / Worker / PostgreSQL 흐름을 보여주기 위한 로컬 운영 패널입니다.

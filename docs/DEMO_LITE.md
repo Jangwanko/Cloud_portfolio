@@ -24,6 +24,15 @@
 | dlq-replayer | 1 | 0 |
 | Prometheus / Grafana | enabled | enabled with lower resource requests |
 
+## Pgpool Connection Budget
+
+- `demo-lite` keeps Pgpool in the DB path to match the full-ha architecture shape.
+- Pgpool `numInitChildren`: `16`.
+- Pgpool `reservedConnections`: `2`.
+- API / Worker `DB_POOL_MAX_CONN`: `2`.
+- Purpose: probe / login / status checks still have free client slots during sample event runs.
+- Trade-off: DB write concurrency is smaller than full-ha; demo stability has priority over throughput.
+
 ## Run
 
 Local kind:

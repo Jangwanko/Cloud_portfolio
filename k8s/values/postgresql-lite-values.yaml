@@ -36,10 +36,10 @@ pgpool:
   podAntiAffinityPreset: soft
   pdb:
     create: false
-  numInitChildren: 8
+  numInitChildren: 16
   maxPool: 1
   childMaxConnections: 50
-  reservedConnections: 1
+  reservedConnections: 2
   childLifeTime: 300
   clientIdleLimit: 60
   connectionLifeTime: 300
