@@ -226,28 +226,36 @@ def _message_room_id(cur, message_id: int) -> int:
 
 @router.post("/users", response_model=UserResponse)
 def create_user(payload: UserCreate):
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            try:
-                cur.execute(
-                    """
-                    INSERT INTO users (username, password_hash)
-                    VALUES (%s, %s)
-                    RETURNING id, username
-                    """,
-                    (payload.username, hash_password(payload.password)),
-                )
-                row = cur.fetchone()
-                conn.commit()
-                return row
-            except Exception as exc:  # noqa: BLE001
-                conn.rollback()
-                raise HTTPException(status_code=409, detail="Username already exists") from exc
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO users (username, password_hash)
+                        VALUES (%s, %s)
+                        RETURNING id, username
+                        """,
+                        (payload.username, hash_password(payload.password)),
+                    )
+                    row = cur.fetchone()
+                    conn.commit()
+                    return row
+                except Exception as exc:  # noqa: BLE001
+                    conn.rollback()
+                    raise HTTPException(status_code=409, detail="Username already exists") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="User database unavailable") from exc
 
 
 @router.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest):
-    user = authenticate_user(payload.username, payload.password)
+    try:
+        user = authenticate_user(payload.username, payload.password)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Auth database unavailable") from exc
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(user["id"], user["username"])

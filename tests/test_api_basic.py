@@ -342,6 +342,50 @@ class TestSecurityHelpers:
         assert isinstance(is_default_auth_secret(), bool)
 
 
+class TestAuthDatabaseFailure:
+    """Auth endpoints expose DB outage as service unavailable, not 500."""
+
+    def test_login_returns_503_when_user_lookup_database_is_unavailable(self, monkeypatch):
+        from fastapi import HTTPException
+
+        import portfolio.api as api
+        from portfolio.schemas import LoginRequest
+
+        def raise_db_down(_username, _password):
+            raise RuntimeError("primary is unavailable")
+
+        monkeypatch.setattr(api, "authenticate_user", raise_db_down)
+
+        try:
+            api.login(LoginRequest(username="demo-order-user", password="Password123!"))
+        except HTTPException as exc:
+            assert exc.status_code == 503
+            assert exc.detail == "Auth database unavailable"
+        else:
+            raise AssertionError("login should fail when auth database is unavailable")
+
+    def test_create_user_returns_503_when_database_connection_is_unavailable(self, monkeypatch):
+        from fastapi import HTTPException
+
+        import portfolio.api as api
+        from portfolio.schemas import UserCreate
+
+        @contextmanager
+        def raise_db_down():
+            raise RuntimeError("primary is unavailable")
+            yield
+
+        monkeypatch.setattr(api, "get_conn", raise_db_down)
+
+        try:
+            api.create_user(UserCreate(username="demo-order-user", password="Password123!"))
+        except HTTPException as exc:
+            assert exc.status_code == 503
+            assert exc.detail == "User database unavailable"
+        else:
+            raise AssertionError("create_user should fail when database is unavailable")
+
+
 class TestConfig:
     """Basic settings/module import checks."""
 
