@@ -287,7 +287,8 @@ kubectl get pods -n "$NAMESPACE"
 printf '\nQuick Start completed successfully.\n'
 printf 'API URL: %s\n' "$BASE_URL"
 printf 'Grafana URL: http://localhost/grafana\n'
-printf 'Grafana login: %s / %s\n' "$GRAFANA_ADMIN_USER" "$GRAFANA_ADMIN_PASSWORD"
+printf 'Grafana anonymous viewer: enabled\n'
+printf 'Grafana admin login: %s / %s\n' "$GRAFANA_ADMIN_USER" "$GRAFANA_ADMIN_PASSWORD"
 printf 'Prometheus URL: http://localhost/prometheus\n'
 printf 'Failure tests: RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh\n'
 printf '\nUseful checks:\n'

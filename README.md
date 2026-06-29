@@ -42,19 +42,28 @@ Start with the demo if you want to see the flow move. Open the architecture and 
 
 `demo-lite`는 full HA를 흉내 내기 위한 구성이 아니라, 제한된 서버에서도 같은 이벤트 처리 개념을 실행해 볼 수 있게 만든 profile입니다.
 
-`demo-lite` is not the HA or performance proof. It is a constrained runtime that makes the same event-driven flow visible on a small server.
+- `demo-lite` is a demo site built to show the event-processing concept of this portfolio.
+- 배포 데모: [https://vm118.js-banjiha.cloud/demo/order-dashboard.html](https://vm118.js-banjiha.cloud/demo/order-dashboard.html)
+- 로컬 실행 경로: 아래 Demo의 로컬 실행 절차
+- demo-lite 기준과 제약: [DEMO_LITE.md](docs/DEMO_LITE.md)
 
-## Local Demo
+## Demo
 
 브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.
 
 The browser demo shows real local processing through API intake, Kafka append, Worker persistence, and PostgreSQL storage.
 
-- Demo UI: `http://localhost/demo/order-dashboard.html`
-- GitHub: `https://github.com/Jangwanko/Cloud_portfolio`
-- API docs: `http://localhost/docs`
-- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Readiness: `http://localhost/health/ready`
+- Deployed Demo UI: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`
+- Deployed Swagger / API docs: `https://vm118.js-banjiha.cloud/docs`
+- Deployed Grafana: `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
+- Deployed Readiness: `https://vm118.js-banjiha.cloud/health/ready`
+- Deployed DLQ summary: `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5`
+- Local Demo UI: `http://localhost/demo/order-dashboard.html`
+- Local Swagger / API docs: `http://localhost/docs`
+- Local Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
+- Local Readiness: `http://localhost/health/ready`
+- GitHub repository: `https://github.com/Jangwanko/Cloud_portfolio`
+- Grafana access: anonymous Viewer, no login required for dashboard view
 
 처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다. Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 `scripts/bootstrap_tools.ps1`이 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 준비합니다.
 
@@ -98,6 +107,14 @@ In the demo UI, add 10, 100, or 1000 reserved sample events, then send the post-
 The demo also includes a lightweight rule-based Operations Advisor. It does not call an AI API. Instead, it interprets queue, Kafka append, DB persistence, and DLQ signals with deterministic rules. A future AI worker can consume the same advisor signals and produce richer operator-facing summaries outside the core persistence path.
 
 English demo script:
+
+1. Open `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`.
+2. Click `EN`.
+3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
+4. Click `Send Post-Order Events`.
+5. Watch `Reserved -> Kafka Appended -> DB Persisted`.
+
+Local demo script:
 
 1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.
 2. Open `http://localhost/demo/order-dashboard.html`.
@@ -247,11 +264,18 @@ Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / 
 
 운영자는 아래 경로로 상태를 확인합니다.
 
-- Readiness: `http://localhost/health/ready`
-- Swagger / OpenAPI: `http://localhost/docs`, `/openapi.json`
-- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Prometheus: `http://localhost/prometheus/`
-- DLQ summary: `GET /v1/dlq/ingress/summary`
+| Surface | Deployed | Local |
+| --- | --- | --- |
+| Readiness | `https://vm118.js-banjiha.cloud/health/ready` | `http://localhost/health/ready` |
+| Swagger / OpenAPI | `https://vm118.js-banjiha.cloud/docs`, `https://vm118.js-banjiha.cloud/openapi.json` | `http://localhost/docs`, `http://localhost/openapi.json` |
+| Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` |
+| Prometheus | `https://vm118.js-banjiha.cloud/prometheus/` | `http://localhost/prometheus/` |
+| DLQ summary | `GET https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary` | `GET http://localhost/v1/dlq/ingress/summary` |
+
+Grafana access:
+
+- dashboard view: anonymous Viewer
+- admin login: secret-managed, configuration changes only
 
 운영 상태 점검:
 

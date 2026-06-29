@@ -88,7 +88,8 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 ## 데모 접근
 로컬 데모 기준 운영 UI 경로:
 - Grafana overview: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
+- Grafana 데모 접근: anonymous Viewer 활성화, 대시보드 링크 바로 열림
+- Grafana admin 계정: `messaging-runtime-secrets`로 유지, 설정 변경 시 사용
 - Prometheus: `http://localhost/prometheus/`
 
 참고:
@@ -145,9 +146,10 @@ HOST_NAME=your.domain.example BASE_URL=http://your.domain.example bash scripts/d
   - 서비스 경로로 취급합니다.
   - bearer token 기반 인증이 적용됩니다.
 - Grafana
-  - 운영 UI로 취급합니다.
-  - 로그인 유지 상태로 노출합니다.
-  - 데모에서는 접근 가능하게 두되, 실서비스에서는 별도 접근 제한이 필요합니다.
+  - 운영 UI 취급
+  - anonymous Viewer로 데모 접근 허용
+  - admin credential은 secret로 유지
+  - 실서비스 별도 접근 제한 필요
 - Prometheus
   - 운영 / 관측 UI로 취급합니다.
   - 현재는 데모 편의를 위해 ingress로 직접 접근 가능하게 둡니다.
@@ -266,11 +268,12 @@ DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 �
 
 현재 적용:
 
-- 사용자 비밀번호는 plain text가 아니라 `pbkdf2_sha256` hash로 저장합니다.
-- API 인증은 bearer token 기반으로 처리합니다.
-- `AUTH_SECRET_KEY`, token TTL, Grafana credential은 `messaging-runtime-secrets`로 분리합니다.
-- `.env`는 Git 추적 대상에서 제외합니다.
-- local Grafana 기본 비밀번호는 데모용이며 운영 credential이 아닙니다.
+- 사용자 비밀번호: `pbkdf2_sha256` hash 저장
+- API 인증: bearer token 기반
+- `AUTH_SECRET_KEY`, token TTL, Grafana credential: `messaging-runtime-secrets` 분리
+- `.env`: Git 추적 대상 제외
+- Grafana anonymous Viewer: 데모 대시보드 조회용
+- local Grafana 기본 비밀번호: 데모용 admin credential, 운영 credential 제외
 
 운영형 확장 기준:
 

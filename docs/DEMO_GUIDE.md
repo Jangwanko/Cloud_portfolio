@@ -8,11 +8,21 @@ The browser demo shows the post-order event path from API intake to Kafka append
 
 | Surface | URL | Purpose |
 | --- | --- | --- |
-| Demo UI | `http://localhost/demo/order-dashboard.html` | 주문 이후 이벤트 흐름 시연 |
-| Swagger | `http://localhost/docs` | API contract 확인 |
-| Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지표 확인 |
-| Readiness | `http://localhost/health/ready` | Kafka / PostgreSQL / standby 상태 확인 |
-| DLQ summary | `http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5` | DLQ reason, replayable, blocked 확인 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | 주문 이후 이벤트 흐름 시연 |
+| Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
+| Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
+| Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
+| Deployed DLQ summary | `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5` | DLQ reason, replayable, blocked 확인 |
+| Local Demo UI | `http://localhost/demo/order-dashboard.html` | 로컬 데모 확인 |
+| Local Swagger | `http://localhost/docs` | 로컬 API contract 확인 |
+| Local Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | 로컬 운영 지표 확인 |
+| Local Readiness | `http://localhost/health/ready` | 로컬 Kafka / PostgreSQL / standby 상태 확인 |
+| Local DLQ summary | `http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5` | 로컬 DLQ reason, replayable, blocked 확인 |
+
+Grafana 접근:
+
+- 대시보드 조회: anonymous Viewer, 로그인 없이 확인
+- admin 계정: 설정 변경용 secret로 유지
 
 ## Quick Start
 
@@ -39,16 +49,25 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
 
 ## Demo Flow
 
-1. `http://localhost/demo/order-dashboard.html`을 엽니다.
-2. 외국인 리크루터에게 보여줄 때는 우측 상단의 `EN`을 선택합니다. 기본 event body도 영어 문구로 바뀝니다.
-3. `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가`로 전송 전 예약을 만듭니다.
-4. `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다.
-5. `예약 건수 -> Kafka 적재 -> DB 저장 -> 총 소요시간` 순서로 숫자가 움직이는지 봅니다.
-6. 오른쪽 결과 패널에서 `Operations Advisor`, Worker replica, Readiness, DLQ summary를 함께 확인합니다.
+- 배포 데모: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
+- 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
+- 외국인 리크루터에게 보여줄 때 `EN` 선택. 기본 event body도 영어 문구로 변경
+- `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가`로 전송 전 예약 생성
+- `결제 완료 / 주문 완료 이벤트 보내기` 클릭
+- 숫자 흐름 확인:
+  - `예약 건수`
+  - `Kafka 적재`
+  - `DB 저장`
+  - `총 소요시간`
+- 오른쪽 패널 확인:
+  - `Operations Advisor`
+  - Worker replica
+  - Readiness
+  - DLQ summary
 
 English demo script:
 
-1. Open `http://localhost/demo/order-dashboard.html`.
+1. Open `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`.
 2. Click `EN`.
 3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
 4. Click `Send Post-Order Events`.
