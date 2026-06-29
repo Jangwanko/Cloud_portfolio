@@ -101,7 +101,8 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 ## 데모 접근
 로컬 데모 기준 운영 UI 경로:
 - Grafana overview: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
+- Grafana 데모 접근: anonymous Viewer 활성화, 대시보드 링크 바로 열림
+- Grafana admin 계정: `messaging-runtime-secrets`로 유지, 설정 변경 시 사용
 - Prometheus: `http://localhost/prometheus/`
 
 참고:
@@ -146,8 +147,8 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
   - bearer token 기반 인증 적용
 - Grafana
   - 운영 UI 취급
-  - 로그인 유지 상태 노출
-  - 데모 접근 허용
+  - anonymous Viewer로 데모 접근 허용
+  - admin credential은 secret로 유지
   - 실서비스 별도 접근 제한 필요
 - Prometheus
   - 운영 / 관측 UI 취급
@@ -297,7 +298,8 @@ DLQ 기준:
 - API 인증: bearer token 기반
 - `AUTH_SECRET_KEY`, token TTL, Grafana credential: `messaging-runtime-secrets` 분리
 - `.env`: Git 추적 대상 제외
-- local Grafana 기본 비밀번호는 데모용이며 운영 credential이 아닙니다.
+- Grafana anonymous Viewer: 데모 대시보드 조회용
+- local Grafana 기본 비밀번호: 데모용 admin credential, 운영 credential 제외
 
 운영형 확장 기준:
 

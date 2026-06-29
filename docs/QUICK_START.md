@@ -131,7 +131,8 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 기본 접근 URL:
 - API: `http://localhost`
 - Grafana: `http://localhost/grafana`
-- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
+- Grafana 대시보드: anonymous Viewer로 바로 조회
+- Grafana admin 계정: `ID admin` / `비밀번호 1q2w3e4r`
 - Prometheus: `http://localhost/prometheus/`
 
 참고:

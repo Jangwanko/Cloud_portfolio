@@ -14,11 +14,19 @@
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Demo UI | `http://localhost/demo/order-dashboard.html` | 주문 이후 이벤트 흐름 시연 |
-| Swagger | `http://localhost/docs` | API contract 확인 |
-| Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
-| Readiness | `http://localhost/health/ready` | Kafka / PostgreSQL 상태 확인 |
-| DLQ summary | `http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5` | DLQ reason, replayable, blocked 확인 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | 주문 이후 이벤트 흐름 시연 |
+| Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
+| Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
+| Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
+| Deployed DLQ summary | `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5` | DLQ reason, replayable, blocked 확인 |
+| Local Demo UI | `http://localhost/demo/order-dashboard.html` | 로컬 데모 확인 |
+| Local Swagger | `http://localhost/docs` | 로컬 API contract 확인 |
+| Local Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | 로컬 운영 지표 확인 |
+
+Grafana 접근:
+
+- 대시보드 조회: anonymous Viewer, 로그인 없이 확인
+- admin 계정: 설정 변경용 secret로 유지
 
 ## Quick Start
 
@@ -39,7 +47,8 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
 
 ## Demo Flow
 
-- `http://localhost/demo/order-dashboard.html` 접속
+- 배포 데모: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
+- 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
 - 외국인 리크루터에게 보여줄 때 `EN` 선택
 - `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
 - `결제 완료 / 주문 완료 이벤트 보내기` 클릭
@@ -56,7 +65,7 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
 
 ## English Demo Script
 
-- Open `http://localhost/demo/order-dashboard.html`.
+- Open `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`.
 - Click `EN`.
 - Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
 - Click `Send Post-Order Events`.

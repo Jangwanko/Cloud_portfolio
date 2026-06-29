@@ -44,20 +44,27 @@ This project is a Kafka-centered post-order event pipeline. The customer-facing 
 
 - `demo-lite`: 포트폴리오의 이벤트 처리 개념을 볼 수 있게 만든 데모 사이트
 - `demo-lite` is a demo site built to show the event-processing concept of this portfolio.
-- master 기준 즉시 실행 경로: 아래 Local Demo
+- 배포 데모: [https://vm118.js-banjiha.cloud/demo/order-dashboard.html](https://vm118.js-banjiha.cloud/demo/order-dashboard.html)
+- master 기준 로컬 실행 경로: 아래 Demo의 로컬 실행 절차
 - demo-lite 기준과 제약: [DEMO_LITE.md](docs/DEMO_LITE.md)
 
-## Local Demo
+## Demo
 
 URLs:
 
-- Demo UI: `http://localhost/demo/order-dashboard.html`
-- GitHub: `https://github.com/Jangwanko/Cloud_portfolio`
-- Swagger / API docs: `http://localhost/docs`
-- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Readiness: `http://localhost/health/ready`
+- Deployed Demo UI: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`
+- Deployed Swagger / API docs: `https://vm118.js-banjiha.cloud/docs`
+- Deployed Grafana: `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
+- Deployed Readiness: `https://vm118.js-banjiha.cloud/health/ready`
+- Deployed DLQ summary: `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5`
+- Local Demo UI: `http://localhost/demo/order-dashboard.html`
+- Local Swagger / API docs: `http://localhost/docs`
+- Local Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
+- Local Readiness: `http://localhost/health/ready`
+- GitHub repository: `https://github.com/Jangwanko/Cloud_portfolio`
+- Grafana access: anonymous Viewer, no login required for dashboard view
 
-처음 실행:
+로컬에서 처음 실행:
 
 - Windows 기준: Docker Desktop만 설치하고 실행
 - helper: `scripts/bootstrap_tools.ps1`가 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe` 준비
@@ -84,6 +91,14 @@ Demo steps:
 - Operations Advisor / Readiness / DLQ summary 확인
 
 English demo script:
+
+1. Open `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`.
+2. Click `EN`.
+3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
+4. Click `Send Post-Order Events`.
+5. Watch `Reserved -> Kafka Appended -> DB Persisted`.
+
+Local demo script:
 
 1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.
 2. Open `http://localhost/demo/order-dashboard.html`.
@@ -274,11 +289,18 @@ Terraform 위치:
 
 상태 확인:
 
-- Readiness: `http://localhost/health/ready`
-- Swagger / OpenAPI: `http://localhost/docs`, `/openapi.json`
-- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Prometheus: `http://localhost/prometheus/`
-- DLQ summary: `GET /v1/dlq/ingress/summary`
+| Surface | Deployed | Local |
+| --- | --- | --- |
+| Readiness | `https://vm118.js-banjiha.cloud/health/ready` | `http://localhost/health/ready` |
+| Swagger / OpenAPI | `https://vm118.js-banjiha.cloud/docs`, `https://vm118.js-banjiha.cloud/openapi.json` | `http://localhost/docs`, `http://localhost/openapi.json` |
+| Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` |
+| Prometheus | `https://vm118.js-banjiha.cloud/prometheus/` | `http://localhost/prometheus/` |
+| DLQ summary | `GET https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary` | `GET http://localhost/v1/dlq/ingress/summary` |
+
+Grafana access:
+
+- dashboard view: anonymous Viewer
+- admin login: secret-managed, configuration changes only
 
 운영 상태 점검:
 
