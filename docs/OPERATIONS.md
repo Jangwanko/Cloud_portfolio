@@ -269,15 +269,18 @@ DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 �
 - `DLQ_REPLAY_MAX_COUNT` 기본값은 `3`입니다.
 - `replay_count`가 최대값 이상이면 replayer는 해당 event를 다시 ingress topic에 넣지 않습니다.
 - 데모 화면의 `수동 재처리` 버튼은 DLQ log 삭제가 아니라 재투입 요청입니다.
+- 데모 화면의 `전체 수동 재처리` 버튼은 replay 가능한 DLQ event를 일괄 재투입 요청합니다.
+- 일괄 재처리 실패 또는 replay guard 도달 event는 사용자 확인 대상으로 남깁니다.
 
 확인 순서:
 
 1. `GET /v1/dlq/ingress?limit=20`으로 최근 실패 event를 확인합니다.
 2. `failed_reason`이 일시 장애인지 데이터 조건 문제인지 구분합니다.
 3. `replay_count`가 `max_replay_count`에 도달했는지 확인합니다.
-4. replay 가능한 event는 데모 화면 `수동 재처리` 또는 `POST /v1/dlq/ingress/replay`로 재투입합니다.
-5. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
-6. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
+4. replay 가능한 event가 여러 건이면 데모 화면 `전체 수동 재처리`로 먼저 재투입합니다.
+5. 개별 확인이 필요한 event는 `수동 재처리` 또는 `POST /v1/dlq/ingress/replay`로 재투입합니다.
+6. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
+7. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
 
 같은 stream 순서 보장 기준:
 

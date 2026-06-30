@@ -66,6 +66,8 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
   - DLQ summary
 - DLQ가 있으면 `DLQ 상세 보기` 클릭
 - replay 가능한 event는 `수동 재처리` 클릭
+- 여러 건이면 `전체 수동 재처리` 클릭
+- replay guard 또는 재처리 실패 건은 사용자 확인 대상으로 분리
 - replay guard 도달 event는 `수동 확인` 상태로 원인 확인
 
 English demo script:
@@ -78,6 +80,7 @@ English demo script:
 6. Open Grafana when you want to show consumer lag and Worker scaling evidence.
 7. If DLQ appears, click `Show DLQ details`.
 8. Click `Manual replay` for replayable events.
+9. Use `Replay all` when several replayable DLQ events remain.
 
 ## DB Storage Evidence
 
