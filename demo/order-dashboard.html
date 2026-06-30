@@ -648,7 +648,7 @@
     <div>
       <div class="title-row">
         <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.2.0 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 1.2.1 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
@@ -900,7 +900,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.2.0";
+    const DEMO_UI_VERSION = "1.2.1";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
@@ -971,6 +971,8 @@
         dlqReplayable: "재처리 가능",
         dlqBlocked: "재처리 제한",
         dlqReplayRequested: "DLQ 수동 재처리 요청",
+        dlqReplayPending: "재처리 확인 중",
+        dlqReplayComplete: "재처리 완료",
         dlqReplayFailed: "DLQ 수동 재처리 실패",
         opsRefreshFailed: "운영 상태 확인 실패",
         authDbUnavailable: "DB primary 연결 불가로 인증 대기 중",
@@ -1114,6 +1116,8 @@
         dlqReplayable: "Replayable",
         dlqBlocked: "Replay blocked",
         dlqReplayRequested: "DLQ manual replay requested",
+        dlqReplayPending: "Checking replay",
+        dlqReplayComplete: "Replay complete",
         dlqReplayFailed: "DLQ manual replay failed",
         opsRefreshFailed: "Operational status refresh failed",
         authDbUnavailable: "Authentication is waiting because the DB primary is unreachable",
@@ -1683,13 +1687,39 @@
           throw new Error(`replay HTTP ${response.status}`);
         }
         const result = await response.json();
-        button.textContent = t("dlqReplayRequested");
+        button.textContent = t("dlqReplayPending");
         log(`${t("dlqReplayRequested")}: request_id=${result.request_id} stream_id=${result.stream_id} replay_count=${result.replay_count}`);
+        await pollDlqReplayStatus(baseUrl, token, result.request_id, button);
         await refreshOpsStatus();
       } catch (error) {
         button.disabled = false;
         log(`${t("dlqReplayFailed")}: ${describeFetchFailure(error)}`);
       }
+    }
+
+    async function pollDlqReplayStatus(baseUrl, token, requestId, button) {
+      const maxAttempts = 30;
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 300 : 1000));
+        const response = await fetch(`${baseUrl}/v1/event-requests/${requestId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.status === 404) {
+          continue;
+        }
+        if (!response.ok) {
+          throw new Error(`status HTTP ${response.status}`);
+        }
+        const status = await response.json();
+        if (status.status === "persisted") {
+          button.textContent = t("dlqReplayComplete");
+          log(`${t("dlqReplayComplete")}: request_id=${requestId} event_id=${status.event_id} stream_seq=${status.stream_seq}`);
+          return status;
+        }
+      }
+      button.textContent = t("dlqReplayPending");
+      log(`${t("dlqReplayPending")}: request_id=${requestId}`);
+      return null;
     }
 
     function updateReadinessPanel(readiness) {
