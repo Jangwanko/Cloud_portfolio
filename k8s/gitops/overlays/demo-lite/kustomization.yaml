@@ -5,7 +5,7 @@ resources:
 images:
   - name: messaging-portfolio
     newName: ghcr.io/jangwanko/cloud_portfolio
-    newTag: 32452a6
+    newTag: 9c538e4
 patches:
   - path: patches/messaging-env-lite.yaml
   - path: patches/kafka-lite.yaml
