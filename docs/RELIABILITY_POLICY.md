@@ -62,6 +62,11 @@ PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`
 
 ### PostgreSQL / Pgpool 장애
 
+- DB / Pgpool 같은 transient persistence 장애는 Kafka offset을 commit하지 않고 Worker가 계속 retry합니다.
+- 장애 중 Kafka에 적재된 event는 DB 복구 후 PostgreSQL에 저장되어야 합니다.
+- retry backoff는 `INGRESS_RETRY_MAX_DELAY_SECONDS` 안에서 제한해 복구 후 재시도 지연을 bounded하게 유지합니다.
+- DLQ는 transient DB outage의 정상 종료 경로가 아니라 poison event와 replay guard를 위한 격리 경로입니다.
+
 - API는 Kafka append가 가능하면 request를 계속 accepted 할 수 있습니다.
 - Worker persistence는 실패하고 retry 후 DLQ로 이동할 수 있습니다.
 - 복구 후 DLQ Replayer가 event를 ingress topic으로 재주입합니다.

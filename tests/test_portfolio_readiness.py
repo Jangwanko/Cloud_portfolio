@@ -390,8 +390,8 @@ class TestOperationalDocumentation:
             "Post-Order Event Console",
             "demo-version",
             "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.1.3"',
-            "ver. 1.1.3 / api -",
+            'const DEMO_UI_VERSION = "1.1.4"',
+            "ver. 1.1.4 / api -",
             "setDemoVersion",
             "ver.",
             "api",
@@ -746,6 +746,14 @@ class TestManifestContracts:
 
         for manifest in (app_manifest, gitops_manifest):
             assert 'DLQ_REPLAY_MAX_COUNT: "3"' in manifest
+
+    def test_transient_db_retry_max_delay_is_set_in_kubernetes_manifests(self):
+        app_manifest = read_text("k8s/app/manifests-ha.yaml")
+        gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
+        demo_lite_env = read_text("k8s/gitops/overlays/demo-lite/patches/messaging-env-lite.yaml")
+
+        for manifest in (app_manifest, gitops_manifest, demo_lite_env):
+            assert 'INGRESS_RETRY_MAX_DELAY_SECONDS: "30"' in manifest
 
     def test_runtime_secret_is_used_by_app_workloads(self):
         manifest = read_text("k8s/gitops/base/manifests-ha.yaml")

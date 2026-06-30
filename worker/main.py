@@ -287,7 +287,10 @@ def move_to_dlq(job_payload: dict, reason: str) -> None:
 
 def mark_inline_retry(job_payload: dict) -> float:
     retry_count = int(job_payload.get("retry_count", 0)) + 1
-    delay = settings.ingress_retry_base_delay_seconds * (2 ** (retry_count - 1))
+    delay = min(
+        settings.ingress_retry_base_delay_seconds * (2 ** (retry_count - 1)),
+        settings.ingress_retry_max_delay_seconds,
+    )
     job_payload["retry_count"] = retry_count
     job_payload["next_retry_at"] = time.time() + delay
     try:
@@ -402,11 +405,6 @@ def handle_ingress_job(raw: str) -> None:
             delay = mark_inline_retry(job_payload)
             time.sleep(delay)
         except (OperationalError, InterfaceError, RuntimeError) as exc:
-            retry_count = int(job_payload.get("retry_count", 0))
-            if retry_count >= settings.ingress_max_retries:
-                move_to_dlq(job_payload, f"transient_error_max_retries:{type(exc).__name__}")
-                return
-
             delay = mark_inline_retry(job_payload)
             try:
                 reconnect_pool()

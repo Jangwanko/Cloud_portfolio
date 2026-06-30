@@ -559,6 +559,52 @@ class TestKafkaIntakeBoundary:
             )
         ]
 
+    def test_transient_db_errors_retry_until_persisted_without_dlq(self, monkeypatch):
+        from psycopg2 import OperationalError
+
+        from worker import main as worker_main
+
+        attempts = []
+        dlq_moves = []
+        sleeps = []
+
+        def fake_persist(job_payload):
+            attempts.append(int(job_payload.get("retry_count", 0)))
+            if len(attempts) < 5:
+                raise OperationalError("database is temporarily unavailable")
+            return {
+                "id": 100,
+                "request_id": job_payload["request_id"],
+                "room_id": job_payload["room_id"],
+                "room_seq": 1,
+                "user_id": job_payload["user_id"],
+                "created_at": "2026-07-01T00:00:00+00:00",
+            }
+
+        def fake_mark_inline_retry(job_payload):
+            job_payload["retry_count"] = int(job_payload.get("retry_count", 0)) + 1
+            return 0
+
+        monkeypatch.setattr(worker_main, "persist_ingress_job", fake_persist)
+        monkeypatch.setattr(worker_main, "mark_inline_retry", fake_mark_inline_retry)
+        monkeypatch.setattr(worker_main, "move_to_dlq", lambda *args: dlq_moves.append(args))
+        monkeypatch.setattr(worker_main, "reconnect_pool", lambda: None)
+        monkeypatch.setattr(worker_main.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+        worker_main.handle_ingress_job(
+            {
+                "route": "send_event",
+                "request_id": "req-transient-db",
+                "room_id": 7,
+                "user_id": 3,
+                "body": "persist after db recovery",
+            }
+        )
+
+        assert attempts == [0, 1, 2, 3, 4]
+        assert dlq_moves == []
+        assert sleeps == [0, 0, 0, 0]
+
     def test_event_list_response_exposes_cache_metadata(self):
         from portfolio.api import _event_list_response
 

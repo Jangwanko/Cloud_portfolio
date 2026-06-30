@@ -121,10 +121,18 @@ Pgpool connection budget:
 - 서버 반영은 GitOps app sync가 아니라 PostgreSQL Helm release upgrade 필요.
 
 DB 복구 후 자동 재처리:
-- Worker inline retry 기간보다 DB / Pgpool 장애가 길면 event는 `message-ingress-dlq`로 격리.
-- `demo-lite`에서도 `dlq-replayer` 1개를 유지해 DB 복구 후 replay 대상 event를 ingress topic으로 재주입.
+- DB / Pgpool 같은 transient persistence 장애는 Kafka offset을 commit하지 않고 Worker가 계속 retry.
+- retry backoff는 최대 `INGRESS_RETRY_MAX_DELAY_SECONDS=30` 안에서 제한.
+- DB 복구 후 같은 Kafka event가 PostgreSQL에 저장되어야 정상.
+- DLQ는 stream sequence gap, 잘못된 payload, replay guard처럼 운영자 확인이 필요한 event 격리 용도.
+- `demo-lite`에서도 `dlq-replayer` 1개를 유지해 이미 DLQ로 격리된 replay 대상 event를 ingress topic으로 재주입.
 - DLQ `blocked`는 replay guard에 걸린 event로 수동 확인 필요.
 - Grafana에서 DLQ total, replay metric, DB 저장 증가를 함께 확인.
+
+자동 재처리 경로:
+- Kafka에 남아 있는 미커밋 event: Worker가 같은 message를 붙잡고 retry, DB 복구 후 persistence 성공, 그 다음 offset commit.
+- 이미 DLQ로 격리된 replayable event: `dlq-replayer`가 `ping_db()`로 DB 복구를 확인한 뒤 ingress topic으로 재주입.
+- 두 경로 모두 운영자가 수동으로 event를 다시 보내는 흐름이 아님.
 
 ## 데모 운영 작업
 

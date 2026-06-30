@@ -2,6 +2,22 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-01 업데이트: transient DB 장애 Worker retry 보장
+
+변경 내용:
+
+- Worker가 PostgreSQL / Pgpool transient 장애를 DLQ로 종료하지 않고 계속 retry하도록 변경.
+- Kafka offset은 DB persistence 성공 후에만 commit되는 흐름 유지.
+- retry backoff 상한 `INGRESS_RETRY_MAX_DELAY_SECONDS=30` 추가.
+- demo-lite / full manifest에 retry max delay 환경값 명시.
+- regression test로 OperationalError가 여러 번 발생해도 DLQ 이동 없이 복구 후 persisted 되는 흐름 고정.
+- 데모 화면 버전을 `1.1.4`로 업데이트.
+
+해석:
+
+- 이 프로젝트의 핵심은 DB 장애 중 Kafka에 적재된 event가 DB 복구 후 저장되는 것.
+- transient DB 장애를 DLQ로 닫으면 Kafka backlog / recovery 증거가 약해지므로 Worker retry path가 기본.
+
 ## 2026-07-01 업데이트: demo-lite DLQ replayer 복구 경로 활성화
 
 변경 내용:

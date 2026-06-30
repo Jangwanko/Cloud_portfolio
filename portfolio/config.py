@@ -28,6 +28,9 @@ class Settings:
     ingress_retry_base_delay_seconds: float = float(
         os.getenv("INGRESS_RETRY_BASE_DELAY_SECONDS", "2")
     )
+    ingress_retry_max_delay_seconds: float = float(
+        os.getenv("INGRESS_RETRY_MAX_DELAY_SECONDS", "30")
+    )
     dlq_replay_enabled: bool = os.getenv("DLQ_REPLAY_ENABLED", "true").lower() == "true"
     dlq_replay_interval_seconds: float = float(os.getenv("DLQ_REPLAY_INTERVAL_SECONDS", "0.2"))
     dlq_replay_batch_size: int = int(os.getenv("DLQ_REPLAY_BATCH_SIZE", "5"))

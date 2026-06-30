@@ -30,6 +30,7 @@
 - Pgpool `numInitChildren`: `16`.
 - Pgpool `reservedConnections`: `2`.
 - API / Worker `DB_POOL_MAX_CONN`: `2`.
+- Worker transient DB retry max delay: `30s`.
 - Purpose: probe / login / status checks still have free client slots during sample event runs.
 - Trade-off: DB write concurrency is smaller than full-ha; demo stability has priority over throughput.
 
@@ -119,7 +120,9 @@ kubectl get nodes
 - Kafka broker failure tolerance is removed. A single broker is enough for flow demonstration, not HA proof.
 - PostgreSQL standby validation is disabled by setting `POSTGRES_MIN_READY_STANDBYS=0`.
 - Worker scale-out is capped at `2`, so backlog drain is slower than `full-ha`.
-- DLQ replayer stays enabled with low resources so transient DB outage events can be replayed after PostgreSQL / Pgpool recovery.
+- Worker keeps transient PostgreSQL / Pgpool outage events uncommitted and retries until persistence succeeds.
+- DLQ replayer stays enabled with low resources for events that were already isolated and remain replayable.
+- Replay is automatic: Worker retries uncommitted Kafka messages, and DLQ replayer waits for DB readiness before reinjecting replayable DLQ events.
 - Performance numbers from `demo-lite` must not be mixed with the Kafka baseline in `docs/TEST_RESULTS.md`.
 
 ## Interview Positioning
