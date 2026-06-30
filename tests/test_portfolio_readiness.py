@@ -784,6 +784,17 @@ class TestManifestContracts:
         assert "DEMO_LITE_ENV_PATCH" in workflow
         assert ".stringData.APP_VERSION" in workflow
 
+    def test_demo_lite_keeps_dlq_replayer_enabled_for_db_recovery(self):
+        app_patch = read_text("k8s/gitops/overlays/demo-lite/patches/app-lite.yaml")
+        demo_lite_docs = read_text("docs/DEMO_LITE.md")
+        operations_docs = read_text("docs/OPERATIONS.md")
+
+        dlq_replayer_patch = app_patch.split("name: dlq-replayer", 1)[1].split("---", 1)[0]
+
+        assert "replicas: 1" in dlq_replayer_patch
+        assert "DLQ replayer" in demo_lite_docs
+        assert "DB 복구 후 자동 재처리" in operations_docs
+
     def test_k3s_profile_reconcile_script_detects_specs_and_updates_argocd(self):
         script = read_text("scripts/reconcile_profile_k3s.sh")
         gitops_docs = read_text("docs/GITOPS.md")

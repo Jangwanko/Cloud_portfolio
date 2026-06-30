@@ -120,6 +120,12 @@ Pgpool connection budget:
 - `demo-lite` 기준 Pgpool `numInitChildren=16`, `reservedConnections=2`, app `DB_POOL_MAX_CONN=2` 유지.
 - 서버 반영은 GitOps app sync가 아니라 PostgreSQL Helm release upgrade 필요.
 
+DB 복구 후 자동 재처리:
+- Worker inline retry 기간보다 DB / Pgpool 장애가 길면 event는 `message-ingress-dlq`로 격리.
+- `demo-lite`에서도 `dlq-replayer` 1개를 유지해 DB 복구 후 replay 대상 event를 ingress topic으로 재주입.
+- DLQ `blocked`는 replay guard에 걸린 event로 수동 확인 필요.
+- Grafana에서 DLQ total, replay metric, DB 저장 증가를 함께 확인.
+
 ## 데모 운영 작업
 
 데모 화면의 운영자 이벤트 큐는 실제 Kafka / Worker / PostgreSQL 흐름을 보여주기 위한 로컬 운영 패널입니다.

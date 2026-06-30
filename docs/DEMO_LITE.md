@@ -21,7 +21,7 @@
 | API | min 3 / max 8 | min 1 / max 2 |
 | Worker | min 2 / max 8 | min 1 / max 2 |
 | notification-worker | 1 | 0 |
-| dlq-replayer | 1 | 0 |
+| dlq-replayer | 1 | 1 low-resource replica |
 | Prometheus / Grafana | enabled | enabled with lower resource requests |
 
 ## Pgpool Connection Budget
@@ -119,7 +119,7 @@ kubectl get nodes
 - Kafka broker failure tolerance is removed. A single broker is enough for flow demonstration, not HA proof.
 - PostgreSQL standby validation is disabled by setting `POSTGRES_MIN_READY_STANDBYS=0`.
 - Worker scale-out is capped at `2`, so backlog drain is slower than `full-ha`.
-- DLQ replay automation is disabled to save resources. DLQ summary can still be inspected, but automatic replay is not the focus of this profile.
+- DLQ replayer stays enabled with low resources so transient DB outage events can be replayed after PostgreSQL / Pgpool recovery.
 - Performance numbers from `demo-lite` must not be mixed with the Kafka baseline in `docs/TEST_RESULTS.md`.
 
 ## Interview Positioning

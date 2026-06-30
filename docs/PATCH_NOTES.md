@@ -2,6 +2,20 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-01 업데이트: demo-lite DLQ replayer 복구 경로 활성화
+
+변경 내용:
+
+- `demo-lite`에서 `dlq-replayer`를 `0 -> 1` replica로 변경.
+- DB / Pgpool 장애가 Worker inline retry 기간보다 길어 DLQ로 이동한 event를 복구 후 자동 replay 대상으로 유지.
+- `dlq-replayer` resource request / limit을 저사양 서버 기준으로 축소.
+- `docs/DEMO_LITE.md`, `docs/OPERATIONS.md`에 DB 복구 후 재처리 흐름 기록.
+
+해석:
+
+- Kafka에 적재된 event가 DB 장애 중 DLQ로 격리되더라도 DB 복구 후 ingress topic으로 재주입될 수 있음.
+- DLQ replay guard에 걸린 `blocked` event는 자동 처리하지 않고 운영자가 확인.
+
 ## 2026-06-30 업데이트: demo-lite Pgpool connection budget 조정
 
 변경 내용:
