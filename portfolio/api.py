@@ -20,6 +20,8 @@ from portfolio.schemas import (
     DemoResetRequest,
     DemoResetResponse,
     DlqListResponse,
+    DlqReplayRequest,
+    DlqReplayResponse,
     DlqSummaryResponse,
     EventCreate,
     EventAcceptedResponse,
@@ -197,6 +199,45 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
         "by_reason": dict(sorted(reasons.items())),
         "by_stream": by_stream,
         "recent_samples": items[:sample_limit],
+    }
+
+
+def _find_dlq_item_by_request_id(request_id: str, limit: int = 500) -> dict | None:
+    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
+    for item in items:
+        summarized = _summarize_dlq_item(item)
+        if summarized.get("request_id") == request_id:
+            return summarized
+    return None
+
+
+def _replay_dlq_payload(item: dict) -> dict:
+    if not item.get("replayable"):
+        raise HTTPException(status_code=409, detail="DLQ event is blocked by replay guard")
+
+    payload = dict(item.get("payload") or {})
+    stream_id = payload.get("room_id")
+    if stream_id is None:
+        raise HTTPException(status_code=409, detail="DLQ event is missing stream id")
+
+    replay_count = int(payload.get("replay_count", 0) or 0) + 1
+    replayed_at = datetime.now(timezone.utc).isoformat()
+    payload["replay_count"] = replay_count
+    payload["replayed_at"] = replayed_at
+    payload["retry_count"] = 0
+    payload["next_retry_at"] = None
+
+    try:
+        publish_ingress_job(stream_id, payload)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
+
+    return {
+        "status": "replayed",
+        "request_id": payload.get("request_id"),
+        "stream_id": int(stream_id),
+        "replay_count": replay_count,
+        "replayed_at": replayed_at,
     }
 
 
@@ -487,6 +528,17 @@ def get_ingress_dlq_summary(
         "max_replay_count": settings.dlq_replay_max_count,
         **summary,
     }
+
+
+@router.post("/dlq/ingress/replay", response_model=DlqReplayResponse)
+def replay_ingress_dlq_event(
+    payload: DlqReplayRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    item = _find_dlq_item_by_request_id(payload.request_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="DLQ event not found")
+    return _replay_dlq_payload(item)
 
 
 def _event_row_to_response(row: dict) -> dict:

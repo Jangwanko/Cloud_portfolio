@@ -453,6 +453,52 @@
       gap: 8px;
     }
 
+    .dlq-detail-panel {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 8px;
+      padding-top: 10px;
+    }
+
+    .dlq-detail-list {
+      display: grid;
+      gap: 8px;
+      max-height: 210px;
+      overflow: auto;
+    }
+
+    .dlq-detail-item {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      gap: 6px;
+      padding: 9px;
+    }
+
+    .dlq-detail-item strong,
+    .dlq-detail-item span {
+      overflow-wrap: anywhere;
+    }
+
+    .dlq-detail-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .dlq-detail-actions {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .dlq-detail-actions button {
+      padding: 8px 10px;
+      white-space: nowrap;
+    }
+
     .ops-refresh {
       align-items: center;
       display: grid;
@@ -602,7 +648,7 @@
     <div>
       <div class="title-row">
         <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.1.4 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 1.2.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
@@ -792,6 +838,12 @@
             <div class="proof"><strong data-i18n="dlqIsolated">DLQ</strong><span id="ops-dlq-status">-</span></div>
             <div class="proof"><strong data-i18n="lastChecked">마지막 확인</strong><span id="ops-last-checked">-</span></div>
           </div>
+          <div class="dlq-detail-panel">
+            <button class="secondary" id="load-dlq-details" data-i18n="dlqDetailsButton">DLQ 상세 보기</button>
+            <div class="dlq-detail-list" id="dlq-detail-list" hidden>
+              <p class="field-help" data-i18n="dlqDetailsEmpty">DLQ 이벤트가 없습니다.</p>
+            </div>
+          </div>
         </div>
         <div class="danger-zone">
           <h3 data-i18n="dangerTitle">위험 작업</h3>
@@ -848,7 +900,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.1.4";
+    const DEMO_UI_VERSION = "1.2.0";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
@@ -911,6 +963,15 @@
         workerUnknown: "확인 불가",
         dlqEmpty: "격리 이벤트 없음",
         dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
+        dlqDetailsButton: "DLQ 상세 보기",
+        dlqDetailsLoading: "DLQ 상세 조회 중",
+        dlqDetailsEmpty: "DLQ 이벤트가 없습니다.",
+        dlqReplayButton: "수동 재처리",
+        dlqReplayBlocked: "수동 확인",
+        dlqReplayable: "재처리 가능",
+        dlqBlocked: "재처리 제한",
+        dlqReplayRequested: "DLQ 수동 재처리 요청",
+        dlqReplayFailed: "DLQ 수동 재처리 실패",
         opsRefreshFailed: "운영 상태 확인 실패",
         authDbUnavailable: "DB primary 연결 불가로 인증 대기 중",
         reservedQueueKept: "예약 큐 유지",
@@ -1045,6 +1106,15 @@
         workerUnknown: "Unavailable",
         dlqEmpty: "No isolated events",
         dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
+        dlqDetailsButton: "Show DLQ details",
+        dlqDetailsLoading: "Loading DLQ details",
+        dlqDetailsEmpty: "No DLQ events.",
+        dlqReplayButton: "Manual replay",
+        dlqReplayBlocked: "Manual check",
+        dlqReplayable: "Replayable",
+        dlqBlocked: "Replay blocked",
+        dlqReplayRequested: "DLQ manual replay requested",
+        dlqReplayFailed: "DLQ manual replay failed",
         opsRefreshFailed: "Operational status refresh failed",
         authDbUnavailable: "Authentication is waiting because the DB primary is unreachable",
         reservedQueueKept: "reserved queue kept",
@@ -1149,6 +1219,7 @@
       uiSession: 0
     };
     const advisorSignalStats = new Map();
+    let lastDlqItems = [];
     let lastAdvisorSignalSignature = null;
     const advisorSituationKeys = {
       advisorReadinessReason: "advisorReadinessSituation",
@@ -1199,6 +1270,9 @@
         updateQueueMetrics();
         renderAdvisorSignalHistory();
         renderDbColumns();
+        if (!document.querySelector("#dlq-detail-list").hidden) {
+          renderDlqDetails(lastDlqItems);
+        }
       }
       renderEvents();
     }
@@ -1500,6 +1574,122 @@
               blocked: summary.blocked || 0
             })
       );
+    }
+
+    function renderDlqDetails(items) {
+      const list = document.querySelector("#dlq-detail-list");
+      list.hidden = false;
+      list.replaceChildren();
+
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "field-help";
+        empty.textContent = t("dlqDetailsEmpty");
+        list.appendChild(empty);
+        return;
+      }
+
+      items.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "dlq-detail-item";
+
+        const title = document.createElement("strong");
+        title.textContent = item.failed_reason || "unknown";
+
+        const meta = document.createElement("span");
+        meta.className = "dlq-detail-meta";
+        meta.textContent = `request_id=${item.request_id || "-"} · stream_id=${item.stream_id || "-"} · replay=${item.replay_count}/${item.max_replay_count}`;
+
+        const actions = document.createElement("div");
+        actions.className = "dlq-detail-actions";
+
+        const state = document.createElement("span");
+        state.className = "dlq-detail-meta";
+        state.textContent = item.replayable ? t("dlqReplayable") : t("dlqBlocked");
+
+        const button = document.createElement("button");
+        button.className = "secondary";
+        button.type = "button";
+        button.dataset.dlqReplay = item.request_id || "";
+        button.disabled = !item.replayable || !item.request_id;
+        button.textContent = item.replayable ? t("dlqReplayButton") : t("dlqReplayBlocked");
+
+        actions.append(state, button);
+        card.append(title, meta, actions);
+        list.appendChild(card);
+      });
+    }
+
+    async function loadDlqDetails() {
+      const button = document.querySelector("#load-dlq-details");
+      const list = document.querySelector("#dlq-detail-list");
+      button.disabled = true;
+      list.hidden = false;
+      list.replaceChildren();
+      const loading = document.createElement("p");
+      loading.className = "field-help";
+      loading.textContent = t("dlqDetailsLoading");
+      list.appendChild(loading);
+
+      try {
+        const baseUrl = currentBaseUrl();
+        const token = await ensureToken(
+          baseUrl,
+          document.querySelector("#username").value,
+          document.querySelector("#password").value
+        );
+        const response = await fetch(`${baseUrl}/v1/dlq/ingress?limit=20`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          throw new Error(`dlq HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        lastDlqItems = result.items || [];
+        renderDlqDetails(lastDlqItems);
+      } catch (error) {
+        list.replaceChildren();
+        const failed = document.createElement("p");
+        failed.className = "field-help";
+        failed.textContent = `${t("opsRefreshFailed")}: ${describeFetchFailure(error)}`;
+        list.appendChild(failed);
+        log(`${t("opsRefreshFailed")}: ${describeFetchFailure(error)}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function replayDlqEvent(requestId, button) {
+      if (!requestId) {
+        return;
+      }
+      button.disabled = true;
+      try {
+        const baseUrl = currentBaseUrl();
+        const token = await ensureToken(
+          baseUrl,
+          document.querySelector("#username").value,
+          document.querySelector("#password").value
+        );
+        const response = await fetch(`${baseUrl}/v1/dlq/ingress/replay`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ request_id: requestId })
+        });
+        if (!response.ok) {
+          throw new Error(`replay HTTP ${response.status}`);
+        }
+        const result = await response.json();
+        button.textContent = t("dlqReplayRequested");
+        log(`${t("dlqReplayRequested")}: request_id=${result.request_id} stream_id=${result.stream_id} replay_count=${result.replay_count}`);
+        await refreshOpsStatus();
+      } catch (error) {
+        button.disabled = false;
+        log(`${t("dlqReplayFailed")}: ${describeFetchFailure(error)}`);
+      }
     }
 
     function updateReadinessPanel(readiness) {
@@ -2066,11 +2256,15 @@
         queueStats.runProcessed = 0;
         queueStats.runTarget = 0;
         queueStats.cancelled = 0;
+        lastDlqItems = [];
         advisorSignalStats.clear();
         lastAdvisorSignalSignature = null;
         updateQueueMetrics();
         renderAdvisorSignalHistory();
         renderDbColumns();
+        if (!document.querySelector("#dlq-detail-list").hidden) {
+          renderDlqDetails(lastDlqItems);
+        }
         renderEvents();
         resetPipeline();
         confirmationInput.value = "";
@@ -2089,6 +2283,14 @@
     document.querySelector("#clear-event-list").addEventListener("click", clearEvents);
     document.querySelector("#reset-demo-db").addEventListener("click", resetDemoEventDb);
     document.querySelector("#refresh-ops-status").addEventListener("click", refreshOpsStatus);
+    document.querySelector("#load-dlq-details").addEventListener("click", loadDlqDetails);
+    document.querySelector("#dlq-detail-list").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-dlq-replay]");
+      if (!button) {
+        return;
+      }
+      replayDlqEvent(button.dataset.dlqReplay, button);
+    });
     document.querySelector("#ops-refresh-interval").addEventListener("change", restartOpsAutoRefresh);
     document.querySelectorAll("[data-language]").forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.language));

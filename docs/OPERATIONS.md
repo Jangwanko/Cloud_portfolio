@@ -264,17 +264,20 @@ DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 �
 - Worker는 retry 한도를 넘긴 event를 Kafka DLQ topic으로 보냅니다.
 - DLQ payload에는 `failed_reason`, `retry_count`, `replay_count`, `failed_at`이 포함됩니다.
 - `GET /v1/dlq/ingress`는 최근 DLQ event를 운영자가 읽기 쉬운 요약 형태로 반환합니다.
+- `POST /v1/dlq/ingress/replay`는 request id 기준으로 replay 가능한 DLQ event를 ingress topic에 재투입합니다.
 - DLQ Replayer는 PostgreSQL writable path가 복구된 뒤 replay 가능한 event를 ingress topic으로 재주입합니다.
 - `DLQ_REPLAY_MAX_COUNT` 기본값은 `3`입니다.
 - `replay_count`가 최대값 이상이면 replayer는 해당 event를 다시 ingress topic에 넣지 않습니다.
+- 데모 화면의 `수동 재처리` 버튼은 DLQ log 삭제가 아니라 재투입 요청입니다.
 
 확인 순서:
 
 1. `GET /v1/dlq/ingress?limit=20`으로 최근 실패 event를 확인합니다.
 2. `failed_reason`이 일시 장애인지 데이터 조건 문제인지 구분합니다.
 3. `replay_count`가 `max_replay_count`에 도달했는지 확인합니다.
-4. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
-5. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
+4. replay 가능한 event는 데모 화면 `수동 재처리` 또는 `POST /v1/dlq/ingress/replay`로 재투입합니다.
+5. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
+6. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
 
 같은 stream 순서 보장 기준:
 

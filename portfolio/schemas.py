@@ -167,6 +167,18 @@ class DlqSummaryResponse(BaseModel):
     recent_samples: list[DlqItemResponse]
 
 
+class DlqReplayRequest(BaseModel):
+    request_id: str = Field(min_length=1, max_length=80)
+
+
+class DlqReplayResponse(BaseModel):
+    status: str
+    request_id: str
+    stream_id: int
+    replay_count: int
+    replayed_at: str
+
+
 class DemoResetRequest(BaseModel):
     confirmation: str = Field(min_length=1, max_length=40)
 

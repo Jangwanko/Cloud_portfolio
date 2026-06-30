@@ -2,6 +2,24 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-01 업데이트: DLQ 상세 보기와 수동 재처리
+
+변경 내용:
+
+- 데모 화면 버전 `1.2.0` 적용.
+- 운영 상태 확인 영역에 `DLQ 상세 보기` 버튼 추가.
+- 최근 DLQ event의 `failed_reason`, `request_id`, `stream_id`, `replay_count` 확인.
+- replay 가능한 event는 `수동 재처리` 버튼으로 ingress topic 재투입.
+- replay guard 도달 event는 `수동 확인` 상태로 표시.
+- API endpoint `POST /v1/dlq/ingress/replay` 추가.
+- OpenAPI contract와 UI 정적 계약 테스트 추가.
+
+운영 기준:
+
+- DLQ 원본 Kafka log는 삭제하지 않음.
+- 수동 재처리는 같은 payload를 `message-ingress`로 다시 넣는 복구 요청.
+- blocked event는 자동/수동 replay보다 원인 확인과 데이터 보정 우선.
+
 ## 2026-07-01 업데이트: transient DB 장애 Worker retry 보장
 
 변경 내용:

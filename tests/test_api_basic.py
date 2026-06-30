@@ -326,6 +326,85 @@ class TestDlqHelpers:
         assert moved is True
         assert len(published) == 1
 
+    def test_manual_dlq_replay_publishes_replayable_item(self, monkeypatch):
+        from portfolio import api
+        from portfolio.schemas import DlqReplayRequest
+
+        published = []
+        monkeypatch.setattr(
+            api,
+            "list_recent_topic_messages",
+            lambda *_args, **_kwargs: [
+                {
+                    "value": {
+                        "request_id": "req-replay",
+                        "room_id": 7,
+                        "retry_count": 3,
+                        "replay_count": 1,
+                        "next_retry_at": "2026-07-01T00:00:00Z",
+                    }
+                }
+            ],
+        )
+        monkeypatch.setattr(api, "publish_ingress_job", lambda *args: published.append(args))
+
+        response = api.replay_ingress_dlq_event(DlqReplayRequest(request_id="req-replay"), current_user={"id": 1})
+
+        assert response["status"] == "replayed"
+        assert response["request_id"] == "req-replay"
+        assert response["stream_id"] == 7
+        assert response["replay_count"] == 2
+        assert len(published) == 1
+        assert published[0][0] == 7
+        assert published[0][1]["retry_count"] == 0
+        assert published[0][1]["next_retry_at"] is None
+        assert published[0][1]["replayed_at"]
+
+    def test_manual_dlq_replay_blocks_max_replay_count(self, monkeypatch):
+        from fastapi import HTTPException
+
+        from portfolio import api
+        from portfolio.config import settings
+        from portfolio.schemas import DlqReplayRequest
+
+        monkeypatch.setattr(
+            api,
+            "list_recent_topic_messages",
+            lambda *_args, **_kwargs: [
+                {
+                    "value": {
+                        "request_id": "req-blocked",
+                        "room_id": 7,
+                        "replay_count": settings.dlq_replay_max_count,
+                    }
+                }
+            ],
+        )
+
+        try:
+            api.replay_ingress_dlq_event(DlqReplayRequest(request_id="req-blocked"), current_user={"id": 1})
+        except HTTPException as exc:
+            assert exc.status_code == 409
+            assert "replay guard" in exc.detail
+        else:  # pragma: no cover
+            raise AssertionError("expected replay guard HTTPException")
+
+    def test_manual_dlq_replay_missing_request_returns_404(self, monkeypatch):
+        from fastapi import HTTPException
+
+        from portfolio import api
+        from portfolio.schemas import DlqReplayRequest
+
+        monkeypatch.setattr(api, "list_recent_topic_messages", lambda *_args, **_kwargs: [])
+
+        try:
+            api.replay_ingress_dlq_event(DlqReplayRequest(request_id="missing"), current_user={"id": 1})
+        except HTTPException as exc:
+            assert exc.status_code == 404
+            assert exc.detail == "DLQ event not found"
+        else:  # pragma: no cover
+            raise AssertionError("expected not found HTTPException")
+
     def test_dlq_metrics_are_defined(self):
         from portfolio.metrics import dlq_events_total, dlq_replay_total
 
@@ -631,6 +710,8 @@ class TestOpenApiContract:
             "EventRequestStatusResponse",
             "DlqListResponse",
             "DlqSummaryResponse",
+            "DlqReplayRequest",
+            "DlqReplayResponse",
             "DemoResetRequest",
             "DemoResetResponse",
         ):
@@ -641,10 +722,11 @@ class TestOpenApiContract:
             "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
+            "/v1/dlq/ingress/replay": "DlqReplayResponse",
             "/v1/admin/demo/reset-events": "DemoResetResponse",
         }
         for path, model in expected_refs.items():
-            method = "post" if path == "/v1/admin/demo/reset-events" else "get"
+            method = "post" if path in {"/v1/admin/demo/reset-events", "/v1/dlq/ingress/replay"} else "get"
             response_schema = paths[path][method]["responses"]["200"]["content"]["application/json"]["schema"]
             assert response_schema["$ref"] == f"#/components/schemas/{model}"
 

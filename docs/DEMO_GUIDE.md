@@ -64,6 +64,9 @@ kubectl rollout status deployment/api -n messaging-app --timeout=180s
   - Worker replica
   - Readiness
   - DLQ summary
+- DLQ가 있으면 `DLQ 상세 보기` 클릭
+- replay 가능한 event는 `수동 재처리` 클릭
+- replay guard 도달 event는 `수동 확인` 상태로 원인 확인
 
 English demo script:
 
@@ -73,6 +76,8 @@ English demo script:
 4. Click `Send Post-Order Events`.
 5. Watch the counters move from `Reserved` to `Kafka Appended` to `DB Persisted`.
 6. Open Grafana when you want to show consumer lag and Worker scaling evidence.
+7. If DLQ appears, click `Show DLQ details`.
+8. Click `Manual replay` for replayable events.
 
 ## DB Storage Evidence
 
