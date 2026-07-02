@@ -390,8 +390,8 @@ class TestOperationalDocumentation:
             "Post-Order Event Console",
             "demo-version",
             "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.3.1"',
-            "ver. 1.3.1 / api -",
+            'const DEMO_UI_VERSION = "1.3.2"',
+            "ver. 1.3.2 / api -",
             "setDemoVersion",
             "ensuredDemoUsers",
             "const demoUserKey = `${baseUrl}|${username}`",
@@ -475,17 +475,25 @@ class TestOperationalDocumentation:
             "runProcessed",
             "markEventStatus",
             "db_row",
-            "pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length)",
+            "pollRequestStatus(baseUrl, token, item.event, uiSession, item.progressIndex, total)",
             "아직 시작하지 않은 예약은 취소할 수 있고, 시작된 작업은 계속 추적합니다.",
             "processReservedEvents",
             "buildFormEvent",
             "sendQueuedEvent",
             "SEND_CONCURRENCY",
+            "POLL_CONCURRENCY",
+            "POLL_BATCH_SIZE",
+            "POLL_BATCH_DELAY_MS",
             "sendNextReservedEvent",
             "activeEvents",
+            "acceptedEvents",
+            "pollAcceptedEvents",
+            "pollNextAcceptedEvent",
             "shouldRenderBatchProgress",
             "Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))",
-            "await Promise.allSettled(pollTasks)",
+            "Promise.allSettled(Array.from({ length: pollerCount }, () => pollNextAcceptedEvent()))",
+            "acceptedEvents.slice(batchStart, batchStart + POLL_BATCH_SIZE)",
+            "setTimeout(resolve, POLL_BATCH_DELAY_MS)",
             "sendFailures",
             "queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget",
             "예약 큐 처리 시작",
@@ -604,10 +612,16 @@ class TestOperationalDocumentation:
         assert "await sendQueuedEvent" in process_reserved
         assert process_reserved.index('event.status = "sending"') < process_reserved.index("await sendQueuedEvent")
         assert "recordKafkaAppended(1, uiSession)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length))" in process_reserved
+        assert "acceptedEvents.push({ event, progressIndex })" in process_reserved
         assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
         assert "await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
-        assert "const pollResults = await Promise.allSettled(pollTasks)" in process_reserved
+        assert "const pollResults = await pollAcceptedEvents(baseUrl, token, acceptedEvents, uiSession, activeEvents.length)" in process_reserved
+        assert "Promise.allSettled(pollTasks)" not in process_reserved
+        poll_accepted = demo.split("async function pollAcceptedEvents", 1)[1].split("async function refreshDlqSummary", 1)[0]
+        assert "for (let batchStart = 0; batchStart < acceptedEvents.length; batchStart += POLL_BATCH_SIZE)" in poll_accepted
+        assert "const batch = acceptedEvents.slice(batchStart, batchStart + POLL_BATCH_SIZE)" in poll_accepted
+        assert "const pollerCount = Math.min(POLL_CONCURRENCY, batch.length)" in poll_accepted
+        assert "setTimeout(resolve, POLL_BATCH_DELAY_MS)" in poll_accepted
         assert "finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === \"rejected\"))" in process_reserved
         record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
         assert "queueStats.queued -= appended" in record_kafka_appended

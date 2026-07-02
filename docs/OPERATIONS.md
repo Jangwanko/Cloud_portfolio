@@ -157,6 +157,8 @@ DB 복구 후 자동 재처리:
 - `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
 - Worker 표시는 현재 replica와 최대 replica입니다. 예: `2/8`, `6/8`.
+- demo-lite에서는 DB 저장 확인 polling도 DB connection budget에 포함됩니다.
+- 대량 샘플 전송 시 `/v1/event-requests/{request_id}` 확인은 느린 batch와 제한된 동시성으로 수행해야 Pgpool slot 고갈을 피할 수 있습니다.
 
 `Demo event DB reset`:
 - 화면에서 `RESET DEMO DB`를 입력한 뒤 실행합니다.

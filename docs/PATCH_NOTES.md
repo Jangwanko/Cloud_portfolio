@@ -2,6 +2,20 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-03 업데이트: 데모 DB 저장 확인 polling 제한
+
+변경 내용:
+
+- 데모 화면 버전 `1.3.2` 적용.
+- Kafka append 이후 DB 저장 확인 polling을 무제한 병렬에서 느린 batch 확인으로 변경.
+- `POLL_CONCURRENCY=4`, `POLL_BATCH_SIZE=12`, `POLL_BATCH_DELAY_MS=3000`으로 `/v1/event-requests/{request_id}` 조회 속도 제한.
+- 1000건 이상 샘플 전송 시 API / Pgpool / PostgreSQL request status 조회 폭주 완화.
+
+해석:
+
+- Pgpool slot 고갈은 Worker persistence만이 아니라 데모 화면의 대량 status polling에서도 발생할 수 있습니다.
+- Kafka 적재와 DB 저장 확인은 분리하되, demo-lite에서는 확인 polling도 connection budget 안에서 수행해야 합니다.
+
 ## 2026-07-03 업데이트: DB connection pool transaction 정리
 
 변경 내용:
