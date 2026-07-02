@@ -158,6 +158,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
 - 대량 전송 후 DB 저장 확인 polling은 느린 batch와 제한된 동시성으로 수행합니다. demo-lite에서 `/v1/event-requests/{request_id}`를 무제한 병렬 호출하면 Pgpool slot을 고갈시킬 수 있습니다.
+- 운영상태 자동 새로고침은 demo-lite에서 기본 30초 이상으로 둡니다. `/v1/auth/login`은 DB 조회를 만들기 때문에 auth token을 재사용하고 401일 때만 갱신합니다.
 - Worker 표시는 `현재 replica/최대 replica` 형식으로 둡니다. 예: `2/8`, `6/8`. 화면에는 `HPA 목표`처럼 여러 의미로 읽히는 표현을 쓰지 않습니다.
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.

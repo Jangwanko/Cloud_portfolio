@@ -652,7 +652,7 @@
     <div>
       <div class="title-row">
         <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.3.3 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 1.3.4 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
@@ -830,8 +830,9 @@
           <div class="ops-actions">
             <button class="secondary" id="refresh-ops-status" data-i18n="refreshOpsStatus">상태 새로고침</button>
             <select id="ops-refresh-interval" aria-label="ops refresh interval">
-              <option value="5000" data-i18n="interval5">5초마다</option>
-              <option value="10000" data-i18n="interval10" selected>10초마다</option>
+              <option value="10000" data-i18n="interval10">10초마다</option>
+              <option value="30000" data-i18n="interval30" selected>30초마다</option>
+              <option value="60000" data-i18n="interval60">60초마다</option>
             </select>
           </div>
           <div class="proof-grid">
@@ -895,7 +896,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.3.3";
+    const DEMO_UI_VERSION = "1.3.4";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
@@ -939,8 +940,9 @@
         opsChecksTitle: "운영 상태 확인",
         opsChecksHelp: "Readiness와 DLQ summary를 페이지 이동 없이 요약합니다.",
         refreshOpsStatus: "상태 새로고침",
-        interval5: "5초마다",
         interval10: "10초마다",
+        interval30: "30초마다",
+        interval60: "60초마다",
         serviceReady: "서비스 상태",
         workerReplicas: "Worker",
         dlqIsolated: "DLQ",
@@ -1075,8 +1077,9 @@
         opsChecksTitle: "Operational Checks",
         opsChecksHelp: "Readiness and DLQ summary are shown here without opening raw JSON pages.",
         refreshOpsStatus: "Refresh status",
-        interval5: "Every 5s",
         interval10: "Every 10s",
+        interval30: "Every 30s",
+        interval60: "Every 60s",
         serviceReady: "Service Status",
         workerReplicas: "Worker",
         dlqIsolated: "DLQ",
@@ -1206,6 +1209,8 @@
     let lastDlqItems = [];
     const dlqReplayUiState = new Map();
     const ensuredDemoUsers = new Set();
+    const demoAuthTokens = new Map();
+    const TOKEN_CACHE_TTL_MS = 50 * 60 * 1000;
     let lastAdvisorSignalSignature = null;
     const advisorSituationKeys = {
       advisorReadinessReason: "advisorReadinessSituation",
@@ -1997,14 +2002,18 @@
         updateReadinessPanel(readiness);
 
         try {
-          const token = await ensureToken(
-            baseUrl,
-            document.querySelector("#username").value,
-            document.querySelector("#password").value
-          );
-          const dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
+          const username = document.querySelector("#username").value;
+          const password = document.querySelector("#password").value;
+          let token = await ensureToken(baseUrl, username, password);
+          let dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
+          if (dlqResponse.status === 401) {
+            token = await ensureToken(baseUrl, username, password, { forceRefresh: true });
+            dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
+              headers: { "Authorization": `Bearer ${token}` }
+            });
+          }
           if (!dlqResponse.ok) {
             throw new Error(`dlq HTTP ${dlqResponse.status}`);
           }
@@ -2032,12 +2041,17 @@
       if (opsRefreshTimer) {
         window.clearInterval(opsRefreshTimer);
       }
-      const intervalMs = Number(document.querySelector("#ops-refresh-interval").value || 10000);
+      const intervalMs = Number(document.querySelector("#ops-refresh-interval").value || 30000);
       opsRefreshTimer = window.setInterval(refreshOpsStatus, intervalMs);
     }
 
-    async function ensureToken(baseUrl, username, password) {
+    async function ensureToken(baseUrl, username, password, options = {}) {
       const demoUserKey = `${baseUrl}|${username}`;
+      const tokenKey = `${baseUrl}|${username}|${password}`;
+      const cached = demoAuthTokens.get(tokenKey);
+      if (!options.forceRefresh && cached && cached.expiresAt > Date.now()) {
+        return cached.token;
+      }
       if (!ensuredDemoUsers.has(demoUserKey)) {
         try {
           await fetch(`${baseUrl}/v1/users`, {
@@ -2063,6 +2077,10 @@
         throw new Error(`login failed: HTTP ${response.status}`);
       }
       const data = await response.json();
+      demoAuthTokens.set(tokenKey, {
+        token: data.access_token,
+        expiresAt: Date.now() + TOKEN_CACHE_TTL_MS
+      });
       return data.access_token;
     }
 
