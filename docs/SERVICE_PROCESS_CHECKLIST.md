@@ -79,7 +79,7 @@ Portfolio status check passed with warnings:
 | --- | --- | --- | --- |
 | Cluster / GitOps | `scripts/check_portfolio_status.ps1` | Argo CD `Synced / Healthy` | [RUNBOOK.md](RUNBOOK.md)의 공통 확인 |
 | API readiness | `Invoke-RestMethod http://localhost/health/ready` | `status=ready` | Kafka Intake / PostgreSQL 절차 |
-| API 계약 | `scripts/test_api_contracts.ps1 -SkipReset` | auth, stream, request status, DLQ summary 계약 통과 | API Contract 실패 |
+| API 계약 | `scripts/test_api_contracts.ps1 -SkipReset` | auth, stream, request status, DLQ summary / replay 계약 통과 | API Contract 실패 |
 | Event intake | `scripts/smoke_test.ps1 -SkipReset` | `202 Accepted` 후 persisted | Kafka Intake 장애 |
 | Kafka broker | Prometheus `kafka_brokers` | 로컬 HA 기준 `3` | Kafka Intake 장애 |
 | Consumer lag | Prometheus `kafka_consumergroup_lag` | lag가 낮거나 감소 | Worker Consumer Lag 증가 |

@@ -2,6 +2,20 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-03 업데이트: 데모 로그인 중복 생성 요청 정리
+
+변경 내용:
+
+- 데모 화면 버전 `1.3.1` 적용.
+- 자동 운영 상태 확인 중 `/v1/users`를 반복 호출하지 않도록 변경.
+- 같은 브라우저 세션에서 demo user 생성 시도는 base URL / username 기준 1회로 제한.
+- PostgreSQL log에 반복되던 `users_username_key` duplicate error 노이즈 감소.
+
+해석:
+
+- `demo-order-user already exists`는 DB primary 다운 증거가 아니라 중복 계정 생성 시도 로그.
+- readiness / DLQ status 확인은 login 중심으로 유지하고, 계정 생성은 초기 준비 단계로 제한.
+
 ## 2026-07-01 업데이트: DLQ 전체 수동 재처리와 예약 실패 정리
 
 변경 내용:

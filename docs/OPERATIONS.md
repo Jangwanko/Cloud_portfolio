@@ -134,6 +134,11 @@ DB 복구 후 자동 재처리:
 - 이미 DLQ로 격리된 replayable event: `dlq-replayer`가 `ping_db()`로 DB 복구를 확인한 뒤 ingress topic으로 재주입.
 - 두 경로 모두 운영자가 수동으로 event를 다시 보내는 흐름이 아님.
 
+로그 해석:
+- PostgreSQL log의 `duplicate key value violates unique constraint "users_username_key"`가 `demo-order-user`에 반복되면 DB primary 다운 증거가 아닙니다.
+- 데모 인증 준비 과정에서 이미 존재하는 계정을 다시 만들려 한 로그입니다.
+- 데모 UI는 base URL / username 기준으로 계정 생성 시도를 한 번만 수행하고 이후에는 login만 수행해야 합니다.
+
 ## 데모 운영 작업
 
 데모 화면의 운영자 이벤트 큐는 실제 Kafka / Worker / PostgreSQL 흐름을 보여주기 위한 로컬 운영 패널입니다.
@@ -332,7 +337,7 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 
 ## API 계약과 운영 노출 기준
 
-핵심 운영 endpoint는 FastAPI `response_model`로 응답 계약을 고정합니다. 현재 고정된 계약은 readiness, event request status, DLQ list, DLQ summary, unread count, read receipt입니다.
+핵심 운영 endpoint는 FastAPI `response_model`로 응답 계약을 고정합니다. 현재 고정된 계약은 readiness, event request status, DLQ list, DLQ summary, DLQ replay, unread count, read receipt입니다.
 
 운영 노출 기준:
 

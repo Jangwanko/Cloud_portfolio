@@ -129,13 +129,16 @@ kubectl logs -n messaging-app deploy/worker --tail=100
 
 ```powershell
 Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress?limit=20
+Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } "http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5"
 kubectl logs -n messaging-app deploy/dlq-replayer --tail=100
 kubectl -n messaging-app exec deploy/dlq-replayer -- printenv DLQ_REPLAY_MAX_COUNT
 ```
 
 조치:
 - `replay_count < max_replay_count`이고 원인이 복구되었다면 DLQ Replayer가 ingress topic으로 재주입합니다.
-- `replayable=false`이면 자동 replay를 멈춘 상태입니다. payload와 `failed_reason`을 보고 데이터 보정 또는 수동 처리 여부를 결정합니다.
+- 데모 UI에서는 `DLQ 상세 보기`로 reason을 확인하고, replay 가능한 건은 `수동 재처리` 또는 `전체 수동 재처리`로 재투입합니다.
+- API로 직접 처리할 때는 `POST /v1/dlq/ingress/replay`에 `request_id`를 전달합니다.
+- `replayable=false`이면 자동/수동 replay 대상이 아닙니다. payload와 `failed_reason`을 보고 데이터 보정 또는 사용자 처리 여부를 결정합니다.
 - 같은 reason이 반복되면 replay보다 원인 수정이 먼저입니다.
 
 복구 확인:
@@ -245,6 +248,12 @@ Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhos
 ```
 
 Endpoint: `GET /v1/dlq/ingress/summary`
+
+수동 재처리 endpoint:
+
+```powershell
+Invoke-RestMethod -Method Post -Headers @{ Authorization = "Bearer <token>" } -ContentType "application/json" -Body '{"request_id":"<request-id>"}' http://localhost/v1/dlq/ingress/replay
+```
 
 판단 순서:
 

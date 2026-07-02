@@ -189,6 +189,7 @@ Kafka를 request intake 경로에 둔 이유는 queue buffer 역할과 함께 ev
 - Worker가 retry 한도를 넘긴 job을 Kafka DLQ topic에 publish합니다.
 - `GET /v1/dlq/ingress`는 Kafka 모드에서 DLQ topic의 최근 메시지를 조회합니다.
 - `POST /v1/dlq/ingress/replay`는 request id 기준으로 replay 가능한 event를 ingress topic에 재투입합니다.
+- 데모 UI의 `전체 수동 재처리`는 별도 batch API가 아니라 replay 가능한 DLQ event를 조회한 뒤 `POST /v1/dlq/ingress/replay`를 반복 호출합니다.
 - DLQ Replayer는 DLQ topic을 소비해 ingress topic으로 재주입합니다.
 - replay된 event는 Worker consumer group에서 다시 처리됩니다.
 

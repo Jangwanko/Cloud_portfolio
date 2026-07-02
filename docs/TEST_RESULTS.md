@@ -472,9 +472,9 @@ Grafana / Prometheus 대시보드가 실제 운영 신호를 받는지 확인하
 powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -SkipReset
 ```
 
-## DLQ Summary API 계약
+## DLQ API 계약
 
-API contract test는 `GET /v1/dlq/ingress/summary` 응답 계약도 확인합니다.
+API contract test는 DLQ list, summary, manual replay endpoint 계약을 확인합니다.
 
 | Field | 검증 |
 | --- | --- |
@@ -488,6 +488,16 @@ API contract test는 `GET /v1/dlq/ingress/summary` 응답 계약도 확인합니
 | `by_stream` | stream별 count list 존재 |
 | `recent_samples` | 최근 DLQ event sample list 존재 |
 
+수동 재처리 계약:
+
+| Endpoint | 계약 |
+| --- | --- |
+| `POST /v1/dlq/ingress/replay` | `request_id` 기준 replay 가능한 DLQ event 재투입 |
+| `DlqReplayRequest` | `request_id` 필수 |
+| `DlqReplayResponse` | `status`, `request_id`, `stream_id`, `replay_count`, `replayed_at` |
+| replay guard 도달 | HTTP `409` |
+| DLQ event 없음 | HTTP `404` |
+
 ## Response Model / Incident Signal 계약
 
 핵심 운영 API는 FastAPI `response_model`로 응답 형태를 고정했습니다.
@@ -498,6 +508,7 @@ API contract test는 `GET /v1/dlq/ingress/summary` 응답 계약도 확인합니
 | `GET /v1/event-requests/{request_id}` | `EventRequestStatusResponse` |
 | `GET /v1/dlq/ingress` | `DlqListResponse` |
 | `GET /v1/dlq/ingress/summary` | `DlqSummaryResponse` |
+| `POST /v1/dlq/ingress/replay` | `DlqReplayResponse` |
 
 장애 신호 wrapper는 아래 명령으로 실행합니다.
 
@@ -517,6 +528,7 @@ OpenAPI는 ChatGPT API가 아니라 이 서비스의 공용 API 사용 설명서
 | `GET /v1/event-requests/{request_id}` | `EventRequestStatusResponse` |
 | `GET /v1/dlq/ingress` | `DlqListResponse` |
 | `GET /v1/dlq/ingress/summary` | `DlqSummaryResponse` |
+| `POST /v1/dlq/ingress/replay` | `DlqReplayResponse` |
 
 특히 `DlqSummaryResponse`는 `total`, `replayable`, `blocked`, `oldest_age_seconds`, `by_reason`, `by_stream`, `recent_samples`를 OpenAPI schema에 노출하는지 확인합니다.
 

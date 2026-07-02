@@ -153,6 +153,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
+- API 전송 실패처럼 Kafka append 전 단계에서 실패한 event는 `send_failed`로 표시하고 예약건수에서 제외합니다. 예약건수는 아직 실행되지 않은 전송 대기 건수입니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
 - `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
@@ -160,6 +161,10 @@ Latest ordering / failure injection result after fixing local client skew:
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
+- `DLQ 상세 보기`는 DLQ log를 읽는 기능입니다. 원본 Kafka DLQ log를 삭제하거나 성공 처리한 것처럼 표현하지 않습니다.
+- `수동 재처리`와 `전체 수동 재처리`는 replay 가능한 DLQ payload를 ingress topic에 재투입 요청하는 기능입니다.
+- replay guard 도달 또는 replay 실패 event는 사용자 확인 대상으로 남깁니다.
+- 재처리 요청 후 DB 저장이 확인되면 `재처리 완료`처럼 완료 상태를 표시합니다.
 - 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 외형적 변경이 없는 내부 수정은 세 번째 숫자(patch), 사용자가 보는 화면이나 흐름에 변화가 있으면 두 번째 숫자(minor), 시스템이나 서비스 컨셉이 크게 바뀌는 수준이면 첫 번째 숫자(major)를 올립니다. 대부분의 일상 변경은 세 번째 숫자 변경으로 처리합니다.
 - 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
 
@@ -183,6 +188,7 @@ Latest ordering / failure injection result after fixing local client skew:
 
 - 데모 UI는 운영 증거를 과장하지 않습니다. Kafka append와 DB persistence는 다른 단계이므로 항상 별도 카운터로 표시합니다.
 - `예약 건수`는 Kafka append 성공 시 감소합니다. `DB 저장`은 Worker가 PostgreSQL commit까지 완료했을 때 증가합니다.
+- Kafka append 전 실패는 예약건수에서 빠지고 `send_failed` 또는 일부 미확인 상태로 표시합니다. Kafka에 들어가지 않은 event를 Kafka 적재나 DB 저장으로 세지 않습니다.
 - 일부 이벤트가 전송 실패하거나 DB 저장 확인이 끝나지 않았으면 결과 상태를 `완료`로 표시하지 않습니다. `일부 미확인` 또는 같은 의미의 상태로 닫습니다.
 - Operations Advisor는 readiness와 DLQ뿐 아니라 남은 예약, Kafka 적재 수, DB 저장 수의 불일치도 확인해야 합니다. 미확인 이벤트가 남아 있으면 `정상`이 아니라 확인 필요 상태로 표시합니다.
 - 운영 링크는 `localhost`를 하드코딩하지 않습니다. 현재 API Base URL 또는 접속 origin을 기준으로 생성합니다.

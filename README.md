@@ -58,6 +58,7 @@ The browser demo shows real local processing through API intake, Kafka append, W
 - Deployed Grafana: `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
 - Deployed Readiness: `https://vm118.js-banjiha.cloud/health/ready`
 - Deployed DLQ summary: `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5`
+- Deployed DLQ replay: demo UI `DLQ 상세 보기`, `수동 재처리`, `전체 수동 재처리`
 - Local Demo UI: `http://localhost/demo/order-dashboard.html`
 - Local Swagger / API docs: `http://localhost/docs`
 - Local Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
@@ -104,6 +105,10 @@ In the demo UI, add 10, 100, or 1000 reserved sample events, then send the post-
 
 `Reserved` is shown as `remaining/total` after the send run starts. It decreases when the API appends an event to Kafka. `DB Persisted` is counted separately after Worker persistence succeeds.
 
+DLQ가 남으면 운영 패널에서 `DLQ 상세 보기`로 reason을 보고, replay 가능한 건은 `수동 재처리` 또는 `전체 수동 재처리`로 ingress topic에 다시 넣습니다. replay guard 도달 또는 재처리 실패 건은 사용자 확인 대상으로 남깁니다.
+
+When DLQ remains, use `Show DLQ details` to inspect reasons. Replayable events can be sent back to the ingress topic with `Manual replay` or `Replay all`; replay-guarded or failed replay events stay as manual handling items.
+
 The demo also includes a lightweight rule-based Operations Advisor. It does not call an AI API. Instead, it interprets queue, Kafka append, DB persistence, and DLQ signals with deterministic rules. A future AI worker can consume the same advisor signals and produce richer operator-facing summaries outside the core persistence path.
 
 English demo script:
@@ -113,6 +118,8 @@ English demo script:
 3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
 4. Click `Send Post-Order Events`.
 5. Watch `Reserved -> Kafka Appended -> DB Persisted`.
+6. If DLQ remains, click `Show DLQ details`.
+7. Use `Manual replay` or `Replay all` for replayable events.
 
 Local demo script:
 
@@ -121,7 +128,7 @@ Local demo script:
 3. Click `EN` if you want to run the demo in English.
 4. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples` to reserve post-order events.
 5. Click `Send Post-Order Events` and watch the counters move from Reserved to Kafka Appended to DB Persisted.
-6. Use Swagger, Grafana, Readiness, DLQ summary, and Reset Demo DB from the operations panel when you want to show supporting evidence.
+6. Use Swagger, Grafana, Readiness, DLQ details/replay, and Reset Demo DB from the operations panel when you want to show supporting evidence.
 
 실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 시연 순서는 [DEMO_GUIDE.md](docs/DEMO_GUIDE.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
 
@@ -132,6 +139,7 @@ Local demo script:
 - DB 장애가 API intake 실패로 바로 전파되지 않도록 Kafka append-first 경계를 둡니다.
 - 같은 `stream_id`는 Kafka partition ordering boundary와 Worker inline retry로 순서를 지킵니다.
 - DLQ summary는 `/v1/dlq/ingress/summary`에서 `by_reason`, `replayable`, `blocked`를 기준으로 운영자가 먼저 판단할 수 있게 합니다.
+- DLQ replay는 `/v1/dlq/ingress/replay`와 데모 UI 버튼으로 재투입 요청을 보여줍니다.
 - `check_portfolio_status.ps1`로 readiness, Argo CD `Synced / Healthy`, kafka-exporter lag, KEDA, backup PVC 상태를 한 번에 확인합니다.
 - 정상 event 흐름과 장애 / DLQ 흐름의 상세 `sequenceDiagram`은 [ARCHITECTURE.md](docs/ARCHITECTURE.md)에 둡니다.
 

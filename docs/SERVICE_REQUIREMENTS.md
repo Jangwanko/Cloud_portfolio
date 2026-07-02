@@ -34,7 +34,7 @@
 | 서비스 운영자 | 주문 이후 event 처리 상태와 업무 분류 확인 | request status, event category, DB snapshot materialized cache |
 | CS / 정산 담당자 | 결제 / 배송 / 환불 / 문의 이벤트를 큰 분류로 확인 | `payment`, `order`, `delivery`, `refund`, `support`, `needs_review` |
 | 장애 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
-| 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, replay count guard |
+| 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, manual replay API, replay count guard |
 | 플랫폼 담당자 | 배포 상태와 runtime 상태를 분리해서 확인 | Argo CD `Synced / Healthy`, workload readiness, kafka-exporter |
 
 ## 기능 요구
@@ -51,6 +51,8 @@
 - retry 한도를 넘긴 event는 Kafka DLQ topic으로 격리합니다.
 - DLQ Replayer는 replay count guard를 지키며 복구 가능한 event만 ingress topic으로 재주입합니다.
 - 운영자는 DLQ summary API로 reason, replayable, blocked, stream 분포를 확인할 수 있습니다.
+- 운영자는 manual replay API 또는 데모 UI 버튼으로 replay 가능한 DLQ event를 재투입할 수 있어야 합니다.
+- replay guard 도달 event는 자동/수동 replay보다 사용자 확인과 데이터 보정 대상으로 남겨야 합니다.
 - 운영자는 Prometheus / Grafana / status check script로 intake, persistence, lag, DLQ, replica 상태를 확인할 수 있습니다.
 
 ## 비기능 요구
@@ -102,6 +104,7 @@
 - 같은 주문 또는 업무 stream 순서가 깨졌다면 Kafka key뿐 아니라 Worker retry와 offset commit 경계를 확인합니다.
 - DLQ가 증가하면 reason 분포를 보고 poison data, schema mismatch, DB transient failure를 분리합니다.
 - `oldest_age_seconds`가 계속 증가하면 자동 replay가 되지 않는 운영 부채로 보고 replay 조건, blocked count, 원인 수정 여부를 먼저 확인합니다.
+- replay 가능한 DLQ event가 여러 건이면 일괄 재처리 요청 후 DB 저장 완료와 남은 blocked event를 다시 확인합니다.
 - GitOps가 `Synced / Healthy`가 아니면 runtime 장애 분석 전에 원하는 manifest와 live state 차이를 먼저 확인합니다.
 
 ## 구조 연결
@@ -109,6 +112,6 @@
 - 빠른 event 수락: API는 PostgreSQL write보다 Kafka append를 우선합니다.
 - 같은 주문 / 업무 stream ordering: `stream_id` key와 Worker inline retry가 같은 ordering boundary를 유지합니다.
 - 장애 격리: Worker retry 한도 초과 event는 Kafka DLQ topic으로 이동합니다.
-- 복구 가능성: DLQ Replayer가 replay guard 안에서 event를 재주입합니다.
+- 복구 가능성: DLQ Replayer와 manual replay API가 replay guard 안에서 event를 재주입합니다.
 - 운영 가시성: Prometheus alert, Grafana dashboard, kafka-exporter, status check script가 같은 신호를 바라봅니다.
 - 배포 일관성: Argo CD GitOps가 runtime manifest를 선언형으로 유지합니다.

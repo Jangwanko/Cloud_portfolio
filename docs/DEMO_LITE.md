@@ -123,6 +123,7 @@ kubectl get nodes
 - Worker keeps transient PostgreSQL / Pgpool outage events uncommitted and retries until persistence succeeds.
 - DLQ replayer stays enabled with low resources for events that were already isolated and remain replayable.
 - Replay is automatic: Worker retries uncommitted Kafka messages, and DLQ replayer waits for DB readiness before reinjecting replayable DLQ events.
+- Manual replay in the demo UI reinjects replayable DLQ payloads into the ingress topic; blocked events remain for manual review.
 - Performance numbers from `demo-lite` must not be mixed with the Kafka baseline in `docs/TEST_RESULTS.md`.
 
 ## Interview Positioning

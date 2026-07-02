@@ -172,12 +172,19 @@ DLQ 패널에서 증가 신호가 보이면 `GET /v1/dlq/ingress/summary`로 rea
 
 이 API는 Prometheus counter보다 payload에 가까운 운영 조회입니다. 알림은 “증가했다”를 알려주고, summary API는 “무엇이 왜 쌓였는가”를 확인합니다.
 
+재처리 판단:
+
+- replay 가능한 event는 데모 UI `수동 재처리` 또는 `전체 수동 재처리`로 ingress topic에 재투입합니다.
+- API 기준 endpoint는 `POST /v1/dlq/ingress/replay`입니다.
+- replay guard에 걸린 blocked event는 Grafana 숫자만 보고 반복 재처리하지 않고 payload와 원인을 확인합니다.
+
 ## Dashboard Operator Links
 
 Grafana dashboard에는 `DLQ Operator Links` 패널을 둡니다. `DLQ Events And Replay` 패널에서 변화가 보이면 해당 링크 패널의 summary endpoint와 Runbook을 따라갑니다.
 
 - Summary: `GET /v1/dlq/ingress/summary?limit=200&sample_limit=5`
 - Samples: `GET /v1/dlq/ingress?limit=20`
+- Manual replay: `POST /v1/dlq/ingress/replay`
 - Runbook: `DLQ Summary Triage`
 
 ## Kafka Exporter Panels
