@@ -390,8 +390,8 @@ class TestOperationalDocumentation:
             "Post-Order Event Console",
             "demo-version",
             "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.3.2"',
-            "ver. 1.3.2 / api -",
+            'const DEMO_UI_VERSION = "1.3.3"',
+            "ver. 1.3.3 / api -",
             "setDemoVersion",
             "ensuredDemoUsers",
             "const demoUserKey = `${baseUrl}|${username}`",
@@ -455,13 +455,6 @@ class TestOperationalDocumentation:
             "db-persisted-count",
             "elapsed-seconds",
             "result-panel",
-            "result-requested",
-            "result-kafka",
-            "result-persisted",
-            "result-cancelled",
-            "result-status",
-            "결과 정리",
-            "Result Summary",
             "recordQueueEnqueued",
             "recordQueueProcessed",
             "recordKafkaAppended",
@@ -651,7 +644,12 @@ class TestOperationalDocumentation:
         assert "cancelPendingReservations()" in clear_events
         assert "events.length = 0" not in clear_events
         result_panel_markup = demo.split('<section class="stack result-panel waiting" id="result-panel">', 1)[1].split("</section>", 1)[0]
-        assert result_panel_markup.index("operations-advisor") < result_panel_markup.index("resultTitle")
+        assert "operations-advisor" in result_panel_markup
+        assert "dbColumnsTitle" in result_panel_markup
+        assert "resultTitle" not in result_panel_markup
+        assert "result-requested" not in demo
+        assert "Result Summary" not in demo
+        assert "결과 정리" not in demo
         links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
         assert 'data-ops-link="/docs"' in links_markup
         assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup

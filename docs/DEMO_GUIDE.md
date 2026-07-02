@@ -84,10 +84,10 @@ English demo script:
 
 ## DB Storage Evidence
 
-데모 화면의 결과 패널은 PostgreSQL `messages` table에 어떤 구조로 저장되는지도 보여줍니다.
+데모 화면의 4번째 운영 증거 영역은 PostgreSQL `messages` table에 어떤 구조로 저장되는지도 보여줍니다.
 `event_type`, `category`, `payment_id`, `stream_seq`, `created_at`처럼 분석 파이프라인에서 바로 쓸 수 있는 컬럼을 확인할 수 있습니다.
 
-The result panel also shows how events are stored in the PostgreSQL `messages` table.
+The fourth evidence column also shows how events are stored in the PostgreSQL `messages` table.
 It highlights analytics-friendly columns such as `event_type`, `category`, `payment_id`, `stream_seq`, and `created_at`.
 
 최근 row 값은 화면에 직접 노출하지 않습니다. 데모에서는 raw id나 본문보다 저장 구조를 보여주는 편이 더 읽기 쉽습니다.
