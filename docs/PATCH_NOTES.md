@@ -2,6 +2,20 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-03 업데이트: DB connection pool transaction 정리
+
+변경 내용:
+
+- DB connection을 pool에 반환하기 전 rollback으로 열린 transaction 정리.
+- `request_statuses` 조회 polling 후 `idle in transaction`이 짧게 누적되는 현상 완화.
+- connection slot 고갈로 Pgpool health가 흔들리는 위험 감소.
+- regression test로 read-only connection 반환 시 rollback 호출 확인.
+
+해석:
+
+- `idle in transaction`이 오래 남으면 Pgpool / PostgreSQL connection slot을 점유합니다.
+- read-only SELECT도 psycopg2 기본 transaction을 열 수 있으므로 pool 반환 시 상태 정리가 필요합니다.
+
 ## 2026-07-03 업데이트: 데모 로그인 중복 생성 요청 정리
 
 변경 내용:

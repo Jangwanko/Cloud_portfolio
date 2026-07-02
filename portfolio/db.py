@@ -130,6 +130,10 @@ def get_conn():
     finally:
         try:
             if _pool is not None and not conn.closed:
+                try:
+                    conn.rollback()
+                except Exception:  # noqa: BLE001
+                    pass
                 _pool.putconn(conn)
         finally:
             db_pool_in_use.dec()

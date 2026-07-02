@@ -138,6 +138,8 @@ DB 복구 후 자동 재처리:
 - PostgreSQL log의 `duplicate key value violates unique constraint "users_username_key"`가 `demo-order-user`에 반복되면 DB primary 다운 증거가 아닙니다.
 - 데모 인증 준비 과정에서 이미 존재하는 계정을 다시 만들려 한 로그입니다.
 - 데모 UI는 base URL / username 기준으로 계정 생성 시도를 한 번만 수행하고 이후에는 login만 수행해야 합니다.
+- `pg_stat_activity`에서 `idle in transaction`이 보이면 `xact_age`, `state_age`, `query`를 함께 확인합니다.
+- 수 초 단위 `request_statuses` polling은 pool 반환 전 transaction 정리 대상입니다. 수 분 이상 남으면 비정상 세션으로 보고 terminate 여부를 판단합니다.
 
 ## 데모 운영 작업
 

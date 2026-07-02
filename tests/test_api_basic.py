@@ -465,6 +465,42 @@ class TestAuthDatabaseFailure:
             raise AssertionError("create_user should fail when database is unavailable")
 
 
+class TestDatabasePoolHygiene:
+    """Database connections return to the pool without open transactions."""
+
+    def test_get_conn_rolls_back_read_only_transaction_before_returning_to_pool(self, monkeypatch):
+        from portfolio import db
+
+        class FakeConn:
+            closed = False
+
+            def __init__(self):
+                self.rollback_count = 0
+
+            def rollback(self):
+                self.rollback_count += 1
+
+        class FakePool:
+            def __init__(self):
+                self.conn = FakeConn()
+                self.returned = []
+
+            def getconn(self):
+                return self.conn
+
+            def putconn(self, conn, close=False):
+                self.returned.append((conn, close))
+
+        pool = FakePool()
+        monkeypatch.setattr(db, "_pool", pool)
+
+        with db.get_conn():
+            pass
+
+        assert pool.conn.rollback_count == 1
+        assert pool.returned == [(pool.conn, False)]
+
+
 class TestConfig:
     """Basic settings/module import checks."""
 
