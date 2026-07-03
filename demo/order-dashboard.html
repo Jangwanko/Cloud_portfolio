@@ -652,7 +652,7 @@
     <div>
       <div class="title-row">
         <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.3.4 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 1.4.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
     </div>
@@ -896,7 +896,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.3.4";
+    const DEMO_UI_VERSION = "1.4.0";
     const translations = {
       ko: {
         pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
@@ -1190,9 +1190,8 @@
     const eventList = document.querySelector("#event-list");
     const logBox = document.querySelector("#log");
     const SEND_CONCURRENCY = 40;
-    const POLL_CONCURRENCY = 4;
-    const POLL_BATCH_SIZE = 12;
-    const POLL_BATCH_DELAY_MS = 3000;
+    const DB_SUMMARY_POLL_INTERVAL_MS = 3000;
+    const DB_SUMMARY_POLL_MAX_ATTEMPTS = 120;
     const queueStats = {
       queued: 0,
       kafkaAppended: 0,
@@ -1341,6 +1340,8 @@
       queueStats.runCompletedAt = null;
       queueStats.runProcessed = 0;
       queueStats.runTarget = count;
+      queueStats.kafkaAppended = 0;
+      queueStats.dbPersisted = 0;
       queueStats.lastRunHadFailures = false;
       queueStats.cancelled = 0;
       updateQueueMetrics();
@@ -1484,71 +1485,59 @@
       setProof("-", "-", "-", "-");
     }
 
-    async function pollRequestStatus(baseUrl, token, event, uiSession, progressIndex = 1, total = 1) {
-      const requestId = event.request_id;
-      if (!isCurrentUiSession(uiSession)) {
-        return;
+    async function fetchPersistenceSummary(baseUrl, token, streamId) {
+      const response = await fetch(`${baseUrl}/v1/streams/${streamId}/persistence-summary`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error(`persistence summary HTTP ${response.status}`);
       }
-      setPipelineStep("worker", "waiting", `GET /v1/event-requests/${requestId} polling`);
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const response = await fetch(`${baseUrl}/v1/event-requests/${requestId}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const status = await response.json();
-          if (status.status === "persisted") {
-            const detail = `persisted event_id=${status.event_id} stream_seq=${status.stream_seq} created_at=${status.created_at}`;
-            setPipelineStep("worker", "done", detail);
-            setPipelineStep("db", "done", `${t("savedPrefix")} event_id=${status.event_id} stream_seq=${status.stream_seq}`);
-            setProof(requestId, "message-ingress", "persisted", `event_id=${status.event_id}, stream_seq=${status.stream_seq}`);
-            markEventStatus(event, "persisted", `event_id=${status.event_id}, stream_seq=${status.stream_seq}`, shouldRenderBatchProgress(progressIndex, total));
-            recordQueueProcessed(1, uiSession);
-            log(`worker persisted request_id=${requestId}`);
-            return;
-          }
-          markEventStatus(event, status.status, null, shouldRenderBatchProgress(progressIndex, total));
-          setPipelineStep("worker", "waiting", `status=${status.status}`);
-          setProof(requestId, "message-ingress", status.status, t("waiting"));
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-      setPipelineStep("worker", "waiting", currentLanguage === "en" ? "Persistence not confirmed yet." : "아직 persisted 확인 전입니다.");
-      setPipelineStep("db", "waiting", currentLanguage === "en" ? "DB persistence is not confirmed yet." : "DB 저장 완료를 아직 확인하지 못했습니다.");
-      setProof(requestId, "message-ingress", "polling timeout", "-");
-      markEventStatus(event, "polling timeout", null, shouldRenderBatchProgress(progressIndex, total));
+      return response.json();
     }
 
-    async function pollAcceptedEvents(baseUrl, token, acceptedEvents, uiSession, total) {
-      const pollResults = [];
-
-      for (let batchStart = 0; batchStart < acceptedEvents.length; batchStart += POLL_BATCH_SIZE) {
-        const batch = acceptedEvents.slice(batchStart, batchStart + POLL_BATCH_SIZE);
-        let nextPollIndex = 0;
-
-        async function pollNextAcceptedEvent() {
-          const index = nextPollIndex;
-          nextPollIndex += 1;
-          if (index >= batch.length) {
-            return;
-          }
-          const item = batch[index];
-          try {
-            const value = await pollRequestStatus(baseUrl, token, item.event, uiSession, item.progressIndex, total);
-            pollResults.push({ status: "fulfilled", value });
-          } catch (error) {
-            pollResults.push({ status: "rejected", reason: error });
-          }
-          return pollNextAcceptedEvent();
-        }
-
-        const pollerCount = Math.min(POLL_CONCURRENCY, batch.length);
-        await Promise.allSettled(Array.from({ length: pollerCount }, () => pollNextAcceptedEvent()));
-
-        if (batchStart + POLL_BATCH_SIZE < acceptedEvents.length) {
-          await new Promise((resolve) => setTimeout(resolve, POLL_BATCH_DELAY_MS));
-        }
+    function applyPersistenceSummary(summary, acceptedEvents, uiSession) {
+      if (!isCurrentUiSession(uiSession)) {
+        return 0;
       }
-      return pollResults;
+      const persisted = Math.min(Number(summary.persisted_count || 0), acceptedEvents.length);
+      const delta = Math.max(persisted - queueStats.dbPersisted, 0);
+      if (delta > 0) {
+        recordQueueProcessed(delta, uiSession);
+        for (let index = 0; index < persisted; index += 1) {
+          const item = acceptedEvents[index];
+          if (item && item.event.status !== "persisted") {
+            item.event.status = "persisted";
+          }
+        }
+        renderEvents();
+      }
+
+      const latestRequest = summary.latest_request_id || "stream-summary";
+      const latestDbRow = summary.latest_event_id
+        ? `event_id=${summary.latest_event_id}, stream_seq=${summary.latest_stream_seq}`
+        : "-";
+      setPipelineStep("worker", persisted >= acceptedEvents.length ? "done" : "waiting", `DB summary persisted=${persisted}/${acceptedEvents.length}`);
+      setPipelineStep("db", persisted >= acceptedEvents.length ? "done" : "waiting", `${t("savedPrefix")} ${persisted}/${acceptedEvents.length}`);
+      setProof(latestRequest, "message-ingress", "persisted summary", latestDbRow);
+      return persisted;
+    }
+
+    async function pollDbPersistenceSummary(baseUrl, token, streamId, acceptedEvents, uiSession) {
+      if (acceptedEvents.length === 0) {
+        return { status: "fulfilled", persisted: 0 };
+      }
+      for (let attempt = 0; attempt < DB_SUMMARY_POLL_MAX_ATTEMPTS; attempt += 1) {
+        const summary = await fetchPersistenceSummary(baseUrl, token, streamId);
+        const persisted = applyPersistenceSummary(summary, acceptedEvents, uiSession);
+        if (persisted >= acceptedEvents.length) {
+          log(`db summary confirmed persisted=${persisted}/${acceptedEvents.length}`);
+          return { status: "fulfilled", persisted };
+        }
+        await new Promise((resolve) => setTimeout(resolve, DB_SUMMARY_POLL_INTERVAL_MS));
+      }
+      setPipelineStep("worker", "waiting", currentLanguage === "en" ? "Persistence summary still catching up." : "DB 저장 수 확인이 아직 따라오는 중입니다.");
+      setPipelineStep("db", "waiting", currentLanguage === "en" ? "DB persistence count is not fully confirmed yet." : "DB 저장 수를 아직 모두 확인하지 못했습니다.");
+      return { status: "rejected", persisted: queueStats.dbPersisted };
     }
 
     async function refreshDlqSummary(baseUrl, token) {
@@ -2229,8 +2218,8 @@
 
       const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length);
       await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()));
-      const pollResults = await pollAcceptedEvents(baseUrl, token, acceptedEvents, uiSession, activeEvents.length);
-      finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === "rejected"));
+      const persistenceResult = await pollDbPersistenceSummary(baseUrl, token, orderId, acceptedEvents, uiSession);
+      finishProcessingRun(uiSession, sendFailures > 0 || persistenceResult.status === "rejected");
       await refreshDlqSummary(baseUrl, token);
     }
 

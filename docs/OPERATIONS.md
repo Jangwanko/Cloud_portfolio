@@ -159,6 +159,8 @@ DB 복구 후 자동 재처리:
 - Worker 표시는 현재 replica와 최대 replica입니다. 예: `2/8`, `6/8`.
 - demo-lite에서는 DB 저장 확인 polling도 DB connection budget에 포함됩니다.
 - 대량 샘플 전송 시 `/v1/event-requests/{request_id}` 확인은 느린 batch와 제한된 동시성으로 수행해야 Pgpool slot 고갈을 피할 수 있습니다.
+- DB 저장 수가 늦게 올라가면 먼저 Worker 저장 지연인지, 화면의 DB 저장 확인 지연인지 분리해서 봅니다.
+- 현재 demo-lite 화면 확인 기준은 `GET /v1/streams/{stream_id}/persistence-summary`를 3초마다 1회 조회하는 방식입니다.
 - 운영상태 자동 새로고침은 `/health/ready`뿐 아니라 login과 DLQ summary 조회를 동반할 수 있으므로 demo-lite에서는 기본 30초 이상으로 둡니다.
 - 운영상태 확인용 auth token은 재사용하고, 401 응답이 왔을 때만 다시 login합니다.
 

@@ -93,6 +93,15 @@ class EventRequestStatusResponse(BaseModel):
     failed_reason: str | None = None
 
 
+class StreamPersistenceSummaryResponse(BaseModel):
+    stream_id: int
+    persisted_count: int
+    latest_request_id: str | None = None
+    latest_event_id: int | None = None
+    latest_stream_seq: int | None = None
+    latest_created_at: str | None = None
+
+
 class ReadReceiptCreate(BaseModel):
     pass
 

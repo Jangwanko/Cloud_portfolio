@@ -2,6 +2,35 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-03 업데이트: DB 저장 수 3초 집계 조회
+
+변경 내용:
+
+- 데모 화면 버전 `1.4.0` 적용.
+- `GET /v1/streams/{stream_id}/persistence-summary` endpoint 추가.
+- 데모 화면의 DB 저장 수 확인을 request_id별 polling에서 stream 단위 집계 조회로 변경.
+- DB 저장 수는 3초마다 한 번 조회.
+- Pipeline Evidence는 최신 저장 row summary를 기준으로 표시.
+
+해석:
+
+- 1000건 전송 후 브라우저가 `/v1/event-requests/{request_id}`를 1000번 확인하지 않습니다.
+- Kafka 적재와 Worker persistence 흐름은 유지하되, 화면 확인 부하는 3초마다 1회로 낮춥니다.
+- 실제 DB 저장 속도와 화면 확인 속도를 더 명확히 분리합니다.
+
+## 2026-07-03 업데이트: DB 저장 확인 속도 재조정
+
+변경 내용:
+
+- 데모 화면 버전 `1.3.5` 적용.
+- DB 저장 확인 polling 값을 `POLL_CONCURRENCY=6`, `POLL_BATCH_SIZE=40`, `POLL_BATCH_DELAY_MS=1000`으로 조정.
+- 이전 `4 / 12 / 3000ms` 설정은 Pgpool 보호에는 안전했지만 1000건 기준 화면 확인이 지나치게 늦었습니다.
+
+해석:
+
+- 실제 Worker 저장 속도와 화면의 DB 저장 확인 속도를 분리해서 봅니다.
+- demo-lite에서는 무제한 polling은 피하되, 확인 속도가 포폴 시연을 방해하지 않는 선으로 조정합니다.
+
 ## 2026-07-03 업데이트: 운영상태 확인 로그인 부하 완화
 
 변경 내용:
@@ -37,7 +66,7 @@ Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기�
 
 - 데모 화면 버전 `1.3.2` 적용.
 - Kafka append 이후 DB 저장 확인 polling을 무제한 병렬에서 느린 batch 확인으로 변경.
-- `POLL_CONCURRENCY=4`, `POLL_BATCH_SIZE=12`, `POLL_BATCH_DELAY_MS=3000`으로 `/v1/event-requests/{request_id}` 조회 속도 제한.
+- `POLL_CONCURRENCY=6`, `POLL_BATCH_SIZE=40`, `POLL_BATCH_DELAY_MS=1000`으로 `/v1/event-requests/{request_id}` 조회 속도 제한.
 - 1000건 이상 샘플 전송 시 API / Pgpool / PostgreSQL request status 조회 폭주 완화.
 
 해석:

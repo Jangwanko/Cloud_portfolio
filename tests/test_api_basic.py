@@ -744,6 +744,7 @@ class TestOpenApiContract:
         for model in (
             "ReadinessResponse",
             "EventRequestStatusResponse",
+            "StreamPersistenceSummaryResponse",
             "DlqListResponse",
             "DlqSummaryResponse",
             "DlqReplayRequest",
@@ -756,6 +757,7 @@ class TestOpenApiContract:
         expected_refs = {
             "/health/ready": "ReadinessResponse",
             "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
+            "/v1/streams/{stream_id}/persistence-summary": "StreamPersistenceSummaryResponse",
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
             "/v1/dlq/ingress/replay": "DlqReplayResponse",
@@ -780,6 +782,17 @@ class TestOpenApiContract:
 
         demo_reset = components["DemoResetResponse"]["properties"]
         assert "reset_dlq_topic" in demo_reset
+
+        persistence_summary = components["StreamPersistenceSummaryResponse"]["properties"]
+        for field in (
+            "stream_id",
+            "persisted_count",
+            "latest_request_id",
+            "latest_event_id",
+            "latest_stream_seq",
+            "latest_created_at",
+        ):
+            assert field in persistence_summary
 
         worker_health = components["WorkerHealthResponse"]["properties"]
         assert "max_replicas" in worker_health

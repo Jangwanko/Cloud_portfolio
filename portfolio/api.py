@@ -34,6 +34,7 @@ from portfolio.schemas import (
     ReadReceiptCreate,
     ReadReceiptResponse,
     StreamCreate,
+    StreamPersistenceSummaryResponse,
     StreamResponse,
     TokenResponse,
     UnreadCountResponse,
@@ -493,6 +494,43 @@ def get_event_request_status(request_id: str, current_user: dict = Depends(get_c
     if status_user_id is not None and int(status_user_id) != int(current_user["id"]):
         raise HTTPException(status_code=403, detail="Request access denied")
     return _externalize_request_status(status)
+
+
+@router.get("/streams/{stream_id}/persistence-summary", response_model=StreamPersistenceSummaryResponse)
+def get_stream_persistence_summary(stream_id: int, current_user: dict = Depends(get_current_user)):
+    user_id = int(current_user["id"])
+    with get_conn() as conn:
+        with get_cursor(conn) as cur:
+            _ensure_room_member(cur, stream_id, user_id)
+            cur.execute(
+                """
+                SELECT COUNT(*) AS persisted_count
+                FROM messages
+                WHERE room_id=%s
+                """,
+                (stream_id,),
+            )
+            count_row = cur.fetchone()
+            cur.execute(
+                """
+                SELECT id, request_id, room_seq, created_at
+                FROM messages
+                WHERE room_id=%s
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (stream_id,),
+            )
+            latest = cur.fetchone()
+
+    return {
+        "stream_id": stream_id,
+        "persisted_count": int(count_row["persisted_count"]),
+        "latest_request_id": None if latest is None else latest["request_id"],
+        "latest_event_id": None if latest is None else int(latest["id"]),
+        "latest_stream_seq": None if latest is None else latest["room_seq"],
+        "latest_created_at": None if latest is None else latest["created_at"].isoformat(),
+    }
 
 
 @router.get("/dlq/ingress", response_model=DlqListResponse)
