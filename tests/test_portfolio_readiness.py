@@ -390,8 +390,8 @@ class TestOperationalDocumentation:
             "Post-Order Event Console",
             "demo-version",
             "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.4.0"',
-            "ver. 1.4.0 / api -",
+            'const DEMO_UI_VERSION = "1.4.1"',
+            "ver. 1.4.1 / api -",
             "setDemoVersion",
             "ensuredDemoUsers",
             "demoAuthTokens",
@@ -625,6 +625,9 @@ class TestOperationalDocumentation:
         assert "DB_SUMMARY_POLL_MAX_ATTEMPTS" in persistence_summary
         assert "fetchPersistenceSummary(baseUrl, token, streamId)" in persistence_summary
         assert "setTimeout(resolve, DB_SUMMARY_POLL_INTERVAL_MS)" in persistence_summary
+        apply_summary = demo.split("function applyPersistenceSummary", 1)[1].split("async function pollDbPersistenceSummary", 1)[0]
+        assert "const previousPersisted = queueStats.dbPersisted" in apply_summary
+        assert "for (let index = previousPersisted; index < persisted; index += 1)" in apply_summary
         assert "finishProcessingRun(uiSession, sendFailures > 0 || persistenceResult.status === \"rejected\")" in process_reserved
         record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
         assert "queueStats.queued -= appended" in record_kafka_appended

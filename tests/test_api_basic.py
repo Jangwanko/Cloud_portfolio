@@ -794,6 +794,10 @@ class TestOpenApiContract:
         ):
             assert field in persistence_summary
 
+        api_source = Path("portfolio/api.py").read_text(encoding="utf-8")
+        assert "WITH summary AS" in api_source
+        assert "LEFT JOIN latest ON TRUE" in api_source
+
         worker_health = components["WorkerHealthResponse"]["properties"]
         assert "max_replicas" in worker_health
         readiness = components["ReadinessResponse"]["properties"]

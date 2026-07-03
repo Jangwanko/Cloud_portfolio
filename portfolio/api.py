@@ -504,32 +504,38 @@ def get_stream_persistence_summary(stream_id: int, current_user: dict = Depends(
             _ensure_room_member(cur, stream_id, user_id)
             cur.execute(
                 """
-                SELECT COUNT(*) AS persisted_count
-                FROM messages
-                WHERE room_id=%s
+                WITH summary AS (
+                    SELECT COUNT(*) AS persisted_count
+                    FROM messages
+                    WHERE room_id=%s
+                ),
+                latest AS (
+                    SELECT id, request_id, room_seq, created_at
+                    FROM messages
+                    WHERE room_id=%s
+                    ORDER BY id DESC
+                    LIMIT 1
+                )
+                SELECT
+                    summary.persisted_count,
+                    latest.id,
+                    latest.request_id,
+                    latest.room_seq,
+                    latest.created_at
+                FROM summary
+                LEFT JOIN latest ON TRUE
                 """,
-                (stream_id,),
+                (stream_id, stream_id),
             )
-            count_row = cur.fetchone()
-            cur.execute(
-                """
-                SELECT id, request_id, room_seq, created_at
-                FROM messages
-                WHERE room_id=%s
-                ORDER BY id DESC
-                LIMIT 1
-                """,
-                (stream_id,),
-            )
-            latest = cur.fetchone()
+            row = cur.fetchone()
 
     return {
         "stream_id": stream_id,
-        "persisted_count": int(count_row["persisted_count"]),
-        "latest_request_id": None if latest is None else latest["request_id"],
-        "latest_event_id": None if latest is None else int(latest["id"]),
-        "latest_stream_seq": None if latest is None else latest["room_seq"],
-        "latest_created_at": None if latest is None else latest["created_at"].isoformat(),
+        "persisted_count": int(row["persisted_count"]),
+        "latest_request_id": row["request_id"],
+        "latest_event_id": None if row["id"] is None else int(row["id"]),
+        "latest_stream_seq": row["room_seq"],
+        "latest_created_at": None if row["created_at"] is None else row["created_at"].isoformat(),
     }
 
 

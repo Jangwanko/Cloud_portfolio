@@ -2,6 +2,19 @@
 
 Kafka Event Stream Systems 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-03 업데이트: persistence summary 경량화
+
+변경 내용:
+
+- 데모 화면 버전 `1.4.1` 적용.
+- `persistence-summary` endpoint의 DB 조회를 2회에서 1회로 축소.
+- 데모 화면에서 이미 DB 저장 확인된 이벤트를 매번 처음부터 다시 훑지 않도록 변경.
+
+해석:
+
+- 3초 집계 조회 흐름은 유지하되, API round-trip과 브라우저 반복 처리를 줄였습니다.
+- Worker persistence path는 변경하지 않았습니다.
+
 ## 2026-07-03 업데이트: DB 저장 수 3초 집계 조회
 
 변경 내용:
