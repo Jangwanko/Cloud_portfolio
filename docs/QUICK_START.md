@@ -11,6 +11,8 @@ Windows PowerShell 기준으로는 Docker Desktop만 설치하고 실행되어 �
 - `tools/kubectl.exe`
 - `tools/helm/windows-amd64/helm.exe`
 
+이 실행 바이너리는 bootstrap 뒤 생기는 local files이며 Git에서 제외됩니다. 저장소가 의도적으로 추적하는 tool artifact는 PostgreSQL HA render 재현용 `tools/helm-cache/repository/postgresql-ha-16.3.2.tgz`입니다. 그 밖의 Helm metadata/cache와 unused chart는 추적하지 않습니다.
+
 최초 실행에는 인터넷 연결이 필요합니다. 도구가 이미 있으면 다시 다운로드하지 않고 기존 파일을 사용합니다. 도구를 강제로 다시 받으려면 아래 명령을 먼저 실행합니다.
 
 ```powershell
@@ -117,10 +119,19 @@ bash scripts/quick_start_all.sh
 - PostgreSQL HA / Kafka runtime 배포
 - `kube-state-metrics` 설치
 - KEDA 설치
-- application stack 배포
+- application stack 배포; manual manifest v2 gate 초기값 `false`
+- API startup Alembic migration과 dual-read/dual-write Worker 기동
+- Worker rollout 완료 뒤 API `GENERIC_EVENTS_V2_ENABLED=true` 전환과 API rollout
 - ingress readiness 확인
 - Windows PowerShell 기본 실행에서는 smoke, DB recovery, HPA scaling test 실행
 - Linux bash 기본 실행에서는 smoke test 실행
+
+PostgreSQL credential lifecycle:
+
+- 최초 Helm install: chart가 `messaging-postgresql-ha-postgresql` Secret의 credential 생성
+- upgrade: Bitnami chart lookup으로 기존 Secret 재사용
+- 실행 순서: PostgreSQL install/upgrade 완료 뒤 application manifest 적용; GitOps 경로도 PostgreSQL 준비 뒤 Argo CD Application 등록
+- PVC를 유지한 채 Secret만 삭제한 경우: 새 credential 자동 생성으로 덮지 않고 기존 DB credential 복구 후 Secret 복원
 
 DB 장애 상황까지 함께 검증하려면 아래처럼 실행합니다.
 
@@ -132,7 +143,7 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 - API: `http://localhost`
 - Grafana: `http://localhost/grafana`
 - Grafana 대시보드: anonymous Viewer로 바로 조회
-- Grafana admin 계정: `ID admin` / `비밀번호 1q2w3e4r`
+- Grafana admin 계정: `messaging-runtime-secrets`에 생성, 일반 데모 조회에는 불필요
 - Prometheus: `http://localhost/prometheus/`
 
 참고:
@@ -182,10 +193,12 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 - Kubernetes runtime 상태 확인
 - same-stream ordering 보장 검증
-- Kafka async persistence latency 측정
+- Kafka async persisted-status client 관측 지연 측정
 - k6 Kafka intake load 측정
 - HPA / metrics sanity 확인
 - `results/kafka-performance/latest.txt`에 최신 결과 저장
+
+현재 `async persistence` 출력의 `accepted_to_status_observed_ms`는 API `queued_at`부터 client가 `persisted` status를 관측할 때까지입니다. 200ms polling interval과 network delay를 포함하므로 Worker commit histogram과 구분합니다. 2026-06 원본의 `accepted-to-persisted`는 PostgreSQL row `created_at`/row-visible proxy이고 event status `200`은 `202 Accepted` 계약 명시 전 historical evidence입니다.
 
 Ordering / failure injection 검증:
 
@@ -215,10 +228,10 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 현재 클러스터 상태만 빠르게 확인하려면 아래 스크립트를 먼저 실행합니다.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
 ```
 
-이 스크립트는 테스트 데이터를 만들지 않고 Kubernetes, Argo CD, API readiness, Prometheus scrape, kafka-exporter, KEDA 상태를 읽어 운영 상태를 요약합니다.
+이 스크립트는 테스트 데이터를 만들지 않고 Kubernetes, API readiness, Prometheus scrape, kafka-exporter, KEDA 상태를 읽어 운영 상태를 요약합니다. `quick_start_gitops.ps1`로 Argo CD까지 설치한 profile에서는 `-SkipArgoCd`를 제거합니다.
 
 서비스 전체 흐름을 순서대로 점검하려면 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 따릅니다.
 
@@ -261,7 +274,7 @@ API contract:
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1
 ```
 
-Cache-first / degraded read:
+DB-authorized snapshot / degraded fallback read:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_cache_read_fallback.ps1
@@ -302,11 +315,13 @@ powershell -ExecutionPolicy Bypass -File scripts/test_dlq_replay_guard.ps1
 ```
 
 ## GitOps 빠른 실행
-Argo CD 요구사항을 보여주기 위한 GitOps bootstrap 스크립트도 포함되어 있습니다.
+Argo CD 요구사항을 보여주기 위한 GitOps bootstrap script도 포함되어 있습니다. master `local-ha` overlay는 CI bot commit 뒤 GHCR의 12-character SHA tag를 사용합니다.
 
 전제:
 - 이 저장소가 클러스터에서 접근 가능한 Git remote 에 push 되어 있어야 합니다
-- local `kind` 데모에서는 앱 이미지 `messaging-portfolio:local` 를 먼저 build 하고 kind 에 load 합니다
+- master push의 CI validation과 GHCR image publish 완료
+- Actions bot이 `k8s/gitops/overlays/local-ha/kustomization.yaml`의 image tag를 갱신한 commit까지 remote에 반영
+- GHCR package public 또는 cluster `imagePullSecret` 준비
 
 실행:
 
@@ -318,7 +333,19 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
 
 이 흐름은 아래를 수행합니다.
 - local cluster bootstrap
+- remote committed overlay의 registry image/tag 해석과 manifest 접근 사전 확인
 - HA PostgreSQL / Kafka runtime 설치
 - Argo CD 설치
 - `k8s/gitops/overlays/local-ha` 를 가리키는 `Application` 생성
+- generic v2 sync 순서: gate `false`인 `messaging-env` Secret wave `-3` → 일반 Sync migration Job wave `-2` → Worker wave `-1` → `local-ha` overlay가 API에 gate `true`를 넣는 wave `0`
+- 기본 실행은 committed overlay 추적; 명시적 image repository/tag를 함께 넘긴 경우에만 Kustomize override 적용
 - readiness 확인과 smoke test 실행
+
+PostgreSQL은 Argo CD Application 등록 전에 Helm으로 install/upgrade합니다. application의 `DB_PASSWORD`는 `messaging-postgresql-ha-postgresql` Secret의 `password` key를 참조합니다. upgrade는 기존 Secret을 재사용하며, PVC가 남은 상태에서 Secret이 유실되면 credential recovery가 선행되어야 합니다.
+
+주의:
+
+- public repository 기본 실행: remote revision의 CI bot SHA tag commit 추적
+- private repository 또는 의도적 고정 배포: `-ImageRepository <ghcr-path> -ImageTag <tag>`를 함께 지정
+- private GHCR: preflight용 `docker login ghcr.io`와 cluster pull용 `imagePullSecret` 필요
+- registry 없이 local image만 사용하는 경로: `quick_start_all.ps1`

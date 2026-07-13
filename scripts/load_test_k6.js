@@ -14,7 +14,7 @@ const SETUP_RETRY_SLEEP = Number(__ENV.SETUP_RETRY_SLEEP || "1");
 const SEND_IDEMPOTENCY_KEY =
   (__ENV.SEND_IDEMPOTENCY_KEY || "false").toLowerCase() === "true";
 
-const eventStatus200 = new Counter("event_status_200");
+const eventStatus202 = new Counter("event_status_202");
 const eventStatus401 = new Counter("event_status_401");
 const eventStatus403 = new Counter("event_status_403");
 const eventStatus404 = new Counter("event_status_404");
@@ -183,15 +183,21 @@ export function eventFlow(data) {
   }
 
   const payload = JSON.stringify({
-    body: `k6 event vu=${__VU} iter=${__ITER}`,
+    event_type: "portfolio.load.probe",
+    payload: {
+      message: `k6 event vu=${__VU} iter=${__ITER}`,
+      virtual_user: __VU,
+      iteration: __ITER,
+    },
+    metadata: { scenario: "k6-intake-baseline" },
   });
 
   const res = http.post(
-    `${BASE_URL}/v1/streams/${data.streamId}/events`,
+    `${BASE_URL}/v2/streams/${data.streamId}/events`,
     payload,
     { headers },
   );
-  if (res.status === 200) eventStatus200.add(1);
+  if (res.status === 202) eventStatus202.add(1);
   else if (res.status === 401) eventStatus401.add(1);
   else if (res.status === 403) eventStatus403.add(1);
   else if (res.status === 404) eventStatus404.add(1);
@@ -201,7 +207,7 @@ export function eventFlow(data) {
   else eventStatusOther.add(1);
 
   check(res, {
-    "event request accepted (200)": (r) => r.status === 200,
+    "event request accepted (202)": (r) => r.status === 202,
   });
 
   sleep(THINK_TIME);
@@ -216,7 +222,7 @@ export function handleSummary(data) {
   const p95Latency = metricValue(data, "http_req_duration", "p(95)", 0);
   const p99Latency = metricValue(data, "http_req_duration", "p(99)", 0);
   const eventStatusLines = [
-    ["200", "event_status_200"],
+    ["202", "event_status_202"],
     ["401", "event_status_401"],
     ["403", "event_status_403"],
     ["404", "event_status_404"],

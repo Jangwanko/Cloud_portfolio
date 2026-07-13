@@ -3,3 +3,21 @@ kind: Kustomization
 
 resources:
   - ../../base
+
+images:
+  - name: messaging-portfolio
+    newName: ghcr.io/jangwanko/cloud_portfolio
+    newTag: master-bootstrap
+
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: api
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: GENERIC_EVENTS_V2_ENABLED
+          value: "true"

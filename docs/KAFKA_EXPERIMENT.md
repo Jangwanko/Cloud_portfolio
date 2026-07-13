@@ -1,197 +1,237 @@
-# Kafka 설계 기록
+# Kafka Design and Experiment Record
 
-Kafka-native 설계는 API intake, Worker persistence, PostgreSQL HA, DLQ / replay, 관측 지표를 분리해서 검증합니다.
+이 문서는 Kafka 전환의 설계 이유와 실험 해석을 기록합니다. 현재 구조는 Kafka-centered이며 PostgreSQL final state와 read model을 유지합니다.
 
-## Kafka를 선택한 이유
+현재 public event model은 `/v2/streams/{stream_id}/events`와 versioned JSON envelope입니다. 주문 lifecycle은 reference adapter이며 아래 성능 결과는 당시 legacy/order contract로 수집된 역사적 증거를 포함합니다.
 
-이 포트폴리오의 핵심 주제는 request intake와 persistence를 분리해 장애 전파를 줄이고, 실패한 event를 재처리 가능한 형태로 남기는 것입니다.
+## Why Kafka
 
-Kafka를 선택한 이유:
+- append-first intake로 API와 PostgreSQL write path 분리
+- partition key로 same-stream ordering boundary 정의
+- consumer group으로 Worker partition 분산
+- consumer lag를 backlog와 KEDA scaling signal로 사용
+- DLQ log와 replay path로 실패 event 보존
+- compacted topic으로 DB-committed snapshot materialization
 
-- event log로 요청 수락 이력을 보존할 수 있습니다.
-- partition key로 stream 단위 ordering boundary를 명확히 둘 수 있습니다.
-- Worker consumer group으로 처리량을 수평 확장할 수 있습니다.
-- consumer lag를 backlog 신호로 사용해 KEDA scaling 기준을 세울 수 있습니다.
-- DLQ topic과 replay flow를 운영 가능한 실패 복구 경로로 만들 수 있습니다.
+Kafka 도입의 평가 기준은 API request latency, Worker persistence capacity, ordering, recovery를 함께 보는 것입니다.
 
-## 현재 흐름
-
-```text
-Client
--> Ingress nginx
--> FastAPI API
--> Kafka ingress topic
--> Worker consumer group
--> Pgpool
--> PostgreSQL HA
-```
-
-실패 시:
+## Current Flow
 
 ```text
-Worker failure
--> retry
--> Kafka DLQ topic
--> DLQ Replayer
--> Kafka ingress topic
--> Worker reprocess
+Upstream / Demo Client
+  -> FastAPI
+  -> message-ingress
+  -> message-worker
+  -> Pgpool
+  -> PostgreSQL HA
 ```
 
-관측 / 스케일링:
+Post-commit flow:
 
 ```text
-API / Worker metrics
--> Prometheus scrape
--> Grafana dashboard
--> KEDA Kafka scaler
--> Worker replica scale-out
+PostgreSQL commit
+  -> message-request-status
+  -> message-snapshots / stream-snapshots
+  -> message-notifications -> notification-worker
 ```
 
-## Kafka runtime
+Failure flow:
 
-현재 dev 환경은 3-broker KRaft Kafka StatefulSet을 사용합니다.
-
-```powershell
-kubectl apply -f k8s/gitops/base/kafka-ha.yaml
-kubectl -n messaging-app rollout status statefulset/kafka --timeout=600s
-kubectl -n messaging-app wait --for=condition=complete job/kafka-topic-bootstrap --timeout=300s
+```text
+Worker inline retry
+  -> retry exhausted
+  -> message-ingress-dlq
+  -> DLQ replayer
+  -> message-ingress
 ```
 
-API / Worker / DLQ Replayer는 Kafka backend 환경변수로 실행합니다.
+Scaling and observation are separate consumers of Kafka state:
 
-```powershell
-kubectl -n messaging-app set env deployment/api KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
-kubectl -n messaging-app set env deployment/worker KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
-kubectl -n messaging-app set env deployment/dlq-replayer KAFKA_BOOTSTRAP_SERVERS=kafka.messaging-app.svc.cluster.local:9092
+```text
+Kafka broker consumer lag -> KEDA Kafka scaler -> Worker replicas
+Kafka exporter / app metrics -> Prometheus -> Grafana / alerts
 ```
 
-Worker autoscaling은 `k8s/app/manifests-ha.yaml`에 포함된 Kafka lag 기준 ScaledObject를 사용합니다.
+KEDA가 Prometheus를 경유해 scaling하는 구조가 아닙니다.
 
-## 설계 상세
+## Runtime and Topics
 
-- Kafka ingress topic: `message-ingress`
-- Kafka DLQ topic: `message-ingress-dlq`
-- Kafka request status compacted topic: `message-request-status`
-- Kafka DB snapshot compacted topics: `message-snapshots`, `stream-snapshots`
-- Consumer group: `message-worker`
+Full local profile:
+
+- Kafka: 3-broker KRaft StatefulSet
+- partitions: `8`
+- replication factor: `3`
+- `min.insync.replicas=2`
+- Worker KEDA range: `2..8`
 - KEDA lag threshold: `100` for the local demo cluster
-- Message key: `stream_id`
-- Offset commit: Worker 처리 성공 후 commit
-- DLQ listing: `GET /v1/dlq/ingress?limit=5`
 
-## 검증 결과
+| Topic | Purpose | Cleanup |
+| --- | --- | --- |
+| `message-ingress` | accepted event log | delete |
+| `message-ingress-dlq` | terminal failure log / replay input | delete |
+| `message-request-status` | latest request lifecycle | compact |
+| `message-snapshots` | committed message snapshot | compact |
+| `stream-snapshots` | committed stream snapshot | compact |
+| `message-notifications` | notification work | delete |
 
-2026-04-26 실행 결과:
+Consumer groups:
 
-- Kafka broker rollout: pass
-- API / Worker / DLQ Replayer Kafka backend rollout: pass
-- readiness: `queue_backend=kafka`, Kafka reachable, PostgreSQL reachable 확인
-- smoke test: pass
-- Kafka DLQ listing: pass
-- DLQ replay trace: pass
-- HPA / metrics sanity: pass
+- `message-worker`: persistence
+- `notification-worker`: notification attempt
 
-## 부하 테스트에서 확인한 점
+Current GitOps source:
 
-초기 Kafka 실험에서는 API가 request status / idempotency / sequence를 PostgreSQL hot path에 두면서 Pgpool 병목이 먼저 드러났습니다. 이후 API intake를 Kafka append 중심으로 정리했습니다.
+- runtime/topic bootstrap: `k8s/gitops/base/kafka-ha.yaml`
+- Worker/KEDA manifests: `k8s/gitops/base/manifests-ha.yaml`
+- local overlay: `k8s/gitops/overlays/local-ha`
+- `k8s/app` copy: manual local bootstrap path
 
-최신 Kafka performance baseline은 아래 suite로 측정했습니다.
+## Ordering and Offset Boundary
+
+- message key: `stream_id`
+- generic endpoint: `/v2/streams/{stream_id}/events`
+- order reference adapter: `order_id` → `stream_id`
+- transient failure: same record inline retry
+- terminal validation rejection / DLQ result: explicit outcome
+- processed record: partition offset `message.offset + 1` commit
+- unexpected exception: failed record seek-back, later records from the same polled partition skipped for that batch
+- global ordering across partitions: excluded
+
+이 경계는 source-level 보강까지 반영됐습니다. poll batch 처리 중 process crash와 rebalance를 포함한 end-to-end fault injection은 추가 검증 과제입니다.
+
+## State-path Decision
+
+초기 Kafka 실험에서는 request status, idempotency claim, sequence allocation이 API의 PostgreSQL hot path에 남아 Pgpool 압력을 만들었습니다.
+
+현재 경계:
+
+- API: Kafka append 전에 PostgreSQL idempotency claim / request-status write 제외
+- `X-Idempotency-Key`: Kafka payload 포함
+- Worker: PostgreSQL state에서 최종 deduplication
+- Worker: persistence 시점 stream sequence 배정
+- read fallback: ingress log 미사용
+- cache source: DB commit 이후 snapshot topic
+
+`schema_version`, `event_type`, JSON `payload`, JSON `metadata`는 Kafka envelope에서 Worker persistence, status, snapshot으로 전달됩니다. Legacy `body`, `category`, `payment_id`는 기존 client와 과거 row를 위한 compatibility alias이며 generic Worker가 domain taxonomy를 강제하지 않습니다.
+
+물리 식별자인 `message-*` topic과 `message-worker` consumer group은 기존 offset, compacted state, rollout compatibility를 위해 유지합니다. 범용 정체성 변경만을 이유로 topic을 교체하지 않습니다.
+
+Generic v2는 순서가 있는 rollout입니다.
+
+- GitOps: gate-false `messaging-env` Secret wave `-3` → 일반 Sync Alembic migration Job wave `-2` → dual-read/dual-write Worker wave `-1` → overlay API-true wave `0`
+- 수동 local: app manifest gate `false` → API startup migration / Worker rollout → quick start가 API gate `true`로 전환
+
+새 Worker는 old/new envelope를 모두 처리합니다. 구 Worker는 v2 job의 legacy body preview만 저장하고 구조화 JSON을 보존하지 못하므로 대칭 rolling compatibility는 제공하지 않습니다.
+
+## Reliability Interpretation
+
+이 Kafka 설계에서 `reliable`이 가리키는 범위:
+
+- per-stream partition ordering과 failed record inline retry
+- processed/terminal record 단위 explicit offset commit
+- PostgreSQL idempotent persistence
+- retry exhaustion 뒤 DLQ 격리와 replay guard
+- consumer lag, drain time, status/snapshot 관측
+
+exactly-once, partition 간 global ordering, 모든 crash boundary의 무손실, production SLA는 검증된 보장이 아닙니다. poll/rebalance fault injection과 DB commit 이후 best-effort publish gap은 후속 검증·개선 범위입니다.
+
+## Performance Evidence
+
+Generic v2 workload는 아직 같은 조건으로 실행하지 않았습니다. 아래 결과는 legacy/order request shape와 당시 HTTP `200` 계약으로 수집된 역사적 evidence이며, v2 serialization/validation 비용이나 v2 route 성능을 측정한 값이 아닙니다.
+
+### Stable intake baseline — 2026-04-28
+
+| Metric | Result |
+| --- | ---: |
+| Workload | 100 VU / 30s |
+| Total requests | `31,676` |
+| Event success | `31,672`, historical HTTP `200` |
+| Error rate | `0.00%` |
+| Avg / p95 / p99 | `44.13ms` / `80.65ms` / `103.57ms` |
+| Same-stream ordering | 100 events, pass |
+| Row-visible proxy p95 | `7.67ms` |
+| Worker KEDA end snapshot | `4` |
+
+`row-visible proxy`는 API accepted 시각과 PostgreSQL row의 `created_at`/조회 가능 시점을 비교한 값입니다. 실제 DB commit timestamp 측정값이 아닙니다.
+
+HTTP `200`은 route에 `202 Accepted`를 명시하기 전의 역사적 원본입니다. 현재 build의 `202`는 새 suite로 재확인해야 합니다.
+
+### Capacity rerun — 2026-06-09
+
+| Metric | Result |
+| --- | ---: |
+| Requests | `34,284` |
+| Avg / p95 / p99 | `36.86ms` / `66.06ms` / `104.99ms` |
+| Ordering | stream `30`, `1..100`, pass |
+| Row-visible proxy p95 | `73.50ms` |
+| Peak message-worker lag | `36,394` |
+| KEDA max | `8` |
+| Drain | 약 14분 뒤 `0` |
+
+API intake burst와 Worker/RDB persistence capacity의 차이를 드러낸 결과입니다. stable baseline 대체값과 KEDA throughput 개선 증거에서 제외합니다.
+
+### Transaction tuning — 2026-06-09
+
+message persistence와 request status update를 하나의 DB transaction으로 묶은 뒤 실행했습니다.
+
+| Metric | Result |
+| --- | ---: |
+| Requests | `28,839` |
+| Avg / p95 / p99 | `53.47ms` / `108.68ms` / `134.53ms` |
+| Ordering | stream `34`, `1..100`, pass |
+| Row-visible proxy p95 | `8.08ms` |
+| Peak message-worker lag | `29,204` |
+| Drain | 약 10분 뒤 `0` |
+
+persistence proxy와 drain은 개선됐고 API intake는 악화됐습니다. 동일 조건 causal A/B가 아니므로 persistence-path 개선 신호로만 기록합니다.
+
+### Notification split — 2026-06-18
+
+| Metric | Result |
+| --- | ---: |
+| Requests | `27,795` |
+| Avg / p95 / p99 | `57.64ms` / `119.28ms` / `150.60ms` |
+| Ordering | stream `38`, `1..100`, pass |
+| Row-visible proxy p95 | `22.13ms` |
+| message-worker drain | 약 16분 뒤 `0` |
+| notification-worker lag | `0` |
+
+core persistence와 notification attempt의 장애 범위 분리가 목적이었습니다. 성능 수치가 악화돼 stable baseline으로 채택하지 않았습니다. DB commit 뒤 notification publish는 best-effort이며 transactional outbox는 없습니다.
+
+## KEDA Interpretation
+
+확인 지표:
+
+- peak consumer lag
+- lag 감소 곡선
+- row-visible 또는 향후 commit-aware persistence latency
+- backlog drain time
+- PostgreSQL throughput / commit / lock wait
+
+확인되지 않은 주장:
+
+- KEDA가 API request count를 증가시켰다는 직접 인과
+- fixed Worker replica보다 KEDA가 우수하다는 동일 조건 수치
+
+다음 실험은 fixed replica와 KEDA를 같은 workload, image, DB pool, partition, 초기 backlog 조건에서 반복해야 합니다.
+
+## DLQ Interpretation
+
+DLQ topic은 append-only failure log입니다.
+
+- list / summary: 최근 조회 sample
+- sample age: unresolved event age 제외
+- replay success: 원본 DLQ record 삭제 제외
+- current unresolved state: 별도 모델 필요
+
+## Reproduction
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
+powershell -ExecutionPolicy Bypass -File scripts\run_kafka_performance_suite.ps1
 ```
 
-2026-04-28 실행 결과:
+원본과 상세 조건:
 
-- 순차 검증 이벤트 수: `100`
-- 순차 검증 결과: `stream_seq 1..100`, body 순서 일치
-- profile: `single500`
-- 동시 사용자: `100`
-- 실행 시간: `30s`
-- idempotency header: 비활성화
-- 전체 HTTP 요청 수: `31676`
-- event status 200: `31672`
-- event status 503: `0`
-- 오류율: `0.00%`
-- 평균 latency: `44.13ms`
-- p95 latency: `80.65ms`
-- p99 latency: `103.57ms`
-- accepted-to-persisted p95: `7.67ms`
-- API HPA 최종 replica: `6`
-- Worker KEDA 최종 replica: `4`
-
-비교 진단:
-
-- 초기 진단 구현에서 `X-Idempotency-Key`를 켠 부하에서는 PostgreSQL state-store path가 API hot path로 다시 들어왔습니다.
-- 이 경우 낮은 부하에서도 `503`이 발생했고, 100 VU에서는 Pgpool 재시작 압력과 높은 실패율이 나타났습니다.
-- Kafka-native 완성형 기준: idempotency / request status state path와 Kafka append path 분리
-
-## 2026-06-09 재실행 메모
-
-동일한 `scripts/run_kafka_performance_suite.ps1` 조건에서 k6를 다시 실행했습니다.
-
-| 지표 | 결과 |
-| --- | ---: |
-| 전체 HTTP 요청 수 | `34284` |
-| event status 200 | `34280` |
-| event status 503 | `0` |
-| 오류율 | `0.00%` |
-| 평균 latency | `36.86ms` |
-| p95 latency | `66.06ms` |
-| p99 latency | `104.99ms` |
-| same-stream ordering | `stream_id=30`, `stream_seq 1..100`, ordering `pass` |
-| async persistence sample | `stream_id=31`, 50 events persisted |
-| accepted-to-persisted p95 | `73.50ms` |
-| 부하 직후 Worker consumer lag | `36394` |
-| Worker KEDA max replica | `8` |
-| 최종 drain | 약 14분 후 consumer lag `0` |
-
-API intake latency는 좋아졌고, 같은 실행에서 same-stream ordering과 async persistence completion도 통과했습니다. 다만 Worker consumer lag가 크게 쌓인 뒤 천천히 drain되었습니다. 따라서 이 결과는 기존 2차 baseline을 단순 대체하기보다 Worker persistence capacity와 drain time을 별도 튜닝 대상으로 보여주는 signal로 해석합니다.
-
-## 2026-06-09 transaction 통합 후 재실행
-
-Worker success path에서 message persistence와 request status update를 하나의 PostgreSQL transaction으로 묶은 뒤 같은 suite를 다시 실행했습니다. 이후 notification attempt 기록은 핵심 persistence transaction에서 분리해 `message-notifications` topic과 별도 `notification-worker`가 처리하도록 조정했습니다.
-
-| 지표 | 결과 |
-| --- | ---: |
-| 전체 HTTP 요청 수 | `28839` |
-| event status 200 | `28835` |
-| event status 503 | `0` |
-| 오류율 | `0.00%` |
-| 평균 latency | `53.47ms` |
-| p95 latency | `108.68ms` |
-| p99 latency | `134.53ms` |
-| same-stream ordering | `stream_id=34`, `stream_seq 1..100`, ordering `pass` |
-| async persistence sample | `stream_id=35`, 50 events persisted |
-| accepted-to-persisted p95 | `8.08ms` |
-| 부하 직후 Worker consumer lag | `29204` |
-| Worker KEDA max replica | `8` |
-| 최종 drain | 약 10분 후 consumer lag `0` |
-
-이 변경은 persistence lag와 backlog drain에는 긍정적이었지만, k6 API intake request count와 p95 latency는 악화됐습니다. 따라서 안정 기준선은 기존 2차 baseline을 유지하고, transaction 통합 결과는 Worker persistence path 개선 실험으로 분리해서 해석합니다.
-
-변경 해석:
-
-- API: Kafka 모드에서 stream sequence 선점 제외
-- Worker: persistence 시점 sequence 배정
-- API accepted status store: 기본값에서 synchronous DB hot path 제외
-- request idempotency claim: 기본값에서 API hot path 수행 제외, Worker persistence path에서 최종 idempotency 처리
-
-## 현재 설계 방향
-
-Kafka-native 완성형으로 가려면 event log path와 low-latency state path를 분리해야 합니다.
-
-현재 반영한 항목:
-
-- Kafka compacted topic으로 DB commit 이후 message / stream snapshot local materialized cache 구성
-- message read는 cache-first로 조회하고, cache miss / stale이면 PostgreSQL로 fallback
-- API는 Kafka append 전에 idempotency claim이나 request status 저장을 위해 PostgreSQL을 선점하지 않음
-
-남은 후보:
-
-- idempotency state를 compacted topic 또는 별도 state backend로 분리
-- 별도 low-latency state store 도입
-- API 응답 계약을 단순 `accepted event id` 중심으로 줄여 state lookup 최소화
-- sequence allocation을 partition-local ordering 기반으로 재설계
-
-이 결과는 Kafka를 선택할 때 event log뿐 아니라 state path까지 함께 설계해야 한다는 결론을 보여줍니다.
+- [TEST_RESULTS.md](TEST_RESULTS.md)
+- [results evidence guide](../results/README.md)
+- [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)

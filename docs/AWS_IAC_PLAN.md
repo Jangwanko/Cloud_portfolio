@@ -1,160 +1,144 @@
-# AWS IaC Plan
+# AWS IaC Migration Blueprint
 
-## Purpose
+## Current Position
 
-- 로컬 `kind + Kubernetes` 검증 구조를 AWS managed architecture로 옮기는 blueprint.
-- 실제 AWS 배포 완료 보고서가 아니다.
-- 포트폴리오에서 보여줄 지점:
-  - async intake
-  - failure recovery
-  - autoscaling
-  - observability
-  - backup / restore
+`infra/terraform`은 로컬 `kind + Kafka + PostgreSQL HA` 구조를 AWS managed services로 옮기기 위한 dev skeleton입니다.
 
-## Current Migration Blueprint
+- AWS deployment 완료 증거: 없음
+- `terraform apply` 실행 증거: 없음
+- local CLI: 공식 SHA256을 검증한 Terraform `1.15.8`
+- local validation: `terraform fmt -recursive`, `terraform init -backend=false`, `terraform validate` 통과
+- `terraform plan` 실행 증거: 없음
+- repository test: Terraform source의 구조적 계약 확인
+- CI source: exact Terraform `1.15.8`, `fmt -check`, `init -backend=false`, `validate` gate 포함; 실제 remote workflow 결과는 별도 확인
 
-| Local validation | AWS managed architecture |
-| --- | --- |
-| `kind` Kubernetes | Amazon EKS |
-| `ingress-nginx` | AWS Load Balancer Controller + ALB |
-| local self-signed TLS | ACM + Route 53 |
-| Kafka 3-broker KRaft | Amazon MSK |
-| PostgreSQL HA + Pgpool | RDS PostgreSQL Multi-AZ / Aurora PostgreSQL |
-| runtime Kubernetes secret | AWS Secrets Manager |
-| local image build/load | Amazon ECR + EKS deploy |
-| Prometheus / Grafana in cluster | EKS 유지 또는 AMP / AMG |
+Version reproducibility:
 
-## Responsibilities Kept
+- Terraform required version: `>= 1.15.8, < 1.16.0`
+- direct provider pins: AWS `5.100.0`, Random `3.9.0`
+- root module pins: VPC `5.21.0`, EKS `20.37.2`, RDS `6.13.1`
+- provider selections and checksums: `envs/dev/.terraform.lock.hcl`
 
-- API:
-  - Kafka append 후 `202 Accepted`
-- Worker:
-  - Kafka consumer group으로 event consume
-  - PostgreSQL persistence
-- Failure handling:
-  - retry
-  - DLQ
-  - replay guard
-- Worker autoscaling:
-  - Kafka consumer lag
-  - backlog drain time
-- Operator signals:
-  - readiness
-  - DLQ summary
-  - consumer lag
-  - accepted-to-persisted lag
+This is a migration blueprint. It documents service mapping, ownership boundaries, and hardening work required before an AWS deployment.
 
-## Responsibilities Moved To AWS
+## Implemented Terraform Scope
 
-- Kafka runtime:
-  - local Kafka -> Amazon MSK
-- PostgreSQL runtime:
-  - PostgreSQL HA + Pgpool -> RDS / Aurora
-- TLS:
-  - self-signed -> ACM
-- Secret:
-  - Kubernetes secret 직접 주입 -> Secrets Manager 연동
-- Backup:
-  - local CronJob -> RDS automated backup / snapshot / PITR
+| Module | Current resource scope | Important boundary |
+| --- | --- | --- |
+| `vpc` | VPC, public/private/database subnets, NAT | production network policy 검토 필요 |
+| `ecr` | immutable tag, scan-on-push application repository | image build/push workflow는 별도 |
+| `eks` | EKS cluster, managed node group, IRSA, private API endpoint default | Kubernetes add-ons/workloads 미설치 |
+| `msk_kafka` | MSK provisioned cluster, security group | dev auth/encryption default hardening 필요 |
+| `rds_postgres` | RDS PostgreSQL Multi-AZ, encrypted storage, backup retention | deletion/final snapshot policy hardening 필요 |
+| `secrets` | DB, Kafka bootstrap, JWT, Grafana secret values | pod injection controller/config 미구현; Terraform state에 secret material 존재 |
+| `route53_acm` | optional hosted-zone lookup, ACM certificate, validation records | ALB alias/application DNS record 미구현 |
 
-## First Target
+현재 Terraform이 만들지 않는 영역:
 
-- 목표:
-  - `terraform validate` 가능한 dev 환경 골격
-- 실제 `terraform apply`:
-  - 선택 작업
-  - MSK / RDS / EKS 비용 발생
+- AWS Load Balancer Controller
+- Kubernetes API / Worker / notification-worker / DLQ replayer workloads
+- KEDA, metrics-server, Prometheus, Grafana
+- External Secrets Operator 또는 Secrets Store CSI Driver
+- MSK topic bootstrap과 application ACL
+- ALB listener / ingress와 Route 53 ALB alias
+- AMP / AMG resources
+- image tag update와 Argo CD application
 
-## Compute
+## Local-to-AWS Mapping
 
-- `Amazon EKS`
-  - API
-  - Worker
-  - DLQ Replayer
-  - notification-worker
-- `Managed Node Group`
-  - 첫 단계는 단일 node group
-  - 이후 API / Worker node 분리 가능
+| Local validation | AWS target | Status in skeleton |
+| --- | --- | --- |
+| kind | Amazon EKS | cluster + node group |
+| local image build/load | Amazon ECR | repository only |
+| Kafka 3-broker KRaft | Amazon MSK | provisioned cluster |
+| PostgreSQL HA + Pgpool | RDS PostgreSQL Multi-AZ | RDS instance |
+| Kubernetes Secret | AWS Secrets Manager | secret resources |
+| ingress-nginx | AWS Load Balancer Controller + ALB | design only |
+| self-signed TLS | ACM + Route 53 | certificate validation only |
+| Prometheus / Grafana | in-cluster or AMP / AMG | design only |
+| backup CronJob | RDS backup / snapshot / PITR | RDS retention setting only |
 
-## Networking
+## Application Responsibilities Preserved
 
-- `VPC`
-  - public subnet: ALB
-  - private subnet: EKS node, RDS, MSK
-- `AWS Load Balancer Controller`
-  - Kubernetes `Ingress` -> ALB
-- `Application Load Balancer`
-  - `/`
-  - `/grafana`
-  - `/prometheus`
-- `Route 53`
-  - domain 연결
-- `ACM`
-  - TLS certificate
-  - ALB HTTPS termination
+- API: Kafka append 뒤 `202 Accepted`
+- Worker: consumer group 기반 PostgreSQL persistence
+- Ordering: domain-neutral `stream_id` key의 Kafka partition boundary; order reference adapter는 `order_id`를 stream key로 매핑
+- Failure: inline retry, DLQ, replay guard
+- Read model: DB commit 이후 compacted snapshot
+- Notification: 별도 topic/consumer boundary
+- Scaling signal: Worker consumer lag, persistence latency, backlog drain
 
-## Container Registry
+PostgreSQL commit 뒤 status/snapshot/notification publish의 신뢰성 gap도 AWS 이전만으로 해결되지 않습니다. transactional outbox 또는 동등한 recovery mechanism이 별도로 필요합니다.
 
-- `Amazon ECR`
-  - API image
-  - Worker image
-  - DLQ Replayer image
-- image strategy:
-  - same image with different command
-  - separate images if runtime boundary grows
+## Current Dev Security Defaults
 
-## Data
+현재 source를 production-ready로 해석하면 안 되는 설정:
 
-- `Amazon RDS for PostgreSQL`
-  - first option for portfolio explanation
-  - Multi-AZ
-  - automated backup
-- `Aurora PostgreSQL`
-  - higher scale option
-  - read/write separation 가능
+| Area | Current dev skeleton | Production direction |
+| --- | --- | --- |
+| EKS endpoint | private access enabled, public disabled by default; public은 제한 CIDR이 있을 때만 활성 | 운영 IAM / access entry와 네트워크 진입 경로 설계 |
+| EKS creator access | dev blueprint bootstrap admin enabled | least-privilege access entry와 운영 role 분리 |
+| MSK client auth | unauthenticated | IAM 또는 SASL/SCRAM, ACL 검토 |
+| MSK client-broker transport | `TLS_PLAINTEXT` | TLS-only |
+| RDS deletion protection | disabled | enabled |
+| RDS final snapshot | skipped | required snapshot policy |
+| Secret delivery | RDS random password와 Secrets Manager value 일치, Terraform state에도 material 존재 | IRSA + ESO/CSI, rotation, least privilege, state backend 보호 |
+| Grafana credential input | Terraform variable | secret generation/rotation과 state 노출 검토 |
 
-## Event Log
+production hardening 완료 전 `apply` 대상은 비용이 발생하는 실험용 dev account로 제한합니다.
 
-- `Amazon MSK`
-  - ingress topic
-  - DLQ topic
-  - status / snapshot compacted topics
-- production settings:
-  - Multi-AZ broker
-  - replication
-  - `min.insync.replicas`
-  - producer `acks`
+## Network and Ingress Target
 
-## Secret
+목표 topology:
 
-- `AWS Secrets Manager`
-  - DB credential
-  - Kafka credential
-  - JWT secret
-  - Grafana admin credential
-- Kubernetes injection:
-  - External Secrets Operator
-  - CSI driver
+- public subnet: ALB
+- private subnet: EKS managed nodes, MSK brokers
+- database subnet: RDS PostgreSQL
+- ACM: HTTPS certificate
+- Route 53: application hostname과 ALB alias
 
-## Observability
+현재 module은 VPC/subnet과 optional ACM validation까지 제공합니다. Load Balancer Controller 설치, Ingress annotation, ALB provisioning, DNS alias는 후속 단계입니다.
 
-- Option 1:
-  - Prometheus / Grafana inside EKS
-  - 현재 구조 설명에 적합
-- Option 2:
-  - Amazon Managed Service for Prometheus
-  - Amazon Managed Grafana
-  - 운영 부담 감소
+## Data and Event Services
 
-## Backup / Recovery
+### RDS PostgreSQL
 
-- RDS automated backups
-- manual snapshot
-- point-in-time recovery
-- Kafka durability:
-  - replication factor
-  - `min.insync.replicas`
-  - producer `acks`
+현재 skeleton:
+
+- PostgreSQL `16.14`
+- Multi-AZ
+- encrypted storage
+- configurable backup retention
+- EKS node security group에서 `5432` 접근
+- generated master password와 Secrets Manager value 일치
+
+후속 검증:
+
+- parameter group과 connection limit
+- failover와 application retry
+- PITR / restore drill
+- deletion protection / final snapshot
+- credential rotation
+
+### Amazon MSK
+
+현재 skeleton:
+
+- Amazon MSK `3.9.x` default, configurable broker count/type/storage
+- private subnet 배치
+- per-topic/per-broker enhanced monitoring
+- in-cluster encryption
+- client auth `unauthenticated`, client-broker transport `TLS_PLAINTEXT`
+
+EKS module의 Kubernetes version default는 `1.36`입니다. Version allowlist와 AWS support 상태는 시간이 지나면 바뀌므로 배포 전 AWS release calendar를 다시 확인합니다.
+
+후속 검증:
+
+- TLS-only client connection
+- IAM 또는 SCRAM authentication
+- topic replication, `min.insync.replicas`, retention, compaction
+- broker failure / rolling maintenance
+- KEDA authentication과 bootstrap secret delivery
 
 ## Terraform Structure
 
@@ -163,18 +147,69 @@ infra/terraform/
   envs/
     dev/
   modules/
-    network/
+    ecr/
     eks/
-    msk/
-    rds/
+    msk_kafka/
+    rds_postgres/
+    route53_acm/
     secrets/
-    observability/
+    vpc/
 ```
 
-## Portfolio Talking Points
+## Validation Path
 
-- 로컬에서 검증한 책임을 AWS managed service로 치환했다.
-- Kubernetes 중심 application 구조는 유지했다.
-- Kafka / PostgreSQL 운영 부담은 MSK / RDS로 넘겼다.
-- Worker scaling 기준은 CPU보다 consumer lag에 둔다.
-- Terraform은 배포 완료 증거가 아니라 migration blueprint 증거다.
+2026-07-14 local static validation 완료:
+
+- Terraform binary `1.15.8` official SHA256 확인
+- `terraform fmt -recursive` 완료
+- `terraform init -backend=false` 완료
+- `terraform validate` 성공
+- `.terraform.lock.hcl` 생성
+
+AWS credential 없이 가능한 정적 검증:
+
+```powershell
+cd infra/terraform/envs/dev
+terraform fmt -check -recursive ../..
+terraform init -backend=false
+terraform validate
+```
+
+Provider/module download에는 network access가 필요합니다. 현재 lock file은 성공한 init의 provider checksum과 `windows_amd64` / `linux_amd64` package hash를 함께 보관합니다.
+
+AWS credential과 비용 검토 뒤 선택 실행:
+
+```powershell
+terraform plan -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+`plan`부터 account, region, estimated cost, destructive change, public exposure를 review합니다.
+
+## Completion Criteria
+
+### Blueprint validation
+
+- `fmt`, `init -backend=false`, `validate` 통과 — 완료
+- module output / secret reference contract test 통과
+- example variable로 review 가능한 plan 생성 — 미실행
+
+### Deployable dev environment
+
+- ECR image push
+- EKS workload / controller bootstrap
+- MSK/RDS private connectivity 확인
+- `202 Accepted` → Kafka → Worker → RDS end-to-end 검증
+- KEDA consumer lag scale-out과 drain 관찰
+- ALB TLS endpoint와 DNS 연결
+
+### Production hardening
+
+- MSK auth와 TLS-only
+- EKS API access 제한
+- RDS deletion/final snapshot 보호
+- secret rotation과 least-privilege IAM
+- restore / failover / broker disruption drill
+- observability retention과 alert routing
+
+전체 포트폴리오 우선순위는 [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)에 있습니다.

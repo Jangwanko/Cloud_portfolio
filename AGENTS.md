@@ -4,20 +4,33 @@
 
 ## Current Project Identity
 
-- 현재 최종 포트폴리오는 쇼핑몰 주문 이후 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
-- 사용자는 결제 완료와 주문 완료 응답까지만 직접 확인하며, Kafka 처리 상태는 사용자 화면에 노출하지 않습니다.
-- Kafka / Worker / DLQ / materialized cache / observability는 주문 이후 운영 이벤트 처리와 장애 대응을 위한 내부 경로입니다.
+- 현재 최종 포트폴리오는 **Kafka 기반 고신뢰 이벤트 처리 시스템**(`Reliable Event Processing System`)입니다. producer가 보낸 범용 event를 수락하고 저장, 장애 격리, 재처리, 알림 작업 분리, 조회용 snapshot까지 처리합니다.
+- 현재 공개 핵심 계약은 `POST /v2/streams/{stream_id}/events`입니다. client는 `event_type`, JSON `payload`, JSON `metadata`를 보내고 API가 accepted/Kafka envelope에 `schema_version=2`를 부여합니다. v2 request status/event list GET alias를 제공하며 인증과 stream 생성은 공유 `/v1` resource API를 사용합니다.
+- 주문·결제 lifecycle은 범용 처리 경계를 보여주는 reference scenario입니다. `/v1/orders/{order_id}/events`, `category`, `payment_id`, body-only stream route는 기존 client와 과거 증거를 위한 compatibility adapter/alias로 유지하며 핵심 정체성으로 설명하지 않습니다.
+- 데모는 주문 lifecycle을 reference scenario로 사용하되 Kafka append와 DB persistence를 서로 다른 운영 증거로 보여줍니다.
+- Kafka / Worker / DLQ / materialized cache / observability는 event domain과 무관하게 수락 이후 처리와 장애 대응을 담당합니다.
 - 현재 최종 브랜치는 `master`입니다. `dev-kafka`는 Kafka 전환 작업 브랜치였고, 같은 최종 commit이 `master`에 병합되어 있습니다.
 - 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 일반 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 저사양 데모 관련 개발 작업은 `demo-dev`에서 진행합니다. 작업 시작 전 현재 브랜치를 확인하고, 대상 역할에 맞는 브랜치에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
+- 범용 event의 `schema_version`, `event_type`, `payload`, `metadata`는 Kafka envelope와 PostgreSQL persistence 경계에서 구조화된 필드로 유지합니다. 과거 `body`, `category`, `payment_id`는 호환 필드입니다.
 - 실패 event는 retry 후 `message-ingress-dlq`에 격리하며, replay guard와 DLQ API가 있습니다.
 - 같은 stream ordering은 global ordering이 아니라 `stream_id` 기준 Kafka partition boundary와 Worker inline retry로 보장합니다.
 - PostgreSQL은 최종 durable source of truth이며, DB commit 이후 snapshot을 compacted topic으로 publish합니다.
+- request status, snapshot, notification Kafka publish는 DB commit 이후 best-effort 단계입니다. 현재 transactional outbox는 없으며, commit 이후 process crash에 따른 publish gap은 개선 과제입니다.
 - API는 `message-request-status`, `message-snapshots`, `stream-snapshots` compacted topic을 consume해 local materialized cache를 유지합니다.
 - Read fallback은 Kafka ingress event를 직접 읽지 않습니다. Worker가 PostgreSQL commit 이후 publish한 DB snapshot만 cache 원본으로 사용합니다.
+- materialized cache consumer에는 consumer group이 없습니다. 각 API pod가 세 topic의 모든 partition을 직접 assign하고 beginning부터 replay한 뒤, startup 시점의 initial end offset에 모두 도달해야 `hydrated=true`, `ready=true`가 됩니다.
+- stream event read는 initial hydration 전 cache를 사용하지 않습니다. PostgreSQL 정상 시 DB membership authorization을 통과하고 cached page가 DB의 latest stream sequence watermark와 연속으로 일치할 때만 fresh snapshot을 사용합니다. PostgreSQL 장애 시에도 이미 hydrated된 message/membership cache가 모두 있을 때만 degraded fallback을 허용합니다.
+- `snapshot consumer group lag`는 현재 구현된 지표가 아닙니다. 필요한 관측은 pod별 current position / captured end offset / remaining records / hydration duration이며 custom metric 개선 과제입니다.
+- compaction은 동일 key의 과거 값은 줄이지만 대부분 unique인 request/message key 수 자체를 줄이지 않습니다. 장기 replay 성장은 retention, DB bootstrap+Kafka changelog, per-stream latest-page snapshot 중 검증된 전략으로 제한해야 합니다.
 - `X-Idempotency-Key`는 API hot path에서 PostgreSQL claim을 만들지 않고 Kafka payload에 포함됩니다. 최종 idempotency / deduplication은 Worker persistence 단계의 PostgreSQL state에서 처리합니다.
 - Worker autoscaling은 CPU가 아니라 KEDA Kafka scaler의 consumer lag 기준입니다. API autoscaling은 CPU HPA입니다.
+- DLQ list / summary는 append-only Kafka DLQ log의 최근 표본입니다. unresolved depth나 현재 backlog가 아니며, `oldest_sample_age_seconds`를 미해결 event SLO로 해석하지 않습니다.
+- 여기서 고신뢰는 per-stream partition ordering boundary, record 단위 explicit offset commit, PostgreSQL idempotent persistence, retry/DLQ/replay, 상태 분리, 관측·장애 복구 검증을 뜻합니다. exactly-once, global ordering, 무손실, production SLA를 증명했다는 의미가 아닙니다.
+- `message-*` Kafka topic, `message-worker` consumer group, `messaging-app` namespace, `rooms`/`messages` table처럼 배포와 저장 상태에 연결된 물리 식별자는 호환성을 위해 유지합니다. 문서 정체성 변경을 이유로 이름만 바꾸지 않습니다.
+- generic v2 rollout은 대칭 호환이 아닙니다. GitOps는 gate `false`인 `messaging-env` Secret wave `-3` → 일반 Sync migration Job wave `-2` → dual-read/dual-write Worker wave `-1` → API wave `0` 순서이며, `local-ha` overlay가 API container에만 gate `true`를 명시합니다. 수동 local manifest도 `false`로 시작하고 quick start가 Worker rollout 뒤 API env를 `true`로 전환합니다. v2 traffic을 구 Worker보다 먼저 열면 legacy body preview만 저장되고 구조화 `payload`/`metadata`가 유실됩니다.
+- 기존 Kafka 성능 baseline은 legacy/order contract로 측정한 역사적 intake 증거입니다. v2 generic envelope 성능으로 재표현하지 않으며 v2는 같은 조건으로 다시 측정합니다.
 
 ## Do Not Mix Redis and Kafka Results
 
@@ -42,31 +55,39 @@ Kafka event stream 성능 기준선:
 
 Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool HA, pool 튜닝, Worker inline retry, stream ordering 보강 후에도 Kafka append-first intake baseline이 유지되는지 확인한 결과입니다.
 
-현재 Kafka 문서에는 Worker fixed replica와 KEDA scale-out을 직접 비교한 수치가 없습니다. 이 비교가 필요하면 Worker를 고정한 실험과 KEDA 활성 실험을 같은 조건에서 별도로 실행하고, API request count보다 consumer lag, accepted-to-persisted lag, backlog drain time을 함께 비교해야 합니다.
+현재 Kafka 문서에는 Worker fixed replica와 KEDA scale-out을 직접 비교한 수치가 없습니다. 이 비교가 필요하면 Worker를 고정한 실험과 KEDA 활성 실험을 같은 조건에서 별도로 실행하고, API request count보다 consumer lag, Worker accepted-to-commit-observed lag, backlog drain time을 함께 비교해야 합니다.
 
 ## Current Kafka Validation Summary
 
 - Kafka broker: 3-broker KRaft StatefulSet, `3/3 ready`.
-- Topics: `message-ingress`, `message-ingress-dlq`, `message-request-status`, `message-snapshots`, `stream-snapshots`.
-- Topic settings: partitions `8`, replication factor `3`, `min.insync.replicas=2`; snapshot topics use `cleanup.policy=compact`.
+- Topics: `message-ingress`, `message-ingress-dlq`, `message-request-status`, `message-snapshots`, `stream-snapshots`, `message-notifications`.
+- Topic settings: partitions `8`, replication factor `3`, `min.insync.replicas=2`; `message-request-status`, `message-snapshots`, `stream-snapshots` use `cleanup.policy=compact`.
 - Same stream ordering: 100 events persisted as `stream_seq 1..100`.
 - Latest Kafka baseline: 100 VU / 30s, `31,676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`.
-- Accepted-to-persisted latest p95: `7.67ms`.
-- 2026-06-09 k6 rerun: 100 VU / 30s, `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`; same-stream ordering revalidated with `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=31`, 50 events persisted; Worker consumer lag reached `36394` and drained to `0` after about 14 minutes. Treat this as an intake-vs-persistence capacity signal, not a direct replacement for the stable 2nd baseline.
+- Stable baseline row-visible latency proxy p95: `7.67ms`. 이 수치는 API accepted 시각과 PostgreSQL row의 `created_at` 또는 조회 가능 시점을 비교한 값이며 DB commit timestamp 직접 측정값이 아닙니다.
+- 2026-06 성능 원본의 event response status는 `200`입니다. route에 `202 Accepted` 계약을 명시하기 전 수집한 historical pre-contract-fix evidence로 유지하고, 현재 build의 `202`는 별도 재실행으로 검증합니다.
+- 2026-06-09 k6 rerun: 100 VU / 30s, `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`; same-stream ordering revalidated with `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=31`, 50 events persisted; Worker consumer lag reached `36394` and drained to `0` after about 14 minutes. Treat this as an intake-vs-persistence capacity signal, not a direct replacement for the stable 2nd baseline. 이 실행의 persistence latency도 row-visible proxy입니다.
 - Worker success path transaction tuning is applied after that rerun: message persistence and request status update share one PostgreSQL transaction; Kafka status/snapshot publish and notification enqueue happen after DB commit.
 - Notification attempts are decoupled from core persistence through Kafka `message-notifications` and a separate `notification-worker`.
-- Post-tuning performance suite at `2026-06-09T02:17:11+09:00`: `28,839` requests, error `0.00%`, avg `53.47ms`, p95 `108.68ms`, p99 `134.53ms`; same-stream ordering revalidated with `stream_id=34`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=35`, accepted-to-persisted p95 `8.08ms`; Worker consumer lag reached `29204` and drained to `0` after about 10 minutes. Treat this as persistence-path improvement but not a stable intake baseline replacement because API intake throughput and p95 worsened.
-- Notification path split suite at `2026-06-18T03:29:47+09:00`: `27,795` requests, error `0.00%`, avg `57.64ms`, p95 `119.28ms`, p99 `150.60ms`; same-stream ordering revalidated with `stream_id=38`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=39`, accepted-to-persisted p95 `22.13ms`; Worker consumer lag drained to `0` after about 16 minutes; notification-worker consumer lag was `0`. Treat this as operational-boundary improvement, not a performance improvement.
+- 현재 notification 경계는 `notification_attempts` 기록까지입니다. 이메일/SMS/push 같은 외부 채널의 실제 발송 성공을 구현하거나 증명한 것으로 쓰지 않습니다.
+- Post-tuning performance suite at `2026-06-09T02:17:11+09:00`: `28,839` requests, error `0.00%`, avg `53.47ms`, p95 `108.68ms`, p99 `134.53ms`; same-stream ordering revalidated with `stream_id=34`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=35`, row-visible proxy p95 `8.08ms`; Worker consumer lag reached `29204` and drained to `0` after about 10 minutes. Treat this as persistence-path improvement but not a stable intake baseline replacement because API intake throughput and p95 worsened.
+- Notification path split suite at `2026-06-18T03:29:47+09:00`: `27,795` requests, error `0.00%`, avg `57.64ms`, p95 `119.28ms`, p99 `150.60ms`; same-stream ordering revalidated with `stream_id=38`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=39`, row-visible proxy p95 `22.13ms`; Worker consumer lag drained to `0` after about 16 minutes; notification-worker consumer lag was `0`. Treat this as operational-boundary improvement, not a performance improvement.
 - Ordering / failure injection validation: `single_no_failure`, `multi_no_failure`, `single_db_failure`, `multi_db_failure` all passed on 2026-06-08 with accepted=persisted, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`.
 - Ordering / failure injection payloads: stream A uses `A001..A100`, stream B uses `B001..B100`, stream C uses `C001..C100`.
 - Ordering / failure injection verifies final persistence by querying PostgreSQL `messages` rows from inside the API pod, not by trusting Kafka accept alone.
-- Cache fallback validation: fresh read `source=cache`, DB down stale fallback `source=cache`, `degraded=true`.
+- Cache fallback validation: initial hydration 완료와 DB membership/watermark 확인 뒤 fresh read `source=cache`, DB down stale fallback `source=cache`, `degraded=true`. Hydration 전 cache read는 검증된 fallback으로 취급 제외.
 - Local HA topology: Kafka `3`, PostgreSQL `3`, Pgpool `2`, API min `3`, Worker min `2`, DLQ replayer `1`.
 - KEDA Kafka trigger: topic `message-ingress`, consumer group `message-worker`, lag threshold `100` for the local demo cluster, min replicas `2`, max replicas `8`.
 - API HPA: CPU target `65%`, min replicas `3`, max replicas `8`.
+- API readiness hard failures: schema startup 미완료, Kafka unreachable, non-local unsafe auth secret(기본값·known placeholder·빈 값·32-byte 미만). PostgreSQL primary/standby/sync/replication guardrail 이탈은 `degraded`; Worker/cache 정보는 state 결정 제외.
+- HTTP request body는 기본 `1 MiB` transport 상한을 declared/chunked body 모두에 적용합니다. generic payload/metadata 상한은 각각 `65,536`/`16,384` UTF-8 JSON bytes이며 transport 상한과 구분합니다.
 - Pgpool SPOF is reduced, not fully eliminated: Pgpool has `2` replicas and PDB `minAvailable=1`, but local kind remains a single-node demo environment.
-- Unit tests: `.venv\Scripts\python.exe -m pytest -q` => `65 passed` at the last documented verification.
-- GitOps status at last documented verification: Argo CD `Synced / Healthy`.
+- Unit / contract test count는 코드 변경에 따라 달라지므로 현재 작업에서 `.venv\Scripts\python.exe -m pytest -q`를 실행하고 실제 출력을 보고합니다. 과거 문서의 서로 다른 pass count를 현재 상태로 재사용하지 않습니다.
+- 2026-07-14 전체 정합성 감사의 identity refactor 이전 local suite는 `115 passed`입니다.
+- 2026-07-14 generic v2 전환과 최종 reliability 보강 뒤 local suite는 `195 passed`입니다. 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
+- GitOps `Synced / Healthy`는 마지막으로 기록된 historical cluster 상태입니다. 현재 상태는 status script와 Argo CD에서 다시 확인합니다.
+- 2026-07-14 read-only local cluster 재확인: API와 core workload는 ready, Argo CD는 `OutOfSync / Healthy`, kafka-exporter의 `notification-worker` consumer lag series는 미검출입니다. local live는 UI `1.1.0`과 event response `200`인 이전 image이며 현재 worktree 수정은 아직 배포되지 않았습니다.
+- 같은 시점 public demo-lite는 UI `1.4.1`, API image `e481a21`, event response `200`인 branch/deployment 전용 상태입니다. `master` source UI/API `2.0.0`과 generic v2 계약은 아직 반영되지 않았습니다.
 
 ## Important Docs
 
@@ -79,11 +100,15 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - `docs/SERVICE_REQUIREMENTS.md`: service assumptions, SLO guardrails, operational purpose.
 - `docs/KAFKA_EXPERIMENT.md`: Kafka migration experiment notes.
 - `docs/PATCH_NOTES.md`: change history.
+- `docs/IMPROVEMENT_ROADMAP.md`: prioritized improvements with measurable completion criteria.
+- `results/README.md`: validation evidence provenance and interpretation rules.
 - `results/kafka-performance/latest.txt`: most recent local Kafka performance suite output, when present.
 - `results/ordering-failure/latest.json`: most recent ordering / failure injection result, when present.
 - `k8s/gitops/base/kafka-ha.yaml`: local Kafka KRaft StatefulSet and topic bootstrap.
 - `k8s/gitops/base/manifests-ha.yaml`: generated local HA application, observability, HPA/KEDA, alerting manifest.
-- `portfolio/api.py`: FastAPI intake, status, DLQ, cache-first read API.
+- `k8s/gitops/base/migration-job.yaml`: Argo 일반 Sync wave `-2` schema migration Job; Worker/API wave보다 먼저 완료합니다.
+- `portfolio/api.py`: FastAPI intake, status, DLQ, DB-authorized snapshot/degraded fallback read API.
+- `portfolio/order_events.py`: `/v1/orders/...` reference adapter용 legacy classification helper; generic core 규칙으로 확대하지 않습니다.
 - `worker/main.py`: Kafka consumer, PostgreSQL persistence, inline retry, DLQ movement, snapshot publish.
 - `portfolio/materialized_cache.py`: request status and DB snapshot local materialized cache.
 - `portfolio/kafka_client.py`: Kafka producer/consumer helpers.
@@ -99,7 +124,7 @@ Run tests:
 Check portfolio status:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1 -SkipArgoCd
 ```
 
 Run Kafka performance suite:
@@ -142,9 +167,12 @@ Latest ordering / failure injection result after fixing local client skew:
 - Terraform 문서는 "AWS에 이미 배포했다"가 아니라 "로컬 검증 구조를 AWS managed architecture로 이전할 수 있게 설계했다"는 migration blueprint 관점으로 씁니다.
 - 문서에서 Kafka 최종 구조를 Redis에서 이름만 바꾼 것처럼 쓰지 않습니다.
 - Kafka를 Kafka-only라고 과장하지 않습니다. 이 프로젝트는 Kafka-centered 구조이며 PostgreSQL state/read model을 유지합니다.
-- Kafka Worker KEDA 효과를 API throughput 증가로 단정하지 않습니다. Kafka에서 Worker scaling 효과는 consumer lag, accepted-to-persisted lag, drain time으로 봅니다.
+- Kafka Worker KEDA 효과를 API throughput 증가로 단정하지 않습니다. Kafka에서 Worker scaling 효과는 consumer lag, persistence latency, drain time으로 봅니다. 2026-06 PowerShell 원본은 DB row `created_at` / row-visible proxy이며 실제 commit timestamp로 부르지 않습니다. 현재 script의 `accepted_to_status_observed_ms`는 client가 `persisted` status를 본 시각까지로 polling/network를 포함합니다. Worker histogram은 `commit()` 반환 뒤 기록한 `persisted_at` 기준이며 새 cluster 측정 전입니다.
 - Redis 성능 수치는 Redis 프로젝트의 이전 scaling/tuning 성과로만 설명합니다.
 - Kafka 성능 수치는 append-first intake baseline과 ordering/recovery validation으로 설명합니다.
+- 2026-06 성능 결과의 event status `200`은 `202 Accepted` route contract 명시 전의 역사적 증거로 표시합니다. 현재 HTTP 계약과 성능은 새 build에서 다시 측정합니다.
+- DLQ API의 `recent_samples`, `by_reason`, `oldest_sample_age_seconds`는 조회한 append-only log 표본의 통계로 설명합니다. unresolved queue depth, 현재 backlog, 미해결 event SLO로 표현하지 않습니다.
+- `results/README.md`, `results/kafka-performance/latest.txt`, `results/ordering-failure/latest.json`은 Git 추적 대상으로 유지합니다. 새 실행은 원본, 조건, stable baseline 채택 여부를 함께 기록합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
 - 문서와 답변에서 "단순히 A가 아니라 B"처럼 AI 말투가 강한 대비 문장을 피합니다. 필요하면 "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 자연스럽게 씁니다.
 - 영어 문서와 답변에서도 `not only`, `not merely`, `not just` 같은 대비형 표현을 쓰지 않습니다. 같은 의미가 필요하면 직접적인 문장으로 나눠 씁니다.
@@ -153,6 +181,8 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
+- 현재 `master` source Demo UI version은 `2.0.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, stream persistence summary `3초` polling, `send_failed`/일부 미확인 종료, 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
+- 문서에 등록된 public demo-lite deployment는 branch/deployment 전용 `1.4.1`입니다. `master` source `2.0.0`은 아직 해당 배포에 반영되지 않았으며, 두 버전을 같은 환경 상태로 표현하지 않습니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
@@ -160,7 +190,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
 - Worker 표시는 `현재 replica/최대 replica` 형식으로 둡니다. 예: `2/8`, `6/8`. 화면에는 `HPA 목표`처럼 여러 의미로 읽히는 표현을 쓰지 않습니다.
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
-- AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 주문 처리와 persistence path에는 넣지 않습니다.
+- AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 event persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
 - 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 외형적 변경이 없는 내부 수정은 세 번째 숫자(patch), 사용자가 보는 화면이나 흐름에 변화가 있으면 두 번째 숫자(minor), 시스템이나 서비스 컨셉이 크게 바뀌는 수준이면 첫 번째 숫자(major)를 올립니다. 대부분의 일상 변경은 세 번째 숫자 변경으로 처리합니다.
 - 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
@@ -168,6 +198,7 @@ Latest ordering / failure injection result after fixing local client skew:
 ## GitOps / Deployment Rules
 
 - Argo CD는 코드 변경 자체를 배포하지 않습니다. 컨테이너 안에 들어가는 Python code, HTML, static file 변경은 반드시 registry image build/push와 Git manifest의 image tag 변경으로 이어져야 클러스터에 반영됩니다.
+- generic v2처럼 schema/consumer/API 순서가 필요한 release는 공통 image tag만 보고 안전하다고 가정하지 않습니다. GitOps Secret `-3` / migration `-2` / Worker `-1` / API `0` wave와 수동 local gate `false` → Worker ready → API gate `true` 경계를 확인합니다.
 - `messaging-portfolio:local`은 local kind 또는 수동 bootstrap 전용 이미지입니다. Argo CD 자동 배포 경로에서는 GHCR/ECR 같은 registry image와 commit SHA 기반 tag를 사용합니다.
 - GitOps 자동 반영은 `git push -> image build/push -> kustomize image tag commit -> Argo CD sync` 순서로 설명합니다. 이 순서를 생략하고 "push하면 바로 반영된다"고 쓰지 않습니다.
 - 브랜치별 배포 역할을 섞지 않습니다.

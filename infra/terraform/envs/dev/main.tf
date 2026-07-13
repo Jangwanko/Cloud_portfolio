@@ -3,9 +3,10 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-  azs         = slice(data.aws_availability_zones.available.names, 0, var.az_count)
-  enable_dns  = var.route53_zone_name != "" && var.domain_name != ""
+  name_prefix                = "${var.project_name}-${var.environment}"
+  azs                        = slice(data.aws_availability_zones.available.names, 0, var.az_count)
+  enable_dns                 = var.route53_zone_name != "" && var.domain_name != ""
+  eks_public_endpoint_access = var.eks_endpoint_public_access && length(var.eks_endpoint_public_access_cidrs) > 0
 }
 
 module "vpc" {
@@ -25,14 +26,17 @@ module "ecr" {
 module "eks" {
   source = "../../modules/eks"
 
-  cluster_name         = "${local.name_prefix}-eks"
-  cluster_version      = var.cluster_version
-  vpc_id               = module.vpc.vpc_id
-  private_subnet_ids   = module.vpc.private_subnet_ids
-  node_instance_types  = var.node_instance_types
-  node_desired_size    = var.node_desired_size
-  node_min_size        = var.node_min_size
-  node_max_size        = var.node_max_size
+  cluster_name                             = "${local.name_prefix}-eks"
+  cluster_version                          = var.cluster_version
+  vpc_id                                   = module.vpc.vpc_id
+  private_subnet_ids                       = module.vpc.private_subnet_ids
+  cluster_endpoint_public_access           = local.eks_public_endpoint_access
+  cluster_endpoint_public_access_cidrs     = var.eks_endpoint_public_access_cidrs
+  enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  node_instance_types                      = var.node_instance_types
+  node_desired_size                        = var.node_desired_size
+  node_min_size                            = var.node_min_size
+  node_max_size                            = var.node_max_size
 }
 
 module "rds_postgres" {
@@ -79,8 +83,8 @@ module "route53_acm" {
 
   source = "../../modules/route53_acm"
 
-  zone_name    = var.route53_zone_name
-  domain_name  = var.domain_name
+  zone_name   = var.route53_zone_name
+  domain_name = var.domain_name
   record_names = [
     "grafana.${var.domain_name}",
     "prometheus.${var.domain_name}",

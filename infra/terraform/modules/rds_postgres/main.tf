@@ -24,12 +24,12 @@ resource "aws_security_group" "db" {
 
 module "db" {
   source  = "terraform-aws-modules/rds/aws"
-  version = "~> 6.6"
+  version = "6.13.1"
 
   identifier = "${var.name_prefix}-postgres"
 
   engine               = "postgres"
-  engine_version       = "16.3"
+  engine_version       = "16.14"
   family               = "postgres16"
   major_engine_version = "16"
   instance_class       = var.instance_class
@@ -37,16 +37,17 @@ module "db" {
   allocated_storage     = var.allocated_storage
   max_allocated_storage = var.allocated_storage * 2
 
-  db_name  = var.db_name
-  username = var.username
-  password = random_password.db.result
-  port     = 5432
+  db_name                     = var.db_name
+  username                    = var.username
+  manage_master_user_password = false
+  password                    = random_password.db.result
+  port                        = 5432
 
-  multi_az               = true
-  storage_encrypted      = true
+  multi_az                = true
+  storage_encrypted       = true
   backup_retention_period = var.backup_retention_period
-  deletion_protection    = false
-  skip_final_snapshot    = true
+  deletion_protection     = false
+  skip_final_snapshot     = true
 
   create_db_subnet_group = true
   subnet_ids             = var.subnet_ids

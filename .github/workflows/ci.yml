@@ -7,21 +7,36 @@ on:
       - main
       - dev
       - dev-kafka
+      - demo-dev
+      - demo-lite
       - ops
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact revision
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.6.0
         with:
-          python-version: "3.11"
+          python-version: "3.11.15"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install Dependencies
         run: |
@@ -29,26 +44,179 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Python Compile Check
-        run: |
-          python -m compileall portfolio worker observer alembic
+        run: python -m compileall portfolio worker alembic
 
       - name: Unit Tests
-        run: |
-          python -m pytest -q
+        run: python -m pytest -q
 
       - name: Build Docker Image
+        run: docker build -t messaging-portfolio:ci .
+
+      - name: Verify Docker Image Runs Non-root
         run: |
-          docker build -t messaging-portfolio:ci .
+          test "$(docker run --rm --entrypoint sh messaging-portfolio:ci -c 'id -u')" = "10001"
+
+      - name: Validate Monitoring Sources
+        run: |
+          python -m json.tool monitoring/grafana/dashboards/messaging-overview.json > /dev/null
+          docker run --rm --entrypoint /bin/promtool \
+            -v "$PWD/monitoring/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v2.54.1 \
+            check config /etc/prometheus/prometheus.yml
+
+      - name: Verify Generated Manifest Copy
+        run: cmp k8s/app/manifests-ha.yaml k8s/gitops/base/manifests-ha.yaml
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.3.1
+        with:
+          version: "v3.21.3"
+
+      - name: Render PostgreSQL HA Chart
+        run: |
+          helm template messaging-postgresql-ha \
+            tools/helm-cache/repository/postgresql-ha-16.3.2.tgz \
+            --namespace messaging-app \
+            --values k8s/values/postgresql-ha-values.yaml \
+            > /tmp/postgresql-ha-rendered.yaml
+          test -s /tmp/postgresql-ha-rendered.yaml
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+        with:
+          terraform_version: "1.15.8"
+
+      - name: Validate Terraform
+        run: |
+          terraform fmt -check -recursive infra/terraform
+          terraform -chdir=infra/terraform/envs/dev init -backend=false -input=false
+          terraform -chdir=infra/terraform/envs/dev validate
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5.1.0
         with:
-          version: "v1.32.0"
+          version: "v1.36.2"
 
       - name: Render GitOps Manifests
-        run: |
-          kubectl kustomize k8s/gitops/overlays/local-ha > /tmp/gitops-rendered.yaml
+        run: kubectl kustomize k8s/gitops/overlays/local-ha > /tmp/gitops-rendered.yaml
 
       - name: Check Render Output
         run: |
           test -s /tmp/gitops-rendered.yaml
+          grep -q 'ghcr.io/jangwanko/cloud_portfolio:' /tmp/gitops-rendered.yaml
+          if grep -q 'image: messaging-portfolio:local' /tmp/gitops-rendered.yaml; then
+            echo "local-ha rendered a local-only application image" >&2
+            exit 1
+          fi
+
+  publish-master-image:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master' &&
+      !contains(github.event.head_commit.message, '[skip image publish]')
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout exact tested revision
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set immutable image coordinates
+        id: image
+        shell: bash
+        run: |
+          short_sha="${GITHUB_SHA::12}"
+          {
+            echo "tag=${short_sha}"
+            echo "repository=ghcr.io/jangwanko/cloud_portfolio"
+            echo "candidate=ghcr.io/jangwanko/cloud_portfolio:candidate-${short_sha}"
+            echo "image=ghcr.io/jangwanko/cloud_portfolio:${short_sha}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Build and push candidate image
+        id: candidate
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.image.outputs.candidate }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Verify published candidate digest
+        shell: bash
+        env:
+          REPOSITORY: ${{ steps.image.outputs.repository }}
+          DIGEST: ${{ steps.candidate.outputs.digest }}
+        run: |
+          test -n "$DIGEST"
+          test "$(docker run --rm --pull always --entrypoint id "${REPOSITORY}@${DIGEST}" -u)" = "10001"
+
+      - name: Promote verified digest
+        shell: bash
+        env:
+          REPOSITORY: ${{ steps.image.outputs.repository }}
+          DIGEST: ${{ steps.candidate.outputs.digest }}
+          RELEASE_IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$RELEASE_IMAGE" \
+            --tag "${REPOSITORY}:master-bootstrap" \
+            "${REPOSITORY}@${DIGEST}"
+
+      - name: Update local-ha image tag
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          git fetch origin master
+          if [[ "$(git rev-parse origin/master)" != "$GITHUB_SHA" ]]; then
+            echo "master advanced after this run started; the newer run will publish its own tag"
+            exit 0
+          fi
+
+          python - "$IMAGE_TAG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path("k8s/gitops/overlays/local-ha/kustomization.yaml")
+          text = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r"(?m)^(\s*newTag:\s*).+$",
+              rf"\g<1>{sys.argv[1]}",
+              text,
+          )
+          if count != 1:
+              raise SystemExit(f"expected exactly one newTag entry, found {count}")
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+          if git diff --quiet -- k8s/gitops/overlays/local-ha/kustomization.yaml; then
+            echo "local-ha already references ${IMAGE_TAG}"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/gitops/overlays/local-ha/kustomization.yaml
+          git commit -m "ci: deploy master image ${IMAGE_TAG} [skip image publish]"
+          git push origin HEAD:master

@@ -12,28 +12,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class TestRequestStatusKey:
-    """Request key generation helpers."""
-
-    def test_request_status_key_format(self):
-        from portfolio.api import _request_status_key
-
-        key = _request_status_key("abc-123")
-        assert key == "message_request_status:abc-123"
-
-    def test_request_status_key_unique(self):
-        from portfolio.api import _request_status_key
-
-        assert _request_status_key("id-1") != _request_status_key("id-2")
-
-    def test_fallback_idem_key_format(self):
-        from portfolio.api import _fallback_idem_key
-
-        key = _fallback_idem_key("send_event", "idem-xyz")
-        assert "send_event" in key
-        assert "idem-xyz" in key
-
-
 class TestExternalizeRequestStatus:
     """Internal status fields are renamed for the external API response."""
 
@@ -93,7 +71,9 @@ class TestMaterializedCache:
     def test_stream_snapshot_cache_checks_membership(self):
         from portfolio.materialized_cache import cache_stream_snapshot, is_cached_stream_member
 
-        cache_stream_snapshot({"stream_id": 88, "member_ids": [1, 2, 3]})
+        cache_stream_snapshot(
+            {"stream_id": 88, "name": "Membership stream", "member_ids": [1, 2, 3]}
+        )
 
         assert is_cached_stream_member(88, 2) is True
         assert is_cached_stream_member(88, 9) is False
@@ -101,12 +81,6 @@ class TestMaterializedCache:
 
 class TestWorkerUtils:
     """Small worker helper checks."""
-
-    def test_request_status_key_format(self):
-        from worker.main import request_status_key
-
-        key = request_status_key("req-abc")
-        assert key == "message_request_status:req-abc"
 
     def test_now_iso_returns_string(self):
         from worker.main import now_iso
@@ -212,7 +186,7 @@ class TestDlqHelpers:
         assert result["total"] == 3
         assert result["replayable"] == 2
         assert result["blocked"] == 1
-        assert result["oldest_age_seconds"] == 120
+        assert result["oldest_sample_age_seconds"] == 120
         assert result["by_reason"] == {
             "room_sequence_gap": 2,
             "transient_error_max_retries:OperationalError": 1,
@@ -229,6 +203,12 @@ class TestDlqHelpers:
 
         published = []
         monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+        monkeypatch.setattr(
+            dlq_replayer,
+            "claim_dlq_replay",
+            lambda *_args: ("claimed", "test-owner"),
+        )
+        monkeypatch.setattr(dlq_replayer, "mark_dlq_replay_published", lambda *_args: True)
 
         moved = dlq_replayer.replay_one(
             {
@@ -246,6 +226,12 @@ class TestDlqHelpers:
 
         published = []
         monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+        monkeypatch.setattr(
+            dlq_replayer,
+            "claim_dlq_replay",
+            lambda *_args: ("claimed", "test-owner"),
+        )
+        monkeypatch.setattr(dlq_replayer, "mark_dlq_replay_published", lambda *_args: True)
 
         moved = dlq_replayer.replay_one(
             {
@@ -314,14 +300,15 @@ class TestKafkaIntakeBoundary:
     def test_reader_membership_checks_use_primary_routing_hint(self):
         api = (ROOT / "portfolio/api.py").read_text(encoding="utf-8")
 
-        assert "/*NO LOAD BALANCE*/ SELECT id FROM rooms" in api
-        assert "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members" in api
+        assert "/*NO LOAD BALANCE*/\n        SELECT 1" in api
+        assert "JOIN room_members rm ON rm.room_id = r.id" in api
 
     def test_worker_validates_membership_before_persistence(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
 
         assert "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s" in worker
-        assert "Stream access denied" in worker
+        assert '"membership_missing"' in worker
+        assert '"Event authorization rejected"' in worker
 
     def test_request_status_updates_publish_to_compacted_topic(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
@@ -366,6 +353,7 @@ class TestKafkaIntakeBoundary:
                         "room_seq": 1,
                         "created_at": CreatedAt(),
                     },
+                    {"user_id": 3},
                 ]
 
             def execute(self, sql, params=None):
@@ -422,16 +410,19 @@ class TestKafkaIntakeBoundary:
         assert "INSERT INTO messages" in executed_sql
         assert "INSERT INTO request_statuses" in executed_sql
         assert "INSERT INTO notification_attempts" not in executed_sql
-        assert published_notifications == [
-            (
-                7,
-                {
-                    "message_id": 10,
-                    "room_id": 7,
-                    "body_preview": "hello",
-                },
-            )
-        ]
+        assert len(published_notifications) == 1
+        notification_key, notification = published_notifications[0]
+        assert notification_key == 7
+        assert notification == {
+            "event_id": 10,
+            "stream_id": 7,
+            "message_id": 10,
+            "room_id": 7,
+            "event_type": "legacy.message",
+            "payload_preview": "hello",
+            "metadata": {},
+            "body_preview": "hello",
+        }
 
     def test_event_list_response_exposes_cache_metadata(self):
         from portfolio.api import _event_list_response
@@ -481,7 +472,7 @@ class TestOpenApiContract:
             "total",
             "replayable",
             "blocked",
-            "oldest_age_seconds",
+            "oldest_sample_age_seconds",
             "by_reason",
             "by_stream",
             "recent_samples",
@@ -496,7 +487,7 @@ class TestOpenApiContract:
 
 
 class TestOrderEventApiContract:
-    """Order-domain routes make the service scenario visible."""
+    """The order reference adapter remains available during the v2 rollout."""
 
     def test_openapi_contains_order_event_intake_contract(self):
         from portfolio.main import app
@@ -508,8 +499,9 @@ class TestOrderEventApiContract:
         assert "OrderEventCreate" in components
         assert "OrderEventAcceptedResponse" in components
         assert "/v1/orders/{order_id}/events" in paths
+        assert paths["/v1/orders/{order_id}/events"]["post"]["deprecated"] is True
 
-        response_schema = paths["/v1/orders/{order_id}/events"]["post"]["responses"]["200"]["content"][
+        response_schema = paths["/v1/orders/{order_id}/events"]["post"]["responses"]["202"]["content"][
             "application/json"
         ]["schema"]
         assert response_schema["$ref"] == "#/components/schemas/OrderEventAcceptedResponse"

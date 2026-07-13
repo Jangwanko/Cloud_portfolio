@@ -5,6 +5,8 @@
 - 위치: `demo-lite` 브랜치 전용
 - master 기준: full local demo와 GitOps 문서 유지
 - 성능 해석: full HA Kafka baseline 대체 제외
+- 서비스 경계: reference event를 Kafka에 append하고 비동기 저장하는 구간 표시
+- scenario: 주문·결제 lifecycle을 범용 처리 흐름의 예제로 사용
 
 ## 현재 브랜치 기준
 
@@ -26,6 +28,11 @@
 - `docs/GITOPS.md`: `master` / local-ha GitOps 기준
 - `docs/TEST_RESULTS.md`: full HA 검증 결과와 Kafka baseline 기준
 - demo-lite 관련 patch note: 별도 브랜치에서 진행한 저사양 데모 작업 기록
+- `master` source Demo UI: `2.0.0`, generic `/v2/streams/{stream_id}/events`와 Reliable Event Processing System 정체성
+- public demo-lite deployment Demo UI: `1.4.1`, API image `e481a21`, event response `200`, branch/image 전용 상태
+- 이번 `master` `2.0.0` 변경: public demo-lite 미배포
+- README/Guide의 `2.0.0` 동작: demo-lite branch에 같은 기능과 image tag가 반영됐는지 확인한 뒤 적용
+- 공개 URL 확인: UI `ver.` badge와 readiness `app_version`을 각각 기록
 
 ## 실행 전 확인
 

@@ -1,5 +1,6 @@
 param(
   [string]$Namespace = "messaging-app",
+  [string]$ChartVersion = "16.3.2",
   [switch]$PrepareImages
 )
 
@@ -114,9 +115,11 @@ if ($PrepareImages) {
 }
 
 $pgHaSource = if ($pgHaChart) { $pgHaChart.FullName } else { "bitnami/postgresql-ha" }
+$pgHaVersionArgs = if ($pgHaChart) { @() } else { @("--version", $ChartVersion) }
 
 & $helm upgrade --install messaging-postgresql-ha $pgHaSource `
   -n $Namespace `
+  @pgHaVersionArgs `
   -f k8s/values/postgresql-ha-values.yaml `
   --wait --timeout 15m
 

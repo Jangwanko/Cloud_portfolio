@@ -112,6 +112,12 @@ worker_failures_total = Counter(
     registry=registry,
 )
 
+notification_publish_failures_total = Counter(
+    "messaging_notification_publish_failures_total",
+    "Notification jobs that could not be published after core persistence committed",
+    registry=registry,
+)
+
 dlq_events_total = Counter(
     "messaging_dlq_events_total",
     "Events published to the Kafka DLQ",

@@ -34,7 +34,8 @@ infra/terraform
 
 ```powershell
 cd infra/terraform/envs/dev
-terraform init
+terraform fmt -check -recursive ../..
+terraform init -backend=false
 terraform validate
 terraform plan -var-file=terraform.tfvars
 ```
@@ -52,8 +53,12 @@ terraform plan -var-file=terraform.tfvars
 
 - `.venv\Scripts\python.exe -m pytest -q`
 - Terraform 관련 테스트는 MSK module, Kafka bootstrap secret, 별도 cache queue 리소스 미포함을 확인합니다.
+- Terraform required version: `>= 1.15.8, < 1.16.0`
+- direct providers: AWS `5.100.0`, Random `3.9.0`
+- root modules: VPC `5.21.0`, EKS `20.37.2`, RDS `6.13.1`
+- provider selection/checksum: `envs/dev/.terraform.lock.hcl`
 
-현재 로컬 환경에는 Terraform CLI가 설치되어 있지 않아 `terraform fmt`, `terraform validate`, `terraform plan`은 아직 실행하지 않았습니다. 실제 AWS 리소스 생성도 비용 절감을 위해 기본 범위에 포함하지 않습니다.
+2026-07-14 기준 공식 SHA256을 확인한 Terraform `1.15.8`로 `fmt -recursive`, `init -backend=false`, `validate`를 실행해 통과했습니다. `terraform plan`과 `terraform apply`는 실행하지 않았고, 실제 AWS 리소스도 생성하지 않았습니다.
 
 ## Kafka 기준
 

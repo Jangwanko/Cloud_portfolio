@@ -19,13 +19,10 @@ class TestOperationalDocumentation:
         test_results = read_text("docs/TEST_RESULTS.md")
 
         for token in (
-            "실시간 협업 메시징",
-            "적용 가능한 서비스 관점",
-            "주문 이후 이벤트 처리",
-            "알림 발송 파이프라인",
-            "고객 문의 / CS 이벤트",
-            "감사 로그 / 활동 로그",
-            "IoT / 센서 수집",
+            "Reliable Event Processing System",
+            "domain-neutral typed event acceptance",
+            "`POST /v2/streams/{stream_id}/events`",
+            "reference scenario",
             "사용자와 관심사",
             "기능 요구",
             "비기능 요구",
@@ -34,8 +31,8 @@ class TestOperationalDocumentation:
             "accepted-to-persisted p95",
             "Kafka topic wait p95",
             "DLQ oldest age",
-            "oldest_age_seconds > 600",
-            "oldest_age_seconds > 1800",
+            "oldest_sample_age_seconds",
+            "unresolved SLO 제외",
             "stream_id",
             "Worker inline retry",
             "Kafka DLQ topic",
@@ -46,12 +43,14 @@ class TestOperationalDocumentation:
         for document in (readme, architecture, reliability, repository_structure, test_results):
             assert "SERVICE_REQUIREMENTS.md" in document
 
-        assert "쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트" in readme
-        assert "AWS Managed Service Mapping" in readme
+        assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
+        assert "주문·결제 lifecycle은 범용 contract를 설명하는 reference scenario" in readme
+        assert "## 서비스 경계 / Service Boundary" in readme
+        assert "## AWS Migration Blueprint" in readme
         assert "## TL;DR" in readme
-        assert "## Trade-off" in readme
+        assert "## Trade-offs" in readme
         assert "서비스 문제" in architecture
-        assert "서비스 기준" in readme
+        assert "서비스 기준" in architecture
 
     def test_readme_is_interview_friendly_about_boundary_and_tradeoffs(self):
         readme = read_text("README.md")
@@ -61,25 +60,24 @@ class TestOperationalDocumentation:
             "## Problem",
             "## Solution",
             "## Architecture Boundary",
-            "Kafka-only 구조가 아니라 Kafka-centered 구조",
+            "Kafka-centered 구조이며 PostgreSQL state/read model을 유지",
             "PostgreSQL state path",
             "## Validation Summary",
             "31,676",
             "100/100 pass",
-            "## Trade-off",
-            "API -> Kafka append",
-            "Worker async persistence",
-            "## Ordering Guarantee",
-            "multi-partition 전체 global ordering은 보장하지 않습니다",
-            "## Intake Boundary: Idempotency State Path",
+            "## Trade-offs",
+            "Kafka append-first intake",
+            "### Ordering Guarantee",
+            "서로 다른 partition 전체의 global ordering: 보장 범위 제외",
+            "### Idempotency Boundary",
             "X-Idempotency-Key",
-            "Kafka append 전에 PostgreSQL claim",
+            "API는 Kafka append 전에 PostgreSQL claim을 만들지 않으며",
             "## What I Learned",
             "## Current Bottleneck",
             "Worker DB write throughput",
             "room_sequences",
             "## Next Improvements",
-            "Kafka compacted topic",
+            "transactional outbox",
             "consumer group rebalance",
         ):
             assert token in readme
@@ -112,6 +110,7 @@ class TestOperationalDocumentation:
         assert "start_materialized_cache" in cache
         assert "get_cached_request_status(request_id)" in api
         assert "list_cached_events(stream_id, limit, before_id)" in api
+        assert "_cached_page_matches_stream_watermark" in api
         assert "snapshot_cache_fresh_seconds" in api
         assert "response_model=EventListResponse" in api
         assert "API started without PostgreSQL startup readiness" in main
@@ -140,7 +139,8 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
         for document in (readme, architecture):
-            assert "cache-first" in document
+            assert "DB membership" in document
+            assert "watermark" in document
             assert "snapshot_age_seconds" in document
             assert "degraded=true" in document
             assert "message-snapshots" in document
@@ -180,7 +180,8 @@ class TestOperationalDocumentation:
             "Cache rebuild time",
             "Stale response count",
             "Degraded read count",
-            "Snapshot consumer lag",
+            "Per-pod snapshot replay progress",
+            "미구현 custom metric",
             "snapshot_age_seconds > 30s",
             "snapshot_age_seconds > 120s",
             "Degraded read ratio",
@@ -190,7 +191,8 @@ class TestOperationalDocumentation:
         for token in (
             "Read cache operating signals",
             "Read cache hit ratio",
-            "Snapshot consumer lag",
+            "Per-pod snapshot replay progress",
+            "consumer group lag와 섞어 해석하지 않습니다",
             "source=cache",
             "degraded=true",
         ):
@@ -200,9 +202,13 @@ class TestOperationalDocumentation:
             "read cache hit ratio",
             "snapshot age",
             "degraded read count",
-            "snapshot consumer lag",
+            "pod별 hydration 상태",
+            "captured initial end offset",
         ):
             assert token in observability
+
+        for document in (requirements, metrics_reference, observability):
+            assert "| Snapshot consumer lag |" not in document
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         readme = read_text("README.md")
@@ -220,7 +226,9 @@ class TestOperationalDocumentation:
         assert "## DLQ 운영 기준" in operations
         assert "DLQ_REPLAY_MAX_COUNT" in operations
         assert "## 보안 기본선" in operations
-        assert "dev-secret-change-me" in operations
+        assert ".env.example` placeholder" in operations
+        assert "32-byte 미만 `AUTH_SECRET_KEY`" in operations
+        assert "non-local readiness와 business API에서 차단" in operations
         assert "외부 secret manager" in operations
 
     def test_test_results_and_patch_notes_keep_experiment_rounds(self):
@@ -309,14 +317,23 @@ class TestOperationalDocumentation:
         assert "리소스 부족 가능성" in test_results
         assert "Poison event did not reach Kafka DLQ in time" in quick_start
 
-    def test_public_docs_do_not_describe_redis_migration(self):
-        public_docs = [read_text("README.md")]
-        public_docs.extend(path.read_text(encoding="utf-8") for path in (ROOT / "docs").glob("*.md"))
-        combined = "\n".join(public_docs).lower()
+    def test_redis_results_are_kept_as_explicit_historical_context(self):
+        readme = read_text("README.md")
+        architecture = read_text("docs/ARCHITECTURE.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+        requirements = read_text("requirements.txt").lower()
+        terraform = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (ROOT / "infra" / "terraform").rglob("*.tf")
+            if ".terraform" not in path.parts
+        ).lower()
 
-        blocked_terms = ["redis", "elasticache", "마이그레이션", "기존 redis", "처음부터 kafka"]
-        for term in blocked_terms:
-            assert term not in combined
+        assert "Redis queue-first 수치는 과거 Redis scaling/tuning 문맥에만 사용" in readme
+        assert "Redis queue 단계" in architecture
+        assert "## Redis Historical Context" in test_results
+        assert "Kafka append-first baseline, Worker Kafka KEDA 효과와 분리" in test_results
+        assert "redis" not in requirements
+        assert "elasticache" not in terraform
 
     def test_public_docs_do_not_use_stale_operating_claims(self):
         public_docs = [read_text("README.md")]
@@ -335,12 +352,20 @@ class TestOperationalDocumentation:
         )
         for term in blocked_terms:
             assert term not in combined
+        assert "cache-first" not in combined.lower()
 
         assert "Kafka append-first path" in combined
-        assert "60 passed" in combined
-        assert "9f7fc62be6f202abf98e12c8c108075502cd29a6" in combined
+        assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
+        assert "status `200`" in combined
+        assert "현재 build의 `202 Accepted`" in combined
+        assert "plan` / `apply`는 실행하지 않았" in combined
+        assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined
-        assert "fresh cache read는 `source=cache`, `degraded=false`" in combined
+        assert "hydrated cache fresh read: DB membership/watermark 확인 뒤 `source=cache`" in combined
+        assert (
+            "DB down stale fallback: initial hydration 완료 상태에서 "
+            "`source=cache`, `degraded=true`"
+        ) in combined
         assert "Worker success path transaction 통합" in combined
         assert "28839" in combined
         assert "8.08ms" in combined
@@ -379,319 +404,6 @@ class TestOperationalDocumentation:
         assert "tools/kubectl.exe" in gitignore
         assert "tools/downloads/" in gitignore
 
-    def test_static_order_dashboard_demo_exists(self):
-        demo = read_text("demo/order-dashboard.html")
-        readme = read_text("README.md")
-        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
-        main = read_text("portfolio/main.py")
-        dockerfile = read_text("Dockerfile")
-
-        for token in (
-            "Post-Order Event Console",
-            "demo-version",
-            "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.1.0"',
-            "ver. 1.1.0 / api -",
-            "setDemoVersion",
-            "ver.",
-            "api",
-            "language-toggle",
-            "setLanguage",
-            "translations",
-            "data-i18n",
-            "KO",
-            "EN",
-            "결제 완료",
-            "주문 완료",
-            "운영자 이벤트 큐",
-            "/v1/orders/",
-            "/v1/dlq/ingress/summary",
-            "payment_completed",
-            "delivery_started",
-            "needs_review",
-            "Pipeline Evidence",
-            "API accepted",
-            "Kafka appended",
-            "Worker persisted",
-            "1. API 접수됨",
-            "2. Kafka 적재됨",
-            "3. Worker 처리 중",
-            "4. DB 저장됨",
-            "DLQ summary",
-            "GitHub",
-            "https://github.com/Jangwanko/Cloud_portfolio",
-            "/v1/event-requests/",
-            "/v1/streams",
-            "createDemoOrderStream",
-            "10개 추가",
-            "100개 추가",
-            "1000개 추가",
-            "Add 10",
-            "Add 100",
-            "Add 1000",
-            "주문 이후 업무 이벤트 종류입니다.",
-            "API가 노출된 주소입니다.",
-            "데모 주문 stream id로 자동 갱신됩니다.",
-            "전송 전 예약 비우기",
-            "clear-event-list",
-            "sample-actions",
-            "send-action",
-            "처리 증거",
-            "처리 현황",
-            "예약 건수",
-            "Kafka 적재",
-            "DB 저장",
-            "총 소요시간",
-            "queue-metrics",
-            "grid-template-columns: repeat(4, minmax(0, 1fr))",
-            "grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1fr) minmax(300px, 0.78fr) minmax(300px, 0.78fr)",
-            "height: 170px",
-            "max-height: 170px",
-            "queued-count",
-            "processed-count",
-            "db-persisted-count",
-            "elapsed-seconds",
-            "result-panel",
-            "result-requested",
-            "result-kafka",
-            "result-persisted",
-            "result-cancelled",
-            "result-status",
-            "결과 정리",
-            "Result Summary",
-            "recordQueueEnqueued",
-            "recordQueueProcessed",
-            "recordKafkaAppended",
-            "recordDbPersisted",
-            "updateQueueMetrics",
-            "startProcessingRun",
-            "runStartedAt",
-            "runCompletedAt",
-            "runProcessed",
-            "markEventStatus",
-            "db_row",
-            "pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length)",
-            "아직 시작하지 않은 예약은 취소할 수 있고, 시작된 작업은 계속 추적합니다.",
-            "processReservedEvents",
-            "buildFormEvent",
-            "sendQueuedEvent",
-            "SEND_CONCURRENCY",
-            "sendNextReservedEvent",
-            "activeEvents",
-            "shouldRenderBatchProgress",
-            "Array.from({ length: senderCount }, () => sendNextReservedEvent())",
-            "예약 큐 처리 시작",
-            "cancelPendingReservations",
-            "events.splice(index, 1)",
-            "queueStats.cancelled += cancelledCount",
-            "queueStats.runTarget = Math.max(queueStats.runTarget - cancelledCount, queueStats.runProcessed)",
-            "proof-grid",
-            "Kafka topic",
-            "DB row",
-            "운영 링크는 확인용 보조 링크입니다.",
-            "운영 상태 확인",
-            "Readiness와 DLQ summary를 페이지 이동 없이 요약합니다.",
-            "상태 새로고침",
-            "5초마다",
-            "10초마다",
-            "Every 5s",
-            "Every 10s",
-            "Operational Checks",
-            "Refresh status",
-            "refresh-ops-status",
-            "ops-refresh-interval",
-            "ops-ready-status",
-            "ops-kafka-status",
-            "ops-postgres-status",
-            "ops-worker-status",
-            "ops-dlq-status",
-            "ops-last-checked",
-            "{available}/{max} 실행 중",
-            "{available}/{max} running",
-            "Operations Advisor",
-            "operations-advisor",
-            "advisor-status",
-            "advisor-reason",
-            "advisor-next-step",
-            "updateOperationsAdvisor",
-            "AI API는 호출하지 않습니다.",
-            "No AI API is called.",
-            "refreshOpsStatus",
-            "restartOpsAutoRefresh",
-            "window.setInterval(refreshOpsStatus, intervalMs)",
-            "updateOperationLinks",
-            'document.querySelector("#base-url").addEventListener("input", updateOperationLinks)',
-            "updateReadinessPanel",
-            "updateDlqSummaryPanel",
-            "queueStats.runTarget > 0 ? `${queueStats.queued}/${queueStats.runTarget}` : String(queueStats.queued)",
-            "reset_dlq_topic",
-            "/health/ready",
-            "브라우저가 API 요청을 막았습니다.",
-            "http://localhost/demo/order-dashboard.html",
-            "deriveDefaultBaseUrl",
-            "describeFetchFailure",
-            "addSampleBatch",
-            "add-sample-1000",
-            "add1000",
-            "clearEvents",
-        ):
-            assert token in demo
-
-        assert 'document.documentElement.lang = language' in demo
-        assert 'document.querySelectorAll("[data-i18n]")' in demo
-        assert 'document.querySelectorAll("[data-language]")' in demo
-        assert "../docs/RUNBOOK.md" not in demo
-        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function cancelPendingReservations()", 1)[0]
-        assert "recordQueueEnqueued(count)" in sample_batch
-        assert "startQueueDrain" not in sample_batch
-        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
-        assert "reservedEvents.length === 0" in process_reserved
-        assert "recordQueueEnqueued(1)" in process_reserved
-        assert "startProcessingRun(reservedEvents.length)" in process_reserved
-        assert "const token = await ensureToken" in process_reserved
-        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
-        assert "const activeEvents = reservedEvents.filter" in process_reserved
-        assert "async function sendNextReservedEvent()" in process_reserved
-        assert "await sendQueuedEvent" in process_reserved
-        assert process_reserved.index('event.status = "sending"') < process_reserved.index("await sendQueuedEvent")
-        assert "recordKafkaAppended(1, uiSession)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length))" in process_reserved
-        assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
-        assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
-        assert "await Promise.all(pollTasks)" in process_reserved
-        record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
-        assert "queueStats.queued -= appended" in record_kafka_appended
-        record_db_persisted = demo.split("function recordDbPersisted(count, uiSession) {", 1)[1].split("function recordQueueProcessed", 1)[0]
-        assert "queueStats.queued -=" not in record_db_persisted
-        assert "queueStats.dbPersisted += count" in record_db_persisted
-        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
-        assert "processReservedEvents" in send_order_event
-        clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
-        assert "cancelPendingReservations()" in clear_events
-        assert "events.length = 0" not in clear_events
-        result_panel_markup = demo.split('<section class="stack result-panel waiting" id="result-panel">', 1)[1].split("</section>", 1)[0]
-        assert result_panel_markup.index("operations-advisor") < result_panel_markup.index("resultTitle")
-        links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
-        assert 'data-ops-link="/docs"' in links_markup
-        assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup
-        assert 'href="https://github.com/Jangwanko/Cloud_portfolio"' in links_markup
-        assert ">GitHub<" in links_markup
-        assert "http://localhost/docs" not in links_markup
-        assert "http://localhost/grafana" not in links_markup
-        assert "/v1/dlq/ingress/summary" not in links_markup
-        assert "/health/ready" not in links_markup
-
-        assert "demo/order-dashboard.html" in readme
-        assert "demo/order-dashboard.html" in repository_structure
-        assert 'app.mount("/demo"' in main
-        assert "COPY demo ./demo" in dockerfile
-        return
-
-        for token in (
-            "Post-Order Event Console",
-            "결제 완료",
-            "주문 완료",
-            "운영자 이벤트 큐",
-            "/v1/orders/",
-            "/v1/dlq/ingress/summary",
-            "payment_completed",
-            "delivery_started",
-            "needs_review",
-            "Pipeline Evidence",
-            "API accepted",
-            "Kafka appended",
-            "Worker persisted",
-            "1. API 접수됨",
-            "2. Kafka 적재됨",
-            "3. Worker 처리 중",
-            "4. DB 저장됨",
-            "DLQ summary",
-            "/v1/event-requests/",
-            "/v1/streams",
-            "createDemoOrderStream",
-            "샘플 1개 추가",
-            "샘플 10개 추가",
-            "샘플 100개 추가",
-            "주문 이후 업무 이벤트 종류입니다.",
-            "API가 노출된 주소입니다.",
-            "데모 주문 stream id로 자동 갱신됩니다.",
-            "운영자 이벤트 큐 비우기",
-            "clear-event-list",
-            "sample-actions",
-            "send-action",
-            "처리 증거",
-            "처리 현황",
-            "예약 건수",
-            "Kafka 적재",
-            "DB 저장",
-            "총 소요시간",
-            "처리량/sec",
-            "queue-metrics",
-            "height: 280px",
-            "align-content: start",
-            "height: 160px",
-            "max-height: 160px",
-            "queued-count",
-            "processed-count",
-            "db-persisted-count",
-            "elapsed-seconds",
-            "throughput-rate",
-            "recordQueueEnqueued",
-            "recordQueueProcessed",
-            "recordKafkaAppended",
-            "recordDbPersisted",
-            "updateQueueMetrics",
-            "startProcessingRun",
-            "runStartedAt",
-            "runCompletedAt",
-            "runProcessed",
-            "이번 처리 시퀀스",
-            "markEventStatus",
-            "db_row",
-            "pollRequestStatus(baseUrl, token, event)",
-            "샘플은 전송 전 예약 큐에 추가됩니다.",
-            "Kafka 적재와 DB 저장을 분리해서 집계합니다.",
-            "processReservedEvents",
-            "buildFormEvent",
-            "sendQueuedEvent",
-            "예약 큐 처리 시작",
-            "proof-grid",
-            "Kafka topic",
-            "DB row",
-            "운영 링크는 확인용 보조 링크입니다.",
-            "/health/ready",
-            "브라우저가 API 요청을 막았습니다.",
-            "http://localhost/demo/order-dashboard.html",
-            "deriveDefaultBaseUrl",
-            "describeFetchFailure",
-            "addSampleBatch",
-            "clearEvents",
-        ):
-            assert token in demo
-
-        assert "../docs/RUNBOOK.md" not in demo
-        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function addSample()", 1)[0]
-        assert "recordQueueEnqueued(count)" in sample_batch
-        assert "startQueueDrain" not in sample_batch
-        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
-        assert "reservedEvents.length === 0" in process_reserved
-        assert "recordQueueEnqueued(1)" in process_reserved
-        assert "startProcessingRun(reservedEvents.length)" in process_reserved
-        assert "const token = await ensureToken" in process_reserved
-        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
-        assert "for (const event of reservedEvents)" in process_reserved
-        assert "await sendQueuedEvent" in process_reserved
-        assert "recordKafkaAppended(1)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event))" in process_reserved
-        assert "await Promise.all(pollTasks)" in process_reserved
-        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
-        assert "processReservedEvents" in send_order_event
-
-        assert "demo/order-dashboard.html" in readme
-        assert "demo/order-dashboard.html" in repository_structure
-        assert 'app.mount("/demo"' in main
-        assert "COPY demo ./demo" in dockerfile
-
 
 class TestManifestContracts:
     def test_dlq_replay_limit_is_set_in_kubernetes_manifests(self):
@@ -714,6 +426,7 @@ class TestManifestContracts:
         terraform_files = [
             path.read_text(encoding="utf-8").lower()
             for path in (ROOT / "infra" / "terraform").rglob("*.tf")
+            if ".terraform" not in path.parts
         ]
         combined = "\n".join(terraform_files)
 
@@ -993,11 +706,13 @@ class TestOperationsDashboard:
 
         for manifest in (app_manifest, gitops_manifest):
             assert "name: dlq-replayer" in manifest
-            assert 'targets: ["dlq-replayer:9102"]' in manifest
-            assert "Messaging Portfolio Operations Overview" in manifest
+            assert "dlq-replayer.messaging-app.svc.cluster.local" in manifest
+            assert "dns_sd_configs:" in manifest
+            assert "Reliable Event Processing Operations Overview" in manifest
             assert "messaging_dlq_replay_total" in manifest
 
-        assert "Messaging Portfolio Operations Overview" in dashboard
+        assert "Reliable Event Processing Operations Overview" in dashboard
+        assert "Messaging Portfolio Operations Overview" not in dashboard
 
 
 class TestAlertPolicy:
@@ -1055,14 +770,22 @@ class TestAlertPolicy:
         metrics_reference = read_text("docs/METRICS_REFERENCE.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (reliability, runbook, test_results):
-            assert "API 5xx" in document
-            assert "accepted-to-persisted" in document
-            assert "Kafka topic wait" in document
-            assert "MessagingDlqReplayBlocked" in document
-            assert "oldest_age_seconds" in document
-            assert "> 600" in document
-            assert "> 1800" in document
+        assert "API 5xx" in reliability
+        assert "accepted-to-persisted" in reliability
+        assert "Kafka topic wait" in reliability
+        assert "MessagingDlqReplayBlocked" in reliability
+        assert "oldest_sample_age_seconds" in reliability
+
+        assert "API 5xx" in runbook
+        assert "accepted-to-commit" in runbook
+        assert "Kafka topic wait" in runbook
+        assert "MessagingDlqReplayBlocked" in runbook
+        assert "oldest_sample_age_seconds" in runbook
+
+        assert "accepted-to-persisted" in test_results
+        assert "MessagingDlqReplayBlocked" in test_results
+        assert "oldest_sample_age_seconds" in test_results
+        assert "현재 DLQ sample age는 alert SLO가 아닙니다" in test_results
 
         for document in (observability, metrics_reference, runbook, test_results):
             assert "kafka-exporter" in document
@@ -1071,7 +794,11 @@ class TestAlertPolicy:
 
         for document in (metrics_reference, runbook, test_results):
             assert "GET /v1/dlq/ingress/summary" in document
-            assert "oldest_age_seconds" in document
+            assert "oldest_sample_age_seconds" in document
+
+        assert "unresolved SLO로 사용하지 않습니다" in reliability
+        assert "unresolved event age 또는 backlog SLO로 사용 제외" in runbook
+        assert "현재 DLQ sample age는 alert SLO가 아닙니다" in test_results
 
         assert "3974 -> 4008" in test_results
         assert "stream_seq 1..20" in test_results

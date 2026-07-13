@@ -1,5 +1,6 @@
 param(
-  [string]$Namespace = "keda"
+  [string]$Namespace = "keda",
+  [string]$ChartVersion = "2.17.2"
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +29,7 @@ kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f 
 
 & $helm upgrade --install keda kedacore/keda `
   -n $Namespace `
+  --version $ChartVersion `
   --wait --timeout 10m
 
 kubectl rollout status deployment/keda-operator -n $Namespace --timeout=300s | Out-Host

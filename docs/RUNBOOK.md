@@ -1,6 +1,6 @@
 # 운영 Runbook
 
-Kafka event stream pipeline 장애 대응 순서:
+Reliable Event Processing System 장애 대응 순서:
 
 - 증상 확인
 - 영향 범위 판단
@@ -15,6 +15,8 @@ Kafka event stream pipeline 장애 대응 순서:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 ```
+
+Argo CD를 설치하지 않은 `quick_start_all.ps1` profile에서는 `-SkipArgoCd` 사용.
 
 확인 항목:
 
@@ -84,7 +86,7 @@ kubectl get job kafka-topic-bootstrap -n messaging-app
 ## PostgreSQL / Pgpool 장애
 
 대표 증상:
-- `/health/ready` `degraded` 또는 `not_ready` 응답
+- `/health/ready` `degraded`; startup schema 미완료까지 겹치면 `not_ready`
 - Worker persistence retry 반복
 - request status `queued` 정체 또는 DLQ 이동
 
@@ -99,6 +101,7 @@ kubectl logs -n messaging-app statefulset/messaging-postgresql-ha-postgresql --t
 
 조치:
 - Pgpool pod 재시작, PostgreSQL primary reachable, standby 수, replication lag 순서 확인
+- `reason`: `postgres_primary_unreachable`, ready/sync standby minimum, replication delay 구분
 - PostgreSQL write path 불안정: Worker inline retry
 - inline retry 한도 초과 event: DLQ 이동
 - DB 복구 후: DLQ reason 확인
@@ -180,6 +183,34 @@ powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1 -SkipRes
 - `scripts/test_api_contracts.ps1 -SkipReset` 통과
 - `scripts/run_recommended_tests.ps1 -SkipK6` 통과
 
+## Generic v2 Schema Downgrade
+
+`0008` downgrade는 구조화된 v2 row와 기존 컬럼만으로 복원할 수 없는 schema v1 envelope를 버릴 수 있으므로 일반적인 code rollback과 함께 자동 실행하지 않습니다. 다음 선행조건을 순서대로 모두 충족해야 합니다.
+
+1. GitOps overlay 또는 manual API env에서 `GENERIC_EVENTS_V2_ENABLED=false` 적용
+2. API rollout 완료와 모든 API pod gate `false` 확인; v2 POST `503` 확인
+3. `message-worker` consumer lag `0` 확인
+4. accepted/retry 상태 v2 request, producer retry, DLQ/replay 대기 event가 없어 inflight v2 `0` 확인
+5. `docs/OPERATIONS.md`의 `downgrade_unsafe_rows` query 결과 `0` 확인
+6. 확인 결과와 시각을 incident/change record에 남긴 뒤 `0007_drop_legacy_room_sequence_allocations` target으로 downgrade
+
+중단 조건:
+
+- API pod 하나라도 gate `true`
+- API rollout 미완료
+- `message-worker` consumer lag `0` 초과
+- v2 request 상태 또는 producer/DLQ/replay inflight 여부 불명확
+- persisted v2 row 또는 복원 불가능한 schema v1 `payload`/`metadata` 존재
+
+위 조건에서는 downgrade를 실행하지 않습니다. `0008` migration도 downgrade-unsafe row가 있으면 명시적으로 거부합니다. 새 schema를 유지하고 원인 수정, 새 image rollout, replay/reconciliation을 통한 forward recovery를 우선합니다.
+
+복구 확인:
+
+- downgrade를 수행한 경우 Alembic current revision 확인
+- v1 compatibility route contract test 통과
+- accepted/persisted reconciliation과 Worker lag `0`
+- downgrade를 중단한 경우 forward-fixed image와 v2 canary의 `payload`/`metadata` 일치
+
 ## 낮은 사양 / Resource Contention
 
 대표 증상:
@@ -225,7 +256,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 운영 알림 확인 순서:
 
-- Grafana `Messaging Portfolio Operations Overview`에서 같은 이름의 지표 흐름 확인
+- Grafana `Reliable Event Processing Operations Overview`에서 같은 이름의 지표 흐름 확인
 - 관련 runbook 절차 진입
 - 첫 조치 후 복구 확인 command 실행
 
@@ -235,8 +266,8 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | `MessagingApiHigh5xxRate` | API 5xx ratio `> 5%` for 5m | API 5xx Ratio | intake 장애로 보고 Kafka Intake / PostgreSQL 절차 진입 |
 | `MessagingApiP95LatencyHigh` | API p95 `> 2s` for 10m | API Latency | API pod CPU, DB pool, Kafka publish 지연 확인 |
 | `MessagingApiP95LatencyCritical` | API p95 `> 4s` for 5m | API Latency | client 영향 장애로 보고 scale/resource 상태 확인 |
-| `MessagingEventPersistLagHigh` | accepted-to-persisted p95 `> 5s` for 5m | Accepted To Persisted Lag | Worker 처리량과 PostgreSQL 상태 확인 |
-| `MessagingEventPersistLagCritical` | accepted-to-persisted p95 `> 15s` for 5m | Accepted To Persisted Lag | persistence 장애로 보고 Worker / PostgreSQL 절차 진입 |
+| `MessagingEventPersistLagHigh` | Worker-observed accepted-to-commit p95 `> 5s` for 5m | Accepted To Persisted Lag | Worker 처리량과 PostgreSQL 상태 확인 |
+| `MessagingEventPersistLagCritical` | Worker-observed accepted-to-commit p95 `> 15s` for 5m | Accepted To Persisted Lag | persistence 장애로 보고 Worker / PostgreSQL 절차 진입 |
 | `MessagingQueueWaitHigh` | Kafka topic wait p95 `> 10s` for 5m | Kafka Topic Wait Time | Worker replica와 KEDA desired replica 확인 |
 | `MessagingQueueWaitCritical` | Kafka topic wait p95 `> 30s` for 5m | Kafka Topic Wait Time | backlog 장애로 보고 Worker Consumer Lag 절차 진입 |
 | `MessagingDlqEventsIncreasing` | DLQ event 1건 이상 증가 | DLQ Events And Replay | failed_reason을 확인하고 replay 가능 여부 판단 |
@@ -274,7 +305,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -Sk
 DLQ 알림 시 첫 확인:
 
 - summary endpoint
-- blocked / replayable / by_reason / oldest_age_seconds
+- sampled blocked / replayable / by_reason / oldest_sample_age_seconds
 - sample payload
 
 ```powershell
@@ -291,9 +322,10 @@ Endpoint: `GET /v1/dlq/ingress/summary`
 | `replayable > 0` | 원인이 복구된 뒤 DLQ Replayer가 ingress topic으로 재주입할 수 있는 후보 |
 | `by_reason.room_sequence_gap` 증가 | 같은 stream ordering 경계에서 앞 event 실패 또는 잘못된 sequence 입력 확인 |
 | `by_reason.transient_error_max_retries:*` 증가 | PostgreSQL / Pgpool / persistence path 장애 확인 |
-| `oldest_age_seconds > 600` | DLQ event가 10분 이상 남은 warning 상태이므로 replay 조건과 원인 수정 여부 확인 |
-| `oldest_age_seconds > 1800` | DLQ event가 30분 이상 남은 critical 상태이므로 자동 replay만 기다리지 말고 수동 처리 또는 원인 수정 결정 |
+| `oldest_sample_age_seconds` | 조회 sample의 역사 범위. unresolved event age 또는 backlog SLO로 사용 제외 |
 | `by_stream` 특정 stream 집중 | 해당 stream의 앞 event, membership, sequence 상태를 우선 조사 |
+
+Summary는 append-only log sample입니다. `blocked`와 `replayable`도 sample 분류이며 현재 unresolved depth가 아닙니다. Incident 종료는 accepted/persisted reconciliation, Worker lag, replay result를 함께 확인합니다.
 
 ## Incident Signal Suite
 

@@ -96,9 +96,13 @@ import urllib.request
 stream_id = os.environ["STREAM_ID"]
 token = os.environ["TOKEN"]
 suffix = os.environ["SUFFIX"]
-payload = json.dumps({"body": f"cache warmup {suffix}"}).encode("utf-8")
+payload = json.dumps({
+    "event_type": "portfolio.cache-warmup.probe",
+    "payload": {"message": f"cache warmup {suffix}"},
+    "metadata": {"scenario": "db-outage-cache-warmup"},
+}).encode("utf-8")
 request = urllib.request.Request(
-    f"http://127.0.0.1:8000/v1/streams/{stream_id}/events",
+    f"http://127.0.0.1:8000/v2/streams/{stream_id}/events",
     data=payload,
     headers={
         "Authorization": f"Bearer {token}",
@@ -107,8 +111,8 @@ request = urllib.request.Request(
     method="POST",
 )
 with urllib.request.urlopen(request, timeout=10) as response:
-    if response.status >= 300:
-        raise SystemExit(response.status)
+    if response.status != 202:
+        raise SystemExit(f"Expected HTTP 202 from cache warmup event, got {response.status}")
 '@
   $encodedCode = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($code))
   $podsRaw = kubectl -n $Namespace get pods -l app=$ApiDeployment -o jsonpath='{.items[*].metadata.name}'
@@ -146,7 +150,15 @@ try {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 
-  $accept = Invoke-RestMethod -Method Post -Uri ("$BaseUrl/v1/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ body = "event while db down" } | ConvertTo-Json)
+  $acceptResponse = Invoke-WebRequest -Method Post -Uri ("$BaseUrl/v2/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{
+    event_type = "portfolio.db-outage.probe"
+    payload = @{ message = "event while db down" }
+    metadata = @{ scenario = "db-outage-recovery" }
+  } | ConvertTo-Json -Depth 4)
+  if ([int]$acceptResponse.StatusCode -ne 202) {
+    throw "Expected HTTP 202 while db down, got $($acceptResponse.StatusCode)"
+  }
+  $accept = $acceptResponse.Content | ConvertFrom-Json
   if ($accept.status -ne "accepted") {
     throw "Expected accepted while db down, got: $($accept | ConvertTo-Json -Compress)"
   }
@@ -169,8 +181,11 @@ try {
   $persisted = $false
   $deadline = (Get-Date).AddSeconds(300)
   while ((Get-Date) -lt $deadline) {
-    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri ("$BaseUrl/v1/event-requests/{0}" -f $requestId)
+    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri ("$BaseUrl/v2/event-requests/{0}" -f $requestId)
     if ($status.status -eq "persisted") {
+      if ($status.payload.message -ne "event while db down") {
+        throw "Persisted generic payload did not match the outage event"
+      }
       $persisted = $true
       break
     }
