@@ -204,11 +204,17 @@ def test_argocd_scope_and_replica_ignores_are_minimal() -> None:
     application = _read(
         "k8s/argocd/application-messaging-portfolio-local-ha.example.yaml"
     )
+    base = _read("k8s/gitops/base/kustomization.yaml")
+    namespace = _read("k8s/gitops/base/namespace.yaml")
     assert '"*"' not in project
     assert "\n    - namespace: argocd" not in project
     assert "name: api" in application
     assert "name: worker" in application
     assert "kind: Namespace" not in _read("k8s/gitops/base/manifests-ha.yaml")
+    assert "  - namespace.yaml" in base
+    assert "kind: Namespace" in namespace
+    assert "name: messaging-app" in namespace
+    assert "argocd.argoproj.io/sync-options: Prune=false" in namespace
 
 
 def test_terraform_uses_consistent_password_and_supported_versions() -> None:

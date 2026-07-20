@@ -2,6 +2,13 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 업데이트: Argo CD Namespace prune 방지
+
+- 기존 GitOps revision이 추적하던 `messaging-app` Namespace가 새 desired state에서 빠지면서 automated prune 대상이 되는 전환 결함 확인
+- Namespace 삭제가 PostgreSQL/Pgpool, runtime secret, backup PVC 등 namespace-scoped bootstrap 리소스까지 연쇄 삭제하는 영향 확인
+- `k8s/gitops/base/namespace.yaml`을 desired state에 유지하고 `argocd.argoproj.io/sync-options: Prune=false` 적용
+- Namespace lifecycle을 application rollout과 분리하는 contract test 및 GitOps 운영 규칙 추가
+
 ## 2026-07-21 업데이트: 기존 DB의 generic v2 migration 호환성 수정
 
 - `master`를 개발·검증 브랜치 `dev-kafka`에 병합하고 generic v2 staged GitOps manifest 반영

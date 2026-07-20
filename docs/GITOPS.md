@@ -110,6 +110,8 @@ Application 기본값:
 - automated prune / self-heal
 - `RespectIgnoreDifferences=true`
 
+`messaging-app` Namespace는 `k8s/gitops/base/namespace.yaml`에 계속 유지하며 `Prune=false`를 적용합니다. 자동 prune이 켜진 Application에서 기존에 추적하던 Namespace를 desired state에서 제거하면 namespace-scoped bootstrap 리소스와 PVC까지 함께 삭제될 수 있기 때문입니다. Namespace lifecycle은 application rollout과 분리하고, 이름 변경이나 제거는 별도 migration 절차로 수행합니다.
+
 Replica drift:
 
 - API HPA와 Worker KEDA가 `/spec/replicas` 변경
