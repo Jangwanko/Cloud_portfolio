@@ -75,6 +75,14 @@ race guard:
 - workflow 실행 중 master가 앞서가면 이전 run의 tag commit 생략
 - 새 master run이 자체 image/tag를 처리
 
+2026-07-21 remote 검증:
+
+- merge commit `8f5d78c`
+- GitHub Actions CI run `#55`: validate / `publish-master-image` success
+- promoted release image `ghcr.io/jangwanko/cloud_portfolio:8f5d78c6963a`
+- overlay bot commit `717e0ca`
+- local Argo CD targetRevision은 `dev-kafka` 유지; master artifact의 local runtime rollout 증거에서 제외
+
 운영 전 확인:
 
 - repository branch protection이 Actions bot push를 허용하는지

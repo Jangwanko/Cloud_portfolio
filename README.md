@@ -146,6 +146,8 @@ DB commit과 후속 Kafka publish 사이의 crash gap은 남아 있는 신뢰성
 
 문서에 등록된 외부 URL은 `demo-lite` deployment입니다. Generic v2는 local `dev-kafka` cluster에서 검증됐으며 public demo-lite에는 아직 반영되지 않았습니다. 접속 시 UI badge, readiness의 API version, event response status를 함께 확인합니다.
 
+Master merge `8f5d78c`는 CI run `#55`를 통과해 GHCR image `8f5d78c6963a`로 승격됐고 overlay bot commit `717e0ca`까지 완료됐습니다. Local Argo CD는 개발 검증 정책에 따라 `dev-kafka`를 추적하므로 이 master artifact의 local runtime 배포 증거로 해석하지 않습니다.
+
 - Demo UI: [https://vm118.js-banjiha.cloud/demo/order-dashboard.html](https://vm118.js-banjiha.cloud/demo/order-dashboard.html)
 - Swagger: [https://vm118.js-banjiha.cloud/docs](https://vm118.js-banjiha.cloud/docs)
 - Readiness: [https://vm118.js-banjiha.cloud/health/ready](https://vm118.js-banjiha.cloud/health/ready)
