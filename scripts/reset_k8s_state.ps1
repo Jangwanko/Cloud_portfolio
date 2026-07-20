@@ -23,11 +23,17 @@ function Get-WorkloadRef([string]$Name) {
 function Scale-Workload([string]$Name, [int]$Replicas) {
   $ref = Get-WorkloadRef $Name
   kubectl -n $Namespace scale $ref --replicas=$Replicas | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to scale $ref to $Replicas replicas"
+  }
 }
 
 function Wait-Workload([string]$Name, [int]$TimeoutSec) {
   $ref = Get-WorkloadRef $Name
   kubectl -n $Namespace rollout status $ref --timeout="$($TimeoutSec)s" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Timed out or failed waiting for $ref rollout"
+  }
 }
 
 function Get-BaseReplicas([string]$Name) {

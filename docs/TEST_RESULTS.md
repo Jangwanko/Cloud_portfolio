@@ -14,14 +14,14 @@
 | Last legacy raw performance suite | 2026-06-18, `27,795`, p95 `119.28ms` | notification 경계 검증, 기준선 미채택 |
 | Same-stream ordering | `stream_seq 1..100` | performance suite와 failure injection에서 통과 |
 | Ordering / DB outage | 네 시나리오 accepted = persisted | 2026-06-08 원본 추적 |
-| Materialized cache fallback | fresh cache와 DB-down stale cache | 기존 functional validation |
+| Materialized cache fallback | fresh cache와 DB-down stale cache | 2026-07-21 tracked rerun: fresh age `0.112s`, DB-down degraded age `11.462s`, recovery exit `0` |
 | Worker scaling | Kafka consumer lag 기반 KEDA | lag / persistence proxy / drain 관찰 |
 | Fixed Worker 대 KEDA | 직접 비교 없음 | 동일 조건 A/B 실험 필요 |
 | Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
 | Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | source/infra contract 검증; remote Actions/Argo rollout 증거 대기 |
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
-| PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | cache fallback과 DB outage suite 모두 recovery exit `0`; primary promotion은 별도 미검증 |
+| PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
 | Public demo-lite UI `1.4.1` | branch/deployment-specific | master `2.0.0` 미배포; public badge/API 별도 확인 |
 | Unit / contract / infrastructure suite | `359 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
@@ -32,6 +32,7 @@
 - [results/kafka-performance/latest.txt](../results/kafka-performance/latest.txt)
 - [results/ordering-failure/latest.json](../results/ordering-failure/latest.json)
 - [results/postgres-restore/latest.json](../results/postgres-restore/latest.json)
+- [results/postgres-recovery/latest.json](../results/postgres-recovery/latest.json)
 - [results evidence guide](../results/README.md)
 
 ## Evidence Vocabulary
@@ -585,7 +586,7 @@ powershell -ExecutionPolicy Bypass -File scripts\test_cache_read_fallback.ps1 -S
 
 이 실행은 cache read/fallback 기능 검증입니다. consumer group lag 또는 pod별 replay 진행률을 측정한 결과가 아닙니다.
 
-2026-07-21 수정 후 재실행은 `47.5s`, exit `0`으로 완료했습니다. Fresh read는 `source=cache`, `degraded=false`, age `0.453s`, DB-down read는 `source=cache`, `degraded=true`, age `11.784s`였고 scale `3→0→3` 뒤 PostgreSQL `3/3`, sync/quorum standby `2`, readiness `ready`로 복귀했습니다. 별도 DB outage suite도 `45.1s`, exit `0`으로 accepted-during-outage와 recovery persistence를 재확인했습니다. Readiness의 `hydrated` 응답 누락 수정은 새 image 배포 뒤 `true`를 직접 확인합니다.
+2026-07-21 tracked rerun은 `45.390s`, exit `0`으로 완료했습니다. Fresh read는 `source=cache`, `degraded=false`, age `0.112s`, DB-down read는 `source=cache`, `degraded=true`, age `11.462s`였고 scale `3→0→3` 뒤 PostgreSQL `3/3`, sync/quorum standby `2`, readiness `ready`로 복귀했습니다. 별도 DB outage suite도 `43.008s`, exit `0`으로 accepted-during-outage와 recovery persistence를 재확인했습니다. Readiness의 `hydrated` 응답 누락 수정은 새 image 배포 뒤 `true`를 직접 확인합니다. 실행 시각·source/script hash·관측값을 담은 tracked structured summary는 [results/postgres-recovery/latest.json](../results/postgres-recovery/latest.json)에 보관합니다. 전체 raw terminal transcript는 보관하지 않았습니다.
 
 ## 운영 메트릭 변화 확인 — 2026-04-29
 

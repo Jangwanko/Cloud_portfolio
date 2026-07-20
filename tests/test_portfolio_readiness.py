@@ -484,7 +484,15 @@ class TestManifestContracts:
         assert "k6 job did not finish within $TimeoutSec seconds" in k6_runner
         assert "-AllowThresholdFailure" not in suite_script
         assert "$failedResultPath" in suite_script
-        assert "if ($suiteSucceeded) { $resultPath } else { $failedResultPath }" in suite_script
+        assert "$overallSucceeded = $suiteSucceeded -and $null -eq $resetError" in suite_script
+        assert "if ($overallSucceeded) { $resultPath } else { $failedResultPath }" in suite_script
+        assert "Final reset failed:" in suite_script
+        assert suite_script.index("Final reset failed:") < suite_script.index(
+            "[System.IO.File]::WriteAllLines"
+        ) < suite_script.index("if ($null -ne $suiteError)")
+        assert suite_script.index("if ($null -ne $suiteError)") < suite_script.index(
+            "if ($null -ne $resetError)"
+        ) < suite_script.index("if ($null -ne $writeError)")
 
     def test_kafka_performance_suite_drains_post_hpa_backlog(self):
         suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
@@ -492,7 +500,15 @@ class TestManifestContracts:
         assert "function Wait-ConsumerLagDrain" in suite_script
         assert '-Phase "main_load"' in suite_script
         assert '-Phase "post_hpa"' in suite_script
-        assert "-RequiredConsecutiveZeroSamples 2" in suite_script
+        assert suite_script.count("-RequiredConsecutiveZeroSamples 2") == 2
+        assert "function Get-ConsumerLagSample" in suite_script
+        assert suite_script.count("min(timestamp(kafka_consumergroup_lag") == 2
+        assert "$sourceTimestampBefore -eq $sourceTimestampAfter" in suite_script
+        assert "after 3 attempts" in suite_script
+        assert "$workerSample.Fresh -and $notificationSample.Fresh -and $timestampsAdvanced" in suite_script
+        assert "$workerSample.SourceTimestampSeconds -gt $lastAcceptedWorkerSourceTimestamp" in suite_script
+        assert "$notificationSample.SourceTimestampSeconds -gt $lastAcceptedNotificationSourceTimestamp" in suite_script
+        assert "max_lag_metric_age_seconds:" in suite_script
         for metric_suffix in (
             "_message_worker_peak_consumer_lag",
             "_notification_worker_peak_consumer_lag",
@@ -510,6 +526,9 @@ class TestManifestContracts:
         ) < suite_script.index('Invoke-SuiteStep "Final runtime snapshot"')
         assert "[System.Text.UTF8Encoding]::new($false)" in suite_script
         assert "[System.IO.File]::WriteAllLines" in suite_script
+        assert "$temporaryOutputPath" in suite_script
+        assert "[System.IO.File]::Replace($temporaryOutputPath, $outputPath, $null)" in suite_script
+        assert "[System.IO.File]::Move($temporaryOutputPath, $outputPath)" in suite_script
 
     def test_api_contract_waits_for_real_materialized_cache_hydration(self):
         contract_script = read_text("scripts/test_api_contracts.ps1")

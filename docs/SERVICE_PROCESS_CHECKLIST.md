@@ -78,7 +78,7 @@ Readiness state는 HTTP status와 reason을 함께 읽습니다.
 | `Prometheus and Kafka exporter` | `up=0` 또는 query no data | scrape target, service, exporter, Prometheus 설정 문제 |
 | `Prometheus and Kafka exporter` | `kafka_brokers < 3` | 로컬 Kafka HA topology 약화 |
 | `Prometheus and Kafka exporter` | `consumer_lag > 100` | Worker가 ingress topic을 따라잡지 못하는 상태 |
-| `Backup PVC` | `Pending` 외 다른 비정상 phase | backup storage 점검 필요 |
+| `Backup PVC` | 첫 backup consumer 실행 뒤에도 phase가 `Bound`가 아님 | backup Job consumer와 storage provisioning 점검 필요 |
 
 PostgreSQL StatefulSet 재시작/scale-up 뒤에는 pod ready 수와 함께 `postgres.sync_standby_count >= 1`을 확인합니다. `0`이면 `scripts/configure_postgres_sync.ps1`로 모든 pod의 persisted sync 설정을 복원하고 readiness가 `ready`로 돌아온 뒤 다음 절차를 진행합니다.
 

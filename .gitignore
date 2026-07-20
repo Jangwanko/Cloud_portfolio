@@ -47,6 +47,9 @@ results/ordering-failure/*
 !results/postgres-restore/
 results/postgres-restore/*
 !results/postgres-restore/latest.json
+!results/postgres-recovery/
+results/postgres-recovery/*
+!results/postgres-recovery/latest.json
 k6/results/
 
 # Docker

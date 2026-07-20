@@ -265,6 +265,10 @@ def test_powershell_postgresql_recovery_restores_sync_replication_safely() -> No
     for recovery in recovery_scripts:
         assert "configure_postgres_sync.ps1" in recovery
 
+    reset_script = _read("scripts/reset_k8s_state.ps1")
+    assert "Failed to scale $ref to $Replicas replicas" in reset_script
+    assert "Timed out or failed waiting for $ref rollout" in reset_script
+
 
 def test_backup_restore_clients_do_not_expose_or_reencode_database_credentials() -> None:
     backup = _read("scripts/backup_postgres_k8s.ps1")
@@ -287,6 +291,11 @@ def test_backup_restore_clients_do_not_expose_or_reencode_database_credentials()
     assert 'kubectl cp $backupName "$Namespace/$restorePod`:/tmp/postgres-restore.sql"' in restore
     assert "--file=/tmp/postgres-restore.sql" in restore
     assert "Get-Content -LiteralPath $resolvedBackupFile -Raw" not in restore
+    reset_block = restore.split("if ($ResetSchema)", 1)[1].split(
+        "--file=/tmp/postgres-restore.sql", 1
+    )[0]
+    assert 'if ($LASTEXITCODE -ne 0)' in reset_block
+    assert "Failed to reset the public schema before restore" in reset_block
 
 
 def test_application_and_alembic_defaults_do_not_embed_a_database_password() -> None:

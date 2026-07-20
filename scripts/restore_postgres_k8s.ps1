@@ -91,6 +91,9 @@ try {
     $resetSql = "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"
     & kubectl exec -i -n $Namespace $restorePod -- `
       psql -h $ServiceName -p 5432 -U $DbUser -d $DbName -v ON_ERROR_STOP=1 -c $resetSql | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to reset the public schema before restore."
+    }
   }
 
   & kubectl exec -n $Namespace $restorePod -- `

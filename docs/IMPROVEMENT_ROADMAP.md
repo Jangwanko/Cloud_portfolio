@@ -7,7 +7,7 @@
 현재 투자 순서:
 
 1. **generic v2 지속 가능 처리량 확정**: 첫 100 VU / 30초 후보를 3회 반복하고 single hot stream과 multi-stream을 분리해 intake, Worker commit lag, PostgreSQL 처리량, drain time 비교
-2. **복구 지점 자동화**: host logical dump의 disposable restore는 통과. 같은 host 장애를 견디는 object storage 복제, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록 추가
+2. **복구 지점 자동화**: 같은 local cluster의 disposable database를 사용한 수동 host logical dump restore는 통과. 남은 범위는 object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 3. **DB commit 이후 publish gap 제거**: request status, snapshot, notification을 transactional outbox 또는 동등한 복구 경계로 이동
 4. **offset crash / rebalance 증거 완성**: 배포 image에서 record 처리와 offset commit 사이 강제 종료, consumer rebalance, 재기동 후 accepted/persisted reconciliation 검증
 
@@ -173,13 +173,14 @@
 
 ### 14. 복구 훈련 확대
 
-- 현재 상태: namespace prune 전환 결함으로 PostgreSQL/Pgpool과 namespace 내부 backup PVC가 함께 삭제되는 local incident 경험. Namespace desired state와 `Prune=false` 보호 적용, fresh PostgreSQL 재설치 뒤 backup Job/PVC 확인. Host logical dump `39,433,414` bytes를 disposable DB로 복원해 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치를 확인하고 임시 DB 삭제. Object storage 사본, cluster-loss 복구, 자동 RPO/RTO 측정은 미구현
+- 현재 완료: namespace prune 전환 결함 뒤 Namespace desired state와 `Prune=false` 보호 적용, fresh PostgreSQL 재설치, backup Job/PVC 확인. Host logical dump `39,433,414` bytes를 같은 local cluster의 disposable DB에 수동 복원해 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치 확인 후 임시 DB 삭제
+- 남은 범위: 정기 restore drill, cluster/namespace lifecycle과 분리된 object storage 사본, cluster-loss 복구, 측정된 RPO/RTO 원본
 - 목표: single-node local demo 범위를 넘어 복구 절차 검증
 - 완료 기준:
   - multi-node broker/worker/node disruption 시나리오
-  - cluster/namespace lifecycle과 분리된 host 또는 object storage backup 사본
+  - local host/cluster lifecycle과 분리된 object storage backup 사본
   - dump size/checksum 검증과 backup 실패 alert
-  - PostgreSQL backup restore drill과 RPO/RTO 원본 기록
+  - 정기 PostgreSQL restore drill과 측정된 RPO/RTO 원본 기록
   - consumer rebalance 및 partition imbalance 실험
   - runbook 단계와 실제 복구 시간 일치
 

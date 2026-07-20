@@ -8,11 +8,14 @@
 - `kafka-performance/failed-YYYYMMDD-HHMMSS.txt`: 실패한 suite의 부분 출력. `latest.txt`를 덮어쓰지 않으며 기본 Git 추적 제외
 - `ordering-failure/latest.json`: ordering / failure injection suite의 마지막 완료 결과
 - `postgres-restore/latest.json`: host logical dump를 disposable database에 복원한 마지막 정합성 검증 원본
+- `postgres-recovery/latest.json`: PostgreSQL 전체 재시작 뒤 sync 설정, cache fallback, outage recovery의 마지막 tracked structured summary
 - 그 밖의 날짜별·중간 산출물: 로컬 보관, 기본 Git 추적 제외
 
 PostgreSQL restore 원본은 dump 파일 자체를 Git에 넣지 않습니다. `latest.json`에 dump size/hash, 검증 script hash, source/restore 비교값과 한계를 남깁니다.
 
-## Latest Completed Suite — 2026-07-21
+PostgreSQL recovery JSON은 실행 시각, source/script hash, 관측값과 한계를 구조화한 추적 요약입니다. 전체 raw terminal transcript는 보관하지 않았으므로 JSON 자체를 원시 출력으로 해석하지 않습니다.
+
+## Latest Completed Kafka Performance Suite — 2026-07-21
 
 - 실행: `2026-07-21T03:37:34+09:00`, `dev-kafka` revision `1439be1`, API/Worker image `d31ac14`
 - 조건: generic v2, 100 VU / 30s, 한 hot stream, Kafka 한 partition 집중
@@ -22,6 +25,23 @@ PostgreSQL restore 원본은 dump 파일 자체를 Git에 넣지 않습니다. `
 - lag: message-worker peak `24,504`, notification-worker peak `6`, main drain `751.76s`, final both `0`
 - HPA follow-up: suite의 main drain 뒤 생성된 추가 message-worker lag `4,962`, 수동 관측 약 `160s` 내 `0`
 - 판정: 첫 generic v2 후보, stable baseline 미채택; fresh cluster clean state를 포함한 단일 실행으로 인과관계 판단 제외
+
+## Latest PostgreSQL Restore Drill — 2026-07-21
+
+- 실행: `2026-07-21T04:41:27+09:00`, `dev-kafka` base revision `1439be1`, 검증 script SHA256 기록
+- 원본: host workspace의 Git-ignored logical dump `39,433,414` bytes, SHA256 `26019e88...93c4`
+- 복원 대상: 같은 local PostgreSQL HA cluster의 disposable database
+- 결과: Alembic `0008`, 10개 table count, generic v2 row `33,840`, max message id `33,840`, max stream sequence `25,378` 원본 일치
+- 한계: 전체 host/cluster loss, object storage 사본, 정기 integrity check, 자동 RPO/RTO 측정 미검증
+
+## Latest PostgreSQL Restart Recovery Drill — 2026-07-21
+
+- 실행: `2026-07-21T05:01:59+09:00`, `dev-kafka` source revision `fde9a24`, 관련 script SHA256 기록
+- sync recovery: 모든 StatefulSet ordinal에 `synchronous_commit=on`, `ANY 1` 지속 적용; primary `postgresql-0`, sync/quorum standby `2`
+- cache fallback: `45.390s`, fresh cache age `0.112s`, DB-down degraded cache age `11.462s`, scale `3→0→3` 뒤 ready
+- DB outage: `43.008s`, DB down 중 event 수락과 복구 뒤 persistence 확인
+- 최종 상태: PostgreSQL `3/3`, Pgpool `2/2`, API ready, message/notification lag `0`, backup PVC `Bound`
+- 한계: primary promotion과 node/AZ 장애 미검증; 상세값은 `postgres-recovery/latest.json`
 
 ## Interpretation Rules
 

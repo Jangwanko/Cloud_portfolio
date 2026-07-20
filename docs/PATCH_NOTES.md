@@ -13,8 +13,13 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - 새 host logical dump `39,433,414` bytes를 disposable database에 복원하고 10개 table row count, Alembic `0008_generic_event_envelope`, generic v2 row `33,840`, message max id/sequence 원본 일치를 확인한 뒤 임시 DB 삭제
 - readiness 응답 생성 과정에서 실제 materialized cache `hydrated` 값이 누락돼 response model 기본값 `false`가 반환되는 결함 수정
 - API contract에 materialized cache `ready`/`hydrated` 필드와 실제 hydration 완료 확인 추가
-- cache fallback suite 재실행 `47.5s`, exit `0`: fresh cache age `0.453s`, DB-down degraded cache age `11.784s`, scale `3→0→3` 뒤 PostgreSQL `3/3`·sync/quorum standby `2`·readiness 복귀
-- DB outage suite 재실행 `45.1s`, exit `0`: DB down 중 event `202` 수락, 복구 뒤 persistence와 sync replication 복귀 확인
+- preliminary console rerun `47.5s`, exit `0`: fresh cache age `0.453s`, DB-down degraded cache age `11.784s`, scale `3→0→3` 뒤 PostgreSQL `3/3`·sync/quorum standby `2`·readiness 복귀
+- preliminary console DB outage rerun `45.1s`, exit `0`: DB down 중 event `202` 수락, 복구 뒤 persistence와 sync replication 복귀 확인
+- tracked recovery rerun: cache fallback `45.390s`(fresh `0.112s`, DB-down `11.462s`), DB outage `43.008s`, 최종 PostgreSQL `3/3`·Pgpool `2/2`·consumer lag `0`; `results/postgres-recovery/latest.json`에 source/script hash와 한계 기록
+- benchmark main/post-HPA drain 모두 전체 lag series가 fresh한 서로 다른 Prometheus scrape의 lag `0`을 연속 2회 확인, timestamp-before/after가 같은 표본만 수락, final reset 실패도 `failed-*.txt`를 먼저 기록한 뒤 원래 suite/reset 오류 전파
+- benchmark 증거는 같은 directory의 임시 파일을 먼저 완성하고 기존 파일은 `File.Replace`, 신규 파일은 `File.Move`로 반영, 쓰기 실패도 별도 보관해 suite → reset → evidence-write 순서로 원래 오류 우선순위 유지
+- restore `-ResetSchema`의 psql 종료 코드를 즉시 확인해 schema reset 실패 뒤 dump 적용이 이어지는 경로 차단
+- reset recovery의 StatefulSet scale/rollout native exit code를 즉시 검사해 조용한 kubectl 실패 차단
 - local unit / contract / infrastructure suite: `359 passed`
 
 ## 2026-07-21 검증: generic v2 첫 성능 후보
