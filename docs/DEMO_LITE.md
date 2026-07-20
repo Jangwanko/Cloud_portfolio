@@ -29,7 +29,7 @@
 - `docs/TEST_RESULTS.md`: full HA 검증 결과와 Kafka baseline 기준
 - demo-lite 관련 patch note: 별도 브랜치에서 진행한 저사양 데모 작업 기록
 - `master` source Demo UI: `2.0.0`, generic `/v2/streams/{stream_id}/events`와 Reliable Event Processing System 정체성
-- public demo-lite deployment Demo UI: `1.4.1`, API image `e481a21`, event response `200`, branch/image 전용 상태
+- public demo-lite deployment: title `Post-Order Event Console`, Demo UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event response `200`, branch/image 전용 상태
 - 이번 `master` `2.0.0` 변경: public demo-lite 미배포
 - README/Guide의 `2.0.0` 동작: demo-lite branch에 같은 기능과 image tag가 반영됐는지 확인한 뒤 적용
 - 공개 URL 확인: UI `ver.` badge와 readiness `app_version`을 각각 기록
