@@ -151,7 +151,7 @@
 
 ### 12. Registry 기반 GitOps 공급망
 
-- 현재 상태: candidate digest build/push → 비루트 실행 검증 → 동일 digest SHA tag 승격 → overlay bot commit source 구현. `dev-kafka` Actions image `9349ba9`와 overlay revision `b84c379`을 local Argo CD가 `Synced / Healthy`로 배포한 흐름 재확인; master 최종 반영과 production digest/SBOM gate는 대기
+- 현재 상태: `dev-kafka` Actions image `9349ba9`와 overlay revision `b84c379`의 local Argo `Synced / Healthy` 배포 확인. Master merge `8f5d78c`도 CI run `#55` validate/publish success, candidate digest 비루트 UID `10001` 검증, image `8f5d78c6963a` 승격, overlay bot commit `717e0ca`, provenance/SBOM 생성까지 완료. Local Argo는 `dev-kafka` 추적 유지
 - 목표: commit SHA image를 registry에 발행하고 overlay tag 변경으로 배포
 - 완료 기준:
   - build/push, manifest tag update, Argo CD sync 흐름 재현
@@ -159,6 +159,7 @@
   - local kind image load 경로와 GitOps 경로 분리
   - GHCR public/pull secret 정책과 Actions bot의 protected-branch 권한 확인
   - production overlay는 tag 외 image digest 고정, SBOM과 critical vulnerability gate 적용
+  - master-targeted cluster에서 image pull, staged rollout, runtime contract 재검증
 
 ### 13. Terraform plan과 production hardening
 

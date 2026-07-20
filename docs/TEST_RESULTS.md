@@ -18,7 +18,7 @@
 | Worker scaling | Kafka consumer lag 기반 KEDA | lag / persistence proxy / drain 관찰 |
 | Fixed Worker 대 KEDA | 직접 비교 없음 | 동일 조건 A/B 실험 필요 |
 | Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
-| Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | source/infra contract 검증; remote Actions/Argo rollout 증거 대기 |
+| Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | CI run `#55` validate/publish success; image `8f5d78c6963a`, bot commit `717e0ca`; master-targeted runtime rollout은 미검증 |
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
@@ -685,7 +685,7 @@ powershell -ExecutionPolicy Bypass -File scripts\test_incident_signals.ps1 -Skip
 - HPA/KEDA replica drift ignore
 - `postgres-backups` `WaitForFirstConsumer` health customization
 
-현재 master registry pipeline은 GHCR SHA image와 overlay tag bot commit을 사용합니다. 위 기록은 과거 cluster snapshot이며 현재 배포 상태를 보장하지 않습니다.
+현재 master registry pipeline은 GHCR SHA image와 overlay tag bot commit을 사용합니다. 2026-07-21 merge `8f5d78c`의 [GitHub Actions run #55](https://github.com/Jangwanko/Cloud_portfolio/actions/runs/29776081853)에서 validate와 `publish-master-image` job이 모두 성공했고, registry candidate digest의 UID `10001` 검증 뒤 image `8f5d78c6963a` 승격과 bot commit `717e0ca`까지 완료됐습니다. Local Argo CD는 `dev-kafka`를 추적하므로 이 결과는 master artifact publication 증거이며 master-targeted runtime rollout 증거는 아닙니다. 위 2026-04-29 기록 역시 현재 배포 상태를 보장하지 않습니다.
 
 ## Portfolio Status Check
 
