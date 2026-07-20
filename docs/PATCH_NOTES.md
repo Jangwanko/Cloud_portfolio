@@ -2,6 +2,16 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 업데이트: v2 벤치마크 관측·검증 계약 보강
+
+- 새 consumer group의 미사용 Kafka partition을 kafka-exporter가 lag `-1`로 노출하는 동작 확인
+- 실제 양수 backlog가 `-1` sentinel에 상쇄되지 않도록 partition별 `clamp_min(..., 0)` 적용 후 합산하도록 status script, benchmark suite, Prometheus alert, Grafana panel 통일
+- benchmark preflight에 workload rollout, API/Worker image 일치, generic v2 gate, OpenAPI `2.0.0`, 시작 consumer lag `0` 검증 추가
+- k6 전체 check 성공 threshold 추가, suite의 threshold 무시 제거, Job timeout 명시 실패 처리
+- 실패한 suite는 별도 `failed-*.txt`에 기록하고 마지막 성공 `latest.txt` 보존
+- Worker `messaging_event_persist_lag_seconds`의 5분 p95를 benchmark 결과에 추가
+- 비회원 stream read의 existence-oracle 방지 `404` 정책과 배포 계약 스크립트 기대값 정렬
+
 ## 2026-07-21 업데이트: Argo CD Namespace prune 방지
 
 - 기존 GitOps revision이 추적하던 `messaging-app` Namespace가 새 desired state에서 빠지면서 automated prune 대상이 되는 전환 결함 확인

@@ -1091,12 +1091,12 @@
                                        },
                        "targets":  [
                                        {
-                                           "expr":  "sum by (consumergroup, topic) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                           "expr":  "sum by (consumergroup, topic) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
                                            "legendFormat":  "{{consumergroup}} / {{topic}} lag",
                                            "refId":  "A"
                                        },
                                        {
-                                           "expr":  "sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                           "expr":  "sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
                                            "legendFormat":  "{{consumergroup}} total",
                                            "refId":  "B"
                                        }

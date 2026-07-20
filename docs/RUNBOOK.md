@@ -361,8 +361,9 @@ Kafka backlog 의심 시 확인 기준:
 - Worker throughput과 DB persist latency 함께 확인
 
 ```powershell
+$lagQuery = [uri]::EscapeDataString('sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))')
 Invoke-RestMethod "http://localhost/prometheus/api/v1/query?query=kafka_brokers"
-Invoke-RestMethod "http://localhost/prometheus/api/v1/query?query=sum(kafka_consumergroup_lag%7Bconsumergroup%3D%22message-worker%22%7D)"
+Invoke-RestMethod "http://localhost/prometheus/api/v1/query?query=$lagQuery"
 ```
 
 해석:

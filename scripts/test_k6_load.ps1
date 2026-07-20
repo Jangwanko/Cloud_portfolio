@@ -45,6 +45,7 @@ try {
   kubectl apply -f $effectiveManifest | Out-Null
 
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
+  $jobFinished = $false
   while ((Get-Date) -lt $deadline) {
     $succeeded = kubectl -n $Namespace get job k6-load-test -o jsonpath="{.status.succeeded}" 2>$null
     $failed = kubectl -n $Namespace get job k6-load-test -o jsonpath="{.status.failed}" 2>$null
@@ -54,12 +55,18 @@ try {
     [void][int]::TryParse(($failed | Out-String).Trim(), [ref]$failedCount)
 
     if ($succeededCount -ge 1) {
+      $jobFinished = $true
       break
     }
     if ($failedCount -ge 1) {
+      $jobFinished = $true
       break
     }
     Start-Sleep -Seconds 2
+  }
+
+  if (-not $jobFinished) {
+    throw "k6 job did not finish within $TimeoutSec seconds"
   }
 
   $podDeadline = (Get-Date).AddSeconds(120)

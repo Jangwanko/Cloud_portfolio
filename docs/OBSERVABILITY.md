@@ -212,7 +212,7 @@ Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.
 | Panel | Metric | Interpretation |
 | --- | --- | --- |
 | `Kafka Broker Count` | `kafka_brokers` | exporter가 보는 broker 수. 로컬 HA 기준은 `3`입니다. |
-| `Kafka Consumer Group Lag` | `kafka_consumergroup_lag{consumergroup="message-worker"}` | Worker consumer group이 topic별로 따라잡지 못한 message 수입니다. |
+| `Kafka Consumer Group Lag` | `sum by (topic) (clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))` | Worker consumer group이 topic별로 따라잡지 못한 message 수입니다. |
 | `Kafka Topic Partitions` | `kafka_topic_partition_current_offset` | topic별 partition 구성을 확인합니다. |
 
 `Kafka Consumer Group Lag`가 증가하면서 core `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다. `notification-worker` job은 별도 query로 분리합니다.
@@ -244,10 +244,12 @@ Grafana는 실험 중 시스템 반응을 보는 용도로 사용합니다.
 
 | 관측점 | PromQL | 해석 |
 | --- | --- | --- |
-| Kafka consumer lag | `sum(kafka_consumergroup_lag{consumergroup="message-worker"})` | DB write path가 막히는 동안 backlog가 쌓이고 복구 후 0으로 drain되는지 확인 |
+| Kafka consumer lag | `sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))` | DB write path가 막히는 동안 backlog가 쌓이고 복구 후 0으로 drain되는지 확인 |
 | Worker accepted-to-commit-observed p95 | `histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[1m])) by (le))` | API queued 시각부터 Worker DB commit 반환 직후까지 |
 | PostgreSQL primary reachability | `messaging_postgres_is_primary{job="api"}` | 장애 주입이 DB path에 실제로 반영됐는지 확인 |
 | DLQ events | `sum(increase(messaging_dlq_events_total[5m]))` | 짧은 장애 흡수 실험에서 DLQ가 0인지 확인 |
 | Worker throughput | `sum(rate(messaging_worker_processed_total{job="worker"}[1m]))` | 복구 후 core backlog 처리 흐름 |
+
+새 consumer group의 빈 partition은 kafka-exporter에서 `-1` lag로 보일 수 있습니다. partition별 값을 `0` 이상으로 정규화한 뒤 합산하며, 합계를 먼저 낸 뒤 한 번만 clamp하지 않습니다.
 
 실험 결과 자체는 `ordering`, `no_loss`, `no_duplicate`, `no_mixed_payload`, `dlq_empty` checks로 판단합니다.

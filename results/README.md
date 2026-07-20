@@ -5,6 +5,7 @@
 ## Tracked Evidence
 
 - `kafka-performance/latest.txt`: Kafka 성능 suite의 마지막 완료 출력
+- `kafka-performance/failed-YYYYMMDD-HHMMSS.txt`: 실패한 suite의 부분 출력. `latest.txt`를 덮어쓰지 않으며 기본 Git 추적 제외
 - `ordering-failure/latest.json`: ordering / failure injection suite의 마지막 완료 결과
 - 그 밖의 날짜별·중간 산출물: 로컬 보관, 기본 Git 추적 제외
 

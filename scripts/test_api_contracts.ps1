@@ -122,7 +122,7 @@ try {
   Assert-True (@($stream.member_ids) -contains [int]$u2.id) "stream must include requested member"
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 401
-  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 403 -Headers $outsiderHeaders
+  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 404 -Headers $outsiderHeaders
   Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -ExpectedStatus 401 -Body (@{ event_type = "portfolio.contract.probe"; payload = @{ message = "unauthorized" } } | ConvertTo-Json -Depth 4)
   Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 202 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
 

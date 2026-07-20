@@ -19,7 +19,9 @@ $ErrorActionPreference = "Stop"
 
 $resultDir = Join-Path $PSScriptRoot "..\results\kafka-performance"
 $resultPath = Join-Path $resultDir "latest.txt"
+$failedResultPath = Join-Path $resultDir ("failed-{0}.txt" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
 $lines = [System.Collections.Generic.List[string]]::new()
+$suiteSucceeded = $false
 
 function Add-Line([string]$Value = "") {
   [void]$lines.Add($Value)
@@ -35,21 +37,87 @@ function Invoke-SuiteStep([string]$Name, [scriptblock]$Action) {
   Add-Line ("Elapsed: {0}s" -f ([math]::Round($elapsed.TotalSeconds, 2)))
 }
 
-function Assert-KubernetesReady() {
-  kubectl get namespace $Namespace | Out-Null
-  kubectl -n $Namespace get deployment api | Out-Null
-  kubectl -n $Namespace get deployment worker | Out-Null
-  kubectl -n $Namespace get statefulset kafka | Out-Null
+function Get-KubernetesJson([string[]]$Arguments) {
+  $raw = & kubectl @Arguments -o json
+  if ($LASTEXITCODE -ne 0 -or -not $raw) {
+    throw "kubectl failed: $($Arguments -join ' ')"
+  }
+  return ($raw | ConvertFrom-Json)
 }
 
-function Get-ConsumerLag([string]$ConsumerGroup) {
-  $query = [uri]::EscapeDataString("sum(kafka_consumergroup_lag{consumergroup=`"$ConsumerGroup`"})")
+function Assert-DeploymentReady([string]$Name) {
+  $deployment = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", $Name)
+  $desired = [int]$deployment.spec.replicas
+  $ready = [int]$deployment.status.readyReplicas
+  $updated = [int]$deployment.status.updatedReplicas
+  if ($ready -ne $desired -or $updated -ne $desired) {
+    throw "deployment/$Name is not fully rolled out (desired=$desired ready=$ready updated=$updated)"
+  }
+  return $deployment
+}
+
+function Assert-KubernetesReady() {
+  $null = Get-KubernetesJson @("get", "namespace", $Namespace)
+  $api = Assert-DeploymentReady -Name "api"
+  $worker = Assert-DeploymentReady -Name "worker"
+  foreach ($name in @("notification-worker", "dlq-replayer", "prometheus", "kafka-exporter", "kube-state-metrics")) {
+    $null = Assert-DeploymentReady -Name $name
+  }
+
+  $kafka = Get-KubernetesJson @("-n", $Namespace, "get", "statefulset", "kafka")
+  if ([int]$kafka.status.readyReplicas -ne [int]$kafka.spec.replicas) {
+    throw "statefulset/kafka is not fully ready"
+  }
+
+  $apiImage = [string]$api.spec.template.spec.containers[0].image
+  $workerImage = [string]$worker.spec.template.spec.containers[0].image
+  if ($apiImage -ne $workerImage) {
+    throw "API and Worker images differ (api=$apiImage worker=$workerImage)"
+  }
+  $gate = $api.spec.template.spec.containers[0].env | Where-Object { $_.name -eq "GENERIC_EVENTS_V2_ENABLED" } | Select-Object -Last 1
+  if ($null -eq $gate -or [string]$gate.value -ne "true") {
+    throw "API generic v2 gate is not enabled"
+  }
+
+  $health = Invoke-RestMethod -Method Get -Uri "$($BaseUrl.TrimEnd('/'))/health/ready" -TimeoutSec 10
+  if ([string]$health.status -ne "ready") {
+    throw "API readiness is not ready: $($health.status)"
+  }
+  $openapi = Invoke-RestMethod -Method Get -Uri "$($BaseUrl.TrimEnd('/'))/openapi.json" -TimeoutSec 10
+  if ([string]$openapi.info.version -ne "2.0.0" -or $null -eq $openapi.paths.'/v2/streams/{stream_id}/events') {
+    throw "Deployed OpenAPI is not the generic v2 contract"
+  }
+
+  $workerLag = Get-ConsumerLag -ConsumerGroup "message-worker"
+  $notificationLag = Get-ConsumerLag -ConsumerGroup "notification-worker"
+  if ($workerLag -ne 0 -or $notificationLag -ne 0) {
+    throw "Consumer lag must start at zero (message-worker=$workerLag notification-worker=$notificationLag)"
+  }
+
+  $script:ApiImage = $apiImage
+  $script:WorkerImage = $workerImage
+  $script:InitialWorkerLag = $workerLag
+  $script:InitialNotificationLag = $notificationLag
+}
+
+function Get-PrometheusScalar([string]$PromQl, [string]$MetricLabel) {
+  $query = [uri]::EscapeDataString($PromQl)
   $response = Invoke-RestMethod -Method Get -Uri "$($PrometheusUrl.TrimEnd('/'))/api/v1/query?query=$query" -TimeoutSec 10
   $result = @($response.data.result)
   if ($response.status -ne "success" -or $result.Count -eq 0) {
-    throw "Kafka lag metric is absent for consumer group $ConsumerGroup"
+    throw "Prometheus metric is absent: $MetricLabel"
   }
-  return [double]$result[0].value[1]
+  $value = [double]$result[0].value[1]
+  if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) {
+    throw "Prometheus metric is not finite: $MetricLabel"
+  }
+  return $value
+}
+
+function Get-ConsumerLag([string]$ConsumerGroup) {
+  return Get-PrometheusScalar `
+    -PromQl "sum(clamp_min(kafka_consumergroup_lag{consumergroup=`"$ConsumerGroup`"}, 0))" `
+    -MetricLabel "Kafka lag for consumer group $ConsumerGroup"
 }
 
 New-Item -ItemType Directory -Force -Path $resultDir | Out-Null
@@ -66,10 +134,16 @@ Add-Line ("ordering_event_count: {0}" -f $OrderingEventCount)
 Add-Line ("event_count: {0}" -f $EventCount)
 Add-Line ("lag_sample_interval_seconds: {0}" -f $LagSampleIntervalSec)
 Add-Line ("lag_drain_timeout_seconds: {0}" -f $LagDrainTimeoutSec)
+Add-Line ("source_branch: {0}" -f ((& git branch --show-current | Out-String).Trim()))
+Add-Line ("source_commit: {0}" -f ((& git rev-parse HEAD | Out-String).Trim()))
 
 try {
   Invoke-SuiteStep "Preflight Kubernetes state" {
     Assert-KubernetesReady
+    Add-Line ("api_image: {0}" -f $script:ApiImage)
+    Add-Line ("worker_image: {0}" -f $script:WorkerImage)
+    Add-Line ("initial_message_worker_lag: {0}" -f $script:InitialWorkerLag)
+    Add-Line ("initial_notification_worker_lag: {0}" -f $script:InitialNotificationLag)
     kubectl -n $Namespace get pods | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }
   }
 
@@ -107,7 +181,7 @@ try {
       param($PrometheusBaseUrl, $SampleIntervalSec)
       while ($true) {
         try {
-          $query = [uri]::EscapeDataString('sum(kafka_consumergroup_lag{consumergroup="message-worker"})')
+          $query = [uri]::EscapeDataString('sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))')
           $response = Invoke-RestMethod -Method Get -Uri "$($PrometheusBaseUrl.TrimEnd('/'))/api/v1/query?query=$query" -TimeoutSec 10
           $result = @($response.data.result)
           if ($response.status -eq "success" -and $result.Count -gt 0) {
@@ -129,7 +203,6 @@ try {
         -StageDuration $StageDuration `
         -ThinkTime $ThinkTime `
         -TimeoutSec $TimeoutSec `
-        -AllowThresholdFailure `
         -SkipReset
       $k6Output | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }
     } finally {
@@ -169,6 +242,10 @@ try {
     Add-Line ("all-consumer backlog_drain_seconds_after_load: {0}" -f $drainSeconds)
     Add-Line ("message-worker final_consumer_lag: 0")
     Add-Line ("notification-worker final_consumer_lag: 0")
+    $persistLagP95 = Get-PrometheusScalar `
+      -PromQl 'histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[5m])) by (le))' `
+      -MetricLabel "Worker accepted-to-commit lag p95"
+    Add-Line ("worker accepted_to_commit_lag_p95_5m_seconds: {0}" -f $persistLagP95)
   }
 
   Invoke-SuiteStep "HPA and metrics sanity" {
@@ -187,6 +264,12 @@ try {
 
   Add-Line ""
   Add-Line "Kafka performance suite completed successfully."
+  $suiteSucceeded = $true
+}
+catch {
+  Add-Line ""
+  Add-Line ("Kafka performance suite failed: {0}" -f $_.Exception.Message)
+  throw
 }
 finally {
   if (-not $SkipReset) {
@@ -198,7 +281,8 @@ finally {
       -DbDeployment $DbDeployment
   }
 
-  Set-Content -Path $resultPath -Value $lines -Encoding UTF8
+  $outputPath = if ($suiteSucceeded) { $resultPath } else { $failedResultPath }
+  Set-Content -Path $outputPath -Value $lines -Encoding UTF8
   Write-Host ""
-  Write-Host "Performance suite result written to $resultPath"
+  Write-Host "Performance suite result written to $outputPath"
 }

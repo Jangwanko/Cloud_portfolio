@@ -349,7 +349,7 @@ kafka_brokers
 consumer group lag를 topic / partition 단위로 보여줍니다. 현재 적용 대상은 `message-worker`, `notification-worker`, DLQ replayer처럼 group id가 있는 consumer입니다. API materialized cache replay에는 적용되지 않습니다.
 
 ```promql
-sum by (topic) (kafka_consumergroup_lag{consumergroup="message-worker"})
+sum by (topic) (clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))
 ```
 
 `message-worker` lag가 높으면 Worker 처리량, DB persist latency, pod scaling을 함께 확인합니다.
@@ -357,8 +357,10 @@ sum by (topic) (kafka_consumergroup_lag{consumergroup="message-worker"})
 Notification path:
 
 ```promql
-sum by (topic) (kafka_consumergroup_lag{consumergroup="notification-worker"})
+sum by (topic) (clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0))
 ```
+
+kafka-exporter는 아직 committed offset이 없는 빈 partition을 `-1`로 노출할 수 있습니다. 집계할 때 각 partition series에 `clamp_min(..., 0)`을 먼저 적용해 빈 partition이 다른 partition의 실제 양수 backlog를 상쇄하지 않도록 합니다.
 
 ### `kafka_topic_partition_current_offset`
 

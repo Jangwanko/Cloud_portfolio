@@ -195,8 +195,15 @@ def test_prometheus_discovers_every_worker_replica_and_notification_lag() -> Non
     assert "api-metrics.messaging-app.svc.cluster.local" in prometheus
     assert "notification-worker.messaging-app.svc.cluster.local" in prometheus
     assert "MessagingNotificationConsumerLagHigh" in alerts
+    assert alerts.count("sum(clamp_min(kafka_consumergroup_lag") >= 3
+    assert "sum(kafka_consumergroup_lag" not in alerts
     assert "--group.filter=(message-.*|notification-worker)" in manifest
+    assert manifest.count("sum(clamp_min(kafka_consumergroup_lag") >= 3
+    assert "sum(kafka_consumergroup_lag" not in manifest
     assert "message-worker|notification-worker" in dashboard
+    assert dashboard.count("clamp_min(kafka_consumergroup_lag") >= 2
+    assert "sum by (consumergroup, topic) (kafka_consumergroup_lag" not in dashboard
+    assert "sum by (consumergroup) (kafka_consumergroup_lag" not in dashboard
 
 
 def test_argocd_scope_and_replica_ignores_are_minimal() -> None:
