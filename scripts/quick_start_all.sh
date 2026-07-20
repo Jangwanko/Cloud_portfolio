@@ -149,24 +149,21 @@ helm_chart_source() {
 }
 
 grant_pg_monitor() {
-  local encoded_password
-  local postgres_password
   local pods
+  local pod
 
-  encoded_password="$(kubectl -n "$NAMESPACE" get secret messaging-postgresql-ha-postgresql -o jsonpath='{.data.postgres-password}' 2>/dev/null || true)"
-  if [[ -z "$encoded_password" ]]; then
-    printf '[warn] Unable to read postgres-password. Skipping pg_monitor grant for portfolio.\n'
-    return 0
-  fi
-
-  postgres_password="$(printf '%s' "$encoded_password" | base64 -d)"
   pods="$(kubectl -n "$NAMESPACE" get pods -l app.kubernetes.io/component=postgresql -o jsonpath='{.items[*].metadata.name}')"
 
   for pod in $pods; do
-    if kubectl -n "$NAMESPACE" exec "$pod" -- bash -lc \
-      "PGPASSWORD='$postgres_password' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -At -c 'SELECT NOT pg_is_in_recovery();'" 2>/dev/null | grep -qx 't'; then
-      kubectl -n "$NAMESPACE" exec "$pod" -- bash -lc \
-        "PGPASSWORD='$postgres_password' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -c 'GRANT pg_monitor TO portfolio;'"
+    if kubectl -n "$NAMESPACE" exec "$pod" -- bash -ceu '
+      password_file="${POSTGRES_POSTGRES_PASSWORD_FILE:-/opt/bitnami/postgresql/secrets/postgres-password}"
+      [[ -r "$password_file" ]]
+      PGPASSWORD="$(<"$password_file")"
+      export PGPASSWORD
+      is_primary="$("$1" -X -qAt -v ON_ERROR_STOP=1 -U postgres -d postgres -c "SELECT NOT pg_is_in_recovery();")"
+      [[ "$is_primary" == "t" ]]
+      exec "$1" -X -q -v ON_ERROR_STOP=1 -U postgres -d postgres -c "GRANT pg_monitor TO portfolio;"
+    ' bash /opt/bitnami/postgresql/bin/psql >/dev/null 2>&1; then
       ok "Granted pg_monitor to portfolio on primary pod: $pod"
       return 0
     fi
@@ -241,6 +238,9 @@ helm upgrade --install messaging-postgresql-ha "$PG_CHART" \
   "${PG_VERSION_ARGS[@]}" \
   -f "$PG_VALUES" \
   --wait --timeout 15m
+
+log "Configuring PostgreSQL synchronous replication"
+NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/scripts/configure_postgres_sync.sh"
 
 grant_pg_monitor
 

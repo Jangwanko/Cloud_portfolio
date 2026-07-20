@@ -486,6 +486,46 @@ class TestManifestContracts:
         assert "$failedResultPath" in suite_script
         assert "if ($suiteSucceeded) { $resultPath } else { $failedResultPath }" in suite_script
 
+    def test_kafka_performance_suite_drains_post_hpa_backlog(self):
+        suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
+
+        assert "function Wait-ConsumerLagDrain" in suite_script
+        assert '-Phase "main_load"' in suite_script
+        assert '-Phase "post_hpa"' in suite_script
+        assert "-RequiredConsecutiveZeroSamples 2" in suite_script
+        for metric_suffix in (
+            "_message_worker_peak_consumer_lag",
+            "_notification_worker_peak_consumer_lag",
+            "_all_consumer_backlog_drain_seconds",
+            "_message_worker_final_consumer_lag",
+            "_notification_worker_final_consumer_lag",
+        ):
+            assert metric_suffix in suite_script
+        assert "consumer lag did not drain to zero within" in suite_script
+        assert suite_script.index('Invoke-SuiteStep "HPA and metrics sanity"') < suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        )
+        assert suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        ) < suite_script.index('Invoke-SuiteStep "Final runtime snapshot"')
+        assert "[System.Text.UTF8Encoding]::new($false)" in suite_script
+        assert "[System.IO.File]::WriteAllLines" in suite_script
+
+    def test_api_contract_waits_for_real_materialized_cache_hydration(self):
+        contract_script = read_text("scripts/test_api_contracts.ps1")
+
+        assert "function Wait-MaterializedCacheHydrated" in contract_script
+        assert 'Assert-HasProperty $health "materialized_cache" "readiness"' in contract_script
+        assert (
+            'Assert-HasProperty $health.materialized_cache "hydrated" '
+            '"readiness.materialized_cache"'
+        ) in contract_script
+        assert "$lastCache.ready -eq $true -and $lastCache.hydrated -eq $true" in contract_script
+        assert (
+            'Assert-Equal $health.materialized_cache.hydrated $true '
+            '"readiness.materialized_cache.hydrated"'
+        ) in contract_script
+
     def test_argocd_gitops_contract_matches_local_ha_runtime(self):
         install_script = read_text("k8s/scripts/install-argocd.ps1")
         bootstrap_script = read_text("k8s/scripts/bootstrap-argocd-app.ps1")
@@ -605,7 +645,8 @@ class TestManifestContracts:
 
         assert "-Revision master" in quick_start
         assert "consumer_lag > 100" in checklist
-        assert "`passed with warnings`는 실패가 아닙니다" in checklist
+        assert "Fresh install에서 PVC가 첫 consumer를 기다릴 때만" in checklist
+        assert "2026-07-21 현재 local PVC는 수동 backup Job 실행 뒤 `Bound`" in checklist
 
 
 class TestApiContractAndRunbook:

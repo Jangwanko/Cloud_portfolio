@@ -140,11 +140,11 @@ DB commit과 후속 Kafka publish 사이의 crash gap은 남아 있는 신뢰성
 
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
-| `master` worktree source | UI `2.0.0`, API `2.0.0` | generic v2 + `202`; 아직 미배포 |
-| local live cluster, 2026-07-14 read-only check | UI `1.1.0` | 이전 image, event response `200` |
+| `master` worktree source | UI `2.0.0`, API `2.0.0` | generic v2 + `202` source contract |
+| local `dev-kafka` live cluster, 2026-07-21 | API `2.0.0`, image `d31ac14` | generic v2 + `202`, Argo `Synced / Healthy` |
 | public demo-lite deployment | UI `1.4.1`, API image `e481a21` | branch/deployment-specific, event response `200` |
 
-문서에 등록된 외부 URL은 `demo-lite` deployment입니다. `master` source의 `2.0.0` 범용 UI와 v2 contract는 local live/public demo 모두 아직 반영되지 않았습니다. 접속 시 UI badge, readiness의 API version, event response status를 함께 확인합니다.
+문서에 등록된 외부 URL은 `demo-lite` deployment입니다. Generic v2는 local `dev-kafka` cluster에서 검증됐으며 public demo-lite에는 아직 반영되지 않았습니다. 접속 시 UI badge, readiness의 API version, event response status를 함께 확인합니다.
 
 - Demo UI: [https://vm118.js-banjiha.cloud/demo/order-dashboard.html](https://vm118.js-banjiha.cloud/demo/order-dashboard.html)
 - Swagger: [https://vm118.js-banjiha.cloud/docs](https://vm118.js-banjiha.cloud/docs)
@@ -208,7 +208,19 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 ## Validation Summary
 
-안정 Kafka intake 기준선:
+현재 generic v2 후보 — 2026-07-21, stable 미승격:
+
+| Item | Result |
+| --- | ---: |
+| Workload | 100 VU / 30s, 한 hot stream |
+| Total HTTP / event `202` | `25,382` / `25,378` |
+| Error rate | `0.00%` |
+| Average | `67.83ms` |
+| p95 / p99 | `123.96ms` / `153.10ms` |
+| Same-stream ordering | `100/100 pass`, `7.93s` |
+| Peak Worker lag / main drain | `24,504` / `751.76s` |
+
+역사적 안정 Kafka intake 기준선:
 
 | Item | Result |
 | --- | ---: |
@@ -222,17 +234,22 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 해석 범위:
 
-- generic v2 performance: 아직 재실행하지 않음; 아래 baseline을 v2 측정값으로 사용하지 않음
+- generic v2: local `dev-kafka` image `d31ac14`에서 OpenAPI/API `2.0.0`, event `202`와 첫 성능 후보 확인
+- stable 승격: 제외; fresh cluster clean state의 단일 hot-stream 실행이며 반복·multi-stream 검증 필요
+- stable legacy 대비: total requests `19.87%` 감소, avg/p95 `53.70%`, p99 `47.82%` 증가
+- 마지막 legacy raw 대비: total requests `8.68%` 감소, avg `17.68%`, p95 `3.92%`, p99 `1.66%` 증가
 - 2026-06 성능 원본의 event status `200`: route에 HTTP `202` 계약을 명시하기 전 수집한 역사적 결과
-- 현재 build의 `202 Accepted`: contract test와 새 성능 실행으로 재확인 필요
+- 현재 build의 `202 Accepted`: contract test와 2026-07-21 성능 실행에서 재확인
 - `7.67ms`: API accepted 시각과 PostgreSQL row의 `created_at`/조회 가능 시점을 비교한 proxy
 - 실제 DB commit timestamp: 위 수치에서 직접 측정하지 않음
+- v2 status-observed sample: 50/50 persisted, avg `79.96ms`, p95 `81.28ms`, max `2384.10ms`; polling/network 포함, row-visible proxy와 비교 제외
+- v2 Worker histogram query `60s`: 최대 finite bucket 경계 포화로 exact p95 해석 제외
 - stable baseline: notification 분리 전 2차 Kafka intake 결과 유지
-- latest raw suite: 2026-06-18 notification-path split 결과, `27,795` requests, p95 `119.28ms`, row-visible proxy p95 `22.13ms`, message-worker lag 약 16분 뒤 `0`
+- last legacy raw suite: 2026-06-18 notification-path split 결과, `27,795` requests, p95 `119.28ms`, row-visible proxy p95 `22.13ms`, message-worker lag 약 16분 뒤 `0`
 
 추가 검증:
 
-- local unit / contract / infrastructure suite: `351 passed` (2026-07-14 source 기준)
+- local unit / contract / infrastructure suite: `359 passed` (2026-07-21 현재 변경)
 - ordering / failure injection 네 시나리오: missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`
 - hydrated cache fresh read: DB membership/watermark 확인 뒤 `source=cache`
 - DB down stale fallback: initial hydration 완료 상태에서 `source=cache`, `degraded=true`, `snapshot_age_seconds`
@@ -302,10 +319,12 @@ Worker scaling 효과는 API request count보다 consumer lag, persistence laten
 
 우선순위는 [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)의 완료 기준으로 관리합니다.
 
-- deployed build에서 HTTP `202`와 offset crash boundary 재검증
+- generic v2 동일 조건 3회 반복과 multi-stream/partition 분산 부하로 sustainable capacity 확정
+- object storage backup 자동화와 정기 restore drill; 2026-07-21 host logical dump의 disposable DB 복원은 통과
+- Worker offset crash/rebalance 장애 주입 검증
+- transactional outbox 또는 동등한 post-commit publish recovery
 - v1 compatibility route 사용량 계측과 deprecation 종료 기준 정의
 - 주문과 무관한 두 번째 reference producer로 generic envelope 재사용성 검증
-- transactional outbox 또는 동등한 post-commit publish recovery
 - fixed Worker와 KEDA의 동일 조건 A/B 실험
 - unresolved DLQ state model과 audit trail
 - Worker commit-observed / client status-observed latency 재측정

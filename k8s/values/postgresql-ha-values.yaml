@@ -13,8 +13,9 @@ postgresql:
   # Passwords are generated in the chart-managed Secret on first install and
   # reused from that Secret during upgrades. Do not commit local credentials.
   # Chart 16.3.2 maps syncReplication=true to replicaCount-1 and does not
-  # support numSynchronousReplicas. Set the container contract explicitly so
-  # either one of the two standbys can acknowledge a commit.
+  # support numSynchronousReplicas. This env sets the fresh-boot target to one
+  # standby. install/recovery scripts also persist the setting on every pod
+  # because the image only regenerates it during first boot.
   syncReplication: false
   syncReplicationMode: ANY
   extraEnvVars:

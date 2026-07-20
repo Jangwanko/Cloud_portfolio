@@ -167,6 +167,128 @@ def test_postgresql_chart_requests_one_of_two_synchronous_standbys() -> None:
     assert "numSynchronousReplicas:" not in values
 
 
+def test_linux_recovery_flows_restore_persisted_postgresql_sync_configuration() -> None:
+    helper = _read("scripts/configure_postgres_sync.sh")
+    quick_start = _read("scripts/quick_start_all.sh")
+    db_recovery = _read("scripts/test_db_down.sh")
+
+    assert "SELECT NOT pg_is_in_recovery();" in helper
+    assert "ALTER SYSTEM SET synchronous_standby_names" in helper
+    assert "ALTER SYSTEM SET synchronous_commit = 'on'" in helper
+    assert 'SYNCHRONOUS_STANDBY_NAMES="ANY 1 (*)"' in helper
+    assert "SELECT pg_reload_conf();" in helper
+    assert "sync_state IN ('sync', 'quorum')" in helper
+    assert "Streaming synchronous standby count" in helper
+    assert 'POSTGRES_STATEFULSET="${POSTGRES_STATEFULSET:-messaging-postgresql-ha-postgresql}"' in helper
+    assert "{.spec.replicas}" in helper
+    assert "{.status.readyReplicas}" in helper
+    assert "index < expected_replicas" in helper
+    assert 'postgres_pods+="${POSTGRES_STATEFULSET}-${index} "' in helper
+    assert "POSTGRES_POSTGRES_PASSWORD_FILE" in helper
+    assert "kubectl -n \"$NAMESPACE\" get secret" not in helper
+    assert "postgres_password" not in helper
+    assert "set -x" not in helper
+
+    quick_start_configure = 'bash "$ROOT_DIR/scripts/configure_postgres_sync.sh"'
+    assert quick_start_configure in quick_start
+    assert quick_start.index("helm upgrade --install messaging-postgresql-ha") < quick_start.index(
+        quick_start_configure
+    ) < quick_start.rindex("\ngrant_pg_monitor\n")
+    assert "POSTGRES_POSTGRES_PASSWORD_FILE" in quick_start
+    assert "base64 -d" not in quick_start
+    assert "postgres_password" not in quick_start
+
+    assert "db_was_scaled_down=true" in db_recovery
+    assert "wait_workload_replicas" in db_recovery
+    assert "ready=\"${ready:-0}\"" in db_recovery
+    assert db_recovery.count('wait_workload_replicas "$db_ref" "$target_replicas"') == 2
+    assert "POSTGRES_SYNC_TIMEOUT_SEC=60 configure_postgres_sync" in db_recovery
+    assert db_recovery.rindex('rollout status "$db_ref"') < db_recovery.rindex(
+        "\nconfigure_postgres_sync\n"
+    ) < db_recovery.index("wait_db_query 240")
+
+
+def test_powershell_postgresql_recovery_restores_sync_replication_safely() -> None:
+    configure = _read("scripts/configure_postgres_sync.ps1")
+    install = _read("k8s/scripts/install-ha.ps1")
+    recovery_scripts = [
+        _read("scripts/reset_k8s_state.ps1"),
+        _read("scripts/test_db_down.ps1"),
+        _read("scripts/test_cache_read_fallback.ps1"),
+    ]
+
+    assert ".status.readyReplicas" in configure
+    assert "foreach ($pod in $expectedPods)" in configure
+    assert "ALTER SYSTEM SET synchronous_commit = 'on';" in configure
+    assert "ALTER SYSTEM SET synchronous_standby_names" in configure
+    assert "ANY 1 (" in configure
+    assert "SELECT pg_reload_conf();" in configure
+    assert "current_setting('synchronous_commit')" in configure
+    assert "current_setting('synchronous_standby_names')" in configure
+    assert "pg_is_in_recovery()" in configure
+    assert "state = 'streaming'" in configure
+    assert "sync_state IN ('sync', 'quorum')" in configure
+    assert "POSTGRES_POSTGRES_PASSWORD_FILE" in configure
+    assert "/opt/bitnami/postgresql/secrets/postgres-password" in configure
+    assert "PostgresShellBase64" in configure
+    assert "base64 -d | bash" in configure
+    assert "kubectl -n $Namespace get secret" not in configure
+    assert configure.index(".status.readyReplicas") < configure.index(
+        "foreach ($pod in $expectedPods)"
+    )
+
+    configured_pods = configure.split("foreach ($pod in $expectedPods)", 1)[1].split(
+        "$expectedPodSql", 1
+    )[0]
+    assert configured_pods.index("ALTER SYSTEM SET synchronous_commit") < configured_pods.index(
+        "ALTER SYSTEM SET synchronous_standby_names"
+    ) < configured_pods.index("SELECT pg_reload_conf()")
+
+    assert "configure_postgres_sync.ps1" in install
+    assert install.index("--wait --timeout 15m") < install.index(
+        "configure_postgres_sync.ps1"
+    ) < install.index(
+        "Grant-PostgresMonitorRole -Namespace"
+    )
+    assert "/opt/bitnami/postgresql/secrets/postgres-password" in install
+    assert "SQL_BASE64" in install
+    assert "PostgresAdminShellBase64" in install
+    assert "base64 -d | bash" in install
+    for forbidden in (
+        "Decode-Base64",
+        "encodedPassword",
+        "postgresPassword",
+        "get secret messaging-postgresql-ha-postgresql",
+    ):
+        assert forbidden not in install
+
+    for recovery in recovery_scripts:
+        assert "configure_postgres_sync.ps1" in recovery
+
+
+def test_backup_restore_clients_do_not_expose_or_reencode_database_credentials() -> None:
+    backup = _read("scripts/backup_postgres_k8s.ps1")
+    restore = _read("scripts/restore_postgres_k8s.ps1")
+
+    for source in (backup, restore):
+        assert "secretKeyRef" in source
+        assert 'name = "messaging-postgresql-ha-postgresql"' in source
+        assert 'key = "password"' in source
+        assert "automountServiceAccountToken = $false" in source
+        assert "runAsNonRoot = $true" in source
+        assert "allowPrivilegeEscalation = $false" in source
+        assert "ConvertTo-Json -Depth 12 -Compress | kubectl create -f -" in source
+        assert "FromBase64String" not in source
+        assert "PGPASSWORD=$password" not in source
+        assert "get secret messaging-postgresql-ha-postgresql" not in source
+
+    assert "--file=/tmp/postgres-backup.sql" in backup
+    assert 'kubectl cp "$Namespace/$backupPod`:/tmp/postgres-backup.sql"' in backup
+    assert 'kubectl cp $backupName "$Namespace/$restorePod`:/tmp/postgres-restore.sql"' in restore
+    assert "--file=/tmp/postgres-restore.sql" in restore
+    assert "Get-Content -LiteralPath $resolvedBackupFile -Raw" not in restore
+
+
 def test_application_and_alembic_defaults_do_not_embed_a_database_password() -> None:
     config = _read("portfolio/config.py")
     alembic_ini = _read("alembic.ini")

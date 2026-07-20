@@ -120,6 +120,71 @@ function Get-ConsumerLag([string]$ConsumerGroup) {
     -MetricLabel "Kafka lag for consumer group $ConsumerGroup"
 }
 
+function Wait-ConsumerLagDrain(
+  [Parameter(Mandatory = $true)]
+  [string]$Phase,
+  [Parameter(Mandatory = $true)]
+  [datetime]$StartedAt,
+  [object[]]$InitialWorkerLagSamples = @(),
+  [int]$RequiredConsecutiveZeroSamples = 1
+) {
+  if ($RequiredConsecutiveZeroSamples -lt 1) {
+    throw "RequiredConsecutiveZeroSamples must be at least 1"
+  }
+  $drainDeadline = (Get-Date).AddSeconds($LagDrainTimeoutSec)
+  $drainedAt = $null
+  $consecutiveZeroSamples = 0
+  $workerLagSamples = [System.Collections.Generic.List[double]]::new()
+  $notificationLagSamples = [System.Collections.Generic.List[double]]::new()
+  foreach ($sample in @($InitialWorkerLagSamples)) {
+    if ($null -ne $sample -and $null -ne $sample.lag) {
+      [void]$workerLagSamples.Add([double]$sample.lag)
+    }
+  }
+
+  $lastWorkerLag = $null
+  $lastNotificationLag = $null
+  while ((Get-Date) -lt $drainDeadline) {
+    $lastWorkerLag = Get-ConsumerLag -ConsumerGroup "message-worker"
+    $lastNotificationLag = Get-ConsumerLag -ConsumerGroup "notification-worker"
+    [void]$workerLagSamples.Add($lastWorkerLag)
+    [void]$notificationLagSamples.Add($lastNotificationLag)
+    Add-Line ("{0}: message-worker lag={1}; notification-worker lag={2}" -f $Phase, $lastWorkerLag, $lastNotificationLag)
+    if ($lastWorkerLag -eq 0 -and $lastNotificationLag -eq 0) {
+      $consecutiveZeroSamples += 1
+      if ($consecutiveZeroSamples -ge $RequiredConsecutiveZeroSamples) {
+        $drainedAt = Get-Date
+        break
+      }
+    } else {
+      $consecutiveZeroSamples = 0
+    }
+    Start-Sleep -Seconds $LagSampleIntervalSec
+  }
+
+  if ($null -eq $drainedAt) {
+    throw ("{0} consumer lag did not drain to zero within {1} seconds (message-worker={2}, notification-worker={3})" -f $Phase, $LagDrainTimeoutSec, $lastWorkerLag, $lastNotificationLag)
+  }
+
+  $workerPeakLag = ($workerLagSamples | Measure-Object -Maximum).Maximum
+  $notificationPeakLag = ($notificationLagSamples | Measure-Object -Maximum).Maximum
+  $drainSeconds = [math]::Round(($drainedAt - $StartedAt).TotalSeconds, 2)
+  Add-Line ("{0}_message_worker_peak_consumer_lag: {1}" -f $Phase, $workerPeakLag)
+  Add-Line ("{0}_notification_worker_peak_consumer_lag: {1}" -f $Phase, $notificationPeakLag)
+  Add-Line ("{0}_all_consumer_backlog_drain_seconds: {1}" -f $Phase, $drainSeconds)
+  Add-Line ("{0}_message_worker_final_consumer_lag: {1}" -f $Phase, $lastWorkerLag)
+  Add-Line ("{0}_notification_worker_final_consumer_lag: {1}" -f $Phase, $lastNotificationLag)
+
+  return [pscustomobject]@{
+    Phase = $Phase
+    MessageWorkerPeakLag = $workerPeakLag
+    NotificationWorkerPeakLag = $notificationPeakLag
+    DrainSeconds = $drainSeconds
+    MessageWorkerFinalLag = $lastWorkerLag
+    NotificationWorkerFinalLag = $lastNotificationLag
+  }
+}
+
 New-Item -ItemType Directory -Force -Path $resultDir | Out-Null
 
 Add-Line "# Kafka Performance Suite"
@@ -213,35 +278,11 @@ try {
     }
   }
 
-  Invoke-SuiteStep "Kafka consumer lag drain" {
-    $drainDeadline = (Get-Date).AddSeconds($LagDrainTimeoutSec)
-    $drainedAt = $null
-    $notificationLagSamples = [System.Collections.Generic.List[double]]::new()
-    $lastWorkerLag = $null
-    $lastNotificationLag = $null
-    while ((Get-Date) -lt $drainDeadline) {
-      $lastWorkerLag = Get-ConsumerLag -ConsumerGroup "message-worker"
-      $lastNotificationLag = Get-ConsumerLag -ConsumerGroup "notification-worker"
-      $script:LagSamples += [pscustomobject]@{ timestamp = [DateTimeOffset]::UtcNow; lag = $lastWorkerLag }
-      [void]$notificationLagSamples.Add($lastNotificationLag)
-      Add-Line ("message-worker lag={0}; notification-worker lag={1}" -f $lastWorkerLag, $lastNotificationLag)
-      if ($lastWorkerLag -eq 0 -and $lastNotificationLag -eq 0) {
-        $drainedAt = Get-Date
-        break
-      }
-      Start-Sleep -Seconds $LagSampleIntervalSec
-    }
-    if ($null -eq $drainedAt) {
-      throw ("consumer lag did not drain to zero within {0} seconds (message-worker={1}, notification-worker={2})" -f $LagDrainTimeoutSec, $lastWorkerLag, $lastNotificationLag)
-    }
-    $peakLag = ($script:LagSamples | Measure-Object -Property lag -Maximum).Maximum
-    $notificationPeakLag = ($notificationLagSamples | Measure-Object -Maximum).Maximum
-    $drainSeconds = [math]::Round(($drainedAt - $script:LoadCompletedAt).TotalSeconds, 2)
-    Add-Line ("message-worker peak_consumer_lag: {0}" -f $peakLag)
-    Add-Line ("notification-worker peak_consumer_lag_during_drain: {0}" -f $notificationPeakLag)
-    Add-Line ("all-consumer backlog_drain_seconds_after_load: {0}" -f $drainSeconds)
-    Add-Line ("message-worker final_consumer_lag: 0")
-    Add-Line ("notification-worker final_consumer_lag: 0")
+  Invoke-SuiteStep "Main load Kafka consumer lag drain" {
+    $script:MainLoadDrain = Wait-ConsumerLagDrain `
+      -Phase "main_load" `
+      -StartedAt $script:LoadCompletedAt `
+      -InitialWorkerLagSamples @($script:LagSamples)
     $persistLagP95 = Get-PrometheusScalar `
       -PromQl 'histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[5m])) by (le))' `
       -MetricLabel "Worker accepted-to-commit lag p95"
@@ -255,6 +296,14 @@ try {
       -HpaName "api-hpa" `
       -TimeoutSec 90
     $hpaOutput | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }
+    $script:HpaLoadCompletedAt = Get-Date
+  }
+
+  Invoke-SuiteStep "Post-HPA Kafka consumer lag drain" {
+    $script:PostHpaDrain = Wait-ConsumerLagDrain `
+      -Phase "post_hpa" `
+      -StartedAt $script:HpaLoadCompletedAt `
+      -RequiredConsecutiveZeroSamples 2
   }
 
   Invoke-SuiteStep "Final runtime snapshot" {
@@ -282,7 +331,8 @@ finally {
   }
 
   $outputPath = if ($suiteSucceeded) { $resultPath } else { $failedResultPath }
-  Set-Content -Path $outputPath -Value $lines -Encoding UTF8
+  $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::WriteAllLines($outputPath, [string[]]$lines, $utf8NoBom)
   Write-Host ""
   Write-Host "Performance suite result written to $outputPath"
 }

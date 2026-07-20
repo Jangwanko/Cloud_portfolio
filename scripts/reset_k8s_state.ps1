@@ -35,6 +35,23 @@ function Get-BaseReplicas([string]$Name) {
   return 1
 }
 
+function Configure-PostgresSyncIfNeeded(
+  [string]$WorkloadName,
+  [int]$ReplicaCount,
+  [int]$WaitSec
+) {
+  $ref = Get-WorkloadRef $WorkloadName
+  if ($ref -notlike "statefulset/*" -or $ReplicaCount -lt 2) {
+    return
+  }
+
+  & "$PSScriptRoot/configure_postgres_sync.ps1" `
+    -Namespace $Namespace `
+    -StatefulSet $WorkloadName `
+    -ExpectedReplicas $ReplicaCount `
+    -TimeoutSec $WaitSec
+}
+
 function Wait-Ready([int]$WaitSec = 240) {
   $deadline = (Get-Date).AddSeconds($WaitSec)
   while ((Get-Date) -lt $deadline) {
@@ -102,8 +119,13 @@ function Invoke-KubectlQuiet([scriptblock]$Action) {
   }
 }
 
-Scale-Workload -Name $DbDeployment -Replicas (Get-BaseReplicas $DbDeployment)
+$targetReplicas = Get-BaseReplicas $DbDeployment
+Scale-Workload -Name $DbDeployment -Replicas $targetReplicas
 Wait-Workload -Name $DbDeployment -TimeoutSec $TimeoutSec
+Configure-PostgresSyncIfNeeded `
+  -WorkloadName $DbDeployment `
+  -ReplicaCount $targetReplicas `
+  -WaitSec $TimeoutSec
 
 # Ensure schema exists even when DB pods have been recreated.
 Wait-DbQueryReady -WaitSec $TimeoutSec

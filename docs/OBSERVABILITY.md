@@ -15,9 +15,9 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 
 - API가 요청을 빠르게 `accepted` 하는가?
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
-- DB commit 이후 snapshot compacted topic 기반 local materialized cache가 DB failover 중 degraded read를 보조하는가?
+- DB commit 이후 snapshot compacted topic 기반 local materialized cache가 DB outage 중 degraded read를 보조하는가?
 - message read 응답의 `source`, `degraded`, `snapshot_age_seconds`로 DB membership/watermark-gated snapshot과 degraded fallback이 정상 동작하는가?
-- read cache hit ratio, snapshot age, degraded read count와 pod별 hydration 상태로 read path가 DB failover를 얼마나 흡수하는가?
+- read cache hit ratio, snapshot age, degraded read count와 pod별 hydration 상태로 read path가 DB outage를 얼마나 흡수하는가?
 - `accepted` 된 요청이 PostgreSQL에 언제 `persisted` 되는가?
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
@@ -223,10 +223,12 @@ Snapshot cache consumer는 consumer group을 사용하지 않습니다. 각 API 
 
 현재 구현 상태:
 
-- readiness payload의 materialized cache `ready`, `hydrated`, `last_error`, request/message/stream item count 확인
+- readiness payload의 materialized cache `ready`, `hydrated`, `last_error` 확인; item count는 현재 응답에 없음
 - `hydrated=true`: pod startup 시 캡처한 initial end offsets까지 모든 partition position 도달
 - `ready=false`, `hydrated=false`: startup replay 미완료 또는 consumer loop 오류 뒤 cache clear/rebuild 대기
 - API response의 `source`, `degraded`, `snapshot_age_seconds`: 실제 read 결과 해석
+
+현재 장애 주입 증거는 PostgreSQL StatefulSet 전체 scale-down/recovery입니다. Primary promotion/failover 동작과 같은 결과로 해석하지 않습니다.
 
 아직 없는 지표:
 

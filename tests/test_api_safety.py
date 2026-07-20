@@ -432,13 +432,18 @@ def test_readiness_rejects_traffic_until_schema_startup_completes(monkeypatch):
     monkeypatch.setattr(
         main,
         "get_materialized_cache_status",
-        lambda: {"ready": True, "last_error": None},
+        lambda: {"ready": True, "hydrated": True, "last_error": None},
     )
 
     status_code, payload = main._build_readiness_payload()
     assert status_code == 503
     assert payload["status"] == "not_ready"
     assert "schema_not_ready" in payload["reason"]
+    assert payload["materialized_cache"] == {
+        "ready": True,
+        "hydrated": True,
+        "last_error": None,
+    }
 
 
 def test_application_maps_uncaught_database_dependency_errors_to_503():

@@ -86,6 +86,8 @@ Readiness state의 직접 조건에서 제외되는 신호:
 - retry terminal: DLQ publish 가능
 - recovery: Worker backlog와 replay path 처리
 
+StatefulSet 재시작 뒤 pod `Ready`만으로 HA 복구를 완료 처리하지 않습니다. 모든 PostgreSQL pod의 persisted sync 설정을 복원하고 현재 primary에서 streaming `sync`/`quorum` standby 1개 이상을 확인해야 readiness의 HA guardrail을 충족합니다. 전체 outage/recovery 검증은 primary promotion/failover 성공 증거와 분리합니다.
+
 짧은 장애가 항상 DLQ로 이어지는 것은 아닙니다. inline retry 안에 DB가 복구되면 같은 record에서 persistence를 재개합니다.
 
 ### Worker saturation

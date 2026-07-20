@@ -186,7 +186,7 @@ DB snapshot materialized cache 현재 검증 기준:
 | Degraded read count | `degraded=true` 응답 수 | read path가 정상 DB/cache 경로를 벗어난 빈도 |
 | Per-pod snapshot replay progress | 미구현 custom metric: current position / captured initial end offset / remaining records / hydration duration | pod별 cold-start replay와 cache gate 개방 지연 측정 |
 
-Materialized cache consumer는 `group_id` 없이 각 API pod가 모든 snapshot partition을 직접 assign하고 beginning부터 replay합니다. 따라서 kafka-exporter의 `kafka_consumergroup_lag` series가 존재하지 않으며, Worker/notification consumer group lag와 섞어 해석하지 않습니다. 현재는 readiness payload의 `ready`, `hydrated`, `last_error`, cache item count와 API read 응답을 확인합니다.
+Materialized cache consumer는 `group_id` 없이 각 API pod가 모든 snapshot partition을 직접 assign하고 beginning부터 replay합니다. 따라서 kafka-exporter의 `kafka_consumergroup_lag` series가 존재하지 않으며, Worker/notification consumer group lag와 섞어 해석하지 않습니다. 현재는 readiness payload의 `ready`, `hydrated`, `last_error`와 API read 응답을 확인합니다. Cache item count와 partition별 replay progress는 아직 노출하지 않습니다.
 
 `message-request-status`와 `message-snapshots`는 대부분 request/message별 unique key를 사용합니다. Compaction만으로 전체 key 수와 pod cold-start replay가 bounded 되지는 않습니다. Retention 또는 bootstrap/changelog 구조가 적용되기 전에는 cache rebuild time을 장기 SLO로 확정하지 않습니다.
 
@@ -273,7 +273,7 @@ Pgpool이 up 상태로 보고하는 standby 수입니다.
 
 ### `messaging_postgres_sync_standby_count`
 
-sync 또는 quorum 기준을 만족하는 standby 수입니다. 로컬 kind 데모에서는 async streaming standby도 정상 운영 상태로 취급합니다.
+sync 또는 quorum 기준을 만족하는 standby 수입니다. 로컬 HA readiness minimum은 `1`이며 `0`이면 async streaming standby가 있더라도 `degraded`입니다.
 
 ### `messaging_postgres_replication_state_count`
 

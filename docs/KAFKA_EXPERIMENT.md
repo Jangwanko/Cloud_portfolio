@@ -137,7 +137,9 @@ exactly-once, partition 간 global ordering, 모든 crash boundary의 무손실,
 
 ## Performance Evidence
 
-Generic v2 workload는 아직 같은 조건으로 실행하지 않았습니다. 아래 결과는 legacy/order request shape와 당시 HTTP `200` 계약으로 수집된 역사적 evidence이며, v2 serialization/validation 비용이나 v2 route 성능을 측정한 값이 아닙니다.
+Generic v2 workload의 첫 후보는 2026-07-21 local `dev-kafka`에서 실행했습니다. 100 VU / 30초 hot single-stream 조건으로 event `25,378건`을 모두 HTTP `202`로 수락했고 error `0.00%`, avg `67.83ms`, p95 `123.96ms`, p99 `153.10ms`, Worker peak lag `24,504`, main drain `751.76s`를 기록했습니다. Fresh DB의 단일 실행이므로 stable baseline으로 승격하지 않습니다. 전체 조건과 한계는 [TEST_RESULTS.md](TEST_RESULTS.md)의 `Generic v2 Performance Candidate`를 사용합니다.
+
+아래 2026-04/06 결과는 legacy/order request shape와 당시 HTTP `200` 계약으로 수집된 역사적 evidence입니다. Generic v2 결과와 같은 표에서 연속 baseline처럼 해석하지 않습니다.
 
 ### Stable intake baseline — 2026-04-28
 
@@ -154,7 +156,7 @@ Generic v2 workload는 아직 같은 조건으로 실행하지 않았습니다. 
 
 `row-visible proxy`는 API accepted 시각과 PostgreSQL row의 `created_at`/조회 가능 시점을 비교한 값입니다. 실제 DB commit timestamp 측정값이 아닙니다.
 
-HTTP `200`은 route에 `202 Accepted`를 명시하기 전의 역사적 원본입니다. 현재 build의 `202`는 새 suite로 재확인해야 합니다.
+HTTP `200`은 route에 `202 Accepted`를 명시하기 전의 역사적 원본입니다. 현재 build의 `202`는 2026-07-21 generic v2 suite에서 별도로 재확인했습니다.
 
 ### Capacity rerun — 2026-06-09
 

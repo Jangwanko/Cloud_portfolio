@@ -90,7 +90,26 @@ event_persist_lag_seconds = Histogram(
     "messaging_event_persist_lag_seconds",
     "Time from API acceptance to PostgreSQL persistence in seconds",
     registry=registry,
-    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60),
+    buckets=(
+        0.005,
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1,
+        2,
+        5,
+        10,
+        30,
+        60,
+        120,
+        300,
+        600,
+        900,
+        1200,
+    ),
 )
 
 queue_wait_seconds = Histogram(

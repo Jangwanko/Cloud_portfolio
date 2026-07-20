@@ -102,12 +102,16 @@ kubectl logs -n messaging-app statefulset/messaging-postgresql-ha-postgresql --t
 조치:
 - Pgpool pod 재시작, PostgreSQL primary reachable, standby 수, replication lag 순서 확인
 - `reason`: `postgres_primary_unreachable`, ready/sync standby minimum, replication delay 구분
+- PostgreSQL StatefulSet 재시작 뒤 `postgres_sync_standbys_below_minimum`: `scripts/configure_postgres_sync.ps1 -Namespace messaging-app` 실행
+- helper 완료 조건: 모든 ready PostgreSQL pod의 `postgresql.auto.conf`에 `synchronous_commit=on`과 `synchronous_standby_names=ANY 1` 저장, 현재 primary의 streaming `sync`/`quorum` standby `>=1`
+- 여러 `ALTER SYSTEM`을 한 `psql -c`에 묶지 않음; 각 문장을 별도 실행한 뒤 `pg_reload_conf()` 확인
 - PostgreSQL write path 불안정: Worker inline retry
 - inline retry 한도 초과 event: DLQ 이동
 - DB 복구 후: DLQ reason 확인
 
 복구 확인:
 - `/health/ready` `ready` 복귀
+- `postgres.sync_standby_count >= 1`
 - `scripts/test_db_down.ps1 -SkipReset` 통과
 - DLQ event `failed_reason` 반복 증가 없음
 

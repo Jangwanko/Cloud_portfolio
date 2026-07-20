@@ -16,6 +16,31 @@ function Get-WorkloadRef([string]$Name) {
   throw "Workload not found: $Name"
 }
 
+function Restore-DbWorkload(
+  [string]$WorkloadRef,
+  [int]$ReplicaCount,
+  [int]$TimeoutSec = 180
+) {
+  kubectl -n $Namespace scale $WorkloadRef --replicas=$ReplicaCount | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to scale $WorkloadRef to $ReplicaCount replicas"
+  }
+
+  kubectl -n $Namespace rollout status $WorkloadRef --timeout="$($TimeoutSec)s" | Out-Host
+  if ($LASTEXITCODE -ne 0) {
+    throw "Timed out waiting for rollout of $WorkloadRef"
+  }
+
+  if ($WorkloadRef -like "statefulset/*" -and $ReplicaCount -ge 2) {
+    $statefulSetName = ($WorkloadRef -split "/", 2)[1]
+    & "$PSScriptRoot/configure_postgres_sync.ps1" `
+      -Namespace $Namespace `
+      -StatefulSet $statefulSetName `
+      -ExpectedReplicas $ReplicaCount `
+      -TimeoutSec $TimeoutSec
+  }
+}
+
 function Wait-Ready([int]$TimeoutSec = 180) {
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
@@ -106,8 +131,10 @@ try {
     Write-Host "Cache read fallback test passed: fresh source=$($fresh.source) degraded=$($fresh.degraded) age=$($fresh.snapshot_age_seconds); db_down source=$($degraded.source) degraded=$($degraded.degraded) age=$($degraded.snapshot_age_seconds)"
   }
   finally {
-    kubectl -n $Namespace scale $dbRef --replicas=$targetReplicas | Out-Null
-    kubectl -n $Namespace rollout status $dbRef --timeout=180s | Out-Host
+    Restore-DbWorkload `
+      -WorkloadRef $dbRef `
+      -ReplicaCount $targetReplicas `
+      -TimeoutSec 180
     Wait-Ready
   }
 }

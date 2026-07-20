@@ -2,6 +2,35 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 수정: PostgreSQL 재시작 복구와 cache readiness 증거
+
+- persisted-volume PostgreSQL StatefulSet 전체 재시작 뒤 chart의 first-boot sync 설정이 재적용되지 않아 `synchronous_standby_names`가 비고 readiness가 `postgres_sync_standbys_below_minimum`으로 남는 결함 확인
+- install과 DB recovery 경로에서 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `synchronous_standby_names=ANY 1`을 각각 별도 `ALTER SYSTEM`으로 지속 저장하고 reload하도록 helper 추가
+- rollout status가 scale-down 시점의 `0 replicas`를 보고 너무 일찍 완료될 수 있어 target spec/ready replica 명시 대기 추가
+- host에서 PostgreSQL administrator password를 decode하거나 command argument에 넣지 않고 pod 내부 Secret file을 사용하도록 monitoring/sync helper 정리
+- Windows PowerShell이 multiline Bash 인자의 quote를 깨뜨리는 실제 실행 오류를 확인하고 remote shell/SQL을 각각 Base64 envelope로 전달하도록 수정
+- 수동 backup/restore client도 password를 host로 decode하지 않고 pod `secretKeyRef`로 주입하며, SQL을 PowerShell text pipeline으로 재인코딩하지 않도록 pod file과 `kubectl cp` 경계로 변경
+- 새 host logical dump `39,433,414` bytes를 disposable database에 복원하고 10개 table row count, Alembic `0008_generic_event_envelope`, generic v2 row `33,840`, message max id/sequence 원본 일치를 확인한 뒤 임시 DB 삭제
+- readiness 응답 생성 과정에서 실제 materialized cache `hydrated` 값이 누락돼 response model 기본값 `false`가 반환되는 결함 수정
+- API contract에 materialized cache `ready`/`hydrated` 필드와 실제 hydration 완료 확인 추가
+- cache fallback suite 재실행 `47.5s`, exit `0`: fresh cache age `0.453s`, DB-down degraded cache age `11.784s`, scale `3→0→3` 뒤 PostgreSQL `3/3`·sync/quorum standby `2`·readiness 복귀
+- DB outage suite 재실행 `45.1s`, exit `0`: DB down 중 event `202` 수락, 복구 뒤 persistence와 sync replication 복귀 확인
+- local unit / contract / infrastructure suite: `359 passed`
+
+## 2026-07-21 검증: generic v2 첫 성능 후보
+
+- local `dev-kafka` revision `1439be1`, API/Worker image `d31ac14`, OpenAPI/API `2.0.0`, generic v2 gate와 시작 consumer lag `0` preflight 통과
+- 100 VU / 30s hot single-stream 부하: total HTTP `25,382`, event `202` `25,378`, error `0.00%`, avg `67.83ms`, p95 `123.96ms`, p99 `153.10ms`
+- same-stream 100 event ordering `stream_seq 1..100` pass, `7.93s`
+- persistence sample 50/50 확인; `accepted_to_status_observed_ms` avg `79.96ms`, p95 `81.28ms`, max `2384.10ms`
+- status-observed latency에 client polling/network 포함; 과거 row-visible proxy와 비교 제외
+- message-worker peak lag `24,504`, notification-worker peak lag `6`, main backlog `751.76s` 뒤 모두 `0`
+- HPA sanity probe가 main drain 뒤 추가한 message-worker lag `4,962`를 후속 수동 관측해 약 `160s` 내 `0` 확인
+- Worker histogram query `60s`는 metric의 최대 finite bucket 경계 포화로 확인; exact p95 해석 제외
+- stable legacy baseline 대비 total requests `19.87%` 감소, avg/p95 `53.70%` 증가, p99 `47.82%` 증가
+- 2026-06-18 마지막 legacy raw suite 대비 total requests `8.68%` 감소, avg `17.68%`, p95 `3.92%`, p99 `1.66%` 증가
+- 첫 generic v2 후보로 기록하고 stable baseline 승격 제외; fresh cluster clean state와 현재 resource 조건이 함께 달라 v2만의 인과로 단정 제외
+
 ## 2026-07-21 업데이트: v2 벤치마크 관측·검증 계약 보강
 
 - 새 consumer group의 미사용 Kafka partition을 kafka-exporter가 lag `-1`로 노출하는 동작 확인
@@ -18,6 +47,8 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 
 - 기존 GitOps revision이 추적하던 `messaging-app` Namespace가 새 desired state에서 빠지면서 automated prune 대상이 되는 전환 결함 확인
 - Namespace 삭제가 PostgreSQL/Pgpool, runtime secret, backup PVC 등 namespace-scoped bootstrap 리소스까지 연쇄 삭제하는 영향 확인
+- 같은 kind cluster에서 PostgreSQL/Pgpool clean reinstall; 삭제된 in-cluster local demo row와 backup PVC는 복구 불가, 성능 suite는 새 DB clean state에서 실행
+- reinstall 뒤 수동 `postgres-weekly-backup` Job `Completed`와 `/backups/postgres-20260720-190134.sql` 생성 확인; 새 `postgres-backups` PVC `Bound`, 이 시점의 restore는 미실행이었으며 후속 disposable restore 결과는 최신 항목에 기록
 - `k8s/gitops/base/namespace.yaml`을 desired state에 유지하고 `argocd.argoproj.io/sync-options: Prune=false` 적용
 - Namespace lifecycle을 application rollout과 분리하는 contract test 및 GitOps 운영 규칙 추가
 
@@ -135,7 +166,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - Terraform `1.15.8` 공식 SHA256 검증, required version / provider / root module pin 정렬, lock file 생성, local fmt/init/validate 성공; plan/apply/AWS 배포는 미실행으로 분리
 - runtime secret: Windows/Linux Grafana 고정 admin password 제거, random secret 생성과 평문 출력 제외
 - PostgreSQL HA: committed password 제거, chart-managed Secret 생성·upgrade 재사용·PVC 유지 시 credential recovery 경계 명시
-- PostgreSQL HA: chart가 무시하던 `numSynchronousReplicas` 제거, 실제 render가 `ANY 1 of 2 standbys`가 되도록 container env 계약 명시
+- PostgreSQL HA: chart가 무시하던 `numSynchronousReplicas` 제거, fresh-boot container env를 `ANY 1 of 2 standbys`로 정렬; persisted-volume restart 보장은 2026-07-21 runtime helper로 후속 보강
 - application / Alembic: 과거 로컬 DB 기본 암호 제거, runtime Secret 또는 명시적 연결 설정만 사용
 - 미배포 legacy `observer` 제거, 현재 운영 surface를 Demo UI / Grafana / Prometheus로 정리
 - repository hygiene: tracked local binaries/Helm metadata/unused Redis chart 제거, PostgreSQL HA vendored chart archive만 의도적 유지

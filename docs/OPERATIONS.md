@@ -55,6 +55,22 @@ Runtime request 경계:
 
 Secret과 PVC의 lifecycle은 함께 관리합니다. Secret만 새로 만들면 기존 PostgreSQL data directory의 credential과 달라져 application 연결이 끊길 수 있습니다.
 
+### PostgreSQL Synchronous Replication Lifecycle
+
+Chart의 `POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS=1` 환경은 fresh boot 설정에 사용되지만 persisted volume을 가진 pod 재시작 때 `postgresql.conf`가 다시 생성되면 sync standby 설정이 빠질 수 있습니다. Pod `Ready`와 StatefulSet rollout 완료만으로 HA recovery를 판정하지 않습니다.
+
+Install/scale-up/recovery 경로는 아래 helper를 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/configure_postgres_sync.ps1 `
+  -Namespace messaging-app
+```
+
+- 모든 ready PostgreSQL pod: `ALTER SYSTEM`으로 `synchronous_commit=on`, `synchronous_standby_names=ANY 1` 지속 저장 후 reload
+- 현재 primary 재탐색: `pg_stat_replication`의 streaming `sync`/`quorum` standby `>=1` 확인
+- credential: pod 내부 chart-managed password file 사용, host command argument/출력으로 전달 제외
+- 실패 처리: helper timeout 또는 sync standby `0`이면 readiness 복구 완료로 간주 제외
+
 ## Local Status Check
 
 Manual quick start:
@@ -95,7 +111,7 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. 이번 `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-14 read-only check의 local live는 UI `1.1.0`/event `200`, public demo-lite는 UI `1.4.1`/API image `e481a21`/event `200`이었습니다. 이번 source 변경은 두 live target 모두 아직 반영되지 않았습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-21 local `dev-kafka` live는 UI/API `2.0.0`, generic event `202`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite는 UI `1.4.1`/API image `e481a21`/event `200`인 별도 deployment이며 generic `2.0.0` 변경은 아직 반영되지 않았습니다.
 
 ## Demo Access
 
@@ -247,7 +263,8 @@ powershell -ExecutionPolicy Bypass -File scripts/backup_postgres_k8s.ps1
 
 - output: `backups/postgres-<timestamp>.sql`
 - source: Pgpool service
-- credential: PostgreSQL HA Secret
+- credential: temporary non-root pod에 PostgreSQL HA Secret `secretKeyRef` 주입; host decode/command argument 제외
+- transfer: pod file을 `kubectl cp`로 복사해 SQL text encoding 보존
 
 Scheduled local backup:
 
@@ -257,6 +274,14 @@ Scheduled local backup:
 - retention script: latest 8 dumps
 
 CronJob 존재는 restore 성공 증거가 아닙니다. 최근 job exit, dump size, restore drill을 함께 확인합니다.
+
+2026-07-21 local restore drill:
+
+- host logical dump: `39,433,414` bytes
+- target: 새 disposable database `portfolio_restore_validation_20260721`
+- 일치 확인: 10개 table row count, Alembic `0008_generic_event_envelope`, generic v2 row `33,840`, message max id `33,840`, max sequence `25,378`
+- 정리: 비교 성공 뒤 disposable database 삭제
+- 해석 제한: 같은 cluster의 logical restore 검증; object storage/cluster-loss 복구와 자동 RPO/RTO는 별도 과제
 
 ## Restore
 
@@ -373,7 +398,7 @@ WHERE schema_version >= 2
 
 consumer lag `0`만으로 v2 inflight 부재를 증명하지 않습니다. compacted request status, producer retry, DLQ/replay 경로를 함께 확인합니다. 어느 조건이든 불확실하거나 downgrade-unsafe row가 남아 있으면 downgrade를 시도하지 않고 새 schema/code를 유지한 채 forward recovery합니다.
 
-v2 performance는 아직 재실행하지 않았습니다. 2026-04/06 Kafka baseline은 당시 legacy/order contract의 역사적 intake evidence이며 v2 성능 결과로 보고하지 않습니다.
+Generic v2의 첫 performance 후보는 2026-07-21 local `dev-kafka`에서 실행했고 event `25,378건`, error `0.00%`, p95 `123.96ms`를 확인했습니다. Fresh DB의 hot single-stream 단일 실행이므로 stable baseline으로 승격하지 않습니다. 2026-04/06 Kafka baseline은 당시 legacy/order contract의 역사적 intake evidence로 분리합니다.
 
 ## Deployment Boundary
 

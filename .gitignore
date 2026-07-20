@@ -44,6 +44,9 @@ results/kafka-performance/*
 !results/ordering-failure/
 results/ordering-failure/*
 !results/ordering-failure/latest.json
+!results/postgres-restore/
+results/postgres-restore/*
+!results/postgres-restore/latest.json
 k6/results/
 
 # Docker
