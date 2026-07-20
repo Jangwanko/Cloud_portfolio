@@ -95,7 +95,7 @@
 
 ### 7. Commit-aware persistence latency
 
-- 현재 상태: Worker가 `commit()` 반환 직후 `persisted_at`을 기록하는 histogram을 배포해 cluster query까지 확인. 첫 결과 `60s`는 당시 최대 finite bucket 포화값이라 exact p95에서 제외. source bucket을 `1200s`까지 확장했으며 새 image 반복 측정 대기
+- 현재 상태: Worker가 `commit()` 반환 직후 `persisted_at`을 기록하는 histogram을 배포해 cluster query까지 확인. 첫 결과 `60s`는 당시 최대 finite bucket 포화값이라 exact p95에서 제외. `1200s`까지 확장한 bucket은 local image `9349ba9`의 `/metrics`에서 노출 확인, 새 bucket을 사용한 반복 측정 대기
 - 목표: API accepted 시각부터 Worker가 DB commit 반환을 관측한 시점까지의 지연을 재현 가능하게 측정
 - 이유: 과거 PostgreSQL `created_at` / row-visible proxy와 client status-observed 측정의 의미 한계 해소
 - 완료 기준:
@@ -151,7 +151,7 @@
 
 ### 12. Registry 기반 GitOps 공급망
 
-- 현재 상태: candidate digest build/push → 비루트 실행 검증 → 동일 digest SHA tag 승격 → overlay bot commit source 구현. `dev-kafka` Actions image `d31ac14`와 overlay revision `1439be1`을 local Argo CD가 `Synced / Healthy`로 배포한 흐름 확인; master 최종 반영과 production digest/SBOM gate는 대기
+- 현재 상태: candidate digest build/push → 비루트 실행 검증 → 동일 digest SHA tag 승격 → overlay bot commit source 구현. `dev-kafka` Actions image `9349ba9`와 overlay revision `b84c379`을 local Argo CD가 `Synced / Healthy`로 배포한 흐름 재확인; master 최종 반영과 production digest/SBOM gate는 대기
 - 목표: commit SHA image를 registry에 발행하고 overlay tag 변경으로 배포
 - 완료 기준:
   - build/push, manifest tag update, Argo CD sync 흐름 재현

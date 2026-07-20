@@ -20,6 +20,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - benchmark 증거는 같은 directory의 임시 파일을 먼저 완성하고 기존 파일은 `File.Replace`, 신규 파일은 `File.Move`로 반영, 쓰기 실패도 별도 보관해 suite → reset → evidence-write 순서로 원래 오류 우선순위 유지
 - restore `-ResetSchema`의 psql 종료 코드를 즉시 확인해 schema reset 실패 뒤 dump 적용이 이어지는 경로 차단
 - reset recovery의 StatefulSet scale/rollout native exit code를 즉시 검사해 조용한 kubectl 실패 차단
+- `dev-kafka` CI/image workflow success 뒤 image `9349ba9`, overlay revision `b84c379`을 Argo `Synced / Healthy`로 배포; API/core ready, cache `ready=true` / `hydrated=true`, API contract pass, consumer lag `0` 확인
 - local unit / contract / infrastructure suite: `359 passed`
 
 ## 2026-07-21 검증: generic v2 첫 성능 후보

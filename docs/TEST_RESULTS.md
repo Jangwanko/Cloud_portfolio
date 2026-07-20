@@ -6,7 +6,7 @@
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Generic event contract | `/v2/streams/{stream_id}/events`, versioned JSON envelope | local `dev-kafka` image `d31ac14`에서 OpenAPI `2.0.0`, `202`, persistence와 성능 후보 재검증 |
+| Generic event contract | `/v2/streams/{stream_id}/events`, versioned JSON envelope | current local image `9349ba9`에서 OpenAPI `2.0.0`, `202`, persistence/API contract 재검증; 성능 후보는 image `d31ac14` 원본 유지 |
 | Generic rollout order | GitOps gate-false Secret `-3` → migration `-2` → Worker `-1` → overlay API-true `0`; manual false → Worker ready → API true | local staged rollout 완료; 대칭 호환 아님 |
 | HTTP intake contract | Kafka append 성공 시 `202 Accepted` | 2026-07-21 v2 suite에서 event `202` 응답 `25,378`, 다른 event status `0` |
 | Generic v2 performance candidate | 100 VU / 30s, event `25,378`, error `0.00%`, p95 `123.96ms` | 첫 측정 후보; 안정 기준선 미채택 |
@@ -25,7 +25,7 @@
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
 | Public demo-lite UI `1.4.1` | branch/deployment-specific | master `2.0.0` 미배포; public badge/API 별도 확인 |
 | Unit / contract / infrastructure suite | `359 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
-| Local live cluster | Argo `Synced / Healthy` revision `1439be1`, API/Worker image `d31ac14`, API `2.0.0`, generic v2 enabled | core ready; 2026-07-21 suite와 후속 drain 뒤 normalized message/notification lag `0` |
+| Local live cluster | Argo `Synced / Healthy` revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0` |
 
 원본 위치:
 
@@ -586,7 +586,7 @@ powershell -ExecutionPolicy Bypass -File scripts\test_cache_read_fallback.ps1 -S
 
 이 실행은 cache read/fallback 기능 검증입니다. consumer group lag 또는 pod별 replay 진행률을 측정한 결과가 아닙니다.
 
-2026-07-21 tracked rerun은 `45.390s`, exit `0`으로 완료했습니다. Fresh read는 `source=cache`, `degraded=false`, age `0.112s`, DB-down read는 `source=cache`, `degraded=true`, age `11.462s`였고 scale `3→0→3` 뒤 PostgreSQL `3/3`, sync/quorum standby `2`, readiness `ready`로 복귀했습니다. 별도 DB outage suite도 `43.008s`, exit `0`으로 accepted-during-outage와 recovery persistence를 재확인했습니다. Readiness의 `hydrated` 응답 누락 수정은 새 image 배포 뒤 `true`를 직접 확인합니다. 실행 시각·source/script hash·관측값을 담은 tracked structured summary는 [results/postgres-recovery/latest.json](../results/postgres-recovery/latest.json)에 보관합니다. 전체 raw terminal transcript는 보관하지 않았습니다.
+2026-07-21 tracked rerun은 `45.390s`, exit `0`으로 완료했습니다. Fresh read는 `source=cache`, `degraded=false`, age `0.112s`, DB-down read는 `source=cache`, `degraded=true`, age `11.462s`였고 scale `3→0→3` 뒤 PostgreSQL `3/3`, sync/quorum standby `2`, readiness `ready`로 복귀했습니다. 별도 DB outage suite도 `43.008s`, exit `0`으로 accepted-during-outage와 recovery persistence를 재확인했습니다. 이후 image `9349ba9` 배포에서 readiness materialized cache `ready=true`, `hydrated=true`와 API contract pass를 직접 확인했습니다. 실행 시각·source/script hash·관측값을 담은 tracked structured summary는 [results/postgres-recovery/latest.json](../results/postgres-recovery/latest.json)에 보관합니다. 전체 raw terminal transcript는 보관하지 않았습니다.
 
 ## 운영 메트릭 변화 확인 — 2026-04-29
 
@@ -696,8 +696,9 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 2026-07-21 local live snapshot:
 
 - API readiness `ready`
-- Argo CD `Synced / Healthy`, revision `1439be1`
-- API/core workload ready, API/Worker image `d31ac14`
+- Argo CD `Synced / Healthy`, revision `b84c379`
+- API/core workload ready, API/Worker image `9349ba9`
+- readiness materialized cache `ready=true`, `hydrated=true`; API contract suite pass
 - Kafka `3/3`, PostgreSQL `3/3`, Pgpool `2/2`
 - `worker-keda` Ready
 - Prometheus scrape targets `up=1`
