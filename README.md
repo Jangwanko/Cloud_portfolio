@@ -141,7 +141,7 @@ DB commit과 후속 Kafka publish 사이의 crash gap은 남아 있는 신뢰성
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
 | `master` worktree source | UI `2.0.0`, API `2.0.0` | generic v2 + `202` source contract |
-| local `dev-kafka` live cluster, 2026-07-21 | API `2.0.0`, image `9349ba9`, revision `b84c379` | generic v2 + `202`, cache `ready=true` / `hydrated=true`, Argo `Synced / Healthy` |
+| local `dev-kafka` live cluster, 2026-07-21 | API `2.0.0`, image `9349ba9`, image-tag revision `b84c379` | generic v2 + `202`, cache `ready=true` / `hydrated=true`, Argo `Synced / Healthy` |
 | public demo-lite deployment | UI `1.4.1`, API image `e481a21` | branch/deployment-specific, event response `200` |
 
 문서에 등록된 외부 URL은 `demo-lite` deployment입니다. Generic v2는 local `dev-kafka` cluster에서 검증됐으며 public demo-lite에는 아직 반영되지 않았습니다. 접속 시 UI badge, readiness의 API version, event response status를 함께 확인합니다.

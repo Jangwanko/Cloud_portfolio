@@ -25,7 +25,7 @@
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
 | Public demo-lite UI `1.4.1` | branch/deployment-specific | master `2.0.0` 미배포; public badge/API 별도 확인 |
 | Unit / contract / infrastructure suite | `359 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
-| Local live cluster | Argo `Synced / Healthy` revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0` |
+| Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
 
 원본 위치:
 
@@ -696,7 +696,7 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 2026-07-21 local live snapshot:
 
 - API readiness `ready`
-- Argo CD `Synced / Healthy`, revision `b84c379`
+- Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`; 이후 docs-only revision은 workload 변경 없음
 - API/core workload ready, API/Worker image `9349ba9`
 - readiness materialized cache `ready=true`, `hydrated=true`; API contract suite pass
 - Kafka `3/3`, PostgreSQL `3/3`, Pgpool `2/2`
