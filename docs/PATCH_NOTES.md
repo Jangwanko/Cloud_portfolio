@@ -2,6 +2,14 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 업데이트: 기존 DB의 generic v2 migration 호환성 수정
+
+- `master`를 개발·검증 브랜치 `dev-kafka`에 병합하고 generic v2 staged GitOps manifest 반영
+- 기존 cluster의 Alembic `version_num VARCHAR(32)`가 긴 `0006` revision ID를 저장하지 못해 migration wave가 중단되는 문제 확인
+- `0006` migration이 revision 갱신 전에 `alembic_version.version_num`을 `VARCHAR(64)`로 확장하도록 수정
+- migration 실패 transaction rollback과 wave 차단을 확인해 기존 DB `0004`, 구 Worker/API, Kafka event 상태 보존
+- 회귀 테스트에 version column 확장 계약 추가
+
 ## 2026-07-14 업데이트: 범용 이벤트 처리 시스템 정체성 전환
 
 목표:
