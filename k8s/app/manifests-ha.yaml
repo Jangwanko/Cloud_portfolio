@@ -935,6 +935,8 @@ spec:
     metadata:
       labels:
         app: prometheus
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "964b227076466205"
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -1034,6 +1036,7 @@ metadata:
 data:
   datasource.yml: |
     apiVersion: 1
+
     datasources:
       - name: Prometheus
         uid: prometheus
@@ -1044,6 +1047,7 @@ data:
         editable: false
   dashboard.yml: |
     apiVersion: 1
+
     providers:
       - name: Reliable Event Processing
         orgId: 1
@@ -2235,6 +2239,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "d92faa8761514e7d"
     spec:
       automountServiceAccountToken: false
       securityContext:

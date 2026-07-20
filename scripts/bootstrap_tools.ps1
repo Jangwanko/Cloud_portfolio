@@ -37,7 +37,7 @@ function Test-DockerReady() {
 function Download-File([string]$Url, [string]$OutFile) {
   Write-Host "Downloading $Url"
   Ensure-Directory -Path (Split-Path $OutFile -Parent)
-  Invoke-WebRequest -Uri $Url -OutFile $OutFile
+  Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $OutFile
 }
 
 function Assert-Sha256([string]$File, [string]$ChecksumFile) {

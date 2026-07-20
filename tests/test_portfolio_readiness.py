@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -608,6 +609,12 @@ class TestManifestContracts:
 
 
 class TestApiContractAndRunbook:
+    def test_windows_web_requests_use_basic_parsing(self):
+        for path in (ROOT / "scripts").glob("*.ps1"):
+            source = path.read_text(encoding="utf-8")
+            for match in re.finditer(r"Invoke-WebRequest", source):
+                assert "-UseBasicParsing" in source[match.start() : match.start() + 160], path
+
     def test_api_contract_script_is_in_recommended_flow_and_docs(self):
         script = read_text("scripts/test_api_contracts.ps1")
         recommended = read_text("scripts/run_recommended_tests.ps1")

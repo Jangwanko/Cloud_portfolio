@@ -74,7 +74,7 @@ try {
   $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)).access_token
 
   $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "cache-fallback-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
-  $acceptedResponse = Invoke-WebRequest -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="cache-fallback-$suffix" } -ContentType "application/json" -Body (@{
+  $acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="cache-fallback-$suffix" } -ContentType "application/json" -Body (@{
     event_type = "portfolio.cache-fallback.probe"
     payload = @{ message = "cache fallback probe" }
     metadata = @{ scenario = "cache-fallback" }

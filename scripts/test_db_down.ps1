@@ -150,7 +150,7 @@ try {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 
-  $acceptResponse = Invoke-WebRequest -Method Post -Uri ("$BaseUrl/v2/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{
+  $acceptResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri ("$BaseUrl/v2/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{
     event_type = "portfolio.db-outage.probe"
     payload = @{ message = "event while db down" }
     metadata = @{ scenario = "db-outage-recovery" }

@@ -48,6 +48,7 @@ try {
   for ($i = 1; $i -le $EventCount; $i++) {
     $body = New-EventBody -Index $i
     $intakeResponse = Invoke-WebRequest `
+      -UseBasicParsing `
       -Method Post `
       -Uri "$BaseUrl/v2/streams/$($stream.id)/events" `
       -Headers $headers `

@@ -11,6 +11,8 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - 실패한 suite는 별도 `failed-*.txt`에 기록하고 마지막 성공 `latest.txt` 보존
 - Worker `messaging_event_persist_lag_seconds`의 5분 p95를 benchmark 결과에 추가
 - 비회원 stream read의 existence-oracle 방지 `404` 정책과 배포 계약 스크립트 기대값 정렬
+- Windows PowerShell 5.1의 IE parser 의존 `Invoke-WebRequest`가 headless 환경에서 `NullReferenceException`을 내지 않도록 운영 스크립트 전체에 `-UseBasicParsing` 적용
+- Prometheus/Grafana source config SHA-256 축약 hash를 pod template에 연결해 ConfigMap 변경이 실제 process rollout으로 이어지도록 보강
 
 ## 2026-07-21 업데이트: Argo CD Namespace prune 방지
 

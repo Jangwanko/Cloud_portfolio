@@ -1,4 +1,5 @@
 from pathlib import Path
+import hashlib
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +24,11 @@ def _literal_block(document: str, key: str) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _config_hash(*relative_paths: str) -> str:
+    combined = "\0".join(_read(path).replace("\r\n", "\n") for path in relative_paths)
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest()[:16]
+
+
 def test_generated_manifest_copy_stays_identical() -> None:
     assert _read("k8s/app/manifests-ha.yaml") == _read(
         "k8s/gitops/base/manifests-ha.yaml"
@@ -40,6 +46,24 @@ def test_monitoring_sources_match_embedded_configmaps() -> None:
     assert _literal_block(manifest, "messaging-overview.json") == _read(
         "monitoring/grafana/dashboards/messaging-overview.json"
     )
+    assert _literal_block(manifest, "datasource.yml") == _read(
+        "monitoring/grafana/provisioning/datasources/datasource.yml"
+    )
+    assert _literal_block(manifest, "dashboard.yml") == _read(
+        "monitoring/grafana/provisioning/dashboards/dashboard.yml"
+    )
+
+    prometheus_hash = _config_hash(
+        "monitoring/prometheus/prometheus.yml",
+        "monitoring/prometheus/alerts.yml",
+    )
+    grafana_hash = _config_hash(
+        "monitoring/grafana/provisioning/datasources/datasource.yml",
+        "monitoring/grafana/provisioning/dashboards/dashboard.yml",
+        "monitoring/grafana/dashboards/messaging-overview.json",
+    )
+    assert f'portfolio.jangwanko.dev/config-hash: "{prometheus_hash}"' in manifest
+    assert f'portfolio.jangwanko.dev/config-hash: "{grafana_hash}"' in manifest
 
 
 def test_local_ha_uses_immutable_registry_tag_workflow() -> None:
