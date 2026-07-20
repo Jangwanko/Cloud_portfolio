@@ -2757,5 +2757,7 @@ def test_notification_attempt_insert_and_migration_enforce_message_id_uniqueness
     assert "inserted" in cursor.sql
     assert cursor.params[:4] == (10, 7, 10, 7)
     assert json.loads(cursor.params[4])["event_id"] == 10
+    assert "ALTER TABLE alembic_version" in migration
+    assert "ALTER COLUMN version_num TYPE VARCHAR(64)" in migration
     assert "uq_notification_attempts_message_id" in migration
     assert "DELETE FROM notification_attempts newer" in migration

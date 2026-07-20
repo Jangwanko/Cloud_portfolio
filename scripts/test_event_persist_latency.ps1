@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 function Get-MetricLines([string]$MetricName) {
   try {
-    $raw = Invoke-WebRequest -Method Get -Uri "$BaseUrl/metrics" -TimeoutSec 10
+    $raw = Invoke-WebRequest -UseBasicParsing -Method Get -Uri "$BaseUrl/metrics" -TimeoutSec 10
     return ($raw.Content -split "`n" | Where-Object { $_ -match "^$MetricName" })
   } catch {
     return @()
@@ -89,7 +89,7 @@ try {
     $idempotencyKey = "latency-$suffix-$i"
 
     $acceptWatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $acceptedResponse = Invoke-WebRequest -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key" = $idempotencyKey } -ContentType "application/json" -Body $body
+    $acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key" = $idempotencyKey } -ContentType "application/json" -Body $body
     $acceptWatch.Stop()
     if ([int]$acceptedResponse.StatusCode -ne 202) {
       throw "Expected HTTP 202 from event intake, got $($acceptedResponse.StatusCode)"

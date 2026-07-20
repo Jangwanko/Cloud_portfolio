@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -422,6 +423,22 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
+    def test_dev_kafka_gitops_uses_registry_image_and_action_tag_update(self):
+        kustomization = read_text("k8s/gitops/overlays/local-ha/kustomization.yaml")
+        workflow = read_text(".github/workflows/dev-kafka-image.yml")
+
+        assert "images:" in kustomization
+        assert "name: messaging-portfolio" in kustomization
+        assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
+        assert "newTag:" in kustomization
+
+        assert "branches: [dev-kafka]" in workflow
+        assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
+        assert "[skip dev-kafka image]" in workflow
+        assert "docker/build-push-action" in workflow
+        assert "yq -i" in workflow
+        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in workflow
+
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
             path.read_text(encoding="utf-8").lower()
@@ -452,7 +469,81 @@ class TestManifestContracts:
         assert 'targets: ["kafka-exporter:9308"]' in prometheus
         assert "MessagingKafkaExporterDown" in alerts
         assert "MessagingKafkaConsumerLagHigh" in alerts
-        assert 'kafka_consumergroup_lag{consumergroup="message-worker"}' in alerts
+        assert alerts.count("sum(clamp_min(kafka_consumergroup_lag") == 3
+        assert "sum(kafka_consumergroup_lag" not in alerts
+
+        status_script = read_text("scripts/check_portfolio_status.ps1")
+        suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
+        k6_script = read_text("scripts/load_test_k6.js")
+        k6_runner = read_text("scripts/test_k6_load.ps1")
+        assert status_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
+        assert suite_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
+        for script in (status_script, suite_script):
+            assert "sum(kafka_consumergroup_lag" not in script
+        assert 'checks: ["rate==1"]' in k6_script
+        assert "k6 job did not finish within $TimeoutSec seconds" in k6_runner
+        assert "-AllowThresholdFailure" not in suite_script
+        assert "$failedResultPath" in suite_script
+        assert "$overallSucceeded = $suiteSucceeded -and $null -eq $resetError" in suite_script
+        assert "if ($overallSucceeded) { $resultPath } else { $failedResultPath }" in suite_script
+        assert "Final reset failed:" in suite_script
+        assert suite_script.index("Final reset failed:") < suite_script.index(
+            "[System.IO.File]::WriteAllLines"
+        ) < suite_script.index("if ($null -ne $suiteError)")
+        assert suite_script.index("if ($null -ne $suiteError)") < suite_script.index(
+            "if ($null -ne $resetError)"
+        ) < suite_script.index("if ($null -ne $writeError)")
+
+    def test_kafka_performance_suite_drains_post_hpa_backlog(self):
+        suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
+
+        assert "function Wait-ConsumerLagDrain" in suite_script
+        assert '-Phase "main_load"' in suite_script
+        assert '-Phase "post_hpa"' in suite_script
+        assert suite_script.count("-RequiredConsecutiveZeroSamples 2") == 2
+        assert "function Get-ConsumerLagSample" in suite_script
+        assert suite_script.count("min(timestamp(kafka_consumergroup_lag") == 2
+        assert "$sourceTimestampBefore -eq $sourceTimestampAfter" in suite_script
+        assert "after 3 attempts" in suite_script
+        assert "$workerSample.Fresh -and $notificationSample.Fresh -and $timestampsAdvanced" in suite_script
+        assert "$workerSample.SourceTimestampSeconds -gt $lastAcceptedWorkerSourceTimestamp" in suite_script
+        assert "$notificationSample.SourceTimestampSeconds -gt $lastAcceptedNotificationSourceTimestamp" in suite_script
+        assert "max_lag_metric_age_seconds:" in suite_script
+        for metric_suffix in (
+            "_message_worker_peak_consumer_lag",
+            "_notification_worker_peak_consumer_lag",
+            "_all_consumer_backlog_drain_seconds",
+            "_message_worker_final_consumer_lag",
+            "_notification_worker_final_consumer_lag",
+        ):
+            assert metric_suffix in suite_script
+        assert "consumer lag did not drain to zero within" in suite_script
+        assert suite_script.index('Invoke-SuiteStep "HPA and metrics sanity"') < suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        )
+        assert suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        ) < suite_script.index('Invoke-SuiteStep "Final runtime snapshot"')
+        assert "[System.Text.UTF8Encoding]::new($false)" in suite_script
+        assert "[System.IO.File]::WriteAllLines" in suite_script
+        assert "$temporaryOutputPath" in suite_script
+        assert "[System.IO.File]::Replace($temporaryOutputPath, $outputPath, $null)" in suite_script
+        assert "[System.IO.File]::Move($temporaryOutputPath, $outputPath)" in suite_script
+
+    def test_api_contract_waits_for_real_materialized_cache_hydration(self):
+        contract_script = read_text("scripts/test_api_contracts.ps1")
+
+        assert "function Wait-MaterializedCacheHydrated" in contract_script
+        assert 'Assert-HasProperty $health "materialized_cache" "readiness"' in contract_script
+        assert (
+            'Assert-HasProperty $health.materialized_cache "hydrated" '
+            '"readiness.materialized_cache"'
+        ) in contract_script
+        assert "$lastCache.ready -eq $true -and $lastCache.hydrated -eq $true" in contract_script
+        assert (
+            'Assert-Equal $health.materialized_cache.hydrated $true '
+            '"readiness.materialized_cache.hydrated"'
+        ) in contract_script
 
     def test_argocd_gitops_contract_matches_local_ha_runtime(self):
         install_script = read_text("k8s/scripts/install-argocd.ps1")
@@ -461,9 +552,13 @@ class TestManifestContracts:
         app_example = read_text("k8s/argocd/application-messaging-portfolio-local-ha.example.yaml")
         gitops_docs = read_text("docs/GITOPS.md")
 
-        for document in (bootstrap_script, quick_start, app_example, gitops_docs):
+        for document in (bootstrap_script, quick_start, app_example):
             assert "master" in document
             assert "dev-kafka" not in document
+
+        assert "master" in gitops_docs
+        assert "dev-kafka" in gitops_docs
+        assert "ghcr.io/jangwanko/cloud_portfolio:<commit-sha>" in gitops_docs
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest
@@ -569,10 +664,17 @@ class TestManifestContracts:
 
         assert "-Revision master" in quick_start
         assert "consumer_lag > 100" in checklist
-        assert "`passed with warnings`는 실패가 아닙니다" in checklist
+        assert "Fresh install에서 PVC가 첫 consumer를 기다릴 때만" in checklist
+        assert "2026-07-21 현재 local PVC는 수동 backup Job 실행 뒤 `Bound`" in checklist
 
 
 class TestApiContractAndRunbook:
+    def test_windows_web_requests_use_basic_parsing(self):
+        for path in (ROOT / "scripts").glob("*.ps1"):
+            source = path.read_text(encoding="utf-8")
+            for match in re.finditer(r"Invoke-WebRequest", source):
+                assert "-UseBasicParsing" in source[match.start() : match.start() + 160], path
+
     def test_api_contract_script_is_in_recommended_flow_and_docs(self):
         script = read_text("scripts/test_api_contracts.ps1")
         recommended = read_text("scripts/run_recommended_tests.ps1")
@@ -585,6 +687,10 @@ class TestApiContractAndRunbook:
         assert "/v1/dlq/ingress" in script
         assert "/v1/dlq/ingress/summary" in script
         assert "Expected HTTP $ExpectedStatus" in script
+        assert (
+            '"$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 404 '
+            "-Headers $outsiderHeaders"
+        ) in script
         assert "test_api_contracts.ps1" in recommended
         assert "test_api_contracts.ps1" in quick_start
         assert "API contract test" in test_results

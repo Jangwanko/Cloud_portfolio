@@ -356,6 +356,7 @@ def _build_readiness_payload() -> tuple[int, dict]:
         },
         "materialized_cache": {
             "ready": bool(cache_status["ready"]),
+            "hydrated": bool(cache_status["hydrated"]),
             "last_error": cache_status["last_error"],
         },
         "worker": worker_status,

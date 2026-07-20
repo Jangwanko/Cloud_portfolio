@@ -211,7 +211,7 @@ groups:
           description: "Queue wait p95 is above 10 seconds for 5 minutes."
 
       - alert: MessagingKafkaConsumerLagHigh
-        expr: sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 100
+        expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 100
         for: 5m
         labels:
           severity: warning
@@ -221,7 +221,7 @@ groups:
           description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
       - alert: MessagingNotificationConsumerLagHigh
-        expr: sum(kafka_consumergroup_lag{consumergroup="notification-worker"}) > 100
+        expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0)) > 100
         for: 5m
         labels:
           severity: warning
@@ -233,7 +233,7 @@ groups:
       - alert: MessagingWorkerLastSuccessStale
         expr: |
           (
-            (sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 0)
+            (sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 0)
             and
             (time() - max(messaging_worker_last_success_timestamp{job="worker"}) > 60)
           )

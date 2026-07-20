@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "validated_at": "2026-07-21T04:41:27+09:00",
+  "branch": "dev-kafka",
+  "base_commit": "1439be10bd4d489ec250ce20cd4ae6d6c3b0b637",
+  "source_state": "worktree changes; exact validation-script hashes recorded below",
+  "scripts": {
+    "backup_postgres_k8s_ps1_sha256": "eb94a24053e006c11fcfba44185cd2a4b264b745f035eab8bf60ce8da9b43fe2",
+    "restore_postgres_k8s_ps1_sha256": "125e08de0dbaf379d51a01de08b28cdcc9cf5780544d79d2ef848e05d76b64d0"
+  },
+  "backup": {
+    "file": "backups/manual-validation/postgres-20260721-043628.sql",
+    "location_scope": "host workspace outside the Kubernetes namespace; Git-ignored local evidence",
+    "size_bytes": 39433414,
+    "sha256": "26019e88d5c7182147dec0f2cae68f18200155740e21ab8409358c562ac593c4",
+    "pg_dump_version": "17.6",
+    "complete_marker_present": true
+  },
+  "restore": {
+    "target_database": "portfolio_restore_validation_20260721",
+    "target_scope": "disposable database in the same local PostgreSQL HA cluster",
+    "completed": true,
+    "temporary_database_dropped": true,
+    "alembic_version": "0008_generic_event_envelope",
+    "generic_v2_rows": 33840,
+    "message_max_id": 33840,
+    "message_max_room_seq": 25378,
+    "source_and_restore_matched": true,
+    "table_counts": {
+      "idempotency_keys": 56,
+      "intake_idempotency_keys": 1,
+      "messages": 33840,
+      "notification_attempts": 33840,
+      "read_receipts": 1,
+      "request_statuses": 33841,
+      "room_members": 24,
+      "room_sequences": 11,
+      "rooms": 12,
+      "users": 27
+    }
+  },
+  "limitations": [
+    "This validates logical backup and restore, schema version, and selected row/sequence equality.",
+    "It does not validate recovery after loss of the entire local host or cluster.",
+    "Object-storage replication, scheduled integrity checks, and automated RPO/RTO measurement remain unimplemented."
+  ]
+}

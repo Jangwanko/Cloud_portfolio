@@ -87,6 +87,31 @@ function Wait-DbQueryReady([int]$TimeoutSec = 180, [int]$RequiredSuccesses = 3) 
   throw "Timed out waiting for pgpool-backed DB query readiness"
 }
 
+function Restore-DbWorkload(
+  [string]$WorkloadRef,
+  [int]$ReplicaCount,
+  [int]$TimeoutSec = 180
+) {
+  kubectl -n $Namespace scale $WorkloadRef --replicas=$ReplicaCount | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to scale $WorkloadRef to $ReplicaCount replicas"
+  }
+
+  kubectl -n $Namespace rollout status $WorkloadRef --timeout="$($TimeoutSec)s" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Timed out waiting for rollout of $WorkloadRef"
+  }
+
+  if ($WorkloadRef -like "statefulset/*" -and $ReplicaCount -ge 2) {
+    $statefulSetName = ($WorkloadRef -split "/", 2)[1]
+    & "$PSScriptRoot/configure_postgres_sync.ps1" `
+      -Namespace $Namespace `
+      -StatefulSet $statefulSetName `
+      -ExpectedReplicas $ReplicaCount `
+      -TimeoutSec $TimeoutSec
+  }
+}
+
 function Warm-ApiMembershipCache([int]$StreamId, [string]$Token, [string]$Suffix) {
   $code = @'
 import json
@@ -135,6 +160,7 @@ $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -Conten
 $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "dbtest-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
 Warm-ApiMembershipCache -StreamId $stream.id -Token $u1Token -Suffix $suffix
 
+$dbRecoveryCompleted = $false
 try {
   $dbRef = Get-WorkloadRef $DbDeployment
   kubectl -n $Namespace scale $dbRef --replicas=0 | Out-Null
@@ -150,7 +176,7 @@ try {
     throw "Expected db down readiness state, got: $($healthDown | ConvertTo-Json -Compress)"
   }
 
-  $acceptResponse = Invoke-WebRequest -Method Post -Uri ("$BaseUrl/v2/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{
+  $acceptResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri ("$BaseUrl/v2/streams/{0}/events" -f $stream.id) -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{
     event_type = "portfolio.db-outage.probe"
     payload = @{ message = "event while db down" }
     metadata = @{ scenario = "db-outage-recovery" }
@@ -167,8 +193,10 @@ try {
   if (-not $requestId) { throw "request_id missing" }
 
   $targetReplicas = if ($DbDeployment -eq "messaging-postgresql-ha-postgresql") { 3 } else { 1 }
-  kubectl -n $Namespace scale $dbRef --replicas=$targetReplicas | Out-Null
-  kubectl -n $Namespace rollout status $dbRef --timeout=120s | Out-Null
+  Restore-DbWorkload `
+    -WorkloadRef $dbRef `
+    -ReplicaCount $targetReplicas `
+    -TimeoutSec 180
   Wait-DbQueryReady -TimeoutSec 180
   Invoke-KubectlQuiet {
     kubectl -n $Namespace exec deploy/$ApiDeployment -- python -c "from portfolio.db import run_alembic_migrations; run_alembic_migrations()" 2>$null | Out-Null
@@ -177,6 +205,7 @@ try {
     throw "Failed to run schema migrations after DB recovery"
   }
   Wait-Ready | Out-Null
+  $dbRecoveryCompleted = $true
 
   $persisted = $false
   $deadline = (Get-Date).AddSeconds(300)
@@ -199,9 +228,14 @@ try {
   Write-Host "DB outage test passed (k8s): accepted during DB down and persisted after recovery"
 }
 finally {
-  $dbRef = Get-WorkloadRef $DbDeployment
-  $targetReplicas = if ($DbDeployment -eq "messaging-postgresql-ha-postgresql") { 3 } else { 1 }
-  kubectl -n $Namespace scale $dbRef --replicas=$targetReplicas | Out-Null
+  if (-not $dbRecoveryCompleted) {
+    $dbRef = Get-WorkloadRef $DbDeployment
+    $targetReplicas = if ($DbDeployment -eq "messaging-postgresql-ha-postgresql") { 3 } else { 1 }
+    Restore-DbWorkload `
+      -WorkloadRef $dbRef `
+      -ReplicaCount $targetReplicas `
+      -TimeoutSec 180
+  }
 }
 }
 finally {

@@ -19,6 +19,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.execute(
         """
+        ALTER TABLE alembic_version
+        ALTER COLUMN version_num TYPE VARCHAR(64);
+
         DELETE FROM notification_attempts newer
         USING notification_attempts older
         WHERE newer.message_id = older.message_id

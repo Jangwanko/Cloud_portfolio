@@ -331,6 +331,8 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -Revision master
 ```
 
+`dev-kafka` 개발 클러스터를 확인하려면 `-Revision dev-kafka`로 실행합니다. 전용 workflow가 GHCR commit-SHA image를 만들고 `k8s/gitops/overlays/local-ha/kustomization.yaml`의 tag commit을 push한 뒤, Argo CD가 그 변경을 sync합니다.
+
 이 흐름은 아래를 수행합니다.
 - local cluster bootstrap
 - remote committed overlay의 registry image/tag 해석과 manifest 접근 사전 확인

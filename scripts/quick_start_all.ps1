@@ -156,7 +156,7 @@ function Test-UrlReady([string]$Url) {
 
 function Test-HttpOk([string]$Url) {
   try {
-    Invoke-WebRequest -Method Get -Uri $Url -TimeoutSec 5 | Out-Null
+    Invoke-WebRequest -UseBasicParsing -Method Get -Uri $Url -TimeoutSec 5 | Out-Null
     return $true
   } catch {
     return $false

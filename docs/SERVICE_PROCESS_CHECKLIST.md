@@ -36,7 +36,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 - `kafka_brokers=3`
 - `message-worker consumer_lag=0` 또는 낮은 값
 
-`postgres-backups` PVC가 `Pending`이어도 첫 backup CronJob consumer 전이라면 local-path `WaitForFirstConsumer`의 정상 warning으로 봅니다.
+새 cluster의 `postgres-backups` PVC가 `Pending`이어도 첫 backup consumer 전이라면 local-path `WaitForFirstConsumer`의 정상 warning으로 봅니다. 2026-07-21 현재 local PVC는 수동 backup Job 실행 뒤 `Bound`입니다.
 
 정상 출력 예시는 아래와 같습니다.
 
@@ -54,11 +54,10 @@ up{job="kafka-exporter"}=1
 kafka_brokers=3
 message-worker consumer_lag=0
 
-Portfolio status check passed with warnings:
-- postgres-backups PVC is Pending until the first backup CronJob consumer is scheduled. This is expected with local-path WaitForFirstConsumer.
+Portfolio status check passed.
 ```
 
-`passed with warnings`는 실패가 아닙니다. 현재 warning은 backup PVC가 아직 첫 CronJob 실행 전이라 binding을 기다리는 상태를 의미합니다.
+Fresh install에서 PVC가 첫 consumer를 기다릴 때만 위 `Pending` warning을 허용합니다. Backup Job 실행 뒤에도 `Pending`이거나 다른 비정상 phase이면 통과로 간주하지 않습니다.
 
 Readiness state는 HTTP status와 reason을 함께 읽습니다.
 
@@ -79,7 +78,9 @@ Readiness state는 HTTP status와 reason을 함께 읽습니다.
 | `Prometheus and Kafka exporter` | `up=0` 또는 query no data | scrape target, service, exporter, Prometheus 설정 문제 |
 | `Prometheus and Kafka exporter` | `kafka_brokers < 3` | 로컬 Kafka HA topology 약화 |
 | `Prometheus and Kafka exporter` | `consumer_lag > 100` | Worker가 ingress topic을 따라잡지 못하는 상태 |
-| `Backup PVC` | `Pending` 외 다른 비정상 phase | backup storage 점검 필요 |
+| `Backup PVC` | 첫 backup consumer 실행 뒤에도 phase가 `Bound`가 아님 | backup Job consumer와 storage provisioning 점검 필요 |
+
+PostgreSQL StatefulSet 재시작/scale-up 뒤에는 pod ready 수와 함께 `postgres.sync_standby_count >= 1`을 확인합니다. `0`이면 `scripts/configure_postgres_sync.ps1`로 모든 pod의 persisted sync 설정을 복원하고 readiness가 `ready`로 돌아온 뒤 다음 절차를 진행합니다.
 
 ## 프로세스별 점검
 

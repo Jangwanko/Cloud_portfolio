@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "validated_at": "2026-07-21T05:01:59+09:00",
+  "branch": "dev-kafka",
+  "source_commit": "fde9a2420f8be108c618a92db29dd9be677a3e09",
+  "source_state": "recovery scripts match source_commit; unrelated benchmark and documentation changes were still uncommitted",
+  "cluster": {
+    "context": "kind-messaging-ha",
+    "namespace": "messaging-app",
+    "profile": "local-ha",
+    "node_topology": "single-node kind"
+  },
+  "scripts": {
+    "configure_postgres_sync_ps1_sha256": "fc978d73ae894dfcfa131d00000d875095c950ee9cab3994de6bccd0de26be19",
+    "test_cache_read_fallback_ps1_sha256": "f067c8b46ff59a06b1143a6fdfaf88e1ff95f29425cd908f1cc0079a36aeca9f",
+    "test_db_down_ps1_sha256": "c18ae30d88305bbc9852db52e858f119b1fb6022923e95dabe20cb6dd862f309",
+    "install_ha_ps1_sha256": "252476bbf014003abab3102e382e2af85ae5727718912dd7b24bd044309d727f"
+  },
+  "sync_configuration": {
+    "exit_code": 0,
+    "elapsed_seconds": 5.849,
+    "primary_pod": "messaging-postgresql-ha-postgresql-0",
+    "synchronous_commit": "on",
+    "synchronous_standby_policy": "ANY 1",
+    "streaming_sync_or_quorum_standbys": 2,
+    "applied_to_all_statefulset_ordinals": true
+  },
+  "cache_fallback": {
+    "exit_code": 0,
+    "elapsed_seconds": 45.39,
+    "fresh_read": {
+      "source": "cache",
+      "degraded": false,
+      "age_seconds": 0.112
+    },
+    "database_down_read": {
+      "source": "cache",
+      "degraded": true,
+      "age_seconds": 11.462
+    },
+    "postgresql_scale_sequence": "3->0->3",
+    "recovery_ready": true
+  },
+  "database_outage": {
+    "exit_code": 0,
+    "elapsed_seconds": 43.008,
+    "event_accepted_while_database_down": true,
+    "event_persisted_after_recovery": true,
+    "recovery_ready": true
+  },
+  "install_path": {
+    "idempotent_helm_upgrade_completed": true,
+    "helm_release_revision": 2,
+    "pg_monitor_grant_completed": true
+  },
+  "final_state": {
+    "api_readiness": "ready",
+    "postgresql_ready_replicas": "3/3",
+    "pgpool_ready_replicas": "2/2",
+    "message_worker_consumer_lag": 0,
+    "notification_worker_consumer_lag": 0,
+    "backup_pvc_phase": "Bound"
+  },
+  "limitations": [
+    "The outage suites restart the complete PostgreSQL StatefulSet; they do not exercise primary promotion.",
+    "The local-ha profile runs on one kind node and does not prove node-level or availability-zone failover.",
+    "This JSON is a structured summary of command output, not a full raw terminal transcript."
+  ]
+}

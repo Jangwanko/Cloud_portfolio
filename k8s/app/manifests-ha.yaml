@@ -857,7 +857,7 @@ data:
               description: "Queue wait p95 is above 10 seconds for 5 minutes."
 
           - alert: MessagingKafkaConsumerLagHigh
-            expr: sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 100
+            expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 100
             for: 5m
             labels:
               severity: warning
@@ -867,7 +867,7 @@ data:
               description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
           - alert: MessagingNotificationConsumerLagHigh
-            expr: sum(kafka_consumergroup_lag{consumergroup="notification-worker"}) > 100
+            expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0)) > 100
             for: 5m
             labels:
               severity: warning
@@ -879,7 +879,7 @@ data:
           - alert: MessagingWorkerLastSuccessStale
             expr: |
               (
-                (sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 0)
+                (sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 0)
                 and
                 (time() - max(messaging_worker_last_success_timestamp{job="worker"}) > 60)
               )
@@ -935,6 +935,8 @@ spec:
     metadata:
       labels:
         app: prometheus
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "964b227076466205"
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -1034,6 +1036,7 @@ metadata:
 data:
   datasource.yml: |
     apiVersion: 1
+
     datasources:
       - name: Prometheus
         uid: prometheus
@@ -1044,6 +1047,7 @@ data:
         editable: false
   dashboard.yml: |
     apiVersion: 1
+
     providers:
       - name: Reliable Event Processing
         orgId: 1
@@ -2154,12 +2158,12 @@ data:
                                            },
                            "targets":  [
                                            {
-                                               "expr":  "sum by (consumergroup, topic) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                               "expr":  "sum by (consumergroup, topic) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
                                                "legendFormat":  "{{consumergroup}} / {{topic}} lag",
                                                "refId":  "A"
                                            },
                                            {
-                                               "expr":  "sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                               "expr":  "sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
                                                "legendFormat":  "{{consumergroup}} total",
                                                "refId":  "B"
                                            }
@@ -2235,6 +2239,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "d92faa8761514e7d"
     spec:
       automountServiceAccountToken: false
       securityContext:

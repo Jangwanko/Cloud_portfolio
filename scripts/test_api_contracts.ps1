@@ -67,6 +67,29 @@ function Wait-Ready() {
   throw "Timed out waiting for readiness"
 }
 
+function Wait-MaterializedCacheHydrated([int]$TimeoutSec = 180) {
+  $deadline = (Get-Date).AddSeconds($TimeoutSec)
+  $lastCache = $null
+  while ((Get-Date) -lt $deadline) {
+    try {
+      $health = Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/ready" -TimeoutSec 5
+      Assert-HasProperty $health "materialized_cache" "readiness"
+      Assert-HasProperty $health.materialized_cache "ready" "readiness.materialized_cache"
+      Assert-HasProperty $health.materialized_cache "hydrated" "readiness.materialized_cache"
+      Assert-HasProperty $health.materialized_cache "last_error" "readiness.materialized_cache"
+      $lastCache = $health.materialized_cache
+      if ($lastCache.ready -eq $true -and $lastCache.hydrated -eq $true) {
+        return $health
+      }
+    } catch {
+      Start-Sleep -Seconds 2
+      continue
+    }
+    Start-Sleep -Seconds 2
+  }
+  throw "Timed out waiting for materialized cache hydration; last=$($lastCache | ConvertTo-Json -Compress)"
+}
+
 if (-not $SkipReset) {
   & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
@@ -80,6 +103,9 @@ try {
   Assert-HasProperty $health.kafka "bootstrap_reachable" "readiness.kafka"
   Assert-Equal $health.kafka.bootstrap_reachable $true "readiness.kafka.bootstrap_reachable"
   Assert-HasProperty $health.postgres "primary_reachable" "readiness.postgres"
+  $health = Wait-MaterializedCacheHydrated
+  Assert-Equal $health.materialized_cache.ready $true "readiness.materialized_cache.ready"
+  Assert-Equal $health.materialized_cache.hydrated $true "readiness.materialized_cache.hydrated"
 
   $suffix = "{0}-{1}" -f [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(), (Get-Random -Maximum 999999)
   $password = "Password123!"
@@ -122,7 +148,7 @@ try {
   Assert-True (@($stream.member_ids) -contains [int]$u2.id) "stream must include requested member"
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 401
-  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 403 -Headers $outsiderHeaders
+  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 404 -Headers $outsiderHeaders
   Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -ExpectedStatus 401 -Body (@{ event_type = "portfolio.contract.probe"; payload = @{ message = "unauthorized" } } | ConvertTo-Json -Depth 4)
   Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 202 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
 

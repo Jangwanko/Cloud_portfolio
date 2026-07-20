@@ -45,6 +45,8 @@
 - `results/README.md`: validation evidence 해석/갱신 규칙
 - `results/kafka-performance/latest.txt`: 마지막 완료 performance suite 원본
 - `results/ordering-failure/latest.json`: 마지막 ordering/failure injection 원본
+- `results/postgres-restore/latest.json`: 마지막 disposable PostgreSQL restore 정합성 원본
+- `results/postgres-recovery/latest.json`: 마지막 PostgreSQL restart/sync/cache/outage recovery tracked structured summary
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
 - `demo/order-dashboard.html`: Reliable Event Processing System 흐름과 order reference payload를 보여주는 브라우저 데모; 파일명은 URL 호환을 위해 유지
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의

@@ -82,6 +82,24 @@ race guard:
 - private GHCR이면 namespace의 `imagePullSecret`
 - bot commit 뒤 CI 재실행 정책과 required check 상태
 
+## Dev Kafka Image Publication
+
+`master`는 최종 GitOps 기준이고, 실제 개발·검증 클러스터는 Application의 `targetRevision`을 `dev-kafka`로 지정합니다.
+
+```text
+push dev-kafka
+  -> CI validation (independent workflow)
+  -> .github/workflows/dev-kafka-image.yml (independent workflow)
+  -> GHCR image build and push with 7-character commit SHA tag
+  -> Actions bot updates local-ha overlay newTag
+  -> bot commit with [skip dev-kafka image]
+  -> Argo CD observes dev-kafka and syncs
+```
+
+현재 validation과 image publication은 별도 workflow로 실행됩니다. `dev-kafka` source push 직후의 구 image tag 상태를 배포 완료로 보지 않습니다. CI validation 성공, GHCR image 발행, overlay tag bot commit을 모두 확인한 뒤 Argo CD revision, workload image, rollout 상태를 확인합니다. Generic v2도 아래의 migration, Worker, API sync wave 순서를 그대로 사용합니다.
+
+English: The development cluster tracks `dev-kafka`. A branch push builds `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>`, updates the local-ha image tag in a bot commit, and then allows Argo CD to sync the staged release.
+
 ## Argo CD Sync
 
 Application 기본값:
@@ -91,6 +109,10 @@ Application 기본값:
 - namespace: `messaging-app`
 - automated prune / self-heal
 - `RespectIgnoreDifferences=true`
+
+`messaging-app` Namespace는 `k8s/gitops/base/namespace.yaml`에 계속 유지하며 `Prune=false`를 적용합니다. 자동 prune이 켜진 Application에서 기존에 추적하던 Namespace를 desired state에서 제거하면 namespace-scoped bootstrap 리소스와 PVC까지 함께 삭제될 수 있기 때문입니다. Namespace lifecycle은 application rollout과 분리하고, 이름 변경이나 제거는 별도 migration 절차로 수행합니다.
+
+Prometheus와 Grafana Deployment의 pod template에는 source config의 SHA-256 축약 hash를 기록합니다. alert, scrape config, provisioning, dashboard가 바뀌면 contract test가 hash 불일치를 실패시켜 annotation 갱신을 요구하고, Argo sync가 새 pod를 rollout해 live process에 변경을 반영합니다.
 
 Replica drift:
 

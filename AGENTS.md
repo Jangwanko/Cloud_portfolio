@@ -30,7 +30,7 @@
 - 여기서 고신뢰는 per-stream partition ordering boundary, record 단위 explicit offset commit, PostgreSQL idempotent persistence, retry/DLQ/replay, 상태 분리, 관측·장애 복구 검증을 뜻합니다. exactly-once, global ordering, 무손실, production SLA를 증명했다는 의미가 아닙니다.
 - `message-*` Kafka topic, `message-worker` consumer group, `messaging-app` namespace, `rooms`/`messages` table처럼 배포와 저장 상태에 연결된 물리 식별자는 호환성을 위해 유지합니다. 문서 정체성 변경을 이유로 이름만 바꾸지 않습니다.
 - generic v2 rollout은 대칭 호환이 아닙니다. GitOps는 gate `false`인 `messaging-env` Secret wave `-3` → 일반 Sync migration Job wave `-2` → dual-read/dual-write Worker wave `-1` → API wave `0` 순서이며, `local-ha` overlay가 API container에만 gate `true`를 명시합니다. 수동 local manifest도 `false`로 시작하고 quick start가 Worker rollout 뒤 API env를 `true`로 전환합니다. v2 traffic을 구 Worker보다 먼저 열면 legacy body preview만 저장되고 구조화 `payload`/`metadata`가 유실됩니다.
-- 기존 Kafka 성능 baseline은 legacy/order contract로 측정한 역사적 intake 증거입니다. v2 generic envelope 성능으로 재표현하지 않으며 v2는 같은 조건으로 다시 측정합니다.
+- 기존 Kafka 성능 baseline은 legacy/order contract로 측정한 역사적 intake 증거입니다. v2 generic envelope 성능으로 재표현하지 않습니다. 2026-07-21 첫 v2 측정은 후보로 유지하고 같은 조건 반복 실행 전 stable baseline으로 승격하지 않습니다.
 
 ## Do Not Mix Redis and Kafka Results
 
@@ -63,9 +63,13 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Topics: `message-ingress`, `message-ingress-dlq`, `message-request-status`, `message-snapshots`, `stream-snapshots`, `message-notifications`.
 - Topic settings: partitions `8`, replication factor `3`, `min.insync.replicas=2`; `message-request-status`, `message-snapshots`, `stream-snapshots` use `cleanup.policy=compact`.
 - Same stream ordering: 100 events persisted as `stream_seq 1..100`.
-- Latest Kafka baseline: 100 VU / 30s, `31,676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`.
+- Stable Kafka intake baseline: 100 VU / 30s, `31,676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`.
+- 2026-07-21 first generic v2 performance candidate: local `dev-kafka` revision `1439be1`, API/Worker image `d31ac14`, 100 VU / 30s hot single stream, total HTTP `25,382`, actual event `202` `25,378`, error `0.00%`, avg `67.83ms`, p95 `123.96ms`, p99 `153.10ms`; stable baseline으로 승격하지 않습니다.
+- 이 v2 후보는 stable legacy baseline 대비 total requests `19.87%` 감소, avg/p95 `53.70%` 증가, p99 `47.82%` 증가입니다. 2026-06-18 last legacy raw 대비 total requests `8.68%` 감소, avg `17.68%`, p95 `3.92%`, p99 `1.66%` 증가입니다. Fresh cluster clean state와 현재 resource 조건이 함께 달라 원인을 v2에만 귀속하지 않습니다.
+- 같은 실행의 ordering은 100 events, `stream_seq 1..100`, `7.93s`, pass입니다. Persistence sample은 50/50, status-observed avg `79.96ms`, p95 `81.28ms`, max `2384.10ms`이며 client polling/network를 포함해 과거 row-visible proxy와 비교하지 않습니다.
+- 같은 실행의 message-worker peak lag는 `24504`, notification-worker peak lag는 `6`, main drain은 `751.76s` 뒤 모두 `0`입니다. HPA probe 뒤 추가 lag `4962`도 수동 관측 약 `160s` 내 `0`으로 drain했습니다. Worker histogram query `60s`는 최대 finite bucket 경계 포화로 exact p95 해석에서 제외합니다.
 - Stable baseline row-visible latency proxy p95: `7.67ms`. 이 수치는 API accepted 시각과 PostgreSQL row의 `created_at` 또는 조회 가능 시점을 비교한 값이며 DB commit timestamp 직접 측정값이 아닙니다.
-- 2026-06 성능 원본의 event response status는 `200`입니다. route에 `202 Accepted` 계약을 명시하기 전 수집한 historical pre-contract-fix evidence로 유지하고, 현재 build의 `202`는 별도 재실행으로 검증합니다.
+- 2026-06 성능 원본의 event response status는 `200`입니다. route에 `202 Accepted` 계약을 명시하기 전 수집한 historical pre-contract-fix evidence로 유지합니다. 현재 build의 `202`는 2026-07-21 v2 suite에서 별도로 검증했습니다.
 - 2026-06-09 k6 rerun: 100 VU / 30s, `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`; same-stream ordering revalidated with `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=31`, 50 events persisted; Worker consumer lag reached `36394` and drained to `0` after about 14 minutes. Treat this as an intake-vs-persistence capacity signal, not a direct replacement for the stable 2nd baseline. 이 실행의 persistence latency도 row-visible proxy입니다.
 - Worker success path transaction tuning is applied after that rerun: message persistence and request status update share one PostgreSQL transaction; Kafka status/snapshot publish and notification enqueue happen after DB commit.
 - Notification attempts are decoupled from core persistence through Kafka `message-notifications` and a separate `notification-worker`.
@@ -84,10 +88,13 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Pgpool SPOF is reduced, not fully eliminated: Pgpool has `2` replicas and PDB `minAvailable=1`, but local kind remains a single-node demo environment.
 - Unit / contract test count는 코드 변경에 따라 달라지므로 현재 작업에서 `.venv\Scripts\python.exe -m pytest -q`를 실행하고 실제 출력을 보고합니다. 과거 문서의 서로 다른 pass count를 현재 상태로 재사용하지 않습니다.
 - 2026-07-14 전체 정합성 감사의 identity refactor 이전 local suite는 `115 passed`입니다.
-- 2026-07-14 generic v2 전환과 최종 reliability 보강 뒤 local suite는 `195 passed`입니다. 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
-- GitOps `Synced / Healthy`는 마지막으로 기록된 historical cluster 상태입니다. 현재 상태는 status script와 Argo CD에서 다시 확인합니다.
-- 2026-07-14 read-only local cluster 재확인: API와 core workload는 ready, Argo CD는 `OutOfSync / Healthy`, kafka-exporter의 `notification-worker` consumer lag series는 미검출입니다. local live는 UI `1.1.0`과 event response `200`인 이전 image이며 현재 worktree 수정은 아직 배포되지 않았습니다.
-- 같은 시점 public demo-lite는 UI `1.4.1`, API image `e481a21`, event response `200`인 branch/deployment 전용 상태입니다. `master` source UI/API `2.0.0`과 generic v2 계약은 아직 반영되지 않았습니다.
+- 2026-07-14 generic v2 전환 작업 중간 checkpoint의 local suite는 `195 passed`입니다. 같은 날 이후 reliability 보강 결과나 현재 pass count로 해석하지 않으며, 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
+- 2026-07-21 benchmark/tooling, PostgreSQL restart recovery, backup/restore, cache readiness 보강 뒤 local suite는 `359 passed`입니다.
+- 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
+- Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
+- Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
+- PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
+- Public demo-lite는 UI `1.4.1`, API image `e481a21`, event response `200`인 branch/deployment 전용 상태입니다. Local generic v2 배포와 같은 환경으로 표현하지 않습니다.
 
 ## Important Docs
 
@@ -104,6 +111,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - `results/README.md`: validation evidence provenance and interpretation rules.
 - `results/kafka-performance/latest.txt`: most recent local Kafka performance suite output, when present.
 - `results/ordering-failure/latest.json`: most recent ordering / failure injection result, when present.
+- `results/postgres-restore/latest.json`: most recent logical backup / disposable restore consistency result, when present.
+- `results/postgres-recovery/latest.json`: most recent tracked structured summary of PostgreSQL restart/sync/cache/outage recovery, when present.
 - `k8s/gitops/base/kafka-ha.yaml`: local Kafka KRaft StatefulSet and topic bootstrap.
 - `k8s/gitops/base/manifests-ha.yaml`: generated local HA application, observability, HPA/KEDA, alerting manifest.
 - `k8s/gitops/base/migration-job.yaml`: Argo 일반 Sync wave `-2` schema migration Job; Worker/API wave보다 먼저 완료합니다.
@@ -172,7 +181,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - Kafka 성능 수치는 append-first intake baseline과 ordering/recovery validation으로 설명합니다.
 - 2026-06 성능 결과의 event status `200`은 `202 Accepted` route contract 명시 전의 역사적 증거로 표시합니다. 현재 HTTP 계약과 성능은 새 build에서 다시 측정합니다.
 - DLQ API의 `recent_samples`, `by_reason`, `oldest_sample_age_seconds`는 조회한 append-only log 표본의 통계로 설명합니다. unresolved queue depth, 현재 backlog, 미해결 event SLO로 표현하지 않습니다.
-- `results/README.md`, `results/kafka-performance/latest.txt`, `results/ordering-failure/latest.json`은 Git 추적 대상으로 유지합니다. 새 실행은 원본, 조건, stable baseline 채택 여부를 함께 기록합니다.
+- `results/README.md`, `results/kafka-performance/latest.txt`, `results/ordering-failure/latest.json`, `results/postgres-restore/latest.json`, `results/postgres-recovery/latest.json`은 Git 추적 대상으로 유지합니다. 새 실행은 원본, 조건, stable baseline 채택 여부 또는 restore/recovery 검증 범위를 함께 기록합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
 - 문서와 답변에서 "단순히 A가 아니라 B"처럼 AI 말투가 강한 대비 문장을 피합니다. 필요하면 "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 자연스럽게 씁니다.
 - 영어 문서와 답변에서도 `not only`, `not merely`, `not just` 같은 대비형 표현을 쓰지 않습니다. 같은 의미가 필요하면 직접적인 문장으로 나눠 씁니다.
@@ -225,7 +234,7 @@ Latest ordering / failure injection result after fixing local client skew:
 
 - `demo-lite`는 저사양 서버에서 API -> Kafka -> Worker -> DB 흐름을 보여주는 profile입니다. HA/failover/성능 baseline 증명으로 설명하지 않습니다.
 - `demo-lite` PostgreSQL은 단일 primary 기준입니다. primary 연결 실패는 standby failover를 의미하지 않으며, 단일 primary 복구 대기와 Kafka backlog / Worker retry 관점으로 설명합니다.
-- full HA, failover, 성능 baseline은 `local-ha` / full-ha 문서와 테스트 결과에서 설명합니다.
+- full HA topology와 성능 baseline은 `local-ha` / full-ha 문서와 테스트 결과에서 설명합니다. 기존 DB outage/recovery 결과를 primary promotion/failover 성공 증거로 재표현하지 않습니다.
 - demo-lite에서 발견한 운영 경험은 문서화하되, master로 옮길 때는 "일반 운영 원칙"과 "저사양 서버 전용 제약"을 분리합니다.
 
 ## Change Scope Rules

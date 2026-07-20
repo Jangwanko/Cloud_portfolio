@@ -2,6 +2,17 @@
 
 이 문서는 현재 포트폴리오의 다음 투자 순서를 정의합니다. 완료 여부는 코드 존재보다 재현 가능한 장애 주입과 원본 증거로 판단합니다.
 
+## Immediate Direction — 2026-07-21
+
+현재 투자 순서:
+
+1. **generic v2 지속 가능 처리량 확정**: 첫 100 VU / 30초 후보를 3회 반복하고 single hot stream과 multi-stream을 분리해 intake, Worker commit lag, PostgreSQL 처리량, drain time 비교
+2. **복구 지점 자동화**: 같은 local cluster의 disposable database를 사용한 수동 host logical dump restore는 통과. 남은 범위는 object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
+3. **DB commit 이후 publish gap 제거**: request status, snapshot, notification을 transactional outbox 또는 동등한 복구 경계로 이동
+4. **offset crash / rebalance 증거 완성**: 배포 image에서 record 처리와 offset commit 사이 강제 종료, consumer rebalance, 재기동 후 accepted/persisted reconciliation 검증
+
+2026-07-21 generic v2 첫 후보는 `25,378` event를 모두 `202`로 수락하고 오류 `0.00%`, p95 `123.96ms`, same-stream ordering `100/100`을 확인했습니다. historical stable baseline보다 total request가 `19.87%` 적고 p95가 `53.70%` 높습니다. fresh local cluster의 단일 hot-stream 1회 결과이므로 stable baseline으로 승격하지 않으며 위 1번 실험으로 원인과 변동폭을 먼저 분리합니다.
+
 ## P0 — 데이터 유실 경계와 API 계약
 
 ### 1. Kafka offset commit 안전성
@@ -17,7 +28,7 @@
 
 ### 2. HTTP `202 Accepted` 계약 재검증
 
-- 현재 상태: 로컬 route / test 구현 완료, 배포 image contract와 새 performance 원본 재검증 대기
+- 현재 상태: local `dev-kafka` image `d31ac14`의 OpenAPI/API `2.0.0`과 performance 원본에서 event `202` `25,378건`, 다른 event status `0`, 오류 `0.00%` 확인. append 직후 status `404` race의 accepted-state 개선은 대기
 - 목표: Kafka append 성공 응답을 route, OpenAPI, 테스트에서 `202`로 고정
 - 이유: 비동기 persistence 경계를 클라이언트 계약에 정확히 표현
 - 완료 기준:
@@ -51,7 +62,7 @@
 
 ### 5. Generic v2 staged rollout gate
 
-- 현재 상태: GitOps gate-false Secret `-3` / 일반 Sync migration `-2` / Worker `-1` / overlay API-true `0` wave와 수동 local gate/quick-start 순서 source 구현; 실제 staged rollout 증거 대기
+- 현재 상태: GitOps gate-false Secret `-3` / 일반 Sync migration `-2` / Worker `-1` / overlay API-true `0` wave source 구현. local `dev-kafka`에서 migration `0008`, 동일 image API/Worker rollout, API gate `true`, v2 canary persistence까지 1회 확인; 중간 단계 rollback/forward-recovery drill은 대기
 - 목표: `0008` → 새 Worker 전체 rollout → API v2 공개 순서를 배포 시스템에서 강제
 - 이유: 구 Worker가 v2 job을 처리하면 body preview만 저장되고 JSON `payload`/`metadata` 유실
 - 완료 기준:
@@ -84,7 +95,7 @@
 
 ### 7. Commit-aware persistence latency
 
-- 현재 상태: Worker가 `commit()` 반환 직후 `persisted_at`을 기록하는 histogram source 구현, cluster 재측정과 clock/polling 비교 대기
+- 현재 상태: Worker가 `commit()` 반환 직후 `persisted_at`을 기록하는 histogram을 배포해 cluster query까지 확인. 첫 결과 `60s`는 당시 최대 finite bucket 포화값이라 exact p95에서 제외. `1200s`까지 확장한 bucket은 local image `9349ba9`의 `/metrics`에서 노출 확인, 새 bucket을 사용한 반복 측정 대기
 - 목표: API accepted 시각부터 Worker가 DB commit 반환을 관측한 시점까지의 지연을 재현 가능하게 측정
 - 이유: 과거 PostgreSQL `created_at` / row-visible proxy와 client status-observed 측정의 의미 한계 해소
 - 완료 기준:
@@ -104,6 +115,7 @@
 
 ### 9. 지속 가능 용량과 backpressure
 
+- 현재 상태: 2026-07-21 30초 single hot-stream burst에서 peak message-worker lag `24,504`, main drain `751.76s`, 최종 lag `0` 확인. 약 `846 events/s` intake가 이 조건의 지속 가능한 DB persistence 처리율보다 높다는 신호이며 steady-state 한계는 미측정
 - 목표: burst intake와 장시간 안정 처리 용량 구분
 - 완료 기준:
   - 30초 burst와 15분 이상 steady-state workload 분리
@@ -114,7 +126,7 @@
 
 ### 10. 범용 event envelope 증거
 
-- 현재 상태: generic schema/migration/Worker/API/UI source 구현과 local suite `351 passed`; 배포 DB migration·staged rollout·v2 성능 재검증 대기
+- 현재 상태: generic schema/migration/Worker/API/UI 구현, local DB migration `0008`, staged rollout, v2 contract/persistence, same-stream ordering, 첫 performance 후보 확인. 서로 다른 reference domain과 안정 성능 반복은 대기
 - 목표: `schema_version`, `event_type`, JSON `payload`, JSON `metadata`를 Kafka payload와 PostgreSQL row에서 일관되게 유지
 - 완료 기준:
   - migration, persistence, API response contract test 통과
@@ -125,7 +137,7 @@
 
 ### 11. Reference adapter와 호환 종료 기준
 
-- 현재 상태: 주문 lifecycle을 reference scenario로 재배치하고 `/v1/orders/{order_id}/events` compatibility adapter 유지, 배포 image 검증 대기
+- 현재 상태: 주문 lifecycle을 reference scenario로 재배치하고 `/v1/orders/{order_id}/events` compatibility adapter 유지. Local `dev-kafka`의 UI/API `2.0.0` 배포와 generic v2 OpenAPI 확인 완료; route 사용량 계측과 종료 정책은 대기
 - 목표: generic core와 domain adapter를 명확히 분리하고 legacy 계약의 관측 가능한 종료 조건 정의
 - 완료 기준:
   - README, OpenAPI, demo의 generic v2 계약 일치
@@ -139,7 +151,7 @@
 
 ### 12. Registry 기반 GitOps 공급망
 
-- 현재 상태: master CI candidate digest build/push → 해당 digest 비루트 실행 검증 → 동일 digest SHA/bootstrap tag 승격 → overlay bot commit과 registry-only bootstrap source 구현. 실제 Actions 실행과 2026-07-14 이후 배포 증거 대기; local live check는 `OutOfSync / Healthy`이며 이번 worktree는 미배포
+- 현재 상태: candidate digest build/push → 비루트 실행 검증 → 동일 digest SHA tag 승격 → overlay bot commit source 구현. `dev-kafka` Actions image `9349ba9`와 overlay revision `b84c379`을 local Argo CD가 `Synced / Healthy`로 배포한 흐름 재확인; master 최종 반영과 production digest/SBOM gate는 대기
 - 목표: commit SHA image를 registry에 발행하고 overlay tag 변경으로 배포
 - 완료 기준:
   - build/push, manifest tag update, Argo CD sync 흐름 재현
@@ -161,10 +173,14 @@
 
 ### 14. 복구 훈련 확대
 
+- 현재 완료: namespace prune 전환 결함 뒤 Namespace desired state와 `Prune=false` 보호 적용, fresh PostgreSQL 재설치, backup Job/PVC 확인. Host logical dump `39,433,414` bytes를 같은 local cluster의 disposable DB에 수동 복원해 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치 확인 후 임시 DB 삭제
+- 남은 범위: 정기 restore drill, cluster/namespace lifecycle과 분리된 object storage 사본, cluster-loss 복구, 측정된 RPO/RTO 원본
 - 목표: single-node local demo 범위를 넘어 복구 절차 검증
 - 완료 기준:
   - multi-node broker/worker/node disruption 시나리오
-  - PostgreSQL backup restore drill과 RPO/RTO 원본 기록
+  - local host/cluster lifecycle과 분리된 object storage backup 사본
+  - dump size/checksum 검증과 backup 실패 alert
+  - 정기 PostgreSQL restore drill과 측정된 RPO/RTO 원본 기록
   - consumer rebalance 및 partition imbalance 실험
   - runbook 단계와 실제 복구 시간 일치
 

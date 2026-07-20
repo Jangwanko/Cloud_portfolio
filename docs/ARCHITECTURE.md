@@ -49,6 +49,8 @@
 - PostgreSQL HA
   - `bitnami/postgresql-ha` 기반
   - pgpool 경유 접근
+  - 모든 PostgreSQL pod의 `postgresql.auto.conf`에 `synchronous_commit=on`, `synchronous_standby_names=ANY 1` 지속 설정
+  - install/recovery helper가 현재 primary의 streaming `sync`/`quorum` standby 1개 이상을 확인한 뒤 완료
 - Prometheus / Grafana
   - metrics 수집, alert, dashboard
 - Kubernetes autoscaling
@@ -67,6 +69,8 @@
   - 수동 logical backup
   - backup본 기반 restore
   - 주 1회 backup `CronJob`
+  - 2026-07-21 host logical dump의 disposable DB restore와 핵심 row/schema 정합성 확인
+  - 같은 host 장애를 견디는 object storage 사본과 자동 restore는 미구현
 
 ## 외부 진입
 현재 로컬 검증 기준 기본 진입점:
@@ -142,7 +146,7 @@ sequenceDiagram
     API-->>Client: source=cache, degraded=true, snapshot_age_seconds
 ```
 
-각 API pod의 materialized cache consumer는 `group_id` 없이 모든 snapshot partition을 직접 `assign`하고 `seek_to_beginning`합니다. Pod startup 시 partition별 end offset을 캡처하고 현재 position이 모두 해당 지점에 도달한 뒤에만 `hydrated=true`, `ready=true`로 cache gate를 엽니다. 따라서 이 경로에는 kafka-exporter가 보여 줄 snapshot consumer group lag이 없습니다. 현재 확인 가능한 상태는 readiness payload의 `ready`, `hydrated`, `last_error`, cache item count이며, position/end-offset/remaining record/hydration duration의 pod별 custom metric은 미구현입니다.
+각 API pod의 materialized cache consumer는 `group_id` 없이 모든 snapshot partition을 직접 `assign`하고 `seek_to_beginning`합니다. Pod startup 시 partition별 end offset을 캡처하고 현재 position이 모두 해당 지점에 도달한 뒤에만 `hydrated=true`, `ready=true`로 cache gate를 엽니다. 따라서 이 경로에는 kafka-exporter가 보여 줄 snapshot consumer group lag이 없습니다. 현재 source의 readiness payload는 `ready`, `hydrated`, `last_error`를 노출하며 cache item count는 노출하지 않습니다. Position/end-offset/remaining record/hydration duration의 pod별 custom metric은 미구현입니다.
 
 Compaction은 같은 key의 이전 값 제거에 유효합니다. `message-request-status`와 `message-snapshots`는 request/message별 unique key가 대부분이므로 key cardinality와 cold-start replay 길이는 계속 증가할 수 있습니다. Retention window, PostgreSQL consistent bootstrap 뒤 Kafka changelog 적용, per-stream latest-page snapshot은 [Improvement Roadmap](IMPROVEMENT_ROADMAP.md)의 비교·검증 대상입니다.
 
@@ -245,7 +249,8 @@ GitOps 순서:
 - initial hydration 미완료: fresh cache와 DB 장애 fallback 모두 사용 제외
 - 응답 필드: `source`, `degraded`, `snapshot_age_seconds`, `items`
 - API startup: PostgreSQL 초기화 실패만으로 process 종료 제외
-- DB failover 중 새 API pod: Kafka intake는 기동 가능하지만 materialized cache는 initial hydration 완료 전 fallback 제공 제외
+- DB outage/recovery 중 새 API pod: Kafka intake는 기동 가능하지만 materialized cache는 initial hydration 완료 전 fallback 제공 제외
+- PostgreSQL primary promotion: 설계상 Pgpool/repmgr 경로를 사용하지만 이번 cache fallback 검증은 전체 StatefulSet outage/recovery이며 promotion 성공 증거로 사용 제외
 
 ## 장애 시나리오별 동작
 
@@ -377,9 +382,12 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
   - HA 매니페스트에 `postgres-weekly-backup` `CronJob`
   - 스케줄: `0 3 * * 0`
   - cluster PVC `postgres-backups` 사용
+  - 같은 namespace/PVC의 dump는 namespace 삭제 재해 복구 지점에서 제외
+
+2026-07-21에는 새 `postgres-backups` PVC를 대상으로 수동 실행한 in-cluster backup Job의 dump와 host `backups/` logical dump를 확인했습니다. Host dump `39,433,414` bytes를 disposable database에 복원한 뒤 10개 table row count, Alembic `0008_generic_event_envelope`, generic v2 row `33,840`, message max id/sequence가 원본과 일치함을 확인하고 임시 DB를 삭제했습니다. 이 결과는 같은 local cluster의 logical restore 증거이며 object storage 복제, cluster-loss 복구, RPO/RTO 자동화 증거는 아닙니다.
 
 ## 운영 기준
-- 아래 수치는 legacy/order contract로 수집한 historical Kafka intake evidence이며 generic v2 성능 증거가 아닙니다. v2는 같은 조건으로 다시 측정합니다.
+- 아래 수치는 legacy/order contract로 수집한 historical Kafka intake evidence입니다. Generic v2 첫 후보는 2026-07-21 별도로 측정했으며 반복 전 stable baseline으로 승격하지 않습니다.
 - Kafka broker: 로컬 기준 3-broker KRaft StatefulSet
 - 안정 Kafka intake baseline: 100 VU / 30초 기준 `31676` requests, error `0.00%`, p95 `80.65ms`, p99 `103.57ms`
 - 2026-06 performance event status `200`: HTTP `202` route contract 명시 전 historical evidence

@@ -23,16 +23,39 @@ function Get-WorkloadRef([string]$Name) {
 function Scale-Workload([string]$Name, [int]$Replicas) {
   $ref = Get-WorkloadRef $Name
   kubectl -n $Namespace scale $ref --replicas=$Replicas | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to scale $ref to $Replicas replicas"
+  }
 }
 
 function Wait-Workload([string]$Name, [int]$TimeoutSec) {
   $ref = Get-WorkloadRef $Name
   kubectl -n $Namespace rollout status $ref --timeout="$($TimeoutSec)s" | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Timed out or failed waiting for $ref rollout"
+  }
 }
 
 function Get-BaseReplicas([string]$Name) {
   if ($Name -eq "messaging-postgresql-ha-postgresql") { return 3 }
   return 1
+}
+
+function Configure-PostgresSyncIfNeeded(
+  [string]$WorkloadName,
+  [int]$ReplicaCount,
+  [int]$WaitSec
+) {
+  $ref = Get-WorkloadRef $WorkloadName
+  if ($ref -notlike "statefulset/*" -or $ReplicaCount -lt 2) {
+    return
+  }
+
+  & "$PSScriptRoot/configure_postgres_sync.ps1" `
+    -Namespace $Namespace `
+    -StatefulSet $WorkloadName `
+    -ExpectedReplicas $ReplicaCount `
+    -TimeoutSec $WaitSec
 }
 
 function Wait-Ready([int]$WaitSec = 240) {
@@ -102,8 +125,13 @@ function Invoke-KubectlQuiet([scriptblock]$Action) {
   }
 }
 
-Scale-Workload -Name $DbDeployment -Replicas (Get-BaseReplicas $DbDeployment)
+$targetReplicas = Get-BaseReplicas $DbDeployment
+Scale-Workload -Name $DbDeployment -Replicas $targetReplicas
 Wait-Workload -Name $DbDeployment -TimeoutSec $TimeoutSec
+Configure-PostgresSyncIfNeeded `
+  -WorkloadName $DbDeployment `
+  -ReplicaCount $targetReplicas `
+  -WaitSec $TimeoutSec
 
 # Ensure schema exists even when DB pods have been recreated.
 Wait-DbQueryReady -WaitSec $TimeoutSec

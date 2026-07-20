@@ -38,7 +38,7 @@ $eventBody = @{
   payload = @{ message = "hello smoke" }
   metadata = @{ scenario = "smoke-test" }
 } | ConvertTo-Json -Depth 4
-$acceptedResponse = Invoke-WebRequest -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-event-$suffix"} -ContentType "application/json" -Body $eventBody
+$acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-event-$suffix"} -ContentType "application/json" -Body $eventBody
 if ([int]$acceptedResponse.StatusCode -ne 202) {
   throw "Expected HTTP 202 from event intake, got $($acceptedResponse.StatusCode)"
 }
