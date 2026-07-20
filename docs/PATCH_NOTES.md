@@ -22,6 +22,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - reset recovery의 StatefulSet scale/rollout native exit code를 즉시 검사해 조용한 kubectl 실패 차단
 - `dev-kafka` CI/image workflow success 뒤 image `9349ba9`, overlay revision `b84c379`을 Argo `Synced / Healthy`로 배포; API/core ready, cache `ready=true` / `hydrated=true`, API contract pass, consumer lag `0` 확인
 - master merge `8f5d78c`와 CI run `#55` validate/publish success, candidate digest UID `10001` 검증 뒤 image `8f5d78c6963a` 승격, overlay bot commit `717e0ca` 완료; local Argo는 `dev-kafka` 추적 유지
+- public demo-lite live GET 재확인: title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, order event success `200`; local `2.0.0`과 배포 경계 유지
 - local unit / contract / infrastructure suite: `359 passed`
 
 ## 2026-07-21 검증: generic v2 첫 성능 후보

@@ -36,8 +36,8 @@ Grafana 접근:
 Version boundary:
 
 - `master` source: UI `2.0.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
-- local `dev-kafka` live 2026-07-21: UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
-- public demo-lite: UI `1.4.1`, API image `e481a21`, event route `200`
+- local `dev-kafka` live 2026-07-21: title `Reliable Event Processing Console`, UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
+- public demo-lite live GET 2026-07-21: title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, API image `e481a21`, generic v2 route 없음, event route `200`
 - generic `2.0.0` 변경: local `dev-kafka`에는 배포 완료, public demo-lite에는 미배포
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
@@ -88,7 +88,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
-- 현재 기대 badge: `1.4.1`; 화면 문구와 API contract는 해당 deployment 기준으로 해석
+- 현재 기대 title/badge: `Post-Order Event Console` / `1.4.1`; OpenAPI `1.0.0`, generic v2 route 없음, order event success `200`
 - `master` source `2.0.0` 기능 확인용으로 사용하지 않음
 
 ## English Demo Script

@@ -23,7 +23,7 @@
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
-| Public demo-lite UI `1.4.1` | branch/deployment-specific | master `2.0.0` 미배포; public badge/API 별도 확인 |
+| Public demo-lite UI `1.4.1` | branch/deployment-specific | live GET: title `Post-Order Event Console`, API `1.0.0`, generic v2 없음, order event success `200`; master `2.0.0` 미배포 |
 | Unit / contract / infrastructure suite | `359 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
 | Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
 

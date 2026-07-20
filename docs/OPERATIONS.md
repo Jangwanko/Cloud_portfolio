@@ -111,7 +111,7 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-21 local `dev-kafka` live는 UI/API `2.0.0`, generic event `202`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite는 UI `1.4.1`/API image `e481a21`/event `200`인 별도 deployment이며 generic `2.0.0` 변경은 아직 반영되지 않았습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-21 local `dev-kafka` live는 title `Reliable Event Processing Console`, UI/API `2.0.0`, generic event `202`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite는 title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event `200`인 별도 deployment이며 generic `2.0.0` 변경은 아직 반영되지 않았습니다.
 
 ## Demo Access
 

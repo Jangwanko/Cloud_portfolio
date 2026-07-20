@@ -95,7 +95,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
-- Public demo-lite는 UI `1.4.1`, API image `e481a21`, event response `200`인 branch/deployment 전용 상태입니다. Local generic v2 배포와 같은 환경으로 표현하지 않습니다.
+- Public demo-lite는 title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event response `200`인 branch/deployment 전용 상태입니다. Local generic v2 배포와 같은 환경으로 표현하지 않습니다.
 
 ## Important Docs
 
