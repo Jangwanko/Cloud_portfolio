@@ -1,15 +1,19 @@
 # Metrics 기준표
 
-Kafka 기반 포트폴리오의 Prometheus / Grafana 지표는 장애별 확인 순서와 함께 해석합니다. 장애 대응 흐름은 [OBSERVABILITY.md](OBSERVABILITY.md)를 기준으로 봅니다.
+Kafka 기반 포트폴리오 지표 해석 기준:
+
+- Prometheus / Grafana 지표
+- 장애별 확인 순서
+- 장애 대응 흐름: [OBSERVABILITY.md](OBSERVABILITY.md)
 
 ## Dashboard 그룹
 
-운영 dashboard는 아래 흐름을 기준으로 봅니다.
+운영 dashboard 확인 흐름:
 
 - API request rate / latency / 5xx ratio
 - API hot path stage latency
 - Worker throughput / failure ratio / last success age
-- Accepted-to-persisted async lag
+- Worker accepted-to-commit-observed async lag
 - Kafka topic wait time
 - DB pool pressure / DB failure reason
 - DLQ event / replay result
@@ -17,13 +21,17 @@ Kafka 기반 포트폴리오의 Prometheus / Grafana 지표는 장애별 확인 
 - Worker / API replica count and HPA desired replicas
 - Pod restart / unavailable replica signal
 
-Kafka broker/topic/consumer group 지표는 kafka-exporter가 제공합니다. dashboard는 `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`를 직접 보고, `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica를 보조 신호로 함께 해석합니다.
+Kafka broker/topic/consumer group 지표:
+
+- 제공: kafka-exporter
+- 직접 확인: `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`
+- 보조 신호: `messaging_queue_wait_seconds`, Worker throughput, KEDA desired replica
 
 ## Health
 
 ### `messaging_health_status`
 
-component별 health 신호입니다.
+component별 health 신호:
 
 - `component="kafka"`: Kafka bootstrap reachable
 - `component="db"`: PostgreSQL writable primary 확인 기준
@@ -39,7 +47,7 @@ messaging_health_status{job="worker",component="worker"}
 
 ### `messaging_api_requests_total`
 
-HTTP status별 API request counter입니다.
+HTTP status별 API request counter.
 
 ```promql
 sum(rate(messaging_api_requests_total[1m])) by (status)
@@ -50,12 +58,14 @@ sum(rate(messaging_api_requests_total[1m])) by (status)
 ```promql
 sum(rate(messaging_api_requests_total{status=~"5.."}[5m]))
 /
-clamp_min(sum(rate(messaging_api_requests_total[5m])), 1)
+clamp_min(sum(rate(messaging_api_requests_total[5m])), 0.001)
 ```
 
 ### `messaging_api_request_latency_seconds`
 
-API가 request를 받고 response를 반환하기까지의 시간입니다. Worker가 PostgreSQL에 persisted 완료할 때까지의 시간은 포함하지 않습니다.
+API request 수신부터 response 반환까지의 시간.
+
+- Worker PostgreSQL persisted 완료 시간 제외
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))
@@ -63,7 +73,7 @@ histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1
 
 ### `messaging_api_stage_latency_seconds`
 
-API hot path 내부 구간별 latency입니다.
+API hot path 내부 구간별 latency.
 
 주요 stage:
 
@@ -79,60 +89,81 @@ histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m]
 
 ### `messaging_worker_processed_total`
 
-Worker가 event를 처리한 누적 건수입니다.
+Worker event 처리 누적 건수.
 
 ```promql
-sum(rate(messaging_worker_processed_total[1m])) by (result)
+sum(rate(messaging_worker_processed_total{job="worker"}[1m])) by (result)
 ```
 
 Worker failure ratio:
 
 ```promql
-sum(rate(messaging_worker_processed_total{result="failure"}[5m]))
+sum(rate(messaging_worker_processed_total{job="worker",result="failure"}[5m]))
 /
-clamp_min(sum(rate(messaging_worker_processed_total[5m])), 1)
+clamp_min(sum(rate(messaging_worker_processed_total{job="worker"}[5m])), 0.001)
 ```
+
+Core ingress 결과는 `success`, `rejected`, `dlq`, `failure`로 분리합니다. `notification-worker`는 `job="notification-worker"`로 별도 조회합니다.
 
 ### `messaging_worker_last_success_timestamp`
 
-Worker가 마지막으로 event를 성공 처리한 Unix timestamp입니다.
+Worker 마지막 event 성공 처리 Unix timestamp.
 
 ```promql
 time() - max(messaging_worker_last_success_timestamp{job="worker"})
 ```
 
-값이 계속 증가하면 Worker pod가 살아 있어도 실제 consume / persist 성공이 멈춘 상태일 수 있습니다.
+해석:
+
+- 값 지속 증가: Worker pod 생존 중 실제 consume / persist 성공 중단 가능성
 
 ### `messaging_worker_stage_latency_seconds`
 
-Worker 내부 구간별 latency입니다.
+Worker 내부 구간별 latency.
 
 주요 stage:
 
 - `db_persist`: PostgreSQL transaction으로 event 영속화
 - `request_status_update`: request status 갱신
-- request status는 PostgreSQL 저장과 함께 `message-request-status` compacted topic으로 publish됩니다. DB read fallback은 별도의 DB commit 이후 snapshot topic인 `message-snapshots` / `stream-snapshots`를 원본으로 사용합니다.
-- message read 응답의 `source`, `degraded`, `snapshot_age_seconds`는 cache-first read의 hit / stale fallback 상태를 판단하는 API-level signal입니다.
+- request status DB row: message persistence와 같은 PostgreSQL transaction
+- request status compacted topic: DB commit 이후 best-effort publish
+- DB read fallback: DB commit 이후 snapshot topic `message-snapshots` / `stream-snapshots` 원본 사용
+- message read 응답 `source`, `degraded`, `snapshot_age_seconds`: DB membership/watermark-gated snapshot hit / stale fallback 판단용 API-level signal
 - `notification_enqueue`: DB commit 이후 `message-notifications` topic으로 후속 notification 작업 생성
-- `notification_db_insert`: 별도 `notification-worker`가 notification 처리 결과 기록
+- `notification_db_insert`: 별도 `notification-worker`가 notification attempt record 저장. 외부 채널 실제 발송 결과 제외
+- `notification_publish`: DB commit 이후 notification job publish
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))
 ```
 
+### `messaging_notification_publish_failures_total`
+
+PostgreSQL commit 이후 `message-notifications` publish 실패 counter입니다.
+
+```promql
+sum(increase(messaging_notification_publish_failures_total{job="worker"}[15m]))
+```
+
+증가 시 core DB row는 이미 commit됐을 수 있습니다. request/message reconciliation과 수동 복구가 필요하며 현재 transactional outbox는 없습니다.
+
 ## 비동기 lag
 
 ### `messaging_event_persist_lag_seconds`
 
-API가 request를 `accepted` 한 시점부터 Worker가 PostgreSQL에 `persisted` 할 때까지 걸린 end-to-end async lag입니다.
+Payload `queued_at`부터 Worker의 PostgreSQL `commit()`이 반환된 직후 기록한 `persisted_at`까지의 lag입니다. DB commit 이후 request status/snapshot/notification publish 시간은 제외합니다. API와 Worker clock 차이는 별도 고려가 필요합니다.
 
 ```promql
-histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))
+histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[1m])) by (le))
 ```
+
+PowerShell performance suite의 2026-06 `accepted-to-persisted`는 PostgreSQL row `created_at` / row-visible proxy입니다. 현재 script의 `accepted_to_status_observed_ms`는 API `queued_at`부터 client가 `persisted` status를 관측할 때까지이며 polling interval과 network delay를 포함합니다. 둘 다 이 Worker histogram과 별도 측정입니다.
 
 ### `messaging_queue_wait_seconds`
 
-event가 Worker 처리 전까지 대기한 시간을 해석하는 지표입니다. Kafka-native 관점에서는 consumer-side wait / backlog signal로 봅니다.
+event가 Worker 처리 전까지 대기한 시간 해석 지표.
+
+- Kafka-centered 관점: consumer-side wait / backlog signal
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))
@@ -140,24 +171,36 @@ histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (
 
 ## Read cache operating signals
 
-DB snapshot materialized cache는 현재 API 응답 메타데이터로 검증합니다. 아래 항목은 운영 신호로 추적해야 할 기준이며, Prometheus counter / histogram으로 승격하기 좋은 후보입니다.
+DB snapshot materialized cache 현재 검증 기준:
+
+- API 응답 메타데이터
+- 운영 신호 후보
+- Prometheus counter / histogram 승격 후보
 
 | 신호 | 현재 확인 방법 | 운영 해석 |
 | --- | --- | --- |
-| Read cache hit ratio | `GET /streams/{stream_id}/events` 응답의 `source=cache` 비율 | 낮아지면 snapshot consumer lag, cache rebuild, DB fallback 증가 가능성 |
+| Read cache hit ratio | `GET /streams/{stream_id}/events` 응답의 `source=cache` 비율 | 낮아지면 pod hydration 지연, cache rebuild, DB fallback 증가 가능성 |
 | Snapshot age | 응답의 `snapshot_age_seconds` | warning `> 30s`, critical `> 120s` 후보 |
 | Cache rebuild time | API pod restart 후 첫 fresh `source=cache` 응답까지 시간 | API pod 교체 뒤 read cache 복구 속도 |
 | Stale response count | `source=cache`, `degraded=true` 응답 수 | DB failure 중 stale cache fallback이 사용자 read를 받치고 있는 정도 |
 | Degraded read count | `degraded=true` 응답 수 | read path가 정상 DB/cache 경로를 벗어난 빈도 |
-| Snapshot consumer lag | `message-snapshots`, `stream-snapshots` consumer group lag | cache freshness와 rebuild 지연의 직접 원인 후보 |
+| Per-pod snapshot replay progress | 미구현 custom metric: current position / captured initial end offset / remaining records / hydration duration | pod별 cold-start replay와 cache gate 개방 지연 측정 |
 
-문서 기준상 `source=cache`는 성공을 뜻하지 않습니다. `degraded=false`이면 fresh cache hit이고, `degraded=true`이면 DB failure 또는 stale fallback을 cache가 대신 받친 상태입니다.
+Materialized cache consumer는 `group_id` 없이 각 API pod가 모든 snapshot partition을 직접 assign하고 beginning부터 replay합니다. 따라서 kafka-exporter의 `kafka_consumergroup_lag` series가 존재하지 않으며, Worker/notification consumer group lag와 섞어 해석하지 않습니다. 현재는 readiness payload의 `ready`, `hydrated`, `last_error`, cache item count와 API read 응답을 확인합니다.
+
+`message-request-status`와 `message-snapshots`는 대부분 request/message별 unique key를 사용합니다. Compaction만으로 전체 key 수와 pod cold-start replay가 bounded 되지는 않습니다. Retention 또는 bootstrap/changelog 구조가 적용되기 전에는 cache rebuild time을 장기 SLO로 확정하지 않습니다.
+
+`source=cache` 해석:
+
+- `degraded=false`: fresh cache hit
+- `degraded=true`: DB failure 또는 stale fallback을 cache가 받친 상태
+- `source=cache`만으로 성공 판단 제외
 
 ## DLQ metrics
 
 ### `messaging_dlq_events_total`
 
-Worker가 event를 Kafka DLQ topic으로 보낸 누적 counter입니다.
+Worker가 event를 Kafka DLQ topic으로 보낸 누적 counter.
 
 ```promql
 sum by (reason) (increase(messaging_dlq_events_total[15m]))
@@ -178,9 +221,9 @@ sum by (result) (increase(messaging_dlq_replay_total[15m]))
 - `replayed`: DLQ event를 ingress topic으로 다시 append함
 - `skipped_max_replay`: `DLQ_REPLAY_MAX_COUNT`에 도달해 자동 replay에서 제외함
 
-### DLQ summary `oldest_age_seconds`
+### DLQ summary `oldest_sample_age_seconds`
 
-DLQ에 오래 남아있는 event는 counter 증가보다 운영 위험이 큽니다. 이 값은 Prometheus metric이 아니라 운영 API 응답 필드입니다.
+이 값은 Prometheus metric이 아니라 운영 API가 조회한 append-only log sample의 시간 범위입니다.
 
 ```powershell
 Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5
@@ -190,8 +233,9 @@ Endpoint: `GET /v1/dlq/ingress/summary`
 
 해석 기준:
 
-- `oldest_age_seconds > 600`: 10분 이상 남은 DLQ event가 있으므로 replay 조건과 `by_reason`을 확인합니다.
-- `oldest_age_seconds > 1800`: 30분 이상 남은 DLQ event가 있으므로 자동 replay만 기다리지 않고 수동 처리 또는 원인 수정을 결정합니다.
+- 오래된 sample 포함 여부 확인
+- unresolved depth / oldest unresolved age에서 제외
+- 현재 incident 판단: DLQ counter increase, replay result, Worker lag, accepted/persisted reconciliation 조합
 
 ## PostgreSQL metrics
 
@@ -200,10 +244,10 @@ Endpoint: `GET /v1/dlq/ingress/summary`
 process별 DB connection checkout 수입니다.
 
 ```promql
-messaging_db_pool_in_use{job=~"api|worker|dlq-replayer"}
+messaging_db_pool_in_use{job=~"api|worker|notification-worker|dlq-replayer"}
 ```
 
-API만 높으면 request hot path, Worker만 높으면 persistence path, DLQ Replayer가 높으면 replay path를 먼저 확인합니다.
+API만 높으면 request/read path, Worker면 persistence path, notification-worker면 notification attempt insert, DLQ Replayer면 replay gate를 먼저 확인합니다.
 
 ### `messaging_db_failure_total`
 
@@ -268,23 +312,23 @@ kube_deployment_status_replicas_unavailable{namespace="messaging-app"}
 
 ### `ready`
 
+- schema startup 완료
 - Kafka bootstrap reachable
 - PostgreSQL writable primary reachable
-- standby / replication 상태 정상
-- Worker consume path 정상
+- standby / sync standby minimum 충족
+- replication delay threshold 이내
+- non-local unsafe auth secret 미사용
 
 ### `degraded`
 
-- PostgreSQL standby 부족 또는 replication lag 상승
-- Kafka append는 가능하지만 Worker lag 증가
-- DLQ replay 증가
-- persistence path 지연
+- schema/Kafka/secret hard failure 없음
+- PostgreSQL primary unreachable, standby 부족, sync standby 부족, 또는 replication delay 상승
 
 ### `not_ready`
 
+- schema startup 미완료
 - Kafka bootstrap unreachable
-- Kafka publish 실패
-- API intake state path 장애로 request 수락 불가
+- non-local unsafe auth secret
 
 더 자세한 readiness 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 봅니다.
 
@@ -302,13 +346,19 @@ kafka_brokers
 
 ### `kafka_consumergroup_lag`
 
-consumer group lag를 topic / partition 단위로 보여줍니다.
+consumer group lag를 topic / partition 단위로 보여줍니다. 현재 적용 대상은 `message-worker`, `notification-worker`, DLQ replayer처럼 group id가 있는 consumer입니다. API materialized cache replay에는 적용되지 않습니다.
 
 ```promql
 sum by (topic) (kafka_consumergroup_lag{consumergroup="message-worker"})
 ```
 
 `message-worker` lag가 높으면 Worker 처리량, DB persist latency, pod scaling을 함께 확인합니다.
+
+Notification path:
+
+```promql
+sum by (topic) (kafka_consumergroup_lag{consumergroup="notification-worker"})
+```
 
 ### `kafka_topic_partition_current_offset`
 

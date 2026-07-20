@@ -6,7 +6,7 @@ metadata:
 spec:
   project: messaging-portfolio
   source:
-    repoURL: https://github.com/your-org/your-repo.git
+    repoURL: https://github.com/Jangwanko/Cloud_portfolio.git
     targetRevision: master
     path: k8s/gitops/overlays/local-ha
   destination:
@@ -22,5 +22,11 @@ spec:
   ignoreDifferences:
     - group: apps
       kind: Deployment
+      name: api
+      jsonPointers:
+        - /spec/replicas
+    - group: apps
+      kind: Deployment
+      name: worker
       jsonPointers:
         - /spec/replicas

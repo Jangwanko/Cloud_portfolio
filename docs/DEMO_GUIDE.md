@@ -1,97 +1,227 @@
-# Demo Guide / 데모 가이드
+# Demo Guide
 
-브라우저 데모는 주문 완료 이후 이벤트가 API에서 Kafka로 들어가고, Worker를 거쳐 PostgreSQL에 저장되는 흐름을 한 화면에서 보여줍니다.
+Master source UI version: `2.0.0`
 
-The browser demo shows the post-order event path from API intake to Kafka append, Worker persistence, and PostgreSQL storage.
+Public demo-lite UI version: `1.4.1` (branch/deployment-specific)
+
+## Purpose
+
+- 브라우저에서 범용 event acceptance부터 PostgreSQL persistence까지의 흐름 확인
+- 주문·결제 lifecycle은 generic event contract에 올린 reference scenario로 사용
+- 확인 흐름:
+  - API intake
+  - Kafka append
+  - Worker persistence
+  - PostgreSQL storage
+  - DLQ / Operations Advisor 상태
 
 ## Demo URLs
 
-| Surface | URL | Purpose |
+| Surface | URL | Use |
 | --- | --- | --- |
-| Demo UI | `http://localhost/demo/order-dashboard.html` | 주문 이후 이벤트 흐름 시연 |
-| Swagger | `http://localhost/docs` | API contract 확인 |
-| Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지표 확인 |
-| Readiness | `http://localhost/health/ready` | Kafka / PostgreSQL / standby 상태 확인 |
-| DLQ summary | `http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5` | DLQ reason, replayable, blocked 확인 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `1.4.1` reference scenario 시연 |
+| Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
+| Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
+| Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
+| Deployed DLQ summary | `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5` | 로그인 user 범위 recent log sample 확인 |
+| Local Demo UI | `http://localhost/demo/order-dashboard.html` | 로컬 데모 확인 |
+| Local Swagger | `http://localhost/docs` | 로컬 API contract 확인 |
+| Local Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | 로컬 운영 지표 확인 |
+
+Grafana 접근:
+
+- 대시보드 조회: anonymous Viewer, 로그인 없이 확인
+- admin 계정: 설정 변경용 secret로 유지
+
+Version boundary:
+
+- `master` source: UI `2.0.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
+- local live 2026-07-14 read-only check: UI `1.1.0`, 이전 event route `200`
+- public demo-lite: UI `1.4.1`, API image `e481a21`, event route `200`
+- 이번 `master` 변경: local live와 public demo-lite 모두 미배포
+- 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
+
+API boundary:
+
+- shared auth/resource APIs: `POST /v1/auth/login`, `POST /v1/streams`
+- generic intake: `POST /v2/streams/{stream_id}/events`
+- generic read aliases: `GET /v2/event-requests/{request_id}`, `GET /v2/streams/{stream_id}/events`
+- demo batch summary: `GET /v1/streams/{stream_id}/persistence-summary`
 
 ## Quick Start
 
-처음 실행할 때는 Docker Desktop을 켠 뒤 전체 bootstrap을 실행합니다.
+- 새 disposable cluster에서 처음 실행:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-이미 클러스터가 있고 데모 화면 변경만 반영하려면 이미지를 다시 빌드하고 API deployment를 재시작합니다.
+- 현재 `2.0.0` image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
 tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
-kubectl rollout restart deployment/api -n messaging-app
-kubectl rollout status deployment/api -n messaging-app --timeout=180s
 ```
+
+기존 cluster에서 API만 restart하는 UI-only 갱신은 `2.0.0`에 사용하지 않습니다. 수동 local manifest는 `GENERIC_EVENTS_V2_ENABLED=false`로 시작해 API startup migration 동안 v2 intake를 막습니다. Quick start는 Worker rollout을 기다린 뒤 API env를 `true`로 바꾸고 API rollout을 확인합니다. GitOps는 gate `false`인 `messaging-env` Secret wave `-3`, 일반 Sync migration Job wave `-2`, Worker wave `-1`, `local-ha` overlay가 API에 gate `true`를 넣는 wave `0` 순서입니다. 구 Worker가 v2 job을 처리하면 body preview만 남고 JSON `payload`/`metadata`가 보존되지 않습니다.
 
 ## Demo Flow
 
-1. `http://localhost/demo/order-dashboard.html`을 엽니다.
-2. 외국인 리크루터에게 보여줄 때는 우측 상단의 `EN`을 선택합니다. 기본 event body도 영어 문구로 바뀝니다.
-3. `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가`로 전송 전 예약을 만듭니다.
-4. `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다.
-5. `예약 건수 -> Kafka 적재 -> DB 저장 -> 총 소요시간` 순서로 숫자가 움직이는지 봅니다.
-6. 오른쪽 결과 패널에서 `Operations Advisor`, Worker replica, Readiness, DLQ summary를 함께 확인합니다.
+- 새 disposable cluster를 `quick_start_all.ps1`로 만들었거나 staged rollout을 완료한 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
+- 외국인 리크루터에게 보여줄 때 `EN` 선택
+- `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
+- `Reference 이벤트 보내기` / `Send Reference Events` 클릭
+- 숫자 흐름 확인:
+  - `예약 건수`
+  - `Kafka 적재`
+  - `DB 저장`
+  - `총 소요시간`
+- 오른쪽 패널 확인:
+  - `Operations Advisor`
+  - Worker replica
+  - Readiness
+  - user-filtered DLQ recent log sample
+  - DLQ detail / manual replay
+- 운영 상태 refresh: 기본 30초, 선택 60초
+- 화면 `ver. 2.0.0`과 API version `2.0.0` 표시 확인
 
-English demo script:
+Public demo-lite 확인:
 
-1. Open `http://localhost/demo/order-dashboard.html`.
-2. Click `EN`.
-3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
-4. Click `Send Post-Order Events`.
-5. Watch the counters move from `Reserved` to `Kafka Appended` to `DB Persisted`.
-6. Open Grafana when you want to show consumer lag and Worker scaling evidence.
+- `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
+- 현재 기대 badge: `1.4.1`; 화면 문구와 API contract는 해당 deployment 기준으로 해석
+- `master` source `2.0.0` 기능 확인용으로 사용하지 않음
+
+## English Demo Script
+
+- Start a fresh disposable cluster with the current `master` source, or complete the staged v2 rollout, then open `http://localhost/demo/order-dashboard.html`.
+- Click `EN`.
+- Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
+- Click `Send Reference Events`.
+- Watch the counters move from `Reserved` to `Kafka Appended` to `DB Persisted`.
+- Open Grafana to show consumer lag and Worker scaling evidence.
 
 ## Counter Meaning
 
 | Counter | Meaning |
 | --- | --- |
-| `예약 건수` / `Reserved` | 전송 시작 후 `남은 예약/전체 예약`으로 표시됩니다. API가 Kafka append에 성공하면 줄어듭니다. |
-| `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append를 성공시킨 수입니다. |
-| `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 완료한 수입니다. |
-| `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다. |
-| `Worker` | 현재 Worker replica와 최대 replica입니다. 예: `2/8`, `6/8`. |
+| `예약 건수` / `Reserved` | 전송 시작 후 `남은 예약/전체 예약`으로 표시. Kafka append 성공 시 감소 |
+| `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append에 성공한 수 |
+| `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 끝낸 수 |
+| `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간 |
+| `Worker` | 현재 Worker replica / 최대 replica. 예: `2/8`, `6/8` |
 
-`예약 건수`와 `DB 저장`은 같은 숫자가 아닙니다. API는 Kafka에 전달하고, Worker가 Kafka event를 소비해 DB에 저장합니다. 그래서 Kafka append가 빠르게 진행된 뒤 DB 저장이 뒤따라오는 모습을 분리해서 봅니다.
+Persistence 확인 방식:
+
+- 한 batch에서 reference stream 1개 생성
+- event append: `POST /v2/streams/{stream_id}/events`
+- event append 뒤 `GET /v1/streams/{stream_id}/persistence-summary`를 3초 간격으로 polling
+- accepted event 수와 `persisted_count` 비교
+- 최대 polling 안에 확인되지 않은 row는 `일부 미확인`
+- API append 실패 event는 `send_failed`로 종료, 전체 화면이 무한 처리 중에 남지 않음
+
+## Read The Counters This Way
+
+- `예약 건수`와 `DB 저장`은 같은 숫자가 아니다.
+- API는 Kafka에 event를 전달한다.
+- Worker는 Kafka event를 소비해 DB에 저장한다.
+- Kafka append가 먼저 움직이고, DB 저장이 뒤따라온다.
+- 이 차이가 데모에서 봐야 할 핵심이다.
+- 일부 `send_failed` 또는 persistence 미확인 존재: `완료` 대신 부분 확인 상태
+
+## Authentication Reuse
+
+- demo login token을 memory에 cache
+- 동일 username / API base에서 만료 전 재사용
+- UI cache lifetime: 30분
+- unauthorized 응답: token refresh 뒤 운영 status 재시도
+- 브라우저 영구 저장소 사용 제외
+
+## Structured DB Evidence
+
+결과 패널의 `DB 저장 컬럼 / Stored DB Columns`:
+
+- `schema_version`: envelope contract version
+- `event_type`: producer-defined event type
+- `payload`: domain-neutral JSON event data
+- `metadata`: classification, external reference 같은 선택적 JSON context
+- DB row 조회: 로그인 user와 stream membership 범위
+
+주문 reference sample은 `reference.payment.completed`, `reference.order.created` 같은 `event_type`과 `metadata.external_references.payment`를 사용합니다. 이 값은 generic core의 필수 domain 규칙이 아닙니다.
+
+Legacy compatibility:
+
+- `/v1/orders/{order_id}/events`: order reference adapter
+- body-only `/v1/streams/{stream_id}/events`: 이전 client 호환
+- `category`, `payment_id`, `body`: 기존 row와 historical evidence 호환 alias
+
+이 패널은 Kafka accepted envelope와 PostgreSQL persistence schema의 연결을 설명합니다.
 
 ## Operations Advisor
 
-Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않습니다.
+- 역할:
+  - 예약, Kafka 적재, DB 저장, DLQ 신호 해석
+  - 위험 상태와 다음 확인 항목 표시
+  - 운영자가 봐야 할 신호 요약
+- 현재 방식:
+  - rule-based
+  - AI API 미사용
+- 확장 여지:
+  - 별도 AI Worker
+  - 운영 요약 생성
+  - 원인 후보 정리
+  - runbook 추천
+- 경계:
+  - 핵심 event persistence path에서 AI 제외
+  - AI는 운영 보조 경로에만 배치
+  - DLQ `total`, `replayable`, `blocked`: recent log sample 해석
 
-현재 역할:
-- 예약, Kafka 적재, DB 저장, DLQ 신호를 해석합니다.
-- 운영자가 다음에 볼 항목을 짧게 제시합니다.
-- 향후 AI Worker가 같은 운영 신호를 읽어 설명을 생성할 수 있는 주입 지점을 보여줍니다.
+## DLQ Detail And Manual Replay
 
-중요한 경계:
-- 핵심 주문 처리와 DB persistence path에는 AI를 넣지 않습니다.
-- AI는 나중에 운영자 요약, 원인 후보 정리, runbook 추천 같은 보조 경로에 붙일 수 있습니다.
+- list/summary scope: `recent_log_sample`
+- `user_filtered=true`: 로그인 user의 event만 표시
+- `oldest_sample_age_seconds`: sample의 oldest record age
+- unresolved depth / current backlog: 표시 제외
+- detail: `failed_reason`, request/stream id, retry/replay count
+- 개별 replay: replayable item의 request id 전송
+- 전체 replay: 화면에 로드된 replayable sample만 요청
+- guard 도달 item: button disabled
+- replay 완료 확인: request status를 3초 간격 polling
+- duplicate replay claim: manual/automatic 경로가 같은 request/replay generation claim을 공유해 중복 요청 방지
+
+Manual replay는 original DLQ log record를 삭제하지 않습니다. Summary count 감소를 성공 기준으로 사용하지 않습니다.
 
 ## Queue Reset And DB Reset
 
 `전송 전 예약 비우기`:
-- 아직 Kafka로 보내지 않은 예약만 취소합니다.
-- 이미 전송이 시작된 이벤트는 Kafka 적재와 DB 저장까지 계속 추적합니다.
+
+- 아직 Kafka로 보내지 않은 예약만 취소
+- 이미 시작된 event는 Kafka 적재와 DB 저장까지 계속 추적
 
 `RESET DEMO DB`:
-- 로컬 데모 이벤트 DB를 초기화합니다.
-- 사용자 계정은 유지하고 주문 stream, messages, request status, idempotency state, notification attempt 데이터를 지웁니다.
-- `message-ingress-dlq` topic을 삭제 후 다시 만들어 DLQ summary도 비웁니다.
-- 이 작업은 로컬 데모 reset입니다. 실제 운영에서는 DLQ 이력을 이런 식으로 지우지 않습니다.
 
-## What To Say In An Interview
+- 로컬 데모 이벤트 DB 초기화
+- 유지:
+  - 사용자 계정
+- 삭제:
+  - demo reference stream
+  - messages
+  - request status
+  - idempotency state
+  - notification attempt
+- DLQ:
+  - `message-ingress-dlq` topic 삭제 후 재생성
+  - DLQ summary 초기화
+- 주의:
+  - 로컬 데모 reset 전용
+  - 실제 운영 DLQ 이력 삭제 절차 아님
+  - `DEMO_RESET_ENABLED=true` 필요; non-demo environment에서는 false 유지
+
+## Interview Lines
 
 Korean:
 
-> 이 데모는 사용자가 보는 결제 완료 응답 뒤에서 Kafka 기반 내부 이벤트 파이프라인이 어떻게 동작하는지 보여줍니다. API는 Kafka에 append하고 빠르게 수락 응답을 반환합니다. Worker는 consumer lag 기준으로 scale-out하면서 PostgreSQL에 최종 저장합니다. 장애 이벤트는 DLQ로 격리하고, 운영자는 Grafana와 DLQ summary로 상태를 확인합니다.
+> 이 데모는 Kafka 기반 고신뢰 이벤트 처리 시스템의 acceptance 경계부터 보여줍니다. 주문 lifecycle은 범용 contract에 넣은 참조 시나리오입니다. API는 typed JSON event를 Kafka에 적재하고 `202 Accepted`를 반환합니다. Worker는 PostgreSQL에 비동기 저장하며, 실패 event는 제한된 retry 뒤 DLQ로 격리합니다. 화면은 Kafka append와 DB persistence를 분리해 보여줍니다.
 
 English:
 
-> This demo shows what happens after the customer-facing payment/order completion response. The API appends post-order events to Kafka and returns `202 Accepted`. Workers consume the events, persist them to PostgreSQL, and scale by Kafka consumer lag. Failed events are isolated in DLQ, while Grafana and DLQ summary provide operator evidence.
+> This demo shows a reliable event-processing boundary. The order lifecycle is a reference scenario on the generic contract. The API appends typed JSON events to Kafka and returns `202 Accepted`; workers persist them asynchronously to PostgreSQL. The UI keeps Kafka acceptance and database persistence as separate signals.

@@ -20,7 +20,15 @@ import uuid
 base_url = sys.argv[1].rstrip("/")
 
 
-def request(method, path, body=None, token=None, idempotency_key=None, timeout=5):
+def request(
+    method,
+    path,
+    body=None,
+    token=None,
+    idempotency_key=None,
+    timeout=5,
+    expected_status=None,
+):
     data = None
     headers = {}
     if body is not None:
@@ -38,6 +46,10 @@ def request(method, path, body=None, token=None, idempotency_key=None, timeout=5
         method=method,
     )
     with urllib.request.urlopen(req, timeout=timeout) as res:
+        if expected_status is not None and res.status != expected_status:
+            raise SystemExit(
+                f"Expected HTTP {expected_status} from {method} {path}, got {res.status}"
+            )
         raw = res.read().decode()
         return json.loads(raw) if raw else {}
 
@@ -73,17 +85,24 @@ stream = request(
 
 accepted = request(
     "POST",
-    f"/v1/streams/{stream['id']}/events",
-    {"body": "hello smoke"},
+    f"/v2/streams/{stream['id']}/events",
+    {
+        "event_type": "portfolio.smoke.probe",
+        "payload": {"message": "hello smoke"},
+        "metadata": {"scenario": "smoke-test"},
+    },
     token=u1_token,
     idempotency_key=f"smoke-event-{suffix}",
+    expected_status=202,
 )
+if accepted.get("schema_version") != 2 or accepted.get("event_type") != "portfolio.smoke.probe":
+    raise SystemExit("Generic event envelope was not accepted as expected")
 request_id = accepted["request_id"]
 
 event_id = None
 deadline = time.time() + 90
 while time.time() < deadline:
-    status = request("GET", f"/v1/event-requests/{request_id}", token=u1_token)
+    status = request("GET", f"/v2/event-requests/{request_id}", token=u1_token)
     if status.get("status") == "persisted" and status.get("event_id"):
         event_id = status["event_id"]
         break
@@ -92,9 +111,21 @@ while time.time() < deadline:
 if event_id is None:
     raise SystemExit("Event was not persisted in time")
 
-events = request("GET", f"/v1/streams/{stream['id']}/events", token=u1_token)
+events = request("GET", f"/v2/streams/{stream['id']}/events", token=u1_token)
+event_items = events.get("items", [])
+persisted = [
+    item
+    for item in event_items
+    if item.get("request_id") == request_id
+    and item.get("payload", {}).get("message") == "hello smoke"
+]
+if len(persisted) != 1:
+    raise SystemExit("Persisted generic event payload was not returned by the read model")
 request("POST", f"/v1/events/{event_id}/read", {}, token=u2_token)
 unread = request("GET", f"/v1/streams/{stream['id']}/unread-count/{u2['id']}", token=u2_token)
 
-print(f"health={health['status']} event_count={len(events)} unread={unread['unread']}")
+print(
+    f"health={health['status']} event_count={len(event_items)} "
+    f"event_source={events['source']} unread={unread['unread']}"
+)
 PY

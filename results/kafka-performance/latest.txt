@@ -1,0 +1,252 @@
+# Kafka Performance Suite
+timestamp: 2026-06-18T03:29:47.2991399+09:00
+namespace: messaging-app
+base_url: http://localhost
+k6_profile: single500
+k6_single_vus: 100
+stage_duration: 30s
+think_time: 0.05
+ordering_event_count: 100
+event_count: 50
+
+==> Preflight Kubernetes state
+NAME                                              READY   STATUS      RESTARTS        AGE
+api-dd4847b58-45rg7                               1/1     Running     0               4m4s
+api-dd4847b58-8f7db                               1/1     Running     0               4m20s
+api-dd4847b58-vs65x                               1/1     Running     0               3m53s
+dlq-replayer-657f4bf57c-wpgmn                     1/1     Running     0               4m20s
+grafana-6f867dfd7f-bzznr                          1/1     Running     49 (14m ago)    48d
+kafka-0                                           1/1     Running     49 (14m ago)    48d
+kafka-1                                           1/1     Running     49 (14m ago)    48d
+kafka-2                                           1/1     Running     49 (14m ago)    48d
+kafka-exporter-6455896fc5-hw9q9                   1/1     Running     128 (13m ago)   48d
+kafka-topic-bootstrap-km7zb                       0/1     Completed   0               48d
+kube-state-metrics-6b45855977-4dh7v               1/1     Running     94 (13m ago)    48d
+messaging-postgresql-ha-pgpool-79f878d6f8-95szs   1/1     Running     2 (14m ago)     9d
+messaging-postgresql-ha-pgpool-79f878d6f8-gl5q4   1/1     Running     2 (14m ago)     9d
+messaging-postgresql-ha-postgresql-0              1/1     Running     57 (14m ago)    48d
+messaging-postgresql-ha-postgresql-1              1/1     Running     57 (14m ago)    48d
+messaging-postgresql-ha-postgresql-2              1/1     Running     57 (14m ago)    48d
+notification-worker-5ff97cdfd-sjmnl               1/1     Running     0               4m20s
+postgres-weekly-backup-29680020-b7m7l             0/1     Completed   3               9d
+postgres-weekly-backup-29690100-pdwpp             0/1     Completed   2               13m
+prometheus-59fd86bf47-hb5kg                       1/1     Running     0               35s
+worker-7878884b96-7nh42                           1/1     Running     0               4m18s
+worker-7878884b96-cm6d2                           1/1     Running     0               4m20s
+Elapsed: 0.7s
+
+==> Reset before performance suite
+Elapsed: 20.54s
+
+==> Same-stream ordering guarantee
+{
+    "stream_id":  38,
+    "event_count":  100,
+    "first_stream_seq":  1,
+    "last_stream_seq":  100,
+    "first_body":  "ordering-event-0001",
+    "last_body":  "ordering-event-0100",
+    "ordering":  "pass"
+}
+Elapsed: 7.6s
+
+==> Kafka async persistence latency
+{
+    "event_count":  50,
+    "stream_id":  39,
+    "accept_latency":  {
+                           "count":  50,
+                           "avg_ms":  53.74,
+                           "p95_ms":  61.7,
+                           "max_ms":  68.88
+                       },
+    "persist_latency":  {
+                            "count":  50,
+                            "avg_ms":  54.03,
+                            "p95_ms":  22.13,
+                            "max_ms":  2228.67
+                        },
+    "status_poll_count":  {
+                              "count":  50,
+                              "avg_ms":  2.1,
+                              "p95_ms":  2,
+                              "max_ms":  11
+                          }
+}
+Elapsed: 15.26s
+
+==> k6 Kafka intake load
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /scripts/load_test_k6.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * users_500: 100 looping VUs for 30s (exec: eventFlow, gracefulStop: 30s)
+
+
+running (0m01.0s), 100/100 VUs, 711 complete and 0 interrupted iterations
+users_500   [   3% ] 100 VUs  00.9s/30s
+
+running (0m02.0s), 100/100 VUs, 1646 complete and 0 interrupted iterations
+users_500   [   6% ] 100 VUs  01.9s/30s
+
+running (0m03.0s), 100/100 VUs, 2554 complete and 0 interrupted iterations
+users_500   [  10% ] 100 VUs  02.9s/30s
+
+running (0m04.0s), 100/100 VUs, 3492 complete and 0 interrupted iterations
+users_500   [  13% ] 100 VUs  03.9s/30s
+
+running (0m05.0s), 100/100 VUs, 4461 complete and 0 interrupted iterations
+users_500   [  16% ] 100 VUs  04.9s/30s
+
+running (0m06.0s), 100/100 VUs, 5448 complete and 0 interrupted iterations
+users_500   [  20% ] 100 VUs  05.9s/30s
+
+running (0m07.0s), 100/100 VUs, 6333 complete and 0 interrupted iterations
+users_500   [  23% ] 100 VUs  06.9s/30s
+
+running (0m08.0s), 100/100 VUs, 7229 complete and 0 interrupted iterations
+users_500   [  26% ] 100 VUs  07.9s/30s
+
+running (0m09.0s), 100/100 VUs, 8096 complete and 0 interrupted iterations
+users_500   [  30% ] 100 VUs  08.9s/30s
+
+running (0m10.0s), 100/100 VUs, 9015 complete and 0 interrupted iterations
+users_500   [  33% ] 100 VUs  09.9s/30s
+
+running (0m11.0s), 100/100 VUs, 9960 complete and 0 interrupted iterations
+users_500   [  36% ] 100 VUs  10.9s/30s
+
+running (0m12.0s), 100/100 VUs, 10709 complete and 0 interrupted iterations
+users_500   [  40% ] 100 VUs  11.9s/30s
+
+running (0m13.0s), 100/100 VUs, 11679 complete and 0 interrupted iterations
+users_500   [  43% ] 100 VUs  12.9s/30s
+
+running (0m14.0s), 100/100 VUs, 12487 complete and 0 interrupted iterations
+users_500   [  46% ] 100 VUs  13.9s/30s
+
+running (0m15.0s), 100/100 VUs, 13426 complete and 0 interrupted iterations
+users_500   [  50% ] 100 VUs  14.9s/30s
+
+running (0m16.0s), 100/100 VUs, 14416 complete and 0 interrupted iterations
+users_500   [  53% ] 100 VUs  15.9s/30s
+
+running (0m17.0s), 100/100 VUs, 15274 complete and 0 interrupted iterations
+users_500   [  56% ] 100 VUs  16.9s/30s
+
+running (0m18.0s), 100/100 VUs, 16226 complete and 0 interrupted iterations
+users_500   [  60% ] 100 VUs  17.9s/30s
+
+running (0m19.0s), 100/100 VUs, 17213 complete and 0 interrupted iterations
+users_500   [  63% ] 100 VUs  18.9s/30s
+
+running (0m20.0s), 100/100 VUs, 18178 complete and 0 interrupted iterations
+users_500   [  66% ] 100 VUs  19.9s/30s
+
+running (0m21.0s), 100/100 VUs, 19096 complete and 0 interrupted iterations
+users_500   [  70% ] 100 VUs  20.9s/30s
+
+running (0m22.0s), 100/100 VUs, 20026 complete and 0 interrupted iterations
+users_500   [  73% ] 100 VUs  21.9s/30s
+
+running (0m23.0s), 100/100 VUs, 20902 complete and 0 interrupted iterations
+users_500   [  76% ] 100 VUs  22.9s/30s
+
+running (0m24.0s), 100/100 VUs, 21870 complete and 0 interrupted iterations
+users_500   [  80% ] 100 VUs  23.9s/30s
+
+running (0m25.0s), 100/100 VUs, 22830 complete and 0 interrupted iterations
+users_500   [  83% ] 100 VUs  24.9s/30s
+
+running (0m26.0s), 100/100 VUs, 23798 complete and 0 interrupted iterations
+users_500   [  86% ] 100 VUs  25.9s/30s
+
+running (0m27.0s), 100/100 VUs, 24778 complete and 0 interrupted iterations
+users_500   [  90% ] 100 VUs  26.9s/30s
+
+running (0m28.0s), 100/100 VUs, 25781 complete and 0 interrupted iterations
+users_500   [  93% ] 100 VUs  27.9s/30s
+
+running (0m29.0s), 100/100 VUs, 26686 complete and 0 interrupted iterations
+users_500   [  96% ] 100 VUs  28.9s/30s
+
+running (0m30.0s), 100/100 VUs, 27600 complete and 0 interrupted iterations
+users_500   [ 100% ] 100 VUs  29.9s/30s
+=== k6 Load Test Summary ===
+Base URL           : http://api.messaging-app.svc.cluster.local:8000
+Profile            : single500
+Stage duration     : 30s (100 concurrent users)
+Idempotency header  : disabled
+Total HTTP requests: 27795
+Error rate         : 0.00%
+Latency avg (ms)   : 57.64
+Latency p95 (ms)   : 119.28
+Latency p99 (ms)   : 150.60
+Event status 200  : 27791
+Event status 401  : 0
+Event status 403  : 0
+Event status 404  : 0
+Event status 409  : 0
+Event status 500  : 0
+Event status 503  : 0
+Event status other: 0
+============================
+
+running (0m30.3s), 000/100 VUs, 27791 complete and 0 interrupted iterations
+users_500 ✓ [ 100% ] 100 VUs  30s
+Elapsed: 35.31s
+
+==> HPA and metrics sanity
+
+Elapsed: 14.32s
+
+==> Final runtime snapshot
+NAME                                              READY   STATUS      RESTARTS        AGE
+api-dd4847b58-45rg7                               1/1     Running     0               5m38s
+api-dd4847b58-4vz47                               1/1     Running     0               18s
+api-dd4847b58-577jm                               0/1     Running     0               3s
+api-dd4847b58-5krrl                               0/1     Running     0               3s
+api-dd4847b58-8f7db                               1/1     Running     0               5m54s
+api-dd4847b58-rgtjv                               1/1     Running     0               18s
+api-dd4847b58-rvg6q                               1/1     Running     0               18s
+api-dd4847b58-vs65x                               1/1     Running     0               5m27s
+dlq-replayer-657f4bf57c-wpgmn                     1/1     Running     0               5m54s
+grafana-6f867dfd7f-bzznr                          1/1     Running     49 (15m ago)    48d
+kafka-0                                           1/1     Running     49 (15m ago)    48d
+kafka-1                                           1/1     Running     49 (15m ago)    48d
+kafka-2                                           1/1     Running     49 (15m ago)    48d
+kafka-exporter-6455896fc5-hw9q9                   1/1     Running     128 (14m ago)   48d
+kafka-topic-bootstrap-km7zb                       0/1     Completed   0               48d
+kube-state-metrics-6b45855977-4dh7v               1/1     Running     94 (15m ago)    48d
+messaging-postgresql-ha-pgpool-79f878d6f8-95szs   1/1     Running     2 (15m ago)     9d
+messaging-postgresql-ha-pgpool-79f878d6f8-gl5q4   1/1     Running     2 (15m ago)     9d
+messaging-postgresql-ha-postgresql-0              1/1     Running     57 (15m ago)    48d
+messaging-postgresql-ha-postgresql-1              1/1     Running     57 (15m ago)    48d
+messaging-postgresql-ha-postgresql-2              1/1     Running     57 (15m ago)    48d
+notification-worker-5ff97cdfd-sjmnl               1/1     Running     0               5m54s
+postgres-weekly-backup-29680020-b7m7l             0/1     Completed   3               9d
+postgres-weekly-backup-29690100-pdwpp             0/1     Completed   2               15m
+prometheus-59fd86bf47-hb5kg                       1/1     Running     0               2m9s
+worker-7878884b96-7nh42                           1/1     Running     0               5m52s
+worker-7878884b96-cm6d2                           1/1     Running     0               5m54s
+worker-7878884b96-dx7tl                           1/1     Running     0               33s
+worker-7878884b96-hlvd7                           1/1     Running     0               3s
+worker-7878884b96-ng6sn                           1/1     Running     0               3s
+worker-7878884b96-nrgh6                           1/1     Running     0               33s
+NAME              REFERENCE           TARGETS         MINPODS   MAXPODS   REPLICAS   AGE
+api-hpa           Deployment/api      cpu: 224%/65%   3         8         6          48d
+worker-keda-hpa   Deployment/worker   800/400 (avg)   2         8         4          48d
+Elapsed: 0.42s
+
+Kafka performance suite completed successfully.
+
+==> Final reset

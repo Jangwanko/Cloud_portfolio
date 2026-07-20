@@ -1,311 +1,385 @@
-# 운영 지침
+# Operations Guide
 
-운영 관점에서 필요한 secret, backup, restore, 운영 UI 경로를 정리한 문서입니다.
-서비스 전체 프로세스의 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)에서 함께 관리합니다.
+운영 점검, secret, backup/restore, demo reset, Kafka/DLQ 경계를 정리합니다. 장애별 명령과 escalation은 [RUNBOOK.md](RUNBOOK.md)를 사용합니다.
 
-## Runtime secret
-로컬 kind 기준 운영 보강을 위해 runtime secret를 별도로 생성합니다.
+처음 실행부터 성능 기준선까지의 전체 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
-생성 스크립트:
+## Runtime Profiles
+
+| Profile | Purpose | Status command |
+| --- | --- | --- |
+| manual local full profile | kind에서 full stack 확인 | `check_portfolio_status.ps1 -SkipArgoCd` |
+| local GitOps | master revision과 Argo CD sync 확인 | `check_portfolio_status.ps1` |
+| demo-lite | 2코어급 demo flow | full HA / performance 증거에서 제외 |
+
+## Runtime Secrets
+
+설치:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File k8s/scripts/install-runtime-secrets.ps1
 ```
 
-생성 대상:
+Secret keys:
+
 - `AUTH_SECRET_KEY`
 - `ACCESS_TOKEN_TTL_SECONDS`
 - `GRAFANA_ADMIN_USER`
 - `GRAFANA_ADMIN_PASSWORD`
 
-특징:
-- `scripts/quick_start_all.ps1`와 `k8s/scripts/setup-kind.ps1`에서 자동 실행됩니다.
-- Grafana 자격증명은 더 이상 매니페스트에 하드코딩하지 않습니다.
-- API / Worker / DLQ replayer가 동일 secret를 받아 인증 관련 값을 사용합니다.
+운영 기준:
 
-## PostgreSQL monitoring role
-PostgreSQL HA 설치 후 `k8s/scripts/install-ha.ps1`는 `portfolio` 사용자에게 `pg_monitor` 역할을 부여합니다.
+- `AUTH_SECRET_KEY`: script-generated random value 또는 명시적 override
+- Grafana admin password: Windows/Linux quick start가 암호학적 random value 생성 후 `messaging-runtime-secrets`에 저장; 평문 출력 제외
+- anonymous Viewer: demo dashboard 조회 전용
+- `-ShowCredentials`: 공유 로그와 화면 녹화에서 사용 제외
+- production: external secret manager, rotation, least-privilege workload identity
+- 운영 전환: 외부 secret manager와 workload identity 연동
 
-이 권한은 `pg_stat_replication`을 읽기 위한 PostgreSQL 내장 읽기 전용 모니터링 역할입니다. API는 이 정보를 사용해 standby의 `state`, `sync_state`, replication lag를 Prometheus metric으로 노출합니다.
+Kubernetes Secret에 넣는 행위는 값 자체의 안전성을 보장하지 않습니다. local generated credential도 production secret manager, rotation, RBAC, audit의 대체가 아닙니다.
 
-## PostgreSQL 백업
-로컬 HA PostgreSQL에 대해 logical backup을 생성할 수 있습니다.
+Runtime request 경계:
+
+- `REQUEST_BODY_MAX_BYTES=1048576`: HTTP body 전체 기본 상한. `Content-Length`와 chunked body를 모두 검사하고 초과 시 `413`
+- 허용 설정 범위: `1..16777216` bytes. generic envelope 내부의 payload/metadata 상한은 각각 `65,536`/`16,384` UTF-8 JSON bytes로 더 작게 적용
+- schema migration startup이 끝나지 않았거나 non-local auth secret이 unsafe하면 `/v1/*`, `/v2/*` business API를 readiness 우회 호출해도 `503`
+
+### PostgreSQL Helm Credential
+
+- Secret: `messaging-postgresql-ha-postgresql`
+- application key reference: `DB_PASSWORD` <- `password`
+- first install: chart-managed random credential 생성
+- upgrade: 기존 Secret lookup과 credential 재사용
+- 순서: PostgreSQL install/upgrade 완료 뒤 API/Worker/notification-worker/DLQ Replayer 적용
+- Secret 유실 + PVC 유지: silent regeneration 금지, 기존 database credential 확인·복구 뒤 Secret 복원
+
+Secret과 PVC의 lifecycle은 함께 관리합니다. Secret만 새로 만들면 기존 PostgreSQL data directory의 credential과 달라져 application 연결이 끊길 수 있습니다.
+
+## Local Status Check
+
+Manual quick start:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
+```
+
+Argo CD bootstrap 완료 뒤:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+```
+
+확인 대상:
+
+- API readiness
+- Kafka broker/topic와 consumer group lag
+- PostgreSQL primary, standby, replication delay
+- Pgpool replicas
+- API / Worker / notification-worker replicas
+- KEDA status
+- Prometheus scrape
+- backup CronJob / PVC
+- Argo CD sync/health — GitOps profile에서만
+
+## Readiness and Alerts
+
+API `/health/ready` 상태:
+
+| State | Direct condition |
+| --- | --- |
+| `ready` | schema startup 완료, Kafka reachable, PostgreSQL primary/HA guardrail 충족, non-local secret 안전 |
+| `degraded` | hard failure 없음, PostgreSQL primary/standby/sync/replication guardrail 이탈 |
+| `not_ready` | schema 미준비, Kafka unreachable, non-local unsafe auth secret |
+
+Standby/sync standby count와 replication byte lag는 degraded reason에 반영됩니다. Broker count, Worker lag/replica, materialized cache 상태는 readiness state 결정과 분리된 alert/status 신호입니다. 상세 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 사용합니다.
+
+`grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
+
+Response의 `app_version`은 실행 중인 API build version입니다. 이번 `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-14 read-only check의 local live는 UI `1.1.0`/event `200`, public demo-lite는 UI `1.4.1`/API image `e481a21`/event `200`이었습니다. 이번 source 변경은 두 live target 모두 아직 반영되지 않았습니다.
+
+## Demo Access
+
+Master source Demo UI: `2.0.0`
+
+Public demo-lite Demo UI: `1.4.1` (branch/deployment-specific, master `2.0.0` 미배포)
+
+Local surfaces:
+
+- Demo: `http://localhost/demo/order-dashboard.html`
+- Swagger: `http://localhost/docs`
+- Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s`
+- Prometheus: `http://localhost/prometheus/`
+- Readiness: `http://localhost/health/ready`
+
+Demo counter semantics:
+
+- `예약 건수`: 남은 예약 / 전체 예약, Kafka append 성공 시 감소
+- `Kafka 적재`: API가 ingress topic append를 완료한 수
+- `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
+- `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
+- Worker: 현재 replica / 최대 replica
+
+UI operating behavior:
+
+- identity: 범용 Reliable Event Processing System; 주문 lifecycle은 reference scenario
+- event intake: `POST /v2/streams/{stream_id}/events`
+- readiness/DLQ refresh: 기본 30초, 선택 60초
+- auth token: 동일 base/user에서 memory cache 재사용, UI 기준 30분
+- persistence: stream 단위 `/persistence-summary`를 3초 간격 polling
+- send failure: event `send_failed` 종료
+- persistence timeout: 일부 미확인 상태, 완료 표시 제외
+- structured evidence: `schema_version`, producer-defined `event_type`, JSON `payload`, JSON `metadata`
+- DLQ: authenticated user-filtered `recent_log_sample`, detail view, manual replay
+
+일부 event가 append 또는 persistence 확인에 실패하면 결과를 완료로 닫지 않습니다.
+
+## Demo Reset
+
+UI에서 `RESET DEMO DB` 확인 문구 입력 뒤 실행합니다.
+
+- endpoint: `POST /v1/admin/demo/reset-events`
+- gate: `DEMO_RESET_ENABLED=true`; default는 local/development/dev/test에서만 true
+- preserved: user accounts
+- reset: demo streams, messages, request status, idempotency state, notification attempts
+- DLQ: `message-ingress-dlq` topic 삭제 후 재생성
+
+이 기능은 disposable demo state 초기화용입니다. production DLQ 이력을 지우는 운영 절차가 아닙니다.
+
+## Kafka Intake and Persistence
+
+- generic contract: `POST /v2/streams/{stream_id}/events`
+- envelope: `schema_version`, `event_type`, JSON `payload`, JSON `metadata`
+- compatibility: `/v1/orders/{order_id}/events` order reference adapter와 legacy body-only stream route 유지
+- success: ingress append 뒤 HTTP `202`
+- Kafka bootstrap/append failure: fail-fast `503`
+- final durable state: PostgreSQL
+- same-stream ordering: `stream_id` key와 partition
+- retry: same offset inline
+- offset: successful/terminal record 단위 explicit commit
+- Worker scaling: `message-worker` lag 기반 KEDA
+
+DB commit 뒤 Worker가 발행하는 항목:
+
+- request status
+- message snapshot
+- notification job
+
+이 발행들은 현재 transactional outbox에 묶여 있지 않습니다. publish failure log/metric과 status reconciliation이 필요합니다.
+
+## Reliability Claim Boundary
+
+이 운영 문서에서 고신뢰는 다음 구현 경계를 뜻합니다.
+
+- 같은 `stream_id`의 partition ordering boundary와 inline retry
+- 성공 또는 terminal DLQ 처리 뒤 record 단위 explicit offset commit
+- PostgreSQL transaction과 idempotency state 기반 중복 persistence 방어
+- retry, DLQ 격리, replay guard, materialized cache fallback
+- accepted, persisted, lag, DLQ 표본을 분리한 관측
+
+exactly-once delivery, partition 간 global ordering, 모든 failure mode의 무손실, production SLA는 현재 검증 범위가 아닙니다. DB commit 이후 status/snapshot/notification publish는 best-effort이며 transactional outbox gap이 남아 있습니다.
+
+## DLQ 운영 기준
+
+현재 DLQ API는 append-only failure log sample입니다.
+
+```powershell
+Invoke-RestMethod `
+  -Headers @{ Authorization = "Bearer <token>" } `
+  "http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5"
+```
+
+| Field | Meaning |
+| --- | --- |
+| `total` / `count` | 조회 범위의 sample count |
+| `replayable` | sample에서 replay guard 미도달 event 수 |
+| `blocked` | sample에서 replay guard 도달/제외 event 수 |
+| `oldest_sample_age_seconds` | sample에서 가장 오래된 log record age |
+| `by_reason` | sampled `failed_reason` count |
+| `by_stream` | sampled stream count |
+| `recent_samples` | recent log event |
+
+API scope fields:
+
+- `scope=recent_log_sample`
+- `user_filtered=true`
+- list/summary와 manual replay는 authenticated user event 범위
+- 전체 수동 재처리: UI에 로드된 replayable sample 대상
+- replay guard 도달 event: manual button 비활성
+- manual/automatic replay 중복: `(request_id, replay_generation)` PostgreSQL claim 공유
+- 이미 persisted 또는 published claim: 동일 generation 재주입 제외
+
+제공하지 않는 값:
+
+- unresolved current depth
+- replay 성공을 차감한 backlog
+- oldest unresolved event SLO age
+
+조사 순서:
+
+1. Worker failure와 DLQ publish metric 확인
+2. `failed_reason`, `retry_count`, `replay_count` 확인
+3. data validation과 transient infrastructure failure 분리
+4. 원인 수정과 PostgreSQL/Kafka 상태 확인
+5. replayer log와 ingress/persistence reconciliation 확인
+
+DLQ replayer는 시작 전과 각 polled batch 처리 전에 DB reachability를 다시 확인합니다. primary가 unavailable이면 현재 consumer를 닫고 replay를 일시 중지합니다. `DLQ_REPLAY_MAX_COUNT` 기본값은 `3`입니다.
+
+## PostgreSQL Monitoring Role
+
+HA 설치 script는 application user에 `pg_monitor`를 부여합니다.
+
+용도:
+
+- `pg_stat_replication`
+- standby state / sync state
+- replication byte lag
+- API Prometheus gauges
+
+production에서는 monitoring identity를 application write identity와 분리하는 방향을 권장합니다.
+
+## Backup
+
+Manual logical backup:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/backup_postgres_k8s.ps1
 ```
 
-결과:
-- `backups/postgres-<timestamp>.sql`
+- output: `backups/postgres-<timestamp>.sql`
+- source: Pgpool service
+- credential: PostgreSQL HA Secret
 
-동작 방식:
-- `messaging-postgresql-ha-postgresql` secret에서 DB password를 읽습니다.
-- `pgpool` 서비스 경유로 `pg_dump`를 수행합니다.
-- 결과를 로컬 `backups/` 디렉터리에 저장합니다.
+Scheduled local backup:
 
-## 주간 백업 일정
-HA 배포에는 주 1회 PostgreSQL logical backup을 남기는 `CronJob`이 포함되어 있습니다.
+- CronJob: `postgres-weekly-backup`
+- schedule: `0 3 * * 0`
+- storage: `postgres-backups` PVC
+- retention script: latest 8 dumps
 
-- 리소스 이름: `postgres-weekly-backup`
-- 스케줄: `0 3 * * 0`
-- 저장 위치: cluster PVC `postgres-backups`
-- 보관 정책: 최근 8개 dump만 유지
+CronJob 존재는 restore 성공 증거가 아닙니다. 최근 job exit, dump size, restore drill을 함께 확인합니다.
 
-확인 예시:
-
-```powershell
-kubectl get cronjob -n messaging-app
-kubectl get pvc -n messaging-app
-```
-
-참고:
-- 현재 구성은 주기 backup 설정이 포함된 운영 흐름을 검증합니다.
-- 필요하면 이후 일 단위 또는 더 짧은 주기로 쉽게 변경할 수 있습니다.
-
-## PostgreSQL 복구
-logical backup을 현재 클러스터 DB에 적용할 수 있습니다.
+## Restore
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
-  -BackupFile backups/postgres-20260416-163842.sql `
+  -BackupFile backups/postgres-<timestamp>.sql `
   -Force
 ```
 
-스키마 초기화 후 복원:
+Disposable cluster schema reset:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
-  -BackupFile backups/postgres-20260416-163842.sql `
+  -BackupFile backups/postgres-<timestamp>.sql `
   -ResetSchema `
   -Force
 ```
 
 주의:
-- 기본값으로는 실행하지 않습니다. 반드시 `-Force`가 필요합니다.
-- `-ResetSchema`를 주면 `public` schema를 비운 뒤 backup SQL을 적용합니다.
-- 현재 복구 절차는 disposable local cluster 기준의 운영 흐름을 검증합니다.
 
-## 데모 접근
-로컬 데모 기준 운영 UI 경로:
-- Grafana overview: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Grafana 로그인: `ID admin` / `비밀번호 1q2w3e4r`
-- Prometheus: `http://localhost/prometheus/`
-
-참고:
-- 기본 운영 문서와 데모 경로는 `http://localhost` 기준입니다.
-- HTTPS는 local self-signed certificate 기반의 TLS 검증용 보조 경로이며, 브라우저에서 보안 경고가 처음 한 번 표시될 수 있습니다.
-
-## 데모 운영 작업
-
-데모 화면의 운영자 이벤트 큐는 실제 Kafka / Worker / PostgreSQL 흐름을 보여주기 위한 로컬 운영 패널입니다.
-
-`전송 전 예약 비우기`:
-- 아직 Kafka로 보내지 않은 `reserved` 이벤트만 취소합니다.
-- 이미 API 전송이 시작된 작업은 취소하지 않습니다.
-- 시작된 작업은 Kafka 적재와 DB 저장까지 계속 추적합니다.
-- 버튼을 누른 시점에 전송 중인 이벤트는 `sending` 상태로 분리되어 예약 취소 대상에 들어가지 않습니다.
-
-데모 counter 기준:
-- `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시하며, Kafka append 성공 시 줄어듭니다.
-- `Kafka 적재`는 API가 ingress topic append를 완료한 수입니다.
-- `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
-- `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
-- Worker 표시는 현재 replica와 최대 replica입니다. 예: `2/8`, `6/8`.
-
-`Demo event DB reset`:
-- 화면에서 `RESET DEMO DB`를 입력한 뒤 실행합니다.
-- API endpoint는 `POST /v1/admin/demo/reset-events`입니다.
-- 사용자 계정은 유지하고 데모 주문 stream, messages, request status, idempotency state, notification attempt 데이터를 초기화합니다.
-- `message-ingress-dlq` topic도 삭제 후 다시 만들어 DLQ summary를 함께 비웁니다.
-- 로컬 / 개발 / 테스트 성격의 `APP_ENV`에서만 허용합니다.
-- 포트폴리오 시연 전 누적된 데모 이벤트를 비울 때 사용합니다.
-
-## 접근 정책
-현재 운영 경로는 일반 서비스 경로와 구분하되, 포트폴리오 데모 기준으로 쉽게 접근할 수 있게 유지합니다.
-
-- API
-  - 서비스 경로로 취급합니다.
-  - bearer token 기반 인증이 적용됩니다.
-- Grafana
-  - 운영 UI로 취급합니다.
-  - 로그인 유지 상태로 노출합니다.
-  - 데모에서는 접근 가능하게 두되, 실서비스에서는 별도 접근 제한이 필요합니다.
-- Prometheus
-  - 운영 / 관측 UI로 취급합니다.
-  - 현재는 데모 편의를 위해 ingress로 직접 접근 가능하게 둡니다.
-  - 실서비스에서는 내부망, VPN, basic auth, SSO 같은 제한이 필요합니다.
-
-현재 목적:
-- 운영 경로와 일반 경로를 구분하고 있다는 점을 보여줍니다.
-- 동시에 데모 중 Grafana / Prometheus를 직접 확인할 수 있는 경로는 유지합니다.
-
-## Secret 처리
-현재 민감한 값은 코드나 매니페스트 하드코딩 대신 Kubernetes secret로 분리합니다.
-
-현재 분리된 값:
-- `AUTH_SECRET_KEY`
-- `ACCESS_TOKEN_TTL_SECONDS`
-- `GRAFANA_ADMIN_USER`
-- `GRAFANA_ADMIN_PASSWORD`
-
-현재 방식:
-- 로컬 kind 기준에서는 `messaging-runtime-secrets`를 생성해 주입합니다.
-- 앱과 운영 UI는 이 secret를 환경변수로 읽습니다.
-
-운영 확장 방향:
-- local: Kubernetes secret
-- staging / prod: 외부 secret manager 또는 배포 파이프라인 연동 secret 관리
-
-로컬 검증에서는 Kubernetes Secret을 사용하고, 운영형 환경에서는 외부 secret manager로 확장할 수 있습니다.
-
-## TLS 기준
-현재 ingress TLS는 local self-signed certificate 기반입니다.
-
-현재 목적:
-- 로컬에서도 TLS termination 구조를 확인할 수 있게 합니다.
-- API / Grafana / Prometheus가 같은 ingress 아래에서 열리는 구성을 HTTP 기준으로 운영하고, 필요할 때만 HTTPS로 TLS 동작을 검증합니다.
-
-운영 확장 방향:
-- local: self-signed certificate
-- actual deployment: trusted certificate, `cert-manager`, 또는 cloud-managed certificate
-
-즉 현재 TLS는 로컬 검증용 구현이고, 운영 단계에서는 신뢰된 인증서 체계로 바꾸는 것이 다음 단계입니다.
-
-## 현재 운영 기준
-현재 상태는 아래처럼 정리할 수 있습니다.
-
-- runtime secret 분리: 적용됨
-- 수동 PostgreSQL backup: 구현 및 검증 완료
-- backup 기반 restore: 구현 및 검증 완료
-- 주 1회 backup `CronJob`: HA 매니페스트에 포함 및 클러스터 적용 완료
-- 운영 UI 접근 제한: 로컬 검증 기준으로 접근 가능하게 유지
-
-## Kafka 운영 시나리오
-현재 event intake는 Kafka append 성공을 write-path 수락 기준으로 봅니다.
-
-- Kafka bootstrap 또는 topic append가 불가능하면 API는 새 write request를 fail-fast로 거절합니다.
-- Worker는 Kafka consumer group으로 ingress topic을 처리하고, 재시도 한계를 넘은 event는 DLQ topic으로 이동합니다.
-- Worker autoscaling은 KEDA Kafka lag 기준으로 동작합니다.
-
-## Kafka persistence 정책
-- Kafka는 accepted write를 순서 있는 commit log로 보관합니다.
-- 최종 영속 저장소는 PostgreSQL입니다.
-- 같은 stream은 같은 Kafka key를 사용해야 하며, 같은 key는 같은 partition에 들어가므로 partition 내부 순서가 유지됩니다.
-- PostgreSQL 영속화 이전 구간의 내구성은 Kafka topic replication factor와 `acks` 정책에 의해 결정됩니다.
-
-## Kafka fail-fast 정책
-- Kafka bootstrap unreachable이면 write path failure로 봅니다.
-- Kafka topic append 실패도 write path failure로 봅니다.
-- Kafka 장애 동안에는 API가 새 write request를 계속 받지 않고 fail-fast 상태로 응답합니다.
-- 즉, enqueue 불가 상태를 soft failure가 아니라 write path failure로 취급합니다.
-
-## readiness / alert 운영 기준
-- readiness는 `ready`, `degraded`, `not_ready`를 즉시 반영합니다.
-- replica count와 standby count는 degraded 판단 기준으로 사용합니다.
-- PostgreSQL degraded는 primary write 불가, standby 부족, replication state 불안정, replication lag 상승을 포함합니다.
-- PostgreSQL primary loss 중에도 Kafka append path가 살아 있으면 API readiness는 `degraded`입니다.
-- 로컬 데모에서는 async streaming standby를 정상 ready 상태로 봅니다.
-- `30초`는 alert 승격 유예이며 readiness 지연에는 사용하지 않습니다.
-- Kafka outage와 PostgreSQL primary loss는 즉시 critical로 봅니다.
-
-자세한 상태 모델과 응답 예시는 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)에서 함께 관리합니다.
-
-## 운영 확장 포인트
-- 운영 UI 접근 정책 강화
-- secret 외부화 방향 정리
-- incident 대응 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리
-
-## DLQ 운영 기준
-
-DLQ는 단순한 실패 보관소가 아니라, replay 가능한 장애 복구 경로입니다.
-
-현재 정책:
-
-- Worker는 retry 한도를 넘긴 event를 Kafka DLQ topic으로 보냅니다.
-- DLQ payload에는 `failed_reason`, `retry_count`, `replay_count`, `failed_at`이 포함됩니다.
-- `GET /v1/dlq/ingress`는 최근 DLQ event를 운영자가 읽기 쉬운 요약 형태로 반환합니다.
-- DLQ Replayer는 PostgreSQL writable path가 복구된 뒤 replay 가능한 event를 ingress topic으로 재주입합니다.
-- `DLQ_REPLAY_MAX_COUNT` 기본값은 `3`입니다.
-- `replay_count`가 최대값 이상이면 replayer는 해당 event를 다시 ingress topic에 넣지 않습니다.
-
-확인 순서:
-
-1. `GET /v1/dlq/ingress?limit=20`으로 최근 실패 event를 확인합니다.
-2. `failed_reason`이 일시 장애인지 데이터 조건 문제인지 구분합니다.
-3. `replay_count`가 `max_replay_count`에 도달했는지 확인합니다.
-4. 같은 reason으로 반복되면 replay보다 원인 수정이 먼저입니다.
-5. PostgreSQL / Pgpool 복구 후 replayer log에서 재주입 여부를 확인합니다.
-
-같은 stream 순서 보장 기준:
-
-- Worker는 transient persistence failure 시 같은 Kafka offset에서 inline retry를 수행합니다.
-- 앞 event가 처리되거나 DLQ로 이동하기 전까지 같은 partition의 뒤 event는 앞지르지 못합니다.
-- 앞 event가 최종 DLQ가 되면 운영자는 DLQ reason을 확인한 뒤 replay 여부를 결정합니다.
+- `-Force` 필수
+- `-ResetSchema`: destructive local recovery option
+- unrelated 또는 production data에 사용 금지
+- restore 뒤 row count, sequence, request status, snapshot/cache 정합성 확인
 
 ## 보안 기본선
 
-현재 보안 기준은 로컬 포트폴리오 검증과 운영형 확장 방향을 분리해서 봅니다.
+현재 local implementation:
 
-현재 적용:
+- PBKDF2-SHA256 password hash, per-user salt, iteration metadata
+- legacy hash verification compatibility
+- HMAC-signed bearer token
+- runtime secret injection
+- `.env` Git 제외, `.env.example` placeholder만 추적
+- Grafana anonymous Viewer
 
-- 사용자 비밀번호는 plain text가 아니라 `pbkdf2_sha256` hash로 저장합니다.
-- API 인증은 bearer token 기반으로 처리합니다.
-- `AUTH_SECRET_KEY`, token TTL, Grafana credential은 `messaging-runtime-secrets`로 분리합니다.
-- `.env`는 Git 추적 대상에서 제외합니다.
-- local Grafana 기본 비밀번호는 데모용이며 운영 credential이 아닙니다.
+제약:
 
-운영형 확장 기준:
+- 코드 기본값·`.env.example` placeholder·빈 값·32-byte 미만 `AUTH_SECRET_KEY`는 local fallback 범위에서만 허용하며 non-local readiness와 business API에서 차단
+- Prometheus/Grafana public ingress는 demo 편의 설정
+- DLQ endpoints는 event payload를 포함할 수 있어 operator authorization과 audit 필요
+- schema/key/route validation에 실패한 invalid ingress는 replay 원본 대신 bounded diagnostic(size, SHA-256, 1KiB base64 preview)을 저장; 정상 처리 중 retry exhaustion record는 replay용 payload 유지
+- local self-signed TLS는 production trust 증거에서 제외
 
-- `AUTH_SECRET_KEY` 기본값 `dev-secret-change-me`는 local 외 환경에서 사용하지 않습니다.
-- Grafana / Prometheus는 public ingress로 직접 열지 않고 내부망, VPN, SSO, basic auth 같은 접근 제한을 둡니다.
-- secret은 Kubernetes Secret에서 외부 secret manager로 확장합니다.
-- credential rotation은 배포 파이프라인에서 관리합니다.
+Production direction:
 
-### DLQ Summary API
+- external identity / token key rotation
+- external secret manager
+- SSO/VPN/private network for operations surfaces
+- network policy and least privilege
+- Kafka authentication과 topic별 producer ACL: API는 ingress, Worker는 status/snapshot/notification, 승인된 replayer는 ingress replay만 발행
+- DLQ payload redaction / retention / audit
 
-운영자는 개별 event를 뒤지기 전에 summary endpoint로 DLQ 상태를 먼저 봅니다.
+## API Contract Changes
 
-```powershell
-Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5
+Route, request model, response model, OpenAPI, contract test를 함께 변경합니다.
+
+FastAPI `response_model`은 readiness, event acceptance/status, stream read, DLQ list/summary/replay의 public response 경계를 고정합니다.
+
+- Swagger: `/docs`
+- schema: `/openapi.json`
+- generic event acceptance: `POST /v2/streams/{stream_id}/events`, HTTP `202`
+- generic read aliases: `GET /v2/event-requests/{request_id}`, `GET /v2/streams/{stream_id}/events`
+- shared resource APIs: `/v1/auth/login`, `/v1/streams`, stream persistence summary
+- persistence status: request status endpoint에서 별도 확인
+
+2026-06 performance 원본의 event status `200`은 contract 명시 전 historical evidence입니다. 현재 image의 계약 증거는 새 test와 suite로 갱신합니다.
+
+Generic v2 GitOps rollout:
+
+1. `GENERIC_EVENTS_V2_ENABLED=false`인 `messaging-env` Secret wave `-3` 적용
+2. 일반 Sync `messaging-schema-migration` Job wave `-2` 완료, Alembic head `0008` 확인; `Force=true,Replace=true`, runtime secret 의존 없음
+3. Worker Deployment wave `-1` rollout 완료, 구 Worker replica `0` 확인
+4. API Deployment wave `0` rollout, `local-ha` overlay가 API container에만 `GENERIC_EVENTS_V2_ENABLED=true`를 넣어 v2 공개
+5. v2 canary event의 PostgreSQL `payload`/`metadata`와 v2 request status/event-list 응답 확인
+
+Generic v2 manual local rollout:
+
+1. `k8s/app/manifests-ha.yaml`의 `GENERIC_EVENTS_V2_ENABLED=false` 상태로 application 적용
+2. API startup migration 동안 v2 POST가 `503 Generic event v2 intake is not enabled`인지 확인
+3. quick start가 Worker rollout 완료를 기다림
+4. `kubectl set env deployment/api -n messaging-app GENERIC_EVENTS_V2_ENABLED=true` 적용
+5. API rollout/readiness 뒤 v2 canary 확인
+
+이 순서를 뒤집지 않습니다. 구 Worker는 v2 job의 compatibility `body` preview는 읽을 수 있지만 구조화 `payload`/`metadata`를 저장하지 못합니다. old/new Worker 혼합 상태에서 v2 traffic을 열면 data fidelity가 깨집니다.
+
+`GENERIC_EVENTS_V2_ENABLED`는 v2 POST intake gate입니다. GitOps base와 수동 local app manifest의 Secret 값은 `false`입니다. `local-ha` overlay가 API container에만 `true`를 추가하고, Windows/Linux quick start는 Worker 준비 뒤 API env를 `true`로 전환합니다. GET v2 aliases와 v1 shared resource API는 같은 read/resource 경계를 사용합니다.
+
+### Generic v2 Downgrade Safety
+
+Alembic `0008` downgrade는 v2 row뿐 아니라 기존 컬럼만으로 복원할 수 없는 schema v1 `payload`/`metadata`가 하나라도 있으면 lossy downgrade를 거부합니다. Order reference adapter의 추가 metadata도 여기에 포함됩니다. 아래 조건을 순서대로 모두 확인한 뒤에만 `0007_drop_legacy_room_sequence_allocations`로 내립니다.
+
+1. 모든 desired state에서 `GENERIC_EVENTS_V2_ENABLED=false` 적용
+2. API rollout 완료와 모든 API pod의 gate `false` 확인; v2 POST가 `503`인지 확인
+3. `message-worker` consumer lag `0` 확인
+4. accepted/retry 상태의 v2 request와 producer 재시도가 없어 inflight v2 event `0`임을 reconciliation으로 확인
+5. 아래 PostgreSQL query의 `downgrade_unsafe_rows` 결과 `0` 확인
+6. 조건과 확인 시각을 기록한 뒤 Alembic downgrade 실행
+
+```sql
+SELECT count(*) AS downgrade_unsafe_rows
+FROM messages
+WHERE schema_version >= 2
+   OR payload IS DISTINCT FROM jsonb_build_object('text', body)
+   OR metadata IS DISTINCT FROM jsonb_strip_nulls(
+        jsonb_build_object(
+            'classification', category,
+            'external_references',
+            CASE WHEN payment_id IS NULL THEN NULL
+                 ELSE jsonb_build_object('payment', payment_id) END
+        )
+   );
 ```
 
-응답의 핵심 필드:
+consumer lag `0`만으로 v2 inflight 부재를 증명하지 않습니다. compacted request status, producer retry, DLQ/replay 경로를 함께 확인합니다. 어느 조건이든 불확실하거나 downgrade-unsafe row가 남아 있으면 downgrade를 시도하지 않고 새 schema/code를 유지한 채 forward recovery합니다.
 
-| Field | 의미 |
-| --- | --- |
-| `total` | 최근 조회 범위 안의 DLQ event 수 |
-| `replayable` | 자동 replay 대상이 될 수 있는 event 수 |
-| `blocked` | `DLQ_REPLAY_MAX_COUNT`에 도달했거나 replay 대상에서 제외된 event 수 |
-| `oldest_age_seconds` | 조회 범위에서 가장 오래된 DLQ event age |
-| `by_reason` | `failed_reason`별 count |
-| `by_stream` | stream별 DLQ count |
-| `recent_samples` | 최근 DLQ event 샘플 |
+v2 performance는 아직 재실행하지 않았습니다. 2026-04/06 Kafka baseline은 당시 legacy/order contract의 역사적 intake evidence이며 v2 성능 결과로 보고하지 않습니다.
 
-`blocked > 0`이면 replay보다 원인 수정이 먼저입니다. `by_reason`이 같은 값으로 몰리면 일시 장애보다 데이터 조건 또는 persistence logic 문제를 우선 의심합니다.
+## Deployment Boundary
 
-## API 계약과 운영 노출 기준
+- manual local: build → kind image load → rollout
+- master GitOps: push → tests → GHCR SHA image → overlay tag bot commit → Argo CD sync
+- Argo CD: source/static file을 image로 빌드하지 않음
+- registry package private: imagePullSecret 필요
 
-핵심 운영 endpoint는 FastAPI `response_model`로 응답 계약을 고정합니다. 현재 고정된 계약은 readiness, event request status, DLQ list, DLQ summary, unread count, read receipt입니다.
-
-운영 노출 기준:
-
-| Surface | 로컬 포트폴리오 | 운영 전환 기준 |
-| --- | --- | --- |
-| API | ingress로 공개 | 인증 endpoint 외에는 JWT 필요, public path 최소화 |
-| Grafana | ingress로 공개 | SSO, basic auth, VPN 또는 사설망 뒤에 배치 |
-| Prometheus | ingress로 공개 | 직접 public 노출 금지, Grafana 또는 내부망에서만 접근 |
-| DLQ API | JWT 필요 | 운영자 권한 분리, replay/blocked 판단 로그 보존 |
-| Metrics | `/metrics` scrape | 외부 공개 금지, cluster-local scrape 우선 |
-
-이 프로젝트의 로컬 ingress 노출은 포트폴리오 검증 편의를 위한 설정입니다. 실제 운영형 배포에서는 ingress class, auth proxy, network policy, secret manager를 함께 적용하는 것을 기준으로 둡니다.
-
-## OpenAPI 사용 설명서
-
-FastAPI는 핵심 API 계약을 `/openapi.json`으로 공개하고, 사람이 보는 문서는 `/docs`에서 제공합니다.
-
-| Endpoint | 용도 |
-| --- | --- |
-| `/docs` | Swagger UI 기반 API 사용 설명서 |
-| `/openapi.json` | client generator와 테스트가 읽는 OpenAPI schema |
-
-운영 API를 변경할 때는 route, request model, `response_model`, API contract script, OpenAPI schema test를 함께 갱신합니다. 이렇게 해야 실제 응답과 공용 사용 설명서가 같은 계약을 유지합니다.
+상세 배포 흐름과 현재 quick-start 제한은 [GITOPS.md](GITOPS.md)를 확인합니다.

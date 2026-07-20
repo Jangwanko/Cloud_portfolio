@@ -1,8 +1,8 @@
-fastapi==0.115.0
-uvicorn==0.30.6
-psycopg2-binary==2.9.9
-kafka-python==2.0.2
-pydantic==2.9.2
-prometheus-client==0.21.0
-alembic==1.13.2
-SQLAlchemy==2.0.36
+fastapi==0.139.0
+uvicorn==0.51.0
+psycopg2-binary==2.9.12
+kafka-python==2.2.20
+pydantic==2.13.4
+prometheus-client==0.25.0
+alembic==1.18.5
+SQLAlchemy==2.0.51

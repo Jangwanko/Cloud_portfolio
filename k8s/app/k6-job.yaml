@@ -7,11 +7,23 @@ spec:
   backoffLimit: 0
   template:
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 12345
+        runAsGroup: 12345
+        seccompProfile:
+          type: RuntimeDefault
       restartPolicy: Never
       containers:
         - name: k6
-          image: grafana/k6:latest
+          image: grafana/k6:0.54.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           env:
             - name: BASE_URL
               value: http://api.messaging-app.svc.cluster.local:8000

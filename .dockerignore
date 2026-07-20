@@ -1,5 +1,8 @@
-﻿.git
+.git
+.github/
 .gitignore
+AGENTS.md
+README.md
 venv/
 .venv/
 __pycache__/
@@ -16,3 +19,11 @@ k6/results/
 .ruff_cache/
 .coverage
 htmlcov/
+backups/
+docs/
+infra/
+k8s/
+monitoring/
+scripts/
+tests/
+tools/

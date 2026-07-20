@@ -310,7 +310,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "5xx_ratio",
-                                           "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1))",
+                                           "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -450,7 +450,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "failure_ratio",
-                                           "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1))",
+                                           "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -997,7 +997,7 @@
                                    },
                        "options":  {
                                        "mode":  "markdown",
-                                       "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_age_seconds`, and `by_stream`."
+                                       "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_sample_age_seconds`, and `by_stream`. `oldest_sample_age_seconds` is the age of the oldest record in the bounded sample, not total unresolved-backlog age or an SLO measurement."
                                    }
                    },
                    {
@@ -1068,7 +1068,7 @@
                        "id":  27,
                        "title":  "Kafka Consumer Group Lag",
                        "type":  "timeseries",
-                       "description":  "Direct kafka-exporter lag for the message-worker consumer group.",
+                       "description":  "Direct kafka-exporter lag for the persistence and notification consumer groups.",
                        "datasource":  {
                                           "type":  "prometheus",
                                           "uid":  "prometheus"
@@ -1091,13 +1091,13 @@
                                        },
                        "targets":  [
                                        {
-                                           "expr":  "sum by (topic) (kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                           "legendFormat":  "{{topic}} lag",
+                                           "expr":  "sum by (consumergroup, topic) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                           "legendFormat":  "{{consumergroup}} / {{topic}} lag",
                                            "refId":  "A"
                                        },
                                        {
-                                           "expr":  "sum(kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                           "legendFormat":  "total lag",
+                                           "expr":  "sum by (consumergroup) (kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"})",
+                                           "legendFormat":  "{{consumergroup}} total",
                                            "refId":  "B"
                                        }
                                    ]
@@ -1153,7 +1153,7 @@
                  "from":  "now-30m"
              },
     "timezone":  "browser",
-    "title":  "Messaging Portfolio Operations Overview",
+    "title":  "Reliable Event Processing Operations Overview",
     "uid":  "messaging-portfolio-overview",
-    "version":  7
+    "version":  9
 }

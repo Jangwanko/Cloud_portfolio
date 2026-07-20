@@ -20,14 +20,14 @@ locals {
       value = jsonencode({ jwt_secret = local.jwt_secret })
     }
     grafana = {
-      name  = "${var.name_prefix}/grafana/admin"
+      name = "${var.name_prefix}/grafana/admin"
       value = jsonencode({
         username = var.grafana_admin_user
         password = local.effective_grafana_pass
       })
     }
     database = {
-      name  = "${var.name_prefix}/database/postgres"
+      name = "${var.name_prefix}/database/postgres"
       value = jsonencode({
         username = var.db_username
         password = var.db_password

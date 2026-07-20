@@ -6,10 +6,13 @@ NAMESPACE="${NAMESPACE:-messaging-app}"
 BASE_URL="${BASE_URL:-http://localhost}"
 IMAGE_NAME="${IMAGE_NAME:-messaging-portfolio:local}"
 GRAFANA_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
-GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-1q2w3e4r}"
+GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-}"
 RECREATE_CLUSTER="${RECREATE_CLUSTER:-true}"
 RUN_SMOKE_TEST="${RUN_SMOKE_TEST:-true}"
 RUN_FAILURE_TESTS="${RUN_FAILURE_TESTS:-false}"
+POSTGRESQL_HA_CHART_VERSION="${POSTGRESQL_HA_CHART_VERSION:-16.3.2}"
+KUBE_STATE_METRICS_CHART_VERSION="${KUBE_STATE_METRICS_CHART_VERSION:-5.31.0}"
+KEDA_CHART_VERSION="${KEDA_CHART_VERSION:-2.17.2}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KIND_CONFIG="$ROOT_DIR/k8s/kind-config.yaml"
@@ -58,7 +61,10 @@ finally:
     sock.close()
 PY
   elif command -v ss >/dev/null 2>&1; then
-    ! ss -ltn | awk '{print $4}' | grep -Eq "[:.]${port}$"
+    if ss -ltn | awk '{print $4}' | grep -Eq "[:.]${port}$"; then
+      return 1
+    fi
+    return 0
   else
     return 0
   fi
@@ -87,10 +93,9 @@ wait_deployment() {
 
 create_runtime_secret() {
   local auth_secret
-  if command -v openssl >/dev/null 2>&1; then
-    auth_secret="$(openssl rand -base64 48 | tr -d '\n')"
-  else
-    auth_secret="local-dev-auth-secret-$(date +%s)"
+  auth_secret="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  if [[ -z "$GRAFANA_ADMIN_PASSWORD" ]]; then
+    GRAFANA_ADMIN_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
   fi
 
   kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
@@ -223,14 +228,17 @@ if [[ ! -d "$ROOT_DIR/tools/helm-cache/repository" ]]; then
 fi
 
 PG_CHART="$(helm_chart_source 'postgresql-ha-*.tgz' 'bitnami/postgresql-ha')"
+PG_VERSION_ARGS=()
 
 if [[ "$PG_CHART" == bitnami/* ]]; then
   helm repo add bitnami https://charts.bitnami.com/bitnami >/dev/null 2>&1 || true
   helm repo update
+  PG_VERSION_ARGS=(--version "$POSTGRESQL_HA_CHART_VERSION")
 fi
 
 helm upgrade --install messaging-postgresql-ha "$PG_CHART" \
   -n "$NAMESPACE" \
+  "${PG_VERSION_ARGS[@]}" \
   -f "$PG_VALUES" \
   --wait --timeout 15m
 
@@ -241,6 +249,7 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics \
   -n "$NAMESPACE" \
+  --version "$KUBE_STATE_METRICS_CHART_VERSION" \
   --wait --timeout 10m
 wait_deployment kube-state-metrics
 
@@ -250,6 +259,7 @@ helm repo update
 kubectl create namespace keda --dry-run=client -o yaml | kubectl apply -f -
 helm upgrade --install keda kedacore/keda \
   -n keda \
+  --version "$KEDA_CHART_VERSION" \
   --wait --timeout 10m
 wait_deployment keda-operator keda
 
@@ -262,9 +272,12 @@ log "Applying application manifests"
 kubectl apply -f "$APP_MANIFEST"
 
 log "Waiting for application deployments"
-wait_deployment api
 wait_deployment worker
+kubectl set env deployment/api -n "$NAMESPACE" GENERIC_EVENTS_V2_ENABLED=true
+wait_deployment api
+wait_deployment notification-worker
 wait_deployment dlq-replayer
+wait_deployment kafka-exporter
 wait_deployment prometheus
 wait_deployment grafana
 
@@ -287,7 +300,9 @@ kubectl get pods -n "$NAMESPACE"
 printf '\nQuick Start completed successfully.\n'
 printf 'API URL: %s\n' "$BASE_URL"
 printf 'Grafana URL: http://localhost/grafana\n'
-printf 'Grafana login: %s / %s\n' "$GRAFANA_ADMIN_USER" "$GRAFANA_ADMIN_PASSWORD"
+printf 'Grafana anonymous viewer: enabled\n'
+printf 'Grafana admin user: %s\n' "$GRAFANA_ADMIN_USER"
+printf 'Grafana admin password: stored in secret messaging-runtime-secrets\n'
 printf 'Prometheus URL: http://localhost/prometheus\n'
 printf 'Failure tests: RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh\n'
 printf '\nUseful checks:\n'

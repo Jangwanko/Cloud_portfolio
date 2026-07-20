@@ -1,110 +1,158 @@
-# 신뢰성 정책
+# Reliability Policy
 
-Kafka event intake, Worker persistence, PostgreSQL HA 기준의 readiness / alert 정책입니다.
+이 문서는 API readiness와 운영 alert의 의미를 분리합니다. 장기 SLA 선언은 범위에서 제외합니다.
 
-서비스 사용자, 기능 요구, 비기능 요구, SLO guardrail의 상위 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)에 두고, 여기서는 그 요구사항을 runtime readiness와 alert 판단으로 변환합니다.
+## Reliability Claim Scope
 
-## 핵심 모델
+`Reliable Event Processing System`의 이름은 다음 구현·검증 경계를 뜻합니다.
 
-- Kafka는 request intake의 event log입니다.
-- API는 요청을 PostgreSQL에 직접 쓰지 않고 Kafka ingress topic에 append한 뒤 `202 Accepted`를 반환합니다.
-- Worker consumer group은 Kafka partition을 소비해 PostgreSQL에 영속화합니다.
-- retry 한도를 넘긴 event는 Kafka DLQ topic으로 이동합니다.
-- DLQ Replayer는 복구 가능한 event를 ingress topic으로 재주입합니다.
+- per-stream Kafka partition ordering과 failed record inline retry
+- 성공 또는 terminal 처리 뒤 record 단위 explicit offset commit
+- PostgreSQL transaction/idempotency state 기반 중복 persistence 방어
+- retry exhaustion 뒤 DLQ 격리와 replay guard
+- accepted, persisted, consumer lag, DLQ 표본의 독립 관측
+- DB outage, ordering, recovery 실험 원본 보존
 
-설계 선택: 이 시스템은 최소 latency보다 요청 수락 안정성과 복구 가능성을 우선합니다. Kafka event log와 Worker persistence를 거치며 일부 latency를 감수하지만, DB 장애 전파를 줄이고 replay 가능한 처리 경로를 확보합니다.
+현재 증명 범위에서 제외:
 
-## Readiness 상태
+- exactly-once delivery
+- partition 간 global ordering
+- 모든 process/broker/database failure 조합에서의 무손실
+- 검증 환경 밖 production SLA
+- DB commit과 후속 Kafka publish의 원자성
+
+## Processing Boundaries
+
+- API: Kafka append 성공 뒤 `202 Accepted`
+- Envelope: `schema_version`, `event_type`, JSON `payload`, JSON `metadata`
+- Worker: Kafka record 처리와 PostgreSQL commit
+- Post-commit publish: request status, snapshots, notification job
+- Failure: inline retry → DLQ publish → replay guard
+- Read model: DB-committed snapshot 기반 cache
+
+DB commit과 후속 Kafka publish는 하나의 transaction이 아닙니다. 현재 publish는 best-effort이며 process crash gap은 남아 있습니다.
+
+## API Readiness Contract
+
+`GET /health/ready`가 직접 결정하는 상태:
 
 ### `ready`
 
+- schema migration startup 완료
 - Kafka bootstrap reachable
-- API Kafka publish path 정상
 - PostgreSQL writable primary reachable
-- PostgreSQL standby count가 로컬 HA 기준 충족
-- Worker가 Kafka ingress topic을 consume 가능
+- HA mode의 ready/sync standby minimum 충족
+- replication byte lag threshold 이내
+- non-local environment의 기본값·빈 값·32-byte 미만 auth secret 미사용
 
 ### `degraded`
 
-서비스는 동작하지만 처리 지연, HA 여력 저하, replay 증가가 관측되는 상태입니다.
-
-- PostgreSQL primary가 일시적으로 unavailable하지만 Kafka append path는 살아 있음
-- PostgreSQL standby 부족 또는 replication lag 증가
-- Worker backlog / consumer lag 증가
-- DLQ replay 증가
-- Worker replica는 증가했지만 persistence lag가 줄지 않음
+- schema/secret/Kafka hard failure 없음
+- PostgreSQL writable primary unreachable, standby minimum 미달, sync standby minimum 미달, 또는 replication byte lag threshold 초과
+- API intake는 Kafka append를 통해 계속 가능
+- Worker persistence는 retry/backlog 상태로 전환 가능
 
 ### `not_ready`
 
-새 write request를 정상 수락할 수 없는 상태입니다.
-
+- schema startup 미완료
 - Kafka bootstrap unreachable
-- Kafka ingress topic publish 실패
-- API 내부 state path 장애로 request intake가 불가능
+- non-local environment에서 unsafe auth secret 사용
 
-PostgreSQL writable primary unreachable은 API intake 관점에서는 `degraded`로 해석할 수 있습니다. Kafka append path가 살아 있으면 새 request를 event log에 남길 수 있고, PostgreSQL 복구 후 Worker가 persistence를 이어갈 수 있기 때문입니다. 단, persistence path가 막힌 상태이므로 alert에서는 critical로 봅니다.
+Readiness state의 직접 조건에서 제외되는 신호:
 
-## Alert 정책
+- Kafka broker replica count / ISR
+- Pgpool replica availability
+- Worker/notification-worker replica와 consumer lag
+- materialized cache ready/error telemetry
+- DLQ / replay activity
+- Prometheus scrape availability
 
-- Kafka unavailable은 intake write path 중단이므로 즉시 critical입니다.
-- PostgreSQL primary loss는 persistence 중단이므로 즉시 critical입니다.
-- Worker consumer lag 증가는 warning에서 시작하고, 일정 시간 이상 지속되면 critical로 승격합니다.
-- DLQ 증가가 일시적이면 warning, 같은 reason으로 반복되면 critical 후보입니다.
-- PostgreSQL standby 부족이나 replication lag 증가는 degraded warning으로 봅니다.
+이 신호들은 alerts와 `check_portfolio_status.ps1`로 확인합니다. readiness response의 Worker 정보가 있더라도 상태 결정 조건으로 해석하지 않습니다.
 
-## 장애 시나리오
+`grace_remaining_seconds`는 `degraded` 시작 뒤 `READINESS_DEGRADED_GRACE_SECONDS` 기준 남은 시간을 보여주는 context field입니다. `degraded` 판정을 늦추거나 HTTP status를 바꾸지 않습니다.
 
-### Kafka broker 장애
+## Incident Interpretation
 
-- API readiness는 Kafka append가 가능하면 `degraded`로 유지됩니다.
-- 새 event append가 실패하면 API는 fail-fast합니다.
-- Kafka recovery 후 API publish와 Worker consume이 정상화됩니다.
+### Kafka broker loss
 
-### PostgreSQL / Pgpool 장애
+- 일부 broker 손실, bootstrap/append 가능: API readiness가 계속 `ready` 또는 DB 상태에 따른 `degraded`일 수 있음
+- replication/ISR 감소: Kafka broker count와 exporter signal로 경고
+- bootstrap/append 불가: `not_ready`, event intake 실패
 
-- API는 Kafka append가 가능하면 request를 계속 accepted 할 수 있습니다.
-- Worker persistence는 실패하고 retry 후 DLQ로 이동할 수 있습니다.
-- 복구 후 DLQ Replayer가 event를 ingress topic으로 재주입합니다.
+### PostgreSQL / Pgpool loss
 
-### Worker 포화
+- API: Kafka append가 가능하면 accepted 유지
+- Worker: DB retry, consumer lag 증가
+- retry terminal: DLQ publish 가능
+- recovery: Worker backlog와 replay path 처리
 
-- Kafka consumer lag가 증가합니다.
-- KEDA Kafka scaler가 lag 기준으로 Worker replica를 늘립니다.
-- replica 증가 후에도 lag가 줄지 않으면 DB persistence 병목으로 해석합니다.
+짧은 장애가 항상 DLQ로 이어지는 것은 아닙니다. inline retry 안에 DB가 복구되면 같은 record에서 persistence를 재개합니다.
 
-### Poison event 처리
+### Worker saturation
 
-- retry 한도를 넘긴 event는 Kafka DLQ topic으로 이동합니다.
-- DLQ payload의 `failed_reason`, `retry_count`, `replay_count`를 확인합니다.
-- 데이터 조건 문제가 해결되지 않으면 replay해도 다시 DLQ에 쌓일 수 있습니다.
-- DLQ Replayer는 `DLQ_REPLAY_MAX_COUNT`를 넘긴 event를 다시 ingress topic으로 재주입하지 않습니다.
+- message-worker consumer lag 증가
+- KEDA가 lag 기준 replica 조정
+- replica 증가 뒤 lag 유지: DB throughput, connection pool, stream lock, partition 분포 확인
+- API request count: Worker scaling 효과의 단독 근거에서 제외
 
-## 현재 메모
+### Poison event
 
-초기 Kafka 실험에서는 request status / idempotency / sequence 일부를 PostgreSQL state table에 배치했고, 이 방식이 API hot path를 Pgpool에 다시 묶을 수 있음을 확인했습니다.
+- validation rejection: request status `failed`, Worker result `rejected`
+- retryable failure 한도 초과: DLQ publish
+- `DLQ_REPLAY_MAX_COUNT` 도달: automatic requeue 제외
+- 원인 수정 없는 replay: 같은 failure 반복 가능
 
-기본 Kafka 모드는 Worker가 persistence 시점에 sequence와 request status를 갱신하며, API intake는 Kafka append 중심으로 동작합니다.
+## Alert Policy
 
-장애별 확인 순서와 복구 절차는 [RUNBOOK.md](RUNBOOK.md)에서 관리합니다.
+매니페스트 기준 1차 guardrail:
 
-## 운영 알림 기준값
-
-아래 값은 Kafka event stream 포트폴리오를 운영형으로 보이게 하기 위한 1차 기본값입니다. 실제 장기 트래픽 기준값이 쌓이기 전까지는 장애 조기 감지와 과도한 오탐 사이의 균형을 보는 임시 SLO 가드레일로 사용합니다.
-
-| 신호 | Warning | Critical |
+| Signal | Warning | Critical |
 | --- | ---: | ---: |
-| API 5xx ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |
-| API p95 latency | 10분 동안 `> 2s` | 5분 동안 `> 4s` |
-| accepted-to-persisted p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
-| Kafka topic wait p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
-| Worker failure ratio | 5분 동안 `> 10%` | - |
-| Worker last success age | 최근 처리량이 있는데 60초 이상 성공 없음 | - |
-| DLQ events | 5분 안에 1건 이상 증가 | `skipped_max_replay` 누적값 `> 0` |
-| DLQ oldest age | summary API `oldest_age_seconds > 600` | summary API `oldest_age_seconds > 1800` |
-| PostgreSQL replication | standby 부족, non-streaming, 1MiB 초과 lag | primary down |
-| Pod restarts | 15분 안에 restart 증가 | - |
-| Deployment availability | 2분 이상 unavailable replica `> 0` | - |
+| API 5xx ratio | 5분 동안 `>1%` | 5분 동안 `>5%` |
+| API p95 latency | 10분 동안 `>2s` | 5분 동안 `>4s` |
+| Worker-observed accepted-to-commit p95 | 5분 동안 `>5s` | 5분 동안 `>15s` |
+| Kafka topic wait / Kafka-to-Worker consume wait p95 | 5분 동안 `>10s` | 5분 동안 `>30s` |
+| message-worker lag | 5분 동안 `>100` | 운영 escalation 기준 별도 |
+| notification-worker lag | 5분 동안 `>100` | 운영 escalation 기준 별도 |
+| DLQ publish | 5분 increase `>0` | replay guard blocked cumulative `>0` |
+| PostgreSQL replication | standby/streaming/lag 기준 이탈 | primary down signal |
+| Pod restart | 15분 increase `>0` | — |
+| Deployment unavailable | 2분 이상 `>0` | — |
 
-알림 이름은 `monitoring/prometheus/alerts.yml`의 `MessagingApi5xxRateWarning`, `MessagingApiHigh5xxRate`, `MessagingEventPersistLagHigh`, `MessagingEventPersistLagCritical`, `MessagingQueueWaitHigh`, `MessagingQueueWaitCritical`, `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 기준으로 문서와 매니페스트가 같은 값을 바라보게 유지합니다.
+Metric 의미:
 
-`DLQ oldest age`는 현재 Prometheus counter가 아니라 DLQ summary API의 운영 판단 신호입니다. `GET /v1/dlq/ingress/summary`에서 `oldest_age_seconds`가 warning / critical 기준을 넘으면, 자동 replay 여부보다 먼저 `blocked`, `by_reason`, `recent_samples`를 확인해 오래 남은 event를 처리합니다.
+- `messaging_event_persist_lag_seconds`: API `queued_at`부터 Worker의 PostgreSQL `commit()` 반환 직후까지. post-commit publish 시간 제외, API/Worker clock 차이 고려
+- PowerShell suite의 2026-06 `accepted-to-persisted`: PostgreSQL row `created_at` / row-visible proxy
+- 현재 PowerShell `accepted_to_status_observed_ms`: client가 `persisted` status를 관측할 때까지이며 polling/network 포함. 위 Prometheus histogram과 별도 측정
+- `messaging_queue_wait_seconds`: queued timestamp부터 Worker consume 시작까지의 근사치
+
+## DLQ Signal Policy
+
+운영에 사용할 수 있는 현재 신호:
+
+- `messaging_dlq_events_total` increase
+- `messaging_dlq_replay_total{result="skipped_max_replay"}`
+- `MessagingDlqReplayBlocked`: replay guard blocked cumulative value 감지
+- sampled `by_reason`, `blocked`, `recent_samples`
+
+현재 제공하지 않는 신호:
+
+- unresolved DLQ depth
+- replay 완료를 반영한 current backlog
+- oldest unresolved event age
+
+Summary API의 `oldest_sample_age_seconds`는 조회한 append-only log sample의 age입니다. warning `10m` / critical `30m` unresolved SLO로 사용하지 않습니다.
+
+## Recovery Completion
+
+incident 종료 조건:
+
+- Kafka append / consume 정상
+- PostgreSQL primary write 정상
+- message-worker lag 감소 후 기대 수준 복귀
+- accepted 수와 persisted 수 reconciliation
+- DLQ / replay terminal event 조사
+- post-commit status/snapshot/notification 누락 확인
+- customer/event producer 재시도 영향 확인
+
+서비스 요구와 SLO guardrail은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 세부 절차는 [RUNBOOK.md](RUNBOOK.md), 개선 완료 조건은 [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)에 있습니다.

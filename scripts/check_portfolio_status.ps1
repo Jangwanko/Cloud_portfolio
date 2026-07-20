@@ -131,8 +131,8 @@ if (-not $SkipPrometheus) {
   }
 
   $brokerCount = Get-ScalarPrometheusValue "kafka_brokers"
-  $consumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"message-worker`"}) or vector(0)"
-  $notificationConsumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"notification-worker`"}) or vector(0)"
+  $consumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"message-worker`"})"
+  $notificationConsumerLag = Get-ScalarPrometheusValue "sum(kafka_consumergroup_lag{consumergroup=`"notification-worker`"})"
   Write-Host "kafka_brokers=$brokerCount"
   Write-Host "message-worker consumer_lag=$consumerLag"
   Write-Host "notification-worker consumer_lag=$notificationConsumerLag"

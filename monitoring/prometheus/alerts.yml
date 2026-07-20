@@ -10,6 +10,21 @@ groups:
           summary: "Kafka unavailable"
           description: "Kafka bootstrap is unavailable, so event intake cannot append to the replicated event log."
 
+      - alert: MessagingMetricsTargetMissing
+        expr: |
+          (up{job=~"api|worker|dlq-replayer|kafka-exporter"} == 0)
+          or absent(up{job="api"})
+          or absent(up{job="worker"})
+          or absent(up{job="dlq-replayer"})
+          or absent(up{job="kafka-exporter"})
+        for: 2m
+        labels:
+          severity: critical
+          service: messaging
+        annotations:
+          summary: "Required metrics target missing"
+          description: "Prometheus cannot scrape a required application or Kafka exporter target."
+
       - alert: MessagingDbDown
         expr: messaging_health_status{job="api",component="db"} == 0
         labels:
@@ -24,7 +39,7 @@ groups:
           (
             (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
             /
-            clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+            clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001)
           ) > 0.05
         for: 5m
         labels:
@@ -128,7 +143,7 @@ groups:
           (
             (sum(rate(messaging_worker_processed_total{result="failure"}[5m])) or vector(0))
             /
-            clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1)
+            clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001)
           ) > 0.1
         for: 5m
         labels:
@@ -157,7 +172,7 @@ groups:
           (
             (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
             /
-            clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+            clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001)
           ) > 0.01
         for: 5m
         labels:
@@ -205,10 +220,20 @@ groups:
           summary: "Kafka consumer group lag high"
           description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
+      - alert: MessagingNotificationConsumerLagHigh
+        expr: sum(kafka_consumergroup_lag{consumergroup="notification-worker"}) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: messaging
+        annotations:
+          summary: "Notification consumer lag high"
+          description: "notification-worker consumer group lag is above 100 messages for 5 minutes."
+
       - alert: MessagingWorkerLastSuccessStale
         expr: |
           (
-            (sum(rate(messaging_worker_processed_total[5m])) > 0)
+            (sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 0)
             and
             (time() - max(messaging_worker_last_success_timestamp{job="worker"}) > 60)
           )
@@ -218,7 +243,7 @@ groups:
           service: messaging
         annotations:
           summary: "Worker success timestamp stale"
-          description: "Worker has recent processing activity but no successful event for over 60 seconds."
+          description: "Worker has pending consumer lag but no successful event for over 60 seconds."
 
       - alert: MessagingDlqEventsIncreasing
         expr: sum(increase(messaging_dlq_events_total[5m])) > 0
