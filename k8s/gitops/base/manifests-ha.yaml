@@ -44,7 +44,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  replicas: 3
+  replicas: 6
   selector:
     matchLabels:
       app: api
@@ -2370,8 +2370,23 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: api
-  minReplicas: 3
+  minReplicas: 6
   maxReplicas: 8
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      selectPolicy: Max
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
   metrics:
     - type: Resource
       resource:

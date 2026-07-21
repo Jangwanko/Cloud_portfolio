@@ -632,9 +632,9 @@ def _apply_materialized_record(topic: str, key: str | None, value: dict | None) 
             else:
                 if is_invalid_kafka_payload(value) or not isinstance(value, dict):
                     raise ValueError("Malformed message-snapshot value")
-                cache_message_snapshot(
-                    _normalize_message_snapshot_record(str(message_key), value)
-                )
+                if type(value.get("id")) is not int or value["id"] != message_key:
+                    raise ValueError("Message snapshot key/payload mismatch")
+                cache_message_snapshot(value)
         elif topic == settings.kafka_stream_snapshot_topic:
             stream_key = _numeric_topic_key(key, field_name="stream")
             if value is None:
@@ -642,9 +642,9 @@ def _apply_materialized_record(topic: str, key: str | None, value: dict | None) 
             else:
                 if is_invalid_kafka_payload(value) or not isinstance(value, dict):
                     raise ValueError("Malformed stream-snapshot value")
-                cache_stream_snapshot(
-                    _normalize_stream_snapshot_record(str(stream_key), value)
-                )
+                if type(value.get("stream_id")) is not int or value["stream_id"] != stream_key:
+                    raise ValueError("Stream snapshot key/payload mismatch")
+                cache_stream_snapshot(value)
     except (KeyError, TypeError, ValueError, OverflowError) as exc:
         try:
             _evict_materialized_key(topic, key)
@@ -707,7 +707,7 @@ def _consume_materialized_topics() -> None:
             initial_end_offsets = consumer.end_offsets(topic_partitions)
 
             while not _stop_event.is_set():
-                records = consumer.poll(timeout_ms=1000, max_records=200)
+                records = consumer.poll(timeout_ms=1000, max_records=1000)
                 for messages in records.values():
                     for message in messages:
                         _apply_materialized_record(message.topic, message.key, message.value)

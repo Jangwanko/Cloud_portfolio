@@ -6,25 +6,27 @@
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Generic event contract | `/v2/streams/{stream_id}/events`, versioned JSON envelope | current local image `9349ba9`에서 OpenAPI `2.0.0`, `202`, persistence/API contract 재검증; 성능 후보는 image `d31ac14` 원본 유지 |
+| Generic event contract | `/v2/streams/{stream_id}/events`, versioned JSON envelope | tracked local image `9349ba9`에서 OpenAPI `2.0.0`, `202`, persistence/API contract 재검증; 성능 원본은 첫 후보 `d31ac14`와 recovery local image `perf-v16` 분리 |
 | Generic rollout order | GitOps gate-false Secret `-3` → migration `-2` → Worker `-1` → overlay API-true `0`; manual false → Worker ready → API true | local staged rollout 완료; 대칭 호환 아님 |
-| HTTP intake contract | Kafka append 성공 시 `202 Accepted` | 2026-07-21 v2 suite에서 event `202` 응답 `25,378`, 다른 event status `0` |
-| Generic v2 performance candidate | 100 VU / 30s, event `25,378`, error `0.00%`, p95 `123.96ms` | 첫 측정 후보; 안정 기준선 미채택 |
+| HTTP intake contract | Kafka append 성공 시 `202 Accepted` | 최신 2026-07-21 recovery suite에서 event `202` 응답 `29,608`, 다른 event status `0` |
+| Generic v2 recovery candidate | 100 VU / 30s, 클린 조건 3회 평균 event `29,168`, error `0.00%`, p95 `101.27ms` | 첫 v2 후보보다 전 지표 개선; dirty local image/API min 6 조건, 안정 기준선 미채택 |
+| First generic v2 candidate | 100 VU / 30s, event `25,378`, error `0.00%`, p95 `123.96ms` | 성능 저하 원인 분석의 비교 기준 |
 | Kafka intake baseline | 100 VU / 30s, `31,676`, error `0.00%`, p95 `80.65ms` | 안정 기준선 유지 |
 | Last legacy raw performance suite | 2026-06-18, `27,795`, p95 `119.28ms` | notification 경계 검증, 기준선 미채택 |
 | Same-stream ordering | `stream_seq 1..100` | performance suite와 failure injection에서 통과 |
 | Ordering / DB outage | 네 시나리오 accepted = persisted | 2026-06-08 원본 추적 |
 | Materialized cache fallback | fresh cache와 DB-down stale cache | 2026-07-21 tracked rerun: fresh age `0.112s`, DB-down degraded age `11.462s`, recovery exit `0` |
 | Worker scaling | Kafka consumer lag 기반 KEDA | lag / persistence proxy / drain 관찰 |
-| Fixed Worker 대 KEDA | 직접 비교 없음 | 동일 조건 A/B 실험 필요 |
+| Fixed Worker 대 KEDA | 64-stream 동일 조건 1회 A/B: fixed all drain `301.42s`, KEDA `261.17s`, KEDA final `8` | drain `13.35%` 감소; KEDA intake event `7.35%` 감소·p95 `25.62%` 증가, 반복 전 candidate |
 | Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
 | Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | CI run `#55` validate/publish success; image `8f5d78c6963a`, bot commit `717e0ca`; master-targeted runtime rollout은 미검증 |
+| Dev GitOps validation gate | `publish-dev-kafka-image` requires `validate`, exact SHA candidate digest verify, branch advance guard | local source와 contract test 반영; commit/push 및 remote Actions 실행 전이므로 배포 증거 제외 |
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
 | Public demo-lite UI `1.4.1` | branch/deployment-specific | live GET: title `Post-Order Event Console`, API `1.0.0`, generic v2 없음, order event success `200`; master `2.0.0` 미배포 |
-| Unit / contract / infrastructure suite | `359 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
+| Unit / contract / infrastructure suite | `363 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
 | Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
 
 원본 위치:
@@ -40,8 +42,9 @@
 ### Generic v2 evidence
 
 - 첫 v2 contract/performance 실행: 2026-07-21 local `dev-kafka`, source revision `1439be1`, API/Worker image `d31ac14`
+- recovery 반복: dirty `dev-kafka` worktree, local image `perf-v16`, clean DB/topic hot-stream 조건 3회
 - 검증 범위: OpenAPI `2.0.0`, generic v2 gate, event `202`, persistence status, same-stream ordering, Kafka lag drain
-- 성능 판정: 한 번의 fresh-cluster 실행에서 얻은 후보이며 stable baseline 미채택
+- 성능 판정: recovery 3회는 첫 후보보다 전 지표 개선; historical stable legacy와 registry image 검증에는 미달해 stable baseline 미채택
 - 2026-04/06 Kafka baseline: legacy/order request shape와 historical response `200`으로 수집
 - 사용 가능 범위: Kafka append-first architecture와 당시 intake baseline
 - 사용 제외: generic JSON envelope의 serialization/validation 비용, v2 route 성능, v2 `202` 배포 증거
@@ -57,7 +60,8 @@
 - event intake endpoints 응답 `202`
 - OpenAPI success response `202`
 - Kafka append 실패 시 `503`
-- 2026-07-21 performance 원본의 event status `202`: `25,378`, 다른 event status `0`
+- 최신 2026-07-21 performance 원본의 event status `202`: `29,608`, 다른 event status `0`
+- 첫 v2 비교 원본의 event status `202`: `25,378`, 다른 event status `0`
 
 ### Row-visible latency proxy
 
@@ -87,7 +91,58 @@
 - unresolved depth / current incident backlog: 제공하지 않음
 - oldest unresolved SLO: 제공하지 않음
 
-## Generic v2 Performance Candidate — 2026-07-21
+## Multi-stream Fixed Worker / KEDA A/B Candidate — 2026-07-21
+
+동일한 dirty `dev-kafka` source image `perf-v17`, API `6`, clean DB/topic, fresh lag `0`, 100 VU / 30s, 64 streams 조건으로 Worker fixed `2`와 KEDA `2→8`을 각각 1회 실행했습니다. 각 arm은 DB event state와 6개 Kafka topic을 재생성하고 Kafka deletion quiet period `75s` 뒤 시작했습니다.
+
+| Worker mode | Event `202` | Error | Avg | p95 | p99 | Peak message lag | Peak notification lag | All-pipeline drain |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| fixed `2` | `22,125` | `0.00%` | `82.65ms` | `169.24ms` | `224.76ms` | `21,170` | `45` | `301.42s` |
+| KEDA `2→8` | `20,499` | `0.00%` | `93.14ms` | `212.60ms` | `297.62ms` | `18,950` | `11,536` | `261.17s` |
+
+판정:
+
+- KEDA arm의 all-pipeline drain `13.35%` 감소와 final Worker `8` 확인
+- main Worker 처리 가속 중 notification-worker backlog 최대 `11,536`으로 이동
+- KEDA arm의 event 수 `7.35%` 감소, avg/p95/p99 `12.69%`/`25.62%`/`32.42%` 증가
+- single-node kind에서 Worker scale-out과 API가 CPU·DB·network 자원을 공유한 결과로 해석
+- fixed/KEDA 각 1회, accepted event 수 차이, dirty local image 포함; stable baseline과 인과관계 확정에서 제외
+- 원본: [fixed Worker](../results/kafka-performance/worker-ab-fixed.txt), [KEDA](../results/kafka-performance/worker-ab-keda.txt)
+
+## Generic v2 Performance Recovery Candidate — 2026-07-21
+
+첫 v2 후보의 저하를 조사한 뒤 dirty local worktree image `perf-v16`으로 같은 클린 DB/topic 조건을 3회 반복했습니다. 각 실행은 API/Worker image 일치, API 6/6, Worker 2/2, 모든 API cache hydration 완료, 시작 consumer lag `0`, Kafka 지연 삭제 I/O 대기 75초를 확인한 뒤 부하를 시작했습니다.
+
+| Run | Event `202` | Error | Avg | p95 | p99 | Peak Worker lag | Main drain |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | `29,146` | `0.00%` | `51.88ms` | `105.34ms` | `139.47ms` | `28,064` | `501.89s` |
+| 2 | `28,749` | `0.00%` | `53.33ms` | `107.96ms` | `147.51ms` | `27,635` | `511.96s` |
+| 3 | `29,608` | `0.00%` | `50.21ms` | `90.51ms` | `134.78ms` | `28,488` | `511.88s` |
+| 평균 | `29,168` | `0.00%` | `51.81ms` | `101.27ms` | `140.59ms` | `28,062` | `508.58s` |
+
+변경과 원인:
+
+- state/status/snapshot/notification producer `linger_ms=0`: Worker commit 뒤 직렬 발행 대기 축소
+- materialized cache consumer frame `64MiB`, aggregate fetch `50MiB`: compacted topic replay의 기본 1MiB frame 초과 reconnect loop 제거
+- cache poll `200→1000`, 중복 구조 검증 제거: API startup full replay CPU 감소
+- API HPA min `3→6`, scale-up stabilization `60s`, 최대 `2 pods/60s`: 부하 중 새 pod의 full replay가 겹치는 시작 부하 억제
+- clean benchmark reset: DB event state와 6개 Kafka topic 초기화, topic 재생성 뒤 75초 quiet period
+- steady-state gate: API/Worker 최소 replica, CPU target 이내, 모든 API cache hydration, fresh lag `0` 연속 확인
+
+판정:
+
+- 첫 v2 후보 대비 3회 평균 event `14.93%` 증가
+- 첫 v2 후보 대비 avg `23.62%`, p95 `18.30%`, p99 `8.17%` 감소
+- main drain 처리율 약 `32.6→55.2 events/s`, `69.3%` 증가
+- 세 실행의 worst run도 첫 v2 후보보다 event, avg, p95, p99 개선
+- historical stable legacy baseline 대비 평균 event `7.92%` 감소, avg/p95/p99 `17.39%`/`25.57%`/`35.74%` 증가
+- API floor `3→6` 변경 포함, 코드 효율만의 개선값으로 귀속 제외
+- dirty worktree/local-only image이므로 registry/GitOps 배포 증거 제외
+- stable generic v2 baseline 승격 제외; multi-stream 반복과 registry image 재검증 대기
+
+최신 원본 [results/kafka-performance/latest.txt](../results/kafka-performance/latest.txt)은 3회차 전체 출력입니다. 1·2회차 수치는 같은 터미널 세션에서 관측한 완료 출력이며 별도 전체 raw 파일로 보존하지 않았습니다.
+
+## First Generic v2 Performance Candidate — 2026-07-21
 
 Generic v2 envelope와 HTTP `202 Accepted` 계약을 실제 local `dev-kafka` cluster에 배포한 뒤 실행한 첫 성능 후보입니다.
 
@@ -309,7 +364,7 @@ Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Work
 - compacted topics: `message-request-status`, `message-snapshots`, `stream-snapshots`
 - PostgreSQL pods: `3`
 - Pgpool replicas: `2`, PDB `minAvailable=1`
-- API HPA: min `3`, max `8`, CPU target `65%`
+- API HPA: min `6`, max `8`, CPU target `65%`, scale-up stabilization `60s`, scale-down stabilization `120s`
 - Worker KEDA: min `2`, max `8`, lag threshold `100`
 - DLQ replayer: `1`
 - notification-worker: separate consumer group
@@ -710,9 +765,9 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 
 ## Known Gaps and Next Acceptance Criteria
 
-- generic v2 동일 조건 3회 반복과 multi-stream/partition sustainable-capacity 측정
+- 64-stream fixed/KEDA A/B 3회 반복과 notification-worker capacity 분리
 - Worker histogram 상단 bucket 확장 뒤 commit-observed p95 재측정
-- fixed Worker 대 KEDA 동일 조건 A/B
+- registry image 기준 hot-stream과 multi-stream 재검증
 - poll batch 중간 crash와 partition offset recovery
 - transactional outbox 또는 동등한 post-commit publish recovery
 - unresolved DLQ 상태 모델

@@ -96,17 +96,18 @@ race guard:
 
 ```text
 push dev-kafka
-  -> CI validation (independent workflow)
-  -> .github/workflows/dev-kafka-image.yml (independent workflow)
-  -> GHCR image build and push with 7-character commit SHA tag
+  -> CI validate job
+  -> publish-dev-kafka-image job (needs: validate)
+  -> candidate image build and digest verification
+  -> verified digest promotion with 12-character commit SHA tag
   -> Actions bot updates local-ha overlay newTag
   -> bot commit with [skip dev-kafka image]
   -> Argo CD observes dev-kafka and syncs
 ```
 
-현재 validation과 image publication은 별도 workflow로 실행됩니다. `dev-kafka` source push 직후의 구 image tag 상태를 배포 완료로 보지 않습니다. CI validation 성공, GHCR image 발행, overlay tag bot commit을 모두 확인한 뒤 Argo CD revision, workload image, rollout 상태를 확인합니다. Generic v2도 아래의 migration, Worker, API sync wave 순서를 그대로 사용합니다.
+`publish-dev-kafka-image`는 같은 workflow의 `validate` 성공에 종속됩니다. exact `github.sha`로 만든 candidate digest를 non-root 실행까지 확인한 뒤 immutable SHA tag와 `dev-kafka-latest`로 승격합니다. 발행 도중 branch가 앞서가면 현재 run은 overlay commit을 만들지 않고 새 revision의 run에 배포를 넘깁니다. CI validation, GHCR digest 승격, overlay tag bot commit을 확인한 뒤 Argo CD revision, workload image, rollout 상태를 확인합니다. Generic v2도 아래의 migration, Worker, API sync wave 순서를 사용합니다.
 
-English: The development cluster tracks `dev-kafka`. A branch push builds `ghcr.io/jangwanko/cloud_portfolio:<commit-sha>`, updates the local-ha image tag in a bot commit, and then allows Argo CD to sync the staged release.
+English: The development cluster tracks `dev-kafka`. The image publication job waits for validation, verifies the candidate digest, promotes that digest under the tested commit SHA, and updates the local-ha tag only while the branch still points to the tested revision.
 
 ## Argo CD Sync
 

@@ -213,9 +213,9 @@ core persistence와 notification attempt의 장애 범위 분리가 목적이었
 확인되지 않은 주장:
 
 - KEDA가 API request count를 증가시켰다는 직접 인과
-- fixed Worker replica보다 KEDA가 우수하다는 동일 조건 수치
+- fixed Worker보다 KEDA가 전 지표에서 우수하다는 안정 결론
 
-다음 실험은 fixed replica와 KEDA를 같은 workload, image, DB pool, partition, 초기 backlog 조건에서 반복해야 합니다.
+2026-07-21 64-stream 동일 조건 1회에서 KEDA `2→8`은 all-pipeline drain을 `301.42s→261.17s`로 줄였습니다. 같은 arm에서 intake event 수와 latency가 악화되고 notification peak lag가 `11,536`까지 이동했습니다. 다음 실험은 같은 workload, image, DB pool, partition, 초기 backlog 조건을 3회 반복하고 notification-worker capacity를 분리해야 합니다.
 
 ## DLQ Interpretation
 

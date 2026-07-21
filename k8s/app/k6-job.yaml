@@ -31,6 +31,8 @@ spec:
               value: "single500"
             - name: K6_SINGLE_VUS
               value: "100"
+            - name: K6_STREAM_COUNT
+              value: "1"
             - name: STAGE_DURATION
               value: "10s"
             - name: THINK_TIME

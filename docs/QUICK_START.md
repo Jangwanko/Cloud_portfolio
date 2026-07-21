@@ -189,9 +189,17 @@ Kafka performance suite 는 기능 검증과 분리해서 실행합니다.
 powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 ```
 
+이전 benchmark 데이터와 compacted topic replay 크기를 제거한 비교 측정은 아래 명령을 사용합니다. `-CleanBenchmarkState`는 local event/request/idempotency/notification 데이터를 지우고 Kafka 6개 topic을 재생성하므로 disposable local cluster에서만 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1 -CleanBenchmarkState
+```
+
 이 suite는 아래 순서로 실행됩니다.
 
+- 선택한 경우 local DB benchmark state와 Kafka topic 초기화, delayed log deletion quiet period 대기
 - Kubernetes runtime 상태 확인
+- API/Worker 최소 replica, API CPU, 모든 API cache hydration, fresh consumer lag `0` steady-state 확인
 - same-stream ordering 보장 검증
 - Kafka async persisted-status client 관측 지연 측정
 - k6 Kafka intake load 측정
@@ -222,6 +230,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 - 이 테스트는 health check 가 아니라 performance test 입니다
 - `test_k6_load.ps1` 기본값은 `single500` profile, 100 VU, 10초입니다
 - `run_kafka_performance_suite.ps1` 기본값은 100 VU, 30초입니다
+- `-CleanBenchmarkState`는 destructive local reset이며 내부 helper가 `-ConfirmDataLoss`를 명시해 실행합니다.
 - k6는 backlog와 latency spike를 만들 수 있으므로 장애 검증 뒤, reset 후 마지막에 실행합니다.
 
 ## 권장 테스트 순서
@@ -331,7 +340,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_gitops.ps1 `
   -Revision master
 ```
 
-`dev-kafka` 개발 클러스터를 확인하려면 `-Revision dev-kafka`로 실행합니다. 전용 workflow가 GHCR commit-SHA image를 만들고 `k8s/gitops/overlays/local-ha/kustomization.yaml`의 tag commit을 push한 뒤, Argo CD가 그 변경을 sync합니다.
+`dev-kafka` 개발 클러스터를 확인하려면 `-Revision dev-kafka`로 실행합니다. CI의 `validate`를 통과한 `publish-dev-kafka-image` job이 candidate digest를 검증하고 GHCR commit-SHA image로 승격합니다. branch가 여전히 같은 revision을 가리킬 때만 `k8s/gitops/overlays/local-ha/kustomization.yaml`의 tag commit을 push하며, Argo CD가 그 변경을 sync합니다.
 
 이 흐름은 아래를 수행합니다.
 - local cluster bootstrap

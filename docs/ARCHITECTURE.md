@@ -289,9 +289,11 @@ GitOps 순서:
 현재 autoscaling은 API와 Worker가 서로 다른 기준을 사용합니다.
 
 - API HPA
-  - min replicas: `3`
+  - min replicas: `6`
   - max replicas: `8`
   - target CPU: `65%`
+  - scale-up stabilization: `60s`, 최대 `2 pods / 60s`
+  - scale-down stabilization: `120s`, 최대 `50% / 60s`
 - Worker KEDA
   - min replicas: `2`
   - max replicas: `8`
@@ -337,9 +339,11 @@ GitOps 순서:
 - consumer lag는 Worker가 아직 처리하지 못한 이벤트 수를 직접 표시
 - DB 복구 후 Worker 확장과 backlog 해소 여부를 같은 지표로 추적 가능
 
-최근 성능 suite에서는 Worker가 KEDA max `8`까지 확장돼도 backlog drain에 약 10~16분이 걸렸습니다. 현재 병목 후보는 PostgreSQL write throughput, commit latency, `room_sequences FOR UPDATE` lock, record 처리 비용입니다. Worker max 변경 전 Kafka partition 수, stream 분산도, DB connection / lock wait를 함께 측정해야 합니다. fixed replica와 KEDA의 동일 조건 직접 비교값은 아직 없습니다.
+2026-07-21 generic v2 회복 후보 3회에서는 Worker가 KEDA max `8`까지 확장된 main backlog를 평균 `508.58s`에 배출했습니다. Peak lag와 drain을 합친 처리율은 약 `55.2 events/s`입니다. 첫 v2 후보의 약 `32.6 events/s`보다 높지만 single hot-stream 조건이라 PostgreSQL sequence lock과 partition 집중의 영향을 함께 받습니다. Worker max 변경 전 Kafka partition 수, stream 분산도, DB connection / lock wait를 측정해야 합니다. fixed replica와 KEDA의 동일 조건 직접 비교값은 아직 없습니다.
 
 replica 증가만으로 성능 개선을 단정하지 않습니다.
+
+API pod는 consumer group 없이 compacted state topic 전체를 replay합니다. API HPA의 급격한 scale-out은 새 pod마다 cache hydration CPU와 Kafka fetch를 동시에 발생시킬 수 있습니다. 현재 min `6`과 scale-up stabilization은 100 VU 단기 부하에서 이 시작 부하를 억제하기 위한 local HA 설정입니다. 장기 해법은 bounded retention 또는 PostgreSQL bootstrap+Kafka changelog 경계입니다.
 
 Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지 않습니다. API는 Kafka append를 먼저 수행하고, Worker persistence 단계에서 stream / membership을 primary state 기준으로 검증합니다. 조회 API의 membership check는 Pgpool primary routing hint를 사용해 standby replication lag 영향을 줄입니다.
 

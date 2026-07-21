@@ -10,6 +10,8 @@ from portfolio.metrics import health_status
 
 
 INVALID_KAFKA_PAYLOAD_MARKER = "__invalid_kafka_payload__"
+_CONSUMER_FETCH_MAX_BYTES = 50 * 1024 * 1024
+_CONSUMER_RECEIVE_MAX_BYTES = 64 * 1024 * 1024
 
 
 class InvalidKafkaPayload(dict):
@@ -31,12 +33,13 @@ def _serialize_json(value):
     return json.dumps(value, allow_nan=False).encode("utf-8")
 
 
-def _deserialize_json(value: bytes | None):
+def _decode_json(value: bytes | None, *, validate_structure: bool):
     if value is None:
         return None
     try:
         decoded = json.loads(value.decode("utf-8"), parse_constant=_reject_nonfinite_json)
-        validate_json_structure(decoded, max_depth=MAX_JSON_WIRE_NESTING_DEPTH)
+        if validate_structure:
+            validate_json_structure(decoded, max_depth=MAX_JSON_WIRE_NESTING_DEPTH)
         return decoded
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError, RecursionError) as exc:
         return InvalidKafkaPayload(
@@ -48,6 +51,17 @@ def _deserialize_json(value: bytes | None):
                 "raw_sha256": hashlib.sha256(value).hexdigest(),
             }
         )
+
+
+def _deserialize_json(value: bytes | None):
+    return _decode_json(value, validate_structure=True)
+
+
+def _deserialize_materialized_json(value: bytes | None):
+    # Materialized-cache normalizers validate the complete record and nested
+    # payload before it becomes readable. Avoid repeating that recursive walk
+    # while replaying the changelog during API startup.
+    return _decode_json(value, validate_structure=False)
 
 
 def _deserialize_utf8_key(value: bytes | None) -> str | None:
@@ -63,8 +77,17 @@ def is_invalid_kafka_payload(value) -> bool:
     return isinstance(value, dict) and value.get(INVALID_KAFKA_PAYLOAD_MARKER) is True
 
 
-@lru_cache(maxsize=1)
-def get_kafka_producer():
+def _consumer_frame_limits() -> dict[str, int]:
+    # A fetch response can contain batches from several partitions. Keep the
+    # network frame ceiling above the aggregate fetch ceiling so compacted
+    # state replay cannot enter a reconnect loop as the changelog grows.
+    return {
+        "fetch_max_bytes": _CONSUMER_FETCH_MAX_BYTES,
+        "receive_message_max_bytes": _CONSUMER_RECEIVE_MAX_BYTES,
+    }
+
+
+def _build_kafka_producer(*, linger_ms: int):
     from kafka import KafkaProducer
 
     return KafkaProducer(
@@ -74,14 +97,25 @@ def get_kafka_producer():
         enable_idempotence=True,
         acks="all",
         retries=3,
-        linger_ms=5,
+        max_in_flight_requests_per_connection=1,
+        linger_ms=linger_ms,
         max_block_ms=3000,
         request_timeout_ms=3000,
     )
 
 
+@lru_cache(maxsize=1)
+def get_kafka_ingress_producer():
+    return _build_kafka_producer(linger_ms=5)
+
+
+@lru_cache(maxsize=1)
+def get_kafka_producer():
+    return _build_kafka_producer(linger_ms=0)
+
+
 def publish_ingress_job(key: int | str, payload: dict) -> None:
-    producer = get_kafka_producer()
+    producer = get_kafka_ingress_producer()
     future = producer.send(settings.kafka_ingress_topic, key=key, value=payload)
     future.get(timeout=10)
 
@@ -127,6 +161,7 @@ def build_ingress_consumer():
         auto_offset_reset="earliest",
         value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -142,6 +177,7 @@ def build_dlq_consumer():
         key_deserializer=_deserialize_utf8_key,
         value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -157,6 +193,7 @@ def build_notification_consumer():
         key_deserializer=_deserialize_utf8_key,
         value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -168,7 +205,8 @@ def build_materialized_cache_consumer():
         enable_auto_commit=False,
         consumer_timeout_ms=1000,
         key_deserializer=_deserialize_utf8_key,
-        value_deserializer=_deserialize_json,
+        value_deserializer=_deserialize_materialized_json,
+        **_consumer_frame_limits(),
     )
 
 
@@ -198,6 +236,7 @@ def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
         consumer_timeout_ms=1000,
         key_deserializer=_deserialize_utf8_key,
         value_deserializer=_deserialize_json,
+        **_consumer_frame_limits(),
     )
     try:
         partitions = consumer.partitions_for_topic(topic)
