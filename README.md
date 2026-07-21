@@ -2,7 +2,7 @@
 
 Kubernetes Operations Platform for a Reliable Event Processing Workload
 
-직접 만든 **Kafka 기반 고신뢰 이벤트 처리 시스템**을 검증 대상 workload로 사용해 배포, lag 기반 확장, 관측, 장애 격리, 복구, 백업·복원을 검증한 DevOps·플랫폼 엔지니어링 프로젝트입니다. API 기능보다 운영 중 어떤 신호를 보고 어떻게 판단했는지를 중심으로 설명합니다.
+직접 만든 **Kafka 기반 고신뢰 이벤트 처리 시스템**을 검증 대상 workload로 사용해 배포, lag 기반 확장, 관측, 장애 격리, 복구, 백업·복원을 검증한 DevOps·플랫폼 엔지니어링 프로젝트입니다. 운영 신호를 수집하고 판단·조치·검증으로 연결한 과정을 설명합니다.
 
 This project operates a reliable event-processing workload on Kubernetes and validates GitOps delivery, lag-based scaling, observability, failure recovery, and restore procedures. The order lifecycle shown in the demo is a reference scenario built on the generic event contract.
 
@@ -40,7 +40,7 @@ Observability ← API latency · consumer lag · replicas · persistence · drai
 ### 대표 판단 사례
 
 - **KEDA A/B**: Worker `2→8`, all-pipeline drain `301.42초→261.17초` 확인. 같은 실행에서 event 수 `7.35%` 감소, p95 `25.62%` 증가, notification peak lag `11,536` 발생. 확장 동작과 병목 이동의 증거로 채택하고 안정 성능 개선 판정은 보류
-- **DB 장애 복구**: 장애 중 Kafka append와 `202` 수락 확인. pod 복귀나 readiness만 사용하지 않고 PostgreSQL 최종 저장과 consumer lag `0`까지 확인
+- **DB 장애 복구**: 장애 중 Kafka append와 `202` 수락 확인. 복구 완료 조건은 PostgreSQL 최종 저장과 consumer lag `0`; pod 복귀와 readiness는 중간 신호로 분류
 - **GitOps와 복구**: `Synced / Healthy`와 workload image revision을 분리. backup 생성과 restore 성공도 별도 증거로 관리
 
 ### 현재 검증 수치 / Current Evidence
@@ -144,7 +144,7 @@ Content-Type: application/json
 }
 ```
 
-Kafka append 성공 응답은 `202 Accepted`이며 DB persistence 완료를 의미하지 않습니다. 후속 상태와 저장 결과는 `GET /v2/event-requests/{request_id}`와 `GET /v2/streams/{stream_id}/events`로 확인합니다. API가 `schema_version=2`를 부여하며 ordering, idempotency, migration, cache 세부 계약은 [Architecture](docs/ARCHITECTURE.md)와 [Service Requirements](docs/SERVICE_REQUIREMENTS.md)에 유지합니다.
+`202 Accepted`의 완료 범위는 Kafka append입니다. DB persistence 상태와 저장 결과는 `GET /v2/event-requests/{request_id}`와 `GET /v2/streams/{stream_id}/events`로 확인합니다. API가 `schema_version=2`를 부여하며 ordering, idempotency, migration, cache 세부 계약은 [Architecture](docs/ARCHITECTURE.md)와 [Service Requirements](docs/SERVICE_REQUIREMENTS.md)에 유지합니다.
 
 ## Reliability Semantics
 
@@ -158,7 +158,7 @@ Kafka append 성공 응답은 `202 Accepted`이며 DB persistence 완료를 의�
 
 exactly-once delivery, partition 간 global ordering, 모든 장애에서의 무손실, production SLA는 증명 범위에 포함하지 않습니다. DB commit 이후 best-effort Kafka publish gap과 unresolved DLQ state model은 남은 개선 과제입니다.
 
-로컬 profile의 Kafka는 애플리케이션별 producer ACL을 증명하지 않습니다. Worker는 compacted topic의 key/payload identity와 owner/schema를 검증하지만, self-consistent forged snapshot을 막는 production 경계는 Kafka authentication과 topic별 least-privilege producer ACL입니다.
+로컬 profile의 Kafka 검증 범위에는 애플리케이션별 producer ACL이 없습니다. Worker는 compacted topic의 key/payload identity와 owner/schema를 검증합니다. Production의 self-consistent forged snapshot 방어 경계는 Kafka authentication과 topic별 least-privilege producer ACL입니다.
 
 `GET /health/ready`의 상태 범위:
 
@@ -181,12 +181,12 @@ Readiness response의 `app_version`은 실행 중인 API build version을 제공
 | DLQ append-only log | 실패 event 보존과 replay input | unresolved 상태는 별도 모델 필요 |
 | Per-pod snapshot replay | pod마다 독립된 local read cache와 offset 소유권 충돌 제거 | unique request/message key 증가에 따라 cold-start replay가 계속 길어질 수 있음 |
 
-Worker scaling 효과는 API request count보다 consumer lag, persistence latency, backlog drain time으로 평가합니다. 현재 병목 후보는 DB insert/commit, stream sequence lock, record processing, connection pool, partition imbalance입니다.
+Worker scaling의 평가 지표는 consumer lag, persistence latency, backlog drain time입니다. API request count는 intake 지표로 분리합니다. 현재 병목 후보는 DB insert/commit, stream sequence lock, record processing, connection pool, partition imbalance입니다.
 
 ## What I Learned
 
 - 빠른 `202`와 실제 처리 용량은 다른 문제이며 burst throughput만으로 지속 가능 용량을 설명할 수 없음
-- Kafka ordering은 global guarantee가 아니라 key/partition과 consumer retry 경계의 조합
+- Kafka ordering 범위는 key/partition과 consumer retry 경계의 조합
 - DB commit 이후 Kafka publish도 별도 실패 경계를 가지며 transactional outbox가 없으면 누락 가능
 - append-only DLQ log 표본과 현재 unresolved incident state는 다른 운영 모델
 - 배포 증거에는 source commit, registry image, manifest tag, Argo CD revision이 함께 필요
@@ -200,7 +200,7 @@ Worker scaling 효과는 API request count보다 consumer lag, persistence laten
 - Worker scale-out 때 단일 notification-worker로 이동하는 backlog
 - 최신 hot-stream 30초 burst의 main lag drain 평균 `508.58초`; historical suite 범위 약 `10~16분`
 
-병목 판정은 API p95 하나로 하지 않습니다. Worker commit-observed lag, consumer lag peak, drain time, DB stage latency를 함께 봅니다.
+병목 판정에는 Worker commit-observed lag, consumer lag peak, drain time, DB stage latency를 사용합니다. API p95는 intake latency로 분리합니다.
 
 ## Next Improvements
 
@@ -212,7 +212,7 @@ Worker scaling 효과는 API request count보다 consumer lag, persistence laten
 - object storage backup, cluster-loss restore drill, RPO/RTO 기록
 - AWS network·IAM·secret·managed database를 포함한 실제 Terraform plan/apply 경로 검증
 
-Transactional outbox, accepted-state read model, unresolved DLQ state는 [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)에 workload 신뢰성 gap으로 유지합니다. 새로운 API·domain 기능 확장보다 배포, 운영, 복구, cloud evidence를 우선합니다.
+Transactional outbox, accepted-state read model, unresolved DLQ state는 [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)에 workload 신뢰성 gap으로 유지합니다. 다음 우선순위는 배포, 운영, 복구, cloud evidence입니다.
 
 ## AWS Migration Blueprint
 
@@ -228,7 +228,7 @@ Transactional outbox, accepted-state read model, unresolved DLQ state는 [Improv
 | local TLS | ACM + Route 53 |
 | runtime secret | AWS Secrets Manager |
 
-The Terraform directory is a migration blueprint, not evidence of an AWS deployment. Validation and production-hardening gaps are documented explicitly in [AWS IaC Plan](docs/AWS_IAC_PLAN.md).
+The Terraform directory is a migration blueprint. This repository currently contains no AWS deployment evidence. Validation and production-hardening gaps are documented explicitly in [AWS IaC Plan](docs/AWS_IAC_PLAN.md).
 
 ## Operations
 

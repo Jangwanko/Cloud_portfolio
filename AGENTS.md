@@ -188,7 +188,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - DLQ API의 `recent_samples`, `by_reason`, `oldest_sample_age_seconds`는 조회한 append-only log 표본의 통계로 설명합니다. unresolved queue depth, 현재 backlog, 미해결 event SLO로 표현하지 않습니다.
 - `results/README.md`, `results/kafka-performance/latest.txt`, `results/ordering-failure/latest.json`, `results/postgres-restore/latest.json`, `results/postgres-recovery/latest.json`은 Git 추적 대상으로 유지합니다. 새 실행은 원본, 조건, stable baseline 채택 여부 또는 restore/recovery 검증 범위를 함께 기록합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
-- 문서와 답변에서 대비를 앞세운 상투적인 문장 구성을 피합니다. "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 의미를 직접 씁니다.
+- 문서와 답변에서 대비를 앞세운 상투적인 문장 구성을 피합니다. 서술의 중요도를 비교형 도입으로 만들지 않고 주제와 판단 기준을 바로 선언합니다. "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 의미를 직접 씁니다.
 - 영어 문서와 답변도 상투적인 부정-대조 구문을 쓰지 않습니다. 같은 의미가 필요하면 짧고 직접적인 문장으로 나눕니다.
 - 불렛 문서는 문장형 끝맺이를 피합니다. `~합니다`, `~했습니다`, `~하지 않음`보다 `~ 확인`, `~ 대기`, `~ 분리`, `~ 유지`, `~ 제외` 같은 항목형 표현을 우선합니다.
 

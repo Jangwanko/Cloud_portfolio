@@ -356,7 +356,7 @@ class TestOperationalDocumentation:
         assert "Kafka append-first intake" in combined
         assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
         assert "status `200`" in combined
-        assert "Kafka append 성공 응답은 `202 Accepted`" in combined
+        assert "`202 Accepted`의 완료 범위는 Kafka append" in combined
         assert "plan` / `apply`는 실행하지 않았" in combined
         assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined
