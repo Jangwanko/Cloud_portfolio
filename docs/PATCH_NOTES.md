@@ -2,6 +2,43 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 푸시 전 평가 반영: 배포 게이트와 첫 화면 정리
+
+- `dev-kafka` image publication을 `ci.yml`의 `publish-dev-kafka-image` job으로 통합하고 `needs: validate` 적용
+- exact tested SHA의 candidate digest를 non-root 실행으로 검증한 뒤 12-character SHA tag로 승격
+- image 발행 중 branch가 앞서간 경우 오래된 run의 overlay tag commit 차단
+- 독립 `dev-kafka-image.yml` 제거, contract test로 validation dependency·digest promotion·branch advance guard 고정
+- README 정체성을 이벤트 처리 workload의 Kubernetes·GitOps 운영 플랫폼으로 전환
+- 상단에 API latency, consumer lag, replica, persistence 관측, drain, GitOps revision, restore 증거의 의미와 판단 한계를 표로 배치
+- KEDA drain 개선과 intake 악화·notification backlog 이동을 대표 운영 판단 사례로 공개
+- generic event contract를 플랫폼 검증 workload 설명으로 뒤로 이동하고 backend 기능 확장보다 배포·복구·cloud evidence를 다음 방향으로 지정
+- public demo-lite 링크를 대표 v2 시연 위치에서 제외하고 legacy deployment 경계 아래로 이동
+- public demo-lite v2 동기화는 current source의 검증·commit·master promotion 뒤 branch overlay 이식과 staged rollout 필요; 현재 미배포
+- hot single-stream 결과를 ordering/hot-partition 한계 증거로 한정하고 64-stream fixed Worker/KEDA A/B를 분리 실행
+- k6 setup에 `K6_STREAM_COUNT`를 추가하고 VU/iteration을 여러 stream에 균등 배정
+- performance suite에 `keda`/`fixed` Worker mode, fixed replica 원복, 실험별 result filename 지원 추가
+- 64-stream fixed `2` arm: event `22,125`, p95 `169.24ms`, message/notification peak lag `21,170`/`45`, all drain `301.42s`
+- 64-stream KEDA `2→8` arm: event `20,499`, p95 `212.60ms`, message/notification peak lag `18,950`/`11,536`, all drain `261.17s`
+- KEDA all drain `13.35%` 감소와 notification backlog 이동 확인; intake event `7.35%` 감소·p95 `25.62%` 증가로 stable 개선 판정 제외
+- 성능 회복 후보가 historical stable baseline에 미달하므로 commit·push 계속 보류
+
+## 2026-07-21 성능 회복: generic v2 클린 조건 3회 반복
+
+- 첫 v2 후보 저하를 intake, cache hydration, Worker post-commit publish, benchmark 초기 상태로 분해
+- compacted topic fetch response가 kafka-python 기본 network frame `1MiB`를 넘을 때 API cache consumer가 reconnect loop에 들어가는 결함 확인; fetch `50MiB`, receive frame `64MiB` 적용
+- materialized cache replay의 중복 JSON 구조 검증 제거, poll batch `200→1000`; cache normalizer 경계의 전체 검증 유지
+- Worker DB commit 뒤 status/snapshot/notification 발행 producer의 `linger_ms`를 `0`으로 분리해 직렬 post-commit 대기 축소
+- API HPA min `3→6`, scale-up stabilization `60s`·최대 `2 pods/60s`, scale-down stabilization `120s`; full cache replay가 부하 중 동시에 늘어나는 시작 부하 억제
+- benchmark suite에 모든 API pod hydration, API/Worker 최소 replica, CPU target, fresh lag `0` 연속 확인 steady-state gate 추가
+- destructive local benchmark reset helper 추가: DB event state 초기화, Kafka 6개 topic 재생성, delayed deletion I/O용 `75s` quiet period, Worker/KEDA 복구
+- result path 절대화, Windows evidence 교체를 `Move-Item -Force`로 수정, source dirty 여부 기록
+- HPA probe pod Ready 대기와 job 종료 판정 보강; CPU current/target과 stabilization 결과 분리 출력
+- 100 VU / 30s hot single-stream 클린 실행 3회: event `29,146`/`28,749`/`29,608`, 오류 모두 `0.00%`
+- 3회 평균 avg `51.81ms`, p95 `101.27ms`, p99 `140.59ms`; 첫 v2 후보 대비 event `14.93%` 증가, avg/p95/p99 `23.62%`/`18.30%`/`8.17%` 감소
+- main Worker drain 평균 `508.58s`, 약 `55.2 events/s`; 첫 v2 후보 약 `32.6 events/s` 대비 `69.3%` 증가
+- historical stable legacy baseline에는 미달하며 API floor 변경과 dirty local image 조건 포함; stable baseline 승격 및 Git push 보류
+- local unit / contract / infrastructure suite: `363 passed`
+
 ## 2026-07-21 수정: PostgreSQL 재시작 복구와 cache readiness 증거
 
 - persisted-volume PostgreSQL StatefulSet 전체 재시작 뒤 chart의 first-boot sync 설정이 재적용되지 않아 `synchronous_standby_names`가 비고 readiness가 `postgres_sync_standbys_below_minimum`으로 남는 결함 확인
@@ -211,7 +248,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 
 변경 내용:
 
-- `AGENTS.md`에 영어 문서와 답변에서도 `not only`, `not merely`, `not just` 같은 대비형 표현을 쓰지 않는 규칙을 추가했습니다.
+- `AGENTS.md`에 영어 문서와 답변의 상투적인 부정-대조 구문을 금지하는 규칙을 추가했습니다.
 - README의 `What To Look For` 문구에서 AI가 쓴 듯한 분류형 표현을 줄였습니다.
 - 설계 / 파이프라인 / 운영 설명을 더 직접적인 데모 안내 문장으로 바꿨습니다.
 - "받았다"와 "저장됐다"를 구분하는 지점을 README 상단에서 바로 보이게 했습니다.

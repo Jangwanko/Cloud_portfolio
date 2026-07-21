@@ -45,10 +45,9 @@ class TestOperationalDocumentation:
             assert "SERVICE_REQUIREMENTS.md" in document
 
         assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
-        assert "주문·결제 lifecycle은 범용 contract를 설명하는 reference scenario" in readme
-        assert "## 서비스 경계 / Service Boundary" in readme
+        assert "reference scenario built on the generic event contract" in readme
+        assert "## 핵심 요약 / Executive Summary" in readme
         assert "## AWS Migration Blueprint" in readme
-        assert "## TL;DR" in readme
         assert "## Trade-offs" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in architecture
@@ -57,22 +56,20 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
 
         for token in (
-            "## TL;DR",
-            "## Problem",
-            "## Solution",
-            "## Architecture Boundary",
-            "Kafka-centered 구조이며 PostgreSQL state/read model을 유지",
-            "PostgreSQL state path",
+            "## 핵심 요약 / Executive Summary",
+            "API → Kafka → Worker → PostgreSQL",
+            "### 현재 검증 수치 / Current Evidence",
+            "Current generic v2 recovery candidate",
+            "Historical Kafka intake baseline",
+            "Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다",
+            "## Generic Event Contract",
+            "## Demo",
+            "### Public legacy demo-lite",
             "## Validation Summary",
             "31,676",
-            "100/100 pass",
+            "same-stream ordering: `100/100`",
             "## Trade-offs",
             "Kafka append-first intake",
-            "### Ordering Guarantee",
-            "서로 다른 partition 전체의 global ordering: 보장 범위 제외",
-            "### Idempotency Boundary",
-            "X-Idempotency-Key",
-            "API는 Kafka append 전에 PostgreSQL claim을 만들지 않으며",
             "## What I Learned",
             "## Current Bottleneck",
             "Worker DB write throughput",
@@ -137,9 +134,8 @@ class TestOperationalDocumentation:
         assert 'value: "notification"' in app_manifest
         assert "job_name: notification-worker" in app_manifest
 
-        readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
-        for document in (readme, architecture):
+        for document in (architecture,):
             assert "DB membership" in document
             assert "watermark" in document
             assert "snapshot_age_seconds" in document
@@ -148,6 +144,9 @@ class TestOperationalDocumentation:
             assert "stream-snapshots" in document
             assert "API local materialized cache" in document
 
+        readme = read_text("README.md")
+        assert "DB membership/watermark 검증" in readme
+        assert "degraded cache" in readme
         assert "Prometheus --> KEDA" not in readme
         assert "KEDA `type: kafka`" in architecture
         assert "Prometheus / kafka-exporter는 같은 lag를 운영자가 관측" in architecture
@@ -212,14 +211,16 @@ class TestOperationalDocumentation:
             assert "| Snapshot consumer lag |" not in document
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
-        readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
 
-        for document in (readme, architecture):
-            assert "정상 event 흐름" in document
-            assert "장애 / DLQ 흐름" in document
-            assert "sequenceDiagram" in document
-            assert "inline retry" in document
+        assert "정상 event 흐름" in architecture
+        assert "장애 / DLQ 흐름" in architecture
+        assert "sequenceDiagram" in architecture
+        assert "inline retry" in architecture
+
+        readme = read_text("README.md")
+        assert "API → Kafka → Worker → PostgreSQL" in readme
+        assert "[Architecture](docs/ARCHITECTURE.md)" in readme
 
     def test_operations_docs_include_dlq_and_security_policy(self):
         operations = read_text("docs/OPERATIONS.md")
@@ -303,11 +304,10 @@ class TestOperationalDocumentation:
             assert "ordering_failure_injection.py" in document
 
     def test_reproducibility_environment_is_documented(self):
-        readme = read_text("README.md")
         quick_start = read_text("docs/QUICK_START.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (readme, quick_start, test_results):
+        for document in (quick_start, test_results):
             assert "AMD Ryzen 5 5600" in document
             assert "12 CPU" in document
             assert "15.6GiB" in document
@@ -319,7 +319,6 @@ class TestOperationalDocumentation:
         assert "Poison event did not reach Kafka DLQ in time" in quick_start
 
     def test_redis_results_are_kept_as_explicit_historical_context(self):
-        readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
         test_results = read_text("docs/TEST_RESULTS.md")
         requirements = read_text("requirements.txt").lower()
@@ -329,7 +328,6 @@ class TestOperationalDocumentation:
             if ".terraform" not in path.parts
         ).lower()
 
-        assert "Redis queue-first 수치는 과거 Redis scaling/tuning 문맥에만 사용" in readme
         assert "Redis queue 단계" in architecture
         assert "## Redis Historical Context" in test_results
         assert "Kafka append-first baseline, Worker Kafka KEDA 효과와 분리" in test_results
@@ -355,18 +353,16 @@ class TestOperationalDocumentation:
             assert term not in combined
         assert "cache-first" not in combined.lower()
 
-        assert "Kafka append-first path" in combined
+        assert "Kafka append-first intake" in combined
         assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
         assert "status `200`" in combined
-        assert "현재 build의 `202 Accepted`" in combined
+        assert "`202 Accepted`의 완료 범위는 Kafka append" in combined
         assert "plan` / `apply`는 실행하지 않았" in combined
         assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined
-        assert "hydrated cache fresh read: DB membership/watermark 확인 뒤 `source=cache`" in combined
-        assert (
-            "DB down stale fallback: initial hydration 완료 상태에서 "
-            "`source=cache`, `degraded=true`"
-        ) in combined
+        assert "DB membership/watermark 검증 뒤 fresh cache" in combined
+        assert "DB-down read는 `source=cache`, `degraded=true`" in combined
+        assert "`source=cache`, `degraded=true`" in combined
         assert "Worker success path transaction 통합" in combined
         assert "28839" in combined
         assert "8.08ms" in combined
@@ -425,19 +421,28 @@ class TestManifestContracts:
 
     def test_dev_kafka_gitops_uses_registry_image_and_action_tag_update(self):
         kustomization = read_text("k8s/gitops/overlays/local-ha/kustomization.yaml")
-        workflow = read_text(".github/workflows/dev-kafka-image.yml")
+        workflow = read_text(".github/workflows/ci.yml")
 
         assert "images:" in kustomization
         assert "name: messaging-portfolio" in kustomization
         assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
         assert "newTag:" in kustomization
 
-        assert "branches: [dev-kafka]" in workflow
+        assert "publish-dev-kafka-image:" in workflow
+        dev_publish = workflow.split("publish-dev-kafka-image:", 1)[1].split(
+            "publish-master-image:", 1
+        )[0]
+        assert "needs: validate" in dev_publish
+        assert "github.ref == 'refs/heads/dev-kafka'" in dev_publish
+        assert "ref: ${{ github.sha }}" in dev_publish
         assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
-        assert "[skip dev-kafka image]" in workflow
-        assert "docker/build-push-action" in workflow
-        assert "yq -i" in workflow
-        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in workflow
+        assert "[skip dev-kafka image]" in dev_publish
+        assert "docker/build-push-action" in dev_publish
+        assert "Verify published candidate digest" in dev_publish
+        assert "docker buildx imagetools create" in dev_publish
+        assert "git rev-parse origin/dev-kafka" in dev_publish
+        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in dev_publish
+        assert not (ROOT / ".github/workflows/dev-kafka-image.yml").exists()
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
@@ -481,6 +486,11 @@ class TestManifestContracts:
         for script in (status_script, suite_script):
             assert "sum(kafka_consumergroup_lag" not in script
         assert 'checks: ["rate==1"]' in k6_script
+        assert "K6_STREAM_COUNT" in k6_script
+        assert "data.streamIds[streamIndex]" in k6_script
+        assert "-K6StreamCount $K6StreamCount" in suite_script
+        assert '[ValidateSet("keda", "fixed")]' in suite_script
+        assert "Restore-WorkerScaling" in suite_script
         assert "k6 job did not finish within $TimeoutSec seconds" in k6_runner
         assert "-AllowThresholdFailure" not in suite_script
         assert "$failedResultPath" in suite_script
@@ -527,8 +537,7 @@ class TestManifestContracts:
         assert "[System.Text.UTF8Encoding]::new($false)" in suite_script
         assert "[System.IO.File]::WriteAllLines" in suite_script
         assert "$temporaryOutputPath" in suite_script
-        assert "[System.IO.File]::Replace($temporaryOutputPath, $outputPath, $null)" in suite_script
-        assert "[System.IO.File]::Move($temporaryOutputPath, $outputPath)" in suite_script
+        assert "Move-Item -LiteralPath $temporaryOutputPath -Destination $outputPath -Force" in suite_script
 
     def test_api_contract_waits_for_real_materialized_cache_hydration(self):
         contract_script = read_text("scripts/test_api_contracts.ps1")
@@ -558,7 +567,7 @@ class TestManifestContracts:
 
         assert "master" in gitops_docs
         assert "dev-kafka" in gitops_docs
-        assert "ghcr.io/jangwanko/cloud_portfolio:<commit-sha>" in gitops_docs
+        assert "ghcr.io/jangwanko/cloud_portfolio:<12-char-sha>" in gitops_docs
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest
@@ -702,7 +711,11 @@ class TestApiContractAndRunbook:
         observability = read_text("docs/OBSERVABILITY.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (readme, operations, runbook, observability, test_results):
+        assert "DLQ summary" in readme
+        for token in ("by_reason", "replayable", "blocked"):
+            assert token in readme
+
+        for document in (operations, runbook, observability, test_results):
             assert "/v1/dlq/ingress/summary" in document
             assert "by_reason" in document
             assert "replayable" in document

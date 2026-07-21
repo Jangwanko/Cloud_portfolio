@@ -317,6 +317,65 @@ def test_http_body_limit_is_explicit_in_runtime_and_operator_contracts() -> None
     assert "413" in requirements
 
 
+def test_api_hpa_avoids_cache_hydration_scale_out_storms() -> None:
+    for path in (
+        "k8s/app/manifests-ha.yaml",
+        "k8s/gitops/base/manifests-ha.yaml",
+    ):
+        manifest = _read(path)
+        hpa = manifest.split("name: api-hpa", 1)[1].split("---", 1)[0]
+        assert "minReplicas: 6" in hpa
+        assert "stabilizationWindowSeconds: 60" in hpa
+        assert "type: Pods" in hpa
+        assert "value: 2" in hpa
+        assert "stabilizationWindowSeconds: 120" in hpa
+
+
+def test_destructive_benchmark_reset_is_explicit_and_restores_workers() -> None:
+    reset = _read("scripts/reset_kafka_benchmark_state.ps1")
+    suite = _read("scripts/run_kafka_performance_suite.ps1")
+    runner = _read("scripts/test_k6_load.ps1")
+    load = _read("scripts/load_test_k6.js")
+    job = _read("k8s/app/k6-job.yaml")
+    fixed_evidence = _read("results/kafka-performance/worker-ab-fixed.txt")
+    keda_evidence = _read("results/kafka-performance/worker-ab-keda.txt")
+
+    assert "[switch]$ConfirmDataLoss" in reset
+    assert "if (-not $ConfirmDataLoss)" in reset
+    assert 'autoscaling.keda.sh/paused-replicas="0"' in reset
+    assert "autoscaling.keda.sh/paused-replicas-" in reset
+    assert "_reset_demo_event_data" in reset
+    assert "cleanup.policy" in reset
+    assert "[int]$KafkaCleanupQuietSec = 75" in reset
+    assert "Start-Sleep -Seconds $KafkaCleanupQuietSec" in reset
+    assert '"rollout", "restart", "deployment/api"' in reset
+    assert "Assert-KubectlSuccess" in reset
+    assert "Invoke-CleanupKubectl" in reset
+    assert "Cleanup failures:" in reset
+    assert "[switch]$CleanBenchmarkState" in suite
+    assert "reset_kafka_benchmark_state.ps1" in suite
+    assert "-ConfirmDataLoss" in suite
+    assert '[ValidateSet("keda", "fixed")]' in suite
+    assert "Set-WorkerScalingExperimentMode" in suite
+    assert "Restore-WorkerScaling" in suite
+    assert "$scalingRestoreError" in suite
+    assert "K6StreamCount" in suite
+    assert "K6StreamCount" in runner
+    assert "K6_STREAM_COUNT" in load
+    assert "data.streamIds[streamIndex]" in load
+    assert "name: K6_STREAM_COUNT" in job
+    for evidence in (fixed_evidence, keda_evidence):
+        assert "k6_stream_count: 64" in evidence
+        assert "Error rate         : 0.00%" in evidence
+        assert "main_load_message_worker_final_consumer_lag: 0" in evidence
+        assert "main_load_notification_worker_final_consumer_lag: 0" in evidence
+    assert "worker_scaling_mode: fixed" in fixed_evidence
+    assert "main_load_all_consumer_backlog_drain_seconds: 301.42" in fixed_evidence
+    assert "worker_scaling_mode: keda" in keda_evidence
+    assert "main_load_all_consumer_backlog_drain_seconds: 261.17" in keda_evidence
+    assert "worker-keda-hpa   Deployment/worker" in keda_evidence
+
+
 def test_quick_starts_install_postgresql_before_application_workloads() -> None:
     windows = _read("scripts/quick_start_all.ps1")
     linux = _read("scripts/quick_start_all.sh")

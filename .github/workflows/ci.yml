@@ -109,6 +109,118 @@ jobs:
             exit 1
           fi
 
+  publish-dev-kafka-image:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/dev-kafka' &&
+      !contains(github.event.head_commit.message, '[skip dev-kafka image]')
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout exact tested revision
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set immutable image coordinates
+        id: image
+        shell: bash
+        run: |
+          short_sha="${GITHUB_SHA::12}"
+          {
+            echo "tag=${short_sha}"
+            echo "repository=ghcr.io/jangwanko/cloud_portfolio"
+            echo "candidate=ghcr.io/jangwanko/cloud_portfolio:candidate-dev-${short_sha}"
+            echo "image=ghcr.io/jangwanko/cloud_portfolio:${short_sha}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Build and push candidate image
+        id: candidate
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.image.outputs.candidate }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Verify published candidate digest
+        shell: bash
+        env:
+          REPOSITORY: ${{ steps.image.outputs.repository }}
+          DIGEST: ${{ steps.candidate.outputs.digest }}
+        run: |
+          test -n "$DIGEST"
+          test "$(docker run --rm --pull always --entrypoint id "${REPOSITORY}@${DIGEST}" -u)" = "10001"
+
+      - name: Promote verified digest
+        shell: bash
+        env:
+          REPOSITORY: ${{ steps.image.outputs.repository }}
+          DIGEST: ${{ steps.candidate.outputs.digest }}
+          RELEASE_IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$RELEASE_IMAGE" \
+            --tag "${REPOSITORY}:dev-kafka-latest" \
+            "${REPOSITORY}@${DIGEST}"
+
+      - name: Update local-ha image tag
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        run: |
+          git fetch origin dev-kafka
+          if [[ "$(git rev-parse origin/dev-kafka)" != "$GITHUB_SHA" ]]; then
+            echo "dev-kafka advanced after this run started; the newer run will publish its own tag"
+            exit 0
+          fi
+
+          python - "$IMAGE_TAG" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path("k8s/gitops/overlays/local-ha/kustomization.yaml")
+          text = path.read_text(encoding="utf-8")
+          updated, count = re.subn(
+              r"(?m)^(\s*newTag:\s*).+$",
+              rf"\g<1>{sys.argv[1]}",
+              text,
+          )
+          if count != 1:
+              raise SystemExit(f"expected exactly one newTag entry, found {count}")
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+          if git diff --quiet -- k8s/gitops/overlays/local-ha/kustomization.yaml; then
+            echo "local-ha already references ${IMAGE_TAG}"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/gitops/overlays/local-ha/kustomization.yaml
+          git commit -m "ci: deploy dev-kafka image ${IMAGE_TAG} [skip dev-kafka image]"
+          git push origin HEAD:dev-kafka
+
   publish-master-image:
     if: >-
       github.event_name == 'push' &&

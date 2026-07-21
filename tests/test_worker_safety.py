@@ -1058,7 +1058,7 @@ def test_json_unicode_scalar_validation_rejects_lone_surrogates_and_allows_emoji
     assert accepted["payload"] == {"value": "😀"}
 
 
-def test_shared_kafka_producer_enables_idempotent_delivery(monkeypatch):
+def test_shared_kafka_producer_preserves_idempotent_ordering_without_linger(monkeypatch):
     import kafka
     from portfolio import kafka_client
 
@@ -1075,6 +1075,31 @@ def test_shared_kafka_producer_enables_idempotent_delivery(monkeypatch):
 
     assert captured["enable_idempotence"] is True
     assert captured["acks"] == "all"
+    assert captured["retries"] == 3
+    assert captured["max_in_flight_requests_per_connection"] == 1
+    assert captured["linger_ms"] == 0
+
+
+def test_ingress_producer_keeps_short_batch_window(monkeypatch):
+    import kafka
+    from portfolio import kafka_client
+
+    captured = {}
+
+    def fake_producer(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(kafka, "KafkaProducer", fake_producer)
+    kafka_client.get_kafka_ingress_producer.cache_clear()
+    kafka_client.get_kafka_ingress_producer()
+    kafka_client.get_kafka_ingress_producer.cache_clear()
+
+    assert captured["enable_idempotence"] is True
+    assert captured["acks"] == "all"
+    assert captured["retries"] == 3
+    assert captured["max_in_flight_requests_per_connection"] == 1
+    assert captured["linger_ms"] == 5
 
 
 def test_ingress_consumer_preserves_raw_key_for_record_validation(monkeypatch):
@@ -1118,6 +1143,27 @@ def test_non_ingress_consumers_use_fail_closed_utf8_key_deserializer(monkeypatch
     assert all(
         kwargs["key_deserializer"] is _deserialize_utf8_key
         for _topics, kwargs in captured
+    )
+    assert captured[2][1]["value_deserializer"] is kafka_client._deserialize_materialized_json
+    assert all(
+        kwargs["fetch_max_bytes"] == 50 * 1024 * 1024
+        and kwargs["receive_message_max_bytes"] == 64 * 1024 * 1024
+        for _topics, kwargs in captured
+    )
+
+
+def test_materialized_deserializer_defers_structure_walk_but_rejects_invalid_json():
+    from portfolio import kafka_client
+
+    deeply_nested = b'{"value":{"nested":{"leaf":1}}}'
+    assert kafka_client._deserialize_materialized_json(deeply_nested)["value"]["nested"] == {
+        "leaf": 1
+    }
+    assert kafka_client.is_invalid_kafka_payload(
+        kafka_client._deserialize_materialized_json(b'{"value":NaN}')
+    )
+    assert kafka_client.is_invalid_kafka_payload(
+        kafka_client._deserialize_materialized_json(b"{not-json")
     )
 
 

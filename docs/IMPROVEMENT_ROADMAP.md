@@ -6,12 +6,15 @@
 
 현재 투자 순서:
 
-1. **generic v2 지속 가능 처리량 확정**: 첫 100 VU / 30초 후보를 3회 반복하고 single hot stream과 multi-stream을 분리해 intake, Worker commit lag, PostgreSQL 처리량, drain time 비교
-2. **복구 지점 자동화**: 같은 local cluster의 disposable database를 사용한 수동 host logical dump restore는 통과. 남은 범위는 object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
-3. **DB commit 이후 publish gap 제거**: request status, snapshot, notification을 transactional outbox 또는 동등한 복구 경계로 이동
-4. **offset crash / rebalance 증거 완성**: 배포 image에서 record 처리와 offset commit 사이 강제 종료, consumer rebalance, 재기동 후 accepted/persisted reconciliation 검증
+1. **public generic v2 demo 동기화**: 현재 legacy demo-lite의 UI `1.4.1`·API `1.0.0`·event `200`을 current generic v2 source와 맞춤. `demo-dev`에서 저사양 overlay를 이식하고 schema migration → Worker → API gate 순서로 검증한 뒤 `demo-lite`에 최소 push
+2. **배포 validation gate 고정**: `dev-kafka` image publication을 `ci.yml`의 `needs: validate` job으로 통합한 source 변경 완료. remote Actions success, verified digest, overlay bot commit, Argo workload image 일치까지 확인해야 완료
+3. **generic v2 지속 가능 처리량 확정**: single hot stream 클린 조건 3회와 64-stream fixed Worker/KEDA A/B 1회 완료. 다음 단계는 A/B 3회 반복, notification-worker capacity 분리, registry image 재검증, PostgreSQL 처리량과 Worker commit lag의 유효 bucket 재측정
+4. **신뢰성 gap 제거**: accepted-state read model, transactional outbox, offset crash/rebalance 장애 주입을 각각 재현 가능한 검증으로 닫음
+5. **복구 지점 자동화**: 같은 local cluster의 disposable database를 사용한 수동 host logical dump restore는 통과. 남은 범위는 object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 
-2026-07-21 generic v2 첫 후보는 `25,378` event를 모두 `202`로 수락하고 오류 `0.00%`, p95 `123.96ms`, same-stream ordering `100/100`을 확인했습니다. historical stable baseline보다 total request가 `19.87%` 적고 p95가 `53.70%` 높습니다. fresh local cluster의 단일 hot-stream 1회 결과이므로 stable baseline으로 승격하지 않으며 위 1번 실험으로 원인과 변동폭을 먼저 분리합니다.
+2026-07-21 회복 후보는 clean DB/topic, API min `6`, 모든 cache hydration과 lag `0`을 확인한 동일 hot-stream 조건에서 3회 실행했습니다. 평균 event `29,168`, p95 `101.27ms`, p99 `140.59ms`, main drain `508.58s`이며 첫 v2 후보보다 세 번 모두 개선됐습니다. historical stable legacy baseline보다 평균 event가 `7.92%` 적고 p95가 `25.57%` 높으며, dirty local image와 API floor 변경을 포함합니다. 64-stream A/B 1회에서는 KEDA drain이 `13.35%` 줄었으나 intake가 악화되고 notification backlog가 커졌습니다. stable generic v2 baseline 승격은 A/B 반복과 registry image 재검증 뒤 판정합니다.
+
+Public 동기화는 branch promotion과 실제 배포를 포함하므로 uncommitted worktree에서 완료할 수 없습니다. 먼저 current source를 local test와 benchmark로 확정하고 사용자 승인 뒤 `dev-kafka` commit/push, `master` promotion, `demo-dev` 저사양 검증, `demo-lite` staged rollout 순서로 진행합니다. Public 배포 workflow도 validation 성공에 종속되어야 합니다.
 
 ## P0 — 데이터 유실 경계와 API 계약
 
@@ -105,6 +108,7 @@
 
 ### 8. Fixed Worker 대 KEDA A/B 실험
 
+- 현재 상태: 64-stream clean 조건 1회 완료. KEDA `2→8`에서 all drain `301.42s→261.17s`, notification peak lag `45→11,536`, intake p95 `169.24ms→212.60ms` 확인
 - 목표: 같은 입력과 DB 조건에서 fixed replica와 lag-based KEDA 비교
 - 이유: API intake 성능과 Worker persistence capacity 분리
 - 완료 기준:
@@ -126,7 +130,7 @@
 
 ### 10. 범용 event envelope 증거
 
-- 현재 상태: generic schema/migration/Worker/API/UI 구현, local DB migration `0008`, staged rollout, v2 contract/persistence, same-stream ordering, 첫 performance 후보 확인. 서로 다른 reference domain과 안정 성능 반복은 대기
+- 현재 상태: generic schema/migration/Worker/API/UI 구현, local DB migration `0008`, staged rollout, v2 contract/persistence, same-stream ordering, clean hot-stream performance 3회, 64-stream A/B 1회 확인. 서로 다른 reference domain, A/B 반복, registry image 안정 성능은 대기
 - 목표: `schema_version`, `event_type`, JSON `payload`, JSON `metadata`를 Kafka payload와 PostgreSQL row에서 일관되게 유지
 - 완료 기준:
   - migration, persistence, API response contract test 통과

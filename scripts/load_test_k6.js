@@ -7,6 +7,7 @@ const STAGE_DURATION = __ENV.STAGE_DURATION || "60s";
 const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
 const SINGLE_VUS = Number(__ENV.K6_SINGLE_VUS || "500");
+const STREAM_COUNT = Number(__ENV.K6_STREAM_COUNT || "1");
 const K6_WRITE_RESULT_FILES =
   (__ENV.K6_WRITE_RESULT_FILES || "true").toLowerCase() !== "false";
 const SETUP_RETRIES = Number(__ENV.SETUP_RETRIES || "5");
@@ -161,17 +162,23 @@ export function setup() {
     Authorization: `Bearer ${u1Token}`,
   };
 
-  const streamRes = postJsonWithRetry(
-    `${BASE_URL}/v1/streams`,
-    { name: `k6-stream-${suffix}`, member_ids: [u1.id, u2.id] },
-    { headers: authHeaders },
-    200,
-    "create stream",
-  );
-  check(streamRes, { "create stream (200)": (r) => r.status === 200 });
-  const stream = JSON.parse(streamRes.body);
+  if (!Number.isInteger(STREAM_COUNT) || STREAM_COUNT < 1 || STREAM_COUNT > 1000) {
+    throw new Error(`K6_STREAM_COUNT must be an integer from 1 to 1000: ${STREAM_COUNT}`);
+  }
+  const streamIds = [];
+  for (let index = 0; index < STREAM_COUNT; index += 1) {
+    const streamRes = postJsonWithRetry(
+      `${BASE_URL}/v1/streams`,
+      { name: `k6-stream-${suffix}-${index}`, member_ids: [u1.id, u2.id] },
+      { headers: authHeaders },
+      200,
+      `create stream ${index}`,
+    );
+    check(streamRes, { "create stream (200)": (r) => r.status === 200 });
+    streamIds.push(JSON.parse(streamRes.body).id);
+  }
 
-  return { streamId: stream.id, token: u1Token };
+  return { streamIds, token: u1Token };
 }
 
 export function eventFlow(data) {
@@ -190,11 +197,12 @@ export function eventFlow(data) {
       virtual_user: __VU,
       iteration: __ITER,
     },
-    metadata: { scenario: "k6-intake-baseline" },
+    metadata: { scenario: "k6-intake-baseline", stream_count: STREAM_COUNT },
   });
+  const streamIndex = (__VU + __ITER) % data.streamIds.length;
 
   const res = http.post(
-    `${BASE_URL}/v2/streams/${data.streamId}/events`,
+    `${BASE_URL}/v2/streams/${data.streamIds[streamIndex]}/events`,
     payload,
     { headers },
   );
@@ -241,6 +249,7 @@ export function handleSummary(data) {
     "=== k6 Load Test Summary ===",
     `Base URL           : ${BASE_URL}`,
     `Profile            : ${PROFILE}`,
+    `Stream count       : ${STREAM_COUNT}`,
     `Stage duration     : ${STAGE_DURATION}${PROFILE === "single500" ? ` (${SINGLE_VUS} concurrent users)` : " (100 -> 500 -> 1000 concurrent users)"}`,
     `Idempotency header  : ${SEND_IDEMPOTENCY_KEY ? "enabled" : "disabled"}`,
     `Total HTTP requests: ${totalRequests}`,

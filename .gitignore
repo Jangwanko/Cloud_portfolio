@@ -41,6 +41,8 @@ results/*
 !results/kafka-performance/
 results/kafka-performance/*
 !results/kafka-performance/latest.txt
+!results/kafka-performance/worker-ab-fixed.txt
+!results/kafka-performance/worker-ab-keda.txt
 !results/ordering-failure/
 results/ordering-failure/*
 !results/ordering-failure/latest.json

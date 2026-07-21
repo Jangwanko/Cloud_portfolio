@@ -6,6 +6,8 @@ param(
   [int]$EventCount = 50,
   [string]$K6Profile = "single500",
   [int]$K6SingleVus = 100,
+  [ValidateRange(1, 1000)]
+  [int]$K6StreamCount = 1,
   [string]$StageDuration = "30s",
   [double]$ThinkTime = 0.05,
   [int]$TimeoutSec = 600,
@@ -15,19 +17,31 @@ param(
   [ValidateRange(1, 300)]
   [int]$MaxLagMetricAgeSec = 30,
   [int]$LagDrainTimeoutSec = 1200,
+  [ValidateRange(30, 1800)]
+  [int]$SteadyStateTimeoutSec = 600,
+  [ValidateSet("keda", "fixed")]
+  [string]$WorkerScalingMode = "keda",
+  [ValidateRange(1, 8)]
+  [int]$FixedWorkerReplicas = 2,
+  [ValidatePattern('^[^\\/:*?"<>|]+\.txt$')]
+  [string]$ResultFileName = "latest.txt",
+  [switch]$CleanBenchmarkState,
   [switch]$SkipReset
 )
 
 $ErrorActionPreference = "Stop"
 
-$resultDir = Join-Path $PSScriptRoot "..\results\kafka-performance"
-$resultPath = Join-Path $resultDir "latest.txt"
-$failedResultPath = Join-Path $resultDir ("failed-{0}.txt" -f (Get-Date -Format "yyyyMMdd-HHmmss"))
+$resultDir = [System.IO.Path]::GetFullPath(
+  (Join-Path $PSScriptRoot "..\results\kafka-performance")
+)
+$resultPath = Join-Path $resultDir $ResultFileName
+$failedResultPath = Join-Path $resultDir ("failed-{0}-{1}" -f (Get-Date -Format "yyyyMMdd-HHmmss"), $ResultFileName)
 $lines = [System.Collections.Generic.List[string]]::new()
 $suiteSucceeded = $false
 $suiteError = $null
 $resetError = $null
 $writeError = $null
+$scalingRestoreError = $null
 
 function Add-Line([string]$Value = "") {
   [void]$lines.Add($Value)
@@ -60,6 +74,58 @@ function Assert-DeploymentReady([string]$Name) {
     throw "deployment/$Name is not fully rolled out (desired=$desired ready=$ready updated=$updated)"
   }
   return $deployment
+}
+
+function Wait-WorkerReplicaCount([int]$Expected) {
+  $deadline = (Get-Date).AddSeconds($SteadyStateTimeoutSec)
+  while ((Get-Date) -lt $deadline) {
+    $worker = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "worker")
+    if (
+      [int]$worker.spec.replicas -eq $Expected -and
+      [int]$worker.status.readyReplicas -eq $Expected -and
+      [int]$worker.status.updatedReplicas -eq $Expected
+    ) {
+      return
+    }
+    Start-Sleep -Seconds 2
+  }
+  throw "Worker did not reach $Expected ready replicas within $SteadyStateTimeoutSec seconds"
+}
+
+function Set-WorkerScalingExperimentMode() {
+  if ($WorkerScalingMode -eq "fixed") {
+    kubectl -n $Namespace annotate scaledobject worker-keda `
+      "autoscaling.keda.sh/paused-replicas=$FixedWorkerReplicas" `
+      --overwrite | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to pin Worker replicas for fixed-mode experiment"
+    }
+    Wait-WorkerReplicaCount -Expected $FixedWorkerReplicas
+    return
+  }
+
+  kubectl -n $Namespace annotate scaledobject worker-keda `
+    autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to enable Worker KEDA for scaling experiment"
+  }
+  Wait-WorkerReplicaCount -Expected 2
+}
+
+function Restore-WorkerScaling() {
+  if ($WorkerScalingMode -ne "fixed") {
+    return
+  }
+  kubectl -n $Namespace annotate scaledobject worker-keda `
+    autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to restore Worker KEDA after fixed-mode experiment"
+  }
+  kubectl -n $Namespace scale deployment/worker --replicas=2 | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to restore Worker replicas after fixed-mode experiment"
+  }
+  Wait-WorkerReplicaCount -Expected 2
 }
 
 function Assert-KubernetesReady() {
@@ -129,11 +195,45 @@ function Get-ConsumerLag([string]$ConsumerGroup) {
     -MetricLabel "Kafka lag for consumer group $ConsumerGroup"
 }
 
+function Get-PristineConsumerLagSample([string]$ConsumerGroup) {
+  $topic = switch ($ConsumerGroup) {
+    "message-worker" { "message-ingress" }
+    "notification-worker" { "message-notifications" }
+    default { return $null }
+  }
+  $topicOffset = Get-PrometheusScalar `
+    -PromQl "sum(clamp_min(kafka_topic_partition_current_offset{topic=`"$topic`"}, 0))" `
+    -MetricLabel "Kafka topic end offset for $topic"
+  if ($topicOffset -ne 0) {
+    return $null
+  }
+  $sourceTimestamp = Get-PrometheusScalar `
+    -PromQl "min(timestamp(kafka_topic_partition_current_offset{topic=`"$topic`"}))" `
+    -MetricLabel "Kafka topic offset source timestamp for $topic"
+  $nowSeconds = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds() / 1000.0
+  $ageSeconds = $nowSeconds - $sourceTimestamp
+  return [pscustomobject]@{
+    Lag = 0
+    SourceTimestampSeconds = $sourceTimestamp
+    AgeSeconds = $ageSeconds
+    Fresh = ($ageSeconds -ge -5 -and $ageSeconds -le $MaxLagMetricAgeSec)
+    PristineTopic = $true
+  }
+}
+
 function Get-ConsumerLagSample([string]$ConsumerGroup) {
   for ($attempt = 1; $attempt -le 3; $attempt += 1) {
-    $sourceTimestampBefore = Get-PrometheusScalar `
-      -PromQl "min(timestamp(kafka_consumergroup_lag{consumergroup=`"$ConsumerGroup`"}))" `
-      -MetricLabel "Kafka lag source timestamp for consumer group $ConsumerGroup"
+    try {
+      $sourceTimestampBefore = Get-PrometheusScalar `
+        -PromQl "min(timestamp(kafka_consumergroup_lag{consumergroup=`"$ConsumerGroup`"}))" `
+        -MetricLabel "Kafka lag source timestamp for consumer group $ConsumerGroup"
+    } catch {
+      $pristine = Get-PristineConsumerLagSample -ConsumerGroup $ConsumerGroup
+      if ($null -ne $pristine) {
+        return $pristine
+      }
+      throw
+    }
     $lag = Get-ConsumerLag -ConsumerGroup $ConsumerGroup
     $sourceTimestampAfter = Get-PrometheusScalar `
       -PromQl "min(timestamp(kafka_consumergroup_lag{consumergroup=`"$ConsumerGroup`"}))" `
@@ -147,11 +247,112 @@ function Get-ConsumerLagSample([string]$ConsumerGroup) {
         SourceTimestampSeconds = $sourceTimestampAfter
         AgeSeconds = $ageSeconds
         Fresh = $fresh
+        PristineTopic = $false
       }
     }
     Start-Sleep -Milliseconds 200
   }
   throw "Kafka lag metric changed while sampling consumer group $ConsumerGroup after 3 attempts"
+}
+
+function Test-AllApiCachesHydrated([object]$ApiDeployment) {
+  $pods = Get-KubernetesJson @(
+    "-n", $Namespace, "get", "pods", "-l", "app=api"
+  )
+  $activePods = @(
+    $pods.items | Where-Object {
+      $null -eq $_.metadata.deletionTimestamp -and $_.status.phase -eq "Running"
+    }
+  )
+  if ($activePods.Count -ne [int]$ApiDeployment.spec.replicas) {
+    return $false
+  }
+  foreach ($pod in $activePods) {
+    $hydrated = & kubectl -n $Namespace exec $pod.metadata.name -- python -c `
+      "import json,urllib.request; print(str(json.load(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5))['materialized_cache']['hydrated']).lower())" `
+      2>$null
+    if ($LASTEXITCODE -ne 0 -or ($hydrated | Out-String).Trim() -ne "true") {
+      return $false
+    }
+  }
+  return $true
+}
+
+function Wait-PerformanceSteadyState() {
+  $deadline = (Get-Date).AddSeconds($SteadyStateTimeoutSec)
+  $requiredConsecutiveSamples = 3
+  $consecutiveSamples = 0
+  while ((Get-Date) -lt $deadline) {
+    $apiHpa = Get-KubernetesJson @("-n", $Namespace, "get", "hpa", "api-hpa")
+    $workerHpa = if ($WorkerScalingMode -eq "keda") {
+      Get-KubernetesJson @("-n", $Namespace, "get", "hpa", "worker-keda-hpa")
+    } else {
+      $null
+    }
+    $api = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "api")
+    $worker = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "worker")
+    $workerLag = Get-ConsumerLagSample -ConsumerGroup "message-worker"
+    $notificationLag = Get-ConsumerLagSample -ConsumerGroup "notification-worker"
+    $health = Invoke-RestMethod -Method Get -Uri "$($BaseUrl.TrimEnd('/'))/health/ready" -TimeoutSec 10
+
+    $apiMin = [int]$apiHpa.spec.minReplicas
+    $expectedWorkerReplicas = if ($WorkerScalingMode -eq "fixed") {
+      $FixedWorkerReplicas
+    } else {
+      [int]$workerHpa.spec.minReplicas
+    }
+    $apiCpuTarget = [int]$apiHpa.spec.metrics[0].resource.target.averageUtilization
+    $apiCpuCurrent = if ($null -eq $apiHpa.status.currentMetrics) {
+      $null
+    } else {
+      [int]$apiHpa.status.currentMetrics[0].resource.current.averageUtilization
+    }
+    $allApiCachesHydrated = Test-AllApiCachesHydrated -ApiDeployment $api
+    $steady = (
+      [int]$api.spec.replicas -eq $apiMin -and
+      [int]$api.status.readyReplicas -eq $apiMin -and
+      [int]$api.status.updatedReplicas -eq $apiMin -and
+      $null -ne $apiCpuCurrent -and
+      $apiCpuCurrent -le $apiCpuTarget -and
+      $allApiCachesHydrated -and
+      [int]$worker.spec.replicas -eq $expectedWorkerReplicas -and
+      [int]$worker.status.readyReplicas -eq $expectedWorkerReplicas -and
+      [int]$worker.status.updatedReplicas -eq $expectedWorkerReplicas -and
+      $workerLag.Fresh -and $workerLag.Lag -eq 0 -and
+      $notificationLag.Fresh -and $notificationLag.Lag -eq 0 -and
+      [string]$health.status -eq "ready" -and
+      $health.materialized_cache.ready -eq $true -and
+      $health.materialized_cache.hydrated -eq $true
+    )
+
+    Add-Line (
+      "steady-state: api={0}/{1} api_cpu={2}/{3}% worker={4}/{5} lag={6}/{7} routed_cache={8}/{9} all_api_caches={10} consecutive={11}/{12}" -f
+      [int]$api.status.readyReplicas,
+      $apiMin,
+      $apiCpuCurrent,
+      $apiCpuTarget,
+      [int]$worker.status.readyReplicas,
+      $expectedWorkerReplicas,
+      $workerLag.Lag,
+      $notificationLag.Lag,
+      $health.materialized_cache.ready,
+      $health.materialized_cache.hydrated,
+      $allApiCachesHydrated,
+      $consecutiveSamples,
+      $requiredConsecutiveSamples
+    )
+
+    if ($steady) {
+      $consecutiveSamples += 1
+      if ($consecutiveSamples -ge $requiredConsecutiveSamples) {
+        return
+      }
+    } else {
+      $consecutiveSamples = 0
+    }
+    Start-Sleep -Seconds 5
+  }
+  throw "Performance environment did not reach steady state within $SteadyStateTimeoutSec seconds"
 }
 
 function Wait-ConsumerLagDrain(
@@ -242,6 +443,7 @@ Add-Line ("namespace: {0}" -f $Namespace)
 Add-Line ("base_url: {0}" -f $BaseUrl)
 Add-Line ("k6_profile: {0}" -f $K6Profile)
 Add-Line ("k6_single_vus: {0}" -f $K6SingleVus)
+Add-Line ("k6_stream_count: {0}" -f $K6StreamCount)
 Add-Line ("stage_duration: {0}" -f $StageDuration)
 Add-Line ("think_time: {0}" -f $ThinkTime)
 Add-Line ("ordering_event_count: {0}" -f $OrderingEventCount)
@@ -249,10 +451,38 @@ Add-Line ("event_count: {0}" -f $EventCount)
 Add-Line ("lag_sample_interval_seconds: {0}" -f $LagSampleIntervalSec)
 Add-Line ("max_lag_metric_age_seconds: {0}" -f $MaxLagMetricAgeSec)
 Add-Line ("lag_drain_timeout_seconds: {0}" -f $LagDrainTimeoutSec)
+Add-Line ("steady_state_timeout_seconds: {0}" -f $SteadyStateTimeoutSec)
+Add-Line ("worker_scaling_mode: {0}" -f $WorkerScalingMode)
+Add-Line ("fixed_worker_replicas: {0}" -f $FixedWorkerReplicas)
+Add-Line ("result_file_name: {0}" -f $ResultFileName)
+Add-Line ("clean_benchmark_state: {0}" -f $CleanBenchmarkState.IsPresent)
 Add-Line ("source_branch: {0}" -f ((& git branch --show-current | Out-String).Trim()))
 Add-Line ("source_commit: {0}" -f ((& git rev-parse HEAD | Out-String).Trim()))
+$sourceWorktreeDirty = ((& git status --porcelain | Out-String).Trim()).Length -gt 0
+Add-Line ("source_worktree_dirty: {0}" -f $sourceWorktreeDirty)
 
 try {
+  if (-not $SkipReset) {
+    Invoke-SuiteStep "Reset before performance suite" {
+      & "$PSScriptRoot/reset_k8s_state.ps1" `
+        -BaseUrl $BaseUrl `
+        -Namespace $Namespace `
+        -DbDeployment $DbDeployment
+    }
+  }
+
+  if ($CleanBenchmarkState) {
+    Invoke-SuiteStep "Reset local benchmark data and Kafka topics" {
+      & "$PSScriptRoot/reset_kafka_benchmark_state.ps1" `
+        -Namespace $Namespace `
+        -ConfirmDataLoss
+    }
+  }
+
+  Invoke-SuiteStep "Configure Worker scaling experiment" {
+    Set-WorkerScalingExperimentMode
+  }
+
   Invoke-SuiteStep "Preflight Kubernetes state" {
     Assert-KubernetesReady
     Add-Line ("api_image: {0}" -f $script:ApiImage)
@@ -262,13 +492,8 @@ try {
     kubectl -n $Namespace get pods | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }
   }
 
-  if (-not $SkipReset) {
-    Invoke-SuiteStep "Reset before performance suite" {
-      & "$PSScriptRoot/reset_k8s_state.ps1" `
-        -BaseUrl $BaseUrl `
-        -Namespace $Namespace `
-        -DbDeployment $DbDeployment
-    }
+  Invoke-SuiteStep "Wait for post-reset performance steady state" {
+    Wait-PerformanceSteadyState
   }
 
   Invoke-SuiteStep "Same-stream ordering guarantee" {
@@ -315,6 +540,7 @@ try {
         -DbDeployment $DbDeployment `
         -K6Profile $K6Profile `
         -K6SingleVus $K6SingleVus `
+        -K6StreamCount $K6StreamCount `
         -StageDuration $StageDuration `
         -ThinkTime $ThinkTime `
         -TimeoutSec $TimeoutSec `
@@ -372,6 +598,14 @@ catch {
   Add-Line ("Kafka performance suite failed: {0}" -f $_.Exception.Message)
 }
 finally {
+  try {
+    Restore-WorkerScaling
+  }
+  catch {
+    $scalingRestoreError = $_
+    Add-Line ("Worker scaling restore failed: {0}" -f $_.Exception.Message)
+  }
+
   if (-not $SkipReset) {
     Add-Line ""
     Add-Line "==> Final reset"
@@ -387,17 +621,13 @@ finally {
     }
   }
 
-  $overallSucceeded = $suiteSucceeded -and $null -eq $resetError
+  $overallSucceeded = $suiteSucceeded -and $null -eq $resetError -and $null -eq $scalingRestoreError
   $outputPath = if ($overallSucceeded) { $resultPath } else { $failedResultPath }
   $temporaryOutputPath = Join-Path $resultDir (".{0}.{1}.tmp" -f (Split-Path $outputPath -Leaf), [guid]::NewGuid().ToString("N"))
   $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
   try {
     [System.IO.File]::WriteAllLines($temporaryOutputPath, [string[]]$lines, $utf8NoBom)
-    if (Test-Path -LiteralPath $outputPath) {
-      [System.IO.File]::Replace($temporaryOutputPath, $outputPath, $null)
-    } else {
-      [System.IO.File]::Move($temporaryOutputPath, $outputPath)
-    }
+    Move-Item -LiteralPath $temporaryOutputPath -Destination $outputPath -Force
     Write-Host ""
     Write-Host "Performance suite result written to $outputPath"
   }
@@ -415,6 +645,9 @@ if ($null -ne $suiteError) {
 }
 if ($null -ne $resetError) {
   throw $resetError
+}
+if ($null -ne $scalingRestoreError) {
+  throw $scalingRestoreError
 }
 if ($null -ne $writeError) {
   throw $writeError

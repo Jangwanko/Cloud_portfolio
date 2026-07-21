@@ -6,6 +6,8 @@ param(
   [string]$DbDeployment = "messaging-postgresql-ha-postgresql",
   [string]$K6Profile = "single500",
   [int]$K6SingleVus = 100,
+  [ValidateRange(1, 1000)]
+  [int]$K6StreamCount = 1,
   [string]$StageDuration = "10s",
   [double]$ThinkTime = 0.05,
   [int]$TimeoutSec = 420,
@@ -35,13 +37,14 @@ try {
   $manifestText = Get-Content $JobManifest -Raw
   $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "K6_PROFILE" -Value $K6Profile
   $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "K6_SINGLE_VUS" -Value ([string]$K6SingleVus)
+  $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "K6_STREAM_COUNT" -Value ([string]$K6StreamCount)
   $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "STAGE_DURATION" -Value $StageDuration
   $manifestText = Set-JobEnvValue -Yaml $manifestText -Name "THINK_TIME" -Value ([string]$ThinkTime)
 
   $effectiveManifest = Join-Path ([System.IO.Path]::GetTempPath()) ("k6-load-test-{0}.yaml" -f ([guid]::NewGuid().ToString("N")))
   Set-Content -Path $effectiveManifest -Value $manifestText -Encoding UTF8
 
-  Write-Host ("Running k6 load test: profile={0}, vus={1}, duration={2}, think_time={3}" -f $K6Profile, $K6SingleVus, $StageDuration, $ThinkTime)
+  Write-Host ("Running k6 load test: profile={0}, vus={1}, streams={2}, duration={3}, think_time={4}" -f $K6Profile, $K6SingleVus, $K6StreamCount, $StageDuration, $ThinkTime)
   kubectl apply -f $effectiveManifest | Out-Null
 
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
