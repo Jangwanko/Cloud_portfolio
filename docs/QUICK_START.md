@@ -78,7 +78,7 @@ bash scripts/install_linux_prereqs.sh
 
 권장 사양보다 낮은 host에서는 전체 HA stack과 100 VU 성능 기준선을 안정적으로 재현하기 어려울 수 있습니다.
 
-낮은 사양에서 억지로 실행할 때의 실패는 대개 기능 오류가 아니라 리소스 부족 신호로 나타납니다.
+낮은 사양에서 실행할 때의 실패는 대개 리소스 부족 신호로 나타납니다. 기능 검증 전에 CPU와 memory pressure를 확인합니다.
 
 | 구간 | 흔한 실패 형태 | 해석 |
 | --- | --- | --- |
@@ -227,7 +227,7 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 ```
 
 참고:
-- 이 테스트는 health check 가 아니라 performance test 입니다
+- 이 테스트의 목적은 performance 측정입니다. health check 범위는 제외합니다.
 - `test_k6_load.ps1` 기본값은 `single500` profile, 100 VU, 10초입니다
 - `run_kafka_performance_suite.ps1` 기본값은 100 VU, 30초입니다
 - `-CleanBenchmarkState`는 destructive local reset이며 내부 helper가 `-ConfirmDataLoss`를 명시해 실행합니다.

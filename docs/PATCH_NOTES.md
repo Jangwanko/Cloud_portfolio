@@ -2,6 +2,18 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-21 README Kubernetes 중심 재구성
+
+- 포트폴리오 첫 화면을 Kubernetes·GitOps 운영 플랫폼 설계로 고정
+- kind cluster, application namespace, StatefulSet·Deployment·Job, HPA·KEDA, sync wave 시각화
+- API, Worker, notification, DLQ, Kafka, PostgreSQL·Pgpool, observability pod inventory와 replica·운영 목적 공개
+- local Kubernetes 책임을 EKS, ECR, ALB, MSK, RDS, Secrets Manager, AMP·AMG에 대응한 표 추가
+- API, Kafka buffer, Worker, KEDA, PostgreSQL, DLQ, rollout, cache, restore 관측 지점과 판단 기준 연결
+- HPA·cache hydration 성능 회복, KEDA 병목 이동, namespace prune 복구를 STAR 형식으로 정리
+- Redis queue-depth KEDA 전환과 Kafka Pgpool HA·inline retry 보강을 historical STAR로 분리
+- Demo, generic contract, reliability, trade-off, learning, bottleneck, roadmap, 문서 지도를 핵심 경계만 남기도록 압축
+- Kafka contract와 backend reliability 세부 설명을 workload·하위 문서 영역으로 이동
+
 ## 2026-07-21 푸시 전 평가 반영: 배포 게이트와 첫 화면 정리
 
 - `dev-kafka` image publication을 `ci.yml`의 `publish-dev-kafka-image` job으로 통합하고 `needs: validate` 적용
@@ -260,7 +272,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 
 - README 상단에 `What To Look For` 섹션을 추가했습니다.
 - 설계, 파이프라인, 데모, 운영, 확장 관점에서 이 프로젝트를 왜 봐야 하는지 짧게 설명했습니다.
-- README가 단순 문서 목차가 아니라 데모와 상세 문서로 들어가게 만드는 입구 역할을 하도록 조정했습니다.
+- README가 데모와 상세 문서로 이어지는 포트폴리오 입구 역할을 하도록 조정했습니다.
 
 ## 2026-06-24 업데이트: README 데모 경계와 GitHub 링크
 
@@ -424,7 +436,7 @@ demo-lite 기준:
 - 이 업데이트는 Kafka 처리 성능 개선보다 포트폴리오 시연성과 운영 의미 전달을 강화한 변경입니다.
 - 화면 카운터는 사용자 주문 완료 응답이 아니라 운영자 관점의 내부 처리 흐름을 보여줍니다.
 - `예약 건수`는 아직 DB 저장 완료 전인 데모 예약 / 진행 중 작업의 남은 수를 의미합니다.
-- `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료가 같은 단계가 아니라는 점을 보여줍니다.
+- `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료의 단계 차이를 보여줍니다.
 - `전송 전 예약 비우기`는 시작 전 예약 취소입니다. 이미 시작한 Kafka / Worker 작업을 취소하는 기능은 아닙니다.
 - `Operations Advisor`는 AX 확장 지점을 보여주기 위한 rule-based 단계입니다. 향후 별도 AI Worker가 같은 운영 신호를 소비해 더 풍부한 요약을 생성할 수 있지만, 핵심 persistence path에는 들어가지 않습니다.
 

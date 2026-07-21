@@ -25,7 +25,7 @@
 - `snapshot consumer group lag`는 현재 구현된 지표가 아닙니다. 필요한 관측은 pod별 current position / captured end offset / remaining records / hydration duration이며 custom metric 개선 과제입니다.
 - compaction은 동일 key의 과거 값은 줄이지만 대부분 unique인 request/message key 수 자체를 줄이지 않습니다. 장기 replay 성장은 retention, DB bootstrap+Kafka changelog, per-stream latest-page snapshot 중 검증된 전략으로 제한해야 합니다.
 - `X-Idempotency-Key`는 API hot path에서 PostgreSQL claim을 만들지 않고 Kafka payload에 포함됩니다. 최종 idempotency / deduplication은 Worker persistence 단계의 PostgreSQL state에서 처리합니다.
-- Worker autoscaling은 CPU가 아니라 KEDA Kafka scaler의 consumer lag 기준입니다. API autoscaling은 CPU HPA입니다.
+- Worker autoscaling은 KEDA Kafka scaler의 consumer lag를 사용합니다. API autoscaling은 CPU HPA를 사용합니다.
 - DLQ list / summary는 append-only Kafka DLQ log의 최근 표본입니다. unresolved depth나 현재 backlog가 아니며, `oldest_sample_age_seconds`를 미해결 event SLO로 해석하지 않습니다.
 - 여기서 고신뢰는 per-stream partition ordering boundary, record 단위 explicit offset commit, PostgreSQL idempotent persistence, retry/DLQ/replay, 상태 분리, 관측·장애 복구 검증을 뜻합니다. exactly-once, global ordering, 무손실, production SLA를 증명했다는 의미가 아닙니다.
 - `message-*` Kafka topic, `message-worker` consumer group, `messaging-app` namespace, `rooms`/`messages` table처럼 배포와 저장 상태에 연결된 물리 식별자는 호환성을 위해 유지합니다. 문서 정체성 변경을 이유로 이름만 바꾸지 않습니다.
@@ -95,7 +95,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-21 performance recovery, cache replay, clean benchmark reset, HPA 안정화 보강 뒤 local suite는 `363 passed`입니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
-- 2026-07-21 dev-kafka delivery gate remote 검증: source commit `041ab21`, `needs: validate` 통과 뒤 exact tested SHA image `041ab21cf795` 승격, overlay bot commit `e3bf987` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
+- 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
@@ -170,6 +170,7 @@ Latest ordering / failure injection result after fixing local client skew:
 
 - git commit, merge, push, PR 생성은 항상 사용자에게 먼저 확인받습니다. 테스트가 통과했더라도 확인 없이 커밋하거나 병합하지 않습니다.
 - README는 포트폴리오 첫 화면 역할로 유지합니다. 모든 세부 내용을 README에 넣지 말고, 핵심 요약 / 데모 진입 / 대표 검증 결과 / 문서 지도만 남깁니다.
+- README 상단 순서는 Kubernetes 설계 → Pod 구성 → AWS 대응 관계 → 관측 지점 → STAR 운영 경험으로 유지합니다. STAR는 current와 historical을 분리하고 Redis·Kafka baseline을 섞지 않습니다. Kafka contract와 backend reliability 세부 내용은 workload 설명과 하위 문서에 둡니다.
 - README의 기본 설명과 사용법은 외국인 리크루터도 볼 수 있게 한국어와 영어를 함께 사용합니다. 전체 문서를 완전 번역하지는 않더라도, project summary, demo usage, AWS migration blueprint는 영어 문장을 같이 둡니다.
 - README에서 자세한 내용을 docs로 넘길 때는 링크만 던지지 않습니다. 각 주제마다 2~4줄 요약, 왜 중요한지 한 문장, 관련 docs 링크를 함께 제공합니다.
 - 세부 구현, 실험 과정, 운영 절차, 장애 대응, Terraform AWS migration blueprint는 docs 문서로 분리합니다.
@@ -178,7 +179,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - `docs/TEST_RESULTS.md`는 최신 검증 결과를 먼저 보여주고, 과거 baseline은 historical results로 분리합니다.
 - `docs/AWS_IAC_PLAN.md`는 현재 AWS migration blueprint를 먼저 설명하고, 구현 단계와 모듈 세부 설명은 뒤에 둡니다.
 - `docs/ARCHITECTURE.md`는 현재 최종 Kafka-centered 구조를 먼저 설명하고, 과거 전환 배경은 뒤쪽 또는 별도 문서로 둡니다.
-- Terraform 문서는 "AWS에 이미 배포했다"가 아니라 "로컬 검증 구조를 AWS managed architecture로 이전할 수 있게 설계했다"는 migration blueprint 관점으로 씁니다.
+- Terraform 문서는 로컬 검증 구조를 AWS managed architecture로 이전하는 migration blueprint 관점으로 씁니다. AWS 배포 증거는 실제 실행 결과가 있을 때 기록합니다.
 - 문서에서 Kafka 최종 구조를 Redis에서 이름만 바꾼 것처럼 쓰지 않습니다.
 - Kafka를 Kafka-only라고 과장하지 않습니다. 이 프로젝트는 Kafka-centered 구조이며 PostgreSQL state/read model을 유지합니다.
 - Kafka Worker KEDA 효과를 API throughput 증가로 단정하지 않습니다. Kafka에서 Worker scaling 효과는 consumer lag, persistence latency, drain time으로 봅니다. 2026-06 PowerShell 원본은 DB row `created_at` / row-visible proxy이며 실제 commit timestamp로 부르지 않습니다. 현재 script의 `accepted_to_status_observed_ms`는 client가 `persisted` status를 본 시각까지로 polling/network를 포함합니다. Worker histogram은 `commit()` 반환 뒤 기록한 `persisted_at` 기준이며 새 cluster 측정 전입니다.
@@ -244,8 +245,8 @@ Latest ordering / failure injection result after fixing local client skew:
 
 ## Change Scope Rules
 
-- `AGENTS.md`는 브랜치별 취향 문서가 아니라 모든 주요 브랜치가 공유하는 운영 기준입니다. `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 한 브랜치에서 AGENTS.md를 바꾸면 같은 변경을 나머지 주요 브랜치에도 cherry-pick해 일관성을 유지합니다.
-- README와 `docs/` 문서도 브랜치별 임시 메모가 아니라 포트폴리오 설명과 운영 기준을 공유하는 문서입니다. 어느 브랜치에서든 문서를 변경했다면 변경 의도, 적용 범위, demo-lite 전용 여부를 확인하고 `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 관련 브랜치에 cherry-pick 또는 동일 패치로 공유합니다.
+- `AGENTS.md`는 모든 주요 브랜치가 공유하는 운영 기준입니다. `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 한 브랜치에서 AGENTS.md를 바꾸면 같은 변경을 나머지 주요 브랜치에도 cherry-pick해 일관성을 유지합니다.
+- README와 `docs/`는 포트폴리오 설명과 운영 기준을 공유하는 문서입니다. 어느 브랜치에서든 문서를 변경했다면 변경 의도, 적용 범위, demo-lite 전용 여부를 확인하고 `master`, `dev-kafka`, `demo-dev`, `demo-lite` 중 관련 브랜치에 cherry-pick 또는 동일 패치로 공유합니다.
 - 문서 변경을 다른 브랜치에 공유할 때는 설정 값을 그대로 복사하지 않습니다. 공통 설명은 공통 문서에 반영하고, 브랜치 전용 제약은 `docs/DEMO_LITE.md`처럼 대상 문서에 분리해서 씁니다.
 - AGENTS.md에 demo-lite 전용 제약을 추가하더라도 전체 운영 규칙과 demo-lite 전용 경계를 분리해서 씁니다. 특정 브랜치만의 임시 상태를 전체 규칙처럼 쓰지 않습니다.
 - 사용자가 "demo-lite에서 한 것처럼"이라고 말해도 설정을 그대로 복사하지 않습니다. 먼저 대상 브랜치 역할, Argo CD targetRevision, overlay path, 실제 배포 클러스터를 확인합니다.

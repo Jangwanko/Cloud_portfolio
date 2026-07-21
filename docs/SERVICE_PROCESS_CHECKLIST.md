@@ -177,7 +177,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 - DLQ 실패: Worker failure reason, DLQ topic, DLQ Replayer 상태를 봅니다.
 - DLQ summary: `scope=recent_log_sample`, `user_filtered=true`, `oldest_sample_age_seconds` 확인. unresolved depth나 미해결 event SLO로 해석 제외
 - Alert probe 실패: metric scrape, Prometheus rule load, alert `for` 시간, kube-state-metrics 상태를 봅니다.
-- Performance 실패: 기능 오류가 아니라 capacity / resource contention / DB path 병목일 수 있으므로 [TEST_RESULTS.md](TEST_RESULTS.md)의 측정 환경과 비교합니다.
+- Performance 실패: capacity / resource contention / DB path 병목부터 확인하고 [TEST_RESULTS.md](TEST_RESULTS.md)의 측정 환경과 비교합니다. 기능 오류 판정은 contract와 persistence 검증 결과를 함께 사용합니다.
 
 ## 최종 판정
 
