@@ -57,12 +57,24 @@ class TestOperationalDocumentation:
 
         for token in (
             "## 핵심 요약 / Executive Summary",
+            "## Kubernetes 설계 / Kubernetes Architecture",
+            "## Pod 구성 / Workload Inventory",
+            "## AWS Migration Blueprint",
+            "## 관측 설계 / Observability Map",
+            "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
+            "STAR 1 — HPA scale-out과 cache hydration 경합 해결",
+            "STAR 2 — KEDA scale-out의 병목 이동 확인",
+            "STAR 3 — GitOps namespace prune 사고 복구",
+            "STAR 4 — CPU HPA에서 queue-depth KEDA로 전환",
+            "STAR 5 — Pgpool HA와 same-stream ordering 보강",
+            "`5,434` requests, p95 `8,175ms`",
+            "`19,528` requests·p95 `1,954ms`",
+            "`31,710` requests, p95 `86.95ms`",
             "API → Kafka → Worker → PostgreSQL",
             "### 현재 검증 수치 / Current Evidence",
             "Current generic v2 recovery candidate",
             "Historical Kafka intake baseline",
             "Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다",
-            "## Generic Event Contract",
             "## Demo",
             "### Public legacy demo-lite",
             "## Validation Summary",
@@ -70,15 +82,18 @@ class TestOperationalDocumentation:
             "same-stream ordering: `100/100`",
             "## Trade-offs",
             "Kafka append-first intake",
-            "## What I Learned",
-            "## Current Bottleneck",
-            "Worker DB write throughput",
-            "room_sequences",
             "## Next Improvements",
             "transactional outbox",
             "consumer group rebalance",
         ):
             assert token in readme
+
+        architecture_index = readme.index("## Kubernetes 설계 / Kubernetes Architecture")
+        inventory_index = readme.index("## Pod 구성 / Workload Inventory")
+        aws_index = readme.index("## AWS Migration Blueprint")
+        observability_index = readme.index("## 관측 설계 / Observability Map")
+        star_index = readme.index("## STAR 운영 문제 해결 경험 / Operational STAR Cases")
+        assert architecture_index < inventory_index < aws_index < observability_index < star_index
 
     def test_db_snapshot_materialized_cache_is_declared(self):
         config = read_text("portfolio/config.py")

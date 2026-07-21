@@ -183,7 +183,7 @@ Prometheus alert rule과 Grafana 운영 패널이 실제 metric 변화에 연결
 powershell -ExecutionPolicy Bypass -File scripts/test_operational_alerts.ps1 -SkipReset
 ```
 
-이 검증은 `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 실제 `firing` 상태까지 관찰하고, `MessagingDeploymentUnavailableReplicas`가 `pending` 또는 `firing`으로 전환되는지 확인합니다. 성능 수치를 측정하는 suite가 아니라 metric scrape, alert evaluation, Kubernetes 상태 지표 배선을 확인하는 운영성 테스트입니다. `MessagingMetricsTargetMissing`과 `MessagingNotificationConsumerLagHigh`는 현재 rule source에 포함되어 있으나 같은 장애 주입 script의 실행 증거는 아직 없습니다.
+이 검증은 `MessagingDlqEventsIncreasing`, `MessagingDlqReplayBlocked`를 실제 `firing` 상태까지 관찰하고, `MessagingDeploymentUnavailableReplicas`가 `pending` 또는 `firing`으로 전환되는지 확인합니다. 검증 대상은 metric scrape, alert evaluation, Kubernetes 상태 지표 배선입니다. 성능 수치 측정은 범위에서 제외합니다. `MessagingMetricsTargetMissing`과 `MessagingNotificationConsumerLagHigh`는 현재 rule source에 포함되어 있으나 같은 장애 주입 script의 실행 증거는 아직 없습니다.
 
 ## DLQ Summary 해석
 
