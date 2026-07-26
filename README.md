@@ -212,9 +212,9 @@ Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소
 
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
-| `master` source | UI `2.0.0`, API `2.0.0` | generic v2 + `202` source contract |
+| `dev-kafka` source | UI `2.2.0`, API `2.0.0` | generic v2 + `202`; Kafka append·DB persistence 동시 갱신, 실행 중 Worker peak 유지 |
 | local `dev-kafka` live evidence, 2026-07-21 | API `2.0.0`, image `9349ba9` | cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
-| public demo-lite deployment | UI `1.4.1`, API `1.0.0`, image `e481a21` | legacy branch deployment, generic v2 없음, event `200` |
+| public demo-lite, 마지막 live 확인 | UI `2.1.0`, API `2.0.0` | generic v2 + `202`; UI `2.2.0` release `626e8296b79d` 게시, runtime 확인 대기 |
 
 ### Local Quick Start
 
@@ -228,13 +228,13 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 - 화면: `Reserved → Kafka Appended → DB Persisted`; `DLQ summary`의 `by_reason`·`replayable`·`blocked` 확인
 - 절차: [Quick Start](docs/QUICK_START.md) · [Demo Guide](docs/DEMO_GUIDE.md)
 
-### Public legacy demo-lite
+### Public demo-lite
 
-2코어급 legacy compatibility deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 현재 source의 generic v2 검증 링크에서 제외합니다.
+2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 마지막 live 확인은 UI `2.1.0` / API `2.0.0` generic v2입니다. UI `2.2.0` release는 공개 runtime badge와 동작 확인 뒤 배포 증거로 승격합니다.
 
 ## Validation Summary
 
-- tests `363 passed`; same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
+- tests `364 passed` (2026-07-27); same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
 - DB 장애 중 Kafka append `202`; 복구 뒤 persistence·consumer lag `0`
 - DB membership/watermark 검증 뒤 fresh cache; DB 장애 중 hydrated degraded cache
 - PostgreSQL restart `3/3 ready`, sync/quorum standby `2`; host dump restore의 schema·table·row·sequence 일치

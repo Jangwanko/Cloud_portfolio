@@ -2,6 +2,15 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-27 Local Demo Kafka·DB 진행률 병렬 관측
+
+- Demo UI `2.2.0`
+- event sender 완료 뒤 시작하던 persistence summary polling을 전송 시작 시점으로 이동
+- Kafka append 진행 중 1초 간격 `persisted_count`를 `DB 저장` 카운터에 반영
+- 실행 중 `/health/ready`를 5초 간격 확인하고 Worker 시작·peak replica 유지
+- producer 완료 뒤 실제 accepted event 수로 최종 persistence 목표 확정
+- local unit / contract / infrastructure suite: `364 passed`
+
 ## 2026-07-27 Grafana 제출 화면 정정
 
 - Kafka intake·PostgreSQL primary·Worker 신호에 `Healthy`·`Active`·`Available` 상태 매핑 추가

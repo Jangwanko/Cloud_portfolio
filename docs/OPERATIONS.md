@@ -111,13 +111,13 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-21 local `dev-kafka` live는 title `Reliable Event Processing Console`, UI/API `2.0.0`, generic event `202`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite는 title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event `200`인 별도 deployment이며 generic `2.0.0` 변경은 아직 반영되지 않았습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. `dev-kafka` source의 예상 조합인 `ver. 2.2.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. Public demo-lite의 마지막 live 확인은 UI `2.1.0`, API `2.0.0`, generic event `202`이며 UI `2.2.0` release runtime은 별도 확인합니다.
 
 ## Demo Access
 
-Master source Demo UI: `2.0.0`
+Dev-kafka source Demo UI: `2.2.0`
 
-Public demo-lite Demo UI: `1.4.1` (branch/deployment-specific, master `2.0.0` 미배포)
+Public demo-lite Demo UI: last verified `2.1.0`, `2.2.0` release runtime 확인 대기
 
 Local surfaces:
 
@@ -133,7 +133,7 @@ Demo counter semantics:
 - `Kafka 적재`: API가 ingress topic append를 완료한 수
 - `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
 - `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
-- Worker: 현재 replica / 최대 replica
+- Worker: 실행 중 5초 간격 readiness에서 확인한 시작 replica와 peak replica
 
 UI operating behavior:
 
@@ -141,7 +141,8 @@ UI operating behavior:
 - event intake: `POST /v2/streams/{stream_id}/events`
 - readiness/DLQ refresh: 기본 30초, 선택 60초
 - auth token: 동일 base/user에서 memory cache 재사용, UI 기준 30분
-- persistence: stream 단위 `/persistence-summary`를 3초 간격 polling
+- persistence: event append 전송과 동시에 stream 단위 `/persistence-summary`를 1초 간격 polling
+- Worker scaling: 실행 중 `/health/ready`를 5초 간격 polling하고 시작·peak replica를 run 종료까지 유지
 - send failure: event `send_failed` 종료
 - persistence timeout: 일부 미확인 상태, 완료 표시 제외
 - structured evidence: `schema_version`, producer-defined `event_type`, JSON `payload`, JSON `metadata`

@@ -958,8 +958,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.0.0"',
-        "ver. 2.0.0 / api -",
+        'const DEMO_UI_VERSION = "2.2.0"',
+        "ver. 2.2.0 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",
@@ -968,6 +968,7 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
         "payload / metadata",
         "Envelope 샘플 검증",
         'id="envelope-verification"',
+        'id="run-worker-status"',
         "/v2/streams/${streamId}/events",
         "event_type: event.event_type",
         "payload: {",
@@ -1002,21 +1003,42 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert "async function sendNextReservedEvent()" in process_reserved
     assert "await sendQueuedEvent" in process_reserved
     assert "recordKafkaAppended(1, uiSession)" in process_reserved
-    assert "await pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession)" in (
-        process_reserved
-    )
+    assert "const persistencePromise = pollStreamPersistence(" in process_reserved
+    assert "activeEvents.length," in process_reserved
+    assert "producerState," in process_reserved
+    assert "void pollRunWorkerScaling(baseUrl, uiSession)" in process_reserved
     assert 'event.status = "send_failed"' in process_reserved
     assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
     assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in (
         process_reserved
+    )
+    assert process_reserved.index("const persistencePromise = pollStreamPersistence(") < (
+        process_reserved.index(
+            "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))"
+        )
+    )
+    assert process_reserved.index("producerState.completed = true") < process_reserved.index(
+        "const persistenceConfirmed = await persistencePromise"
     )
 
     persistence_poll = demo.split("async function pollStreamPersistence", 1)[1].split(
         "async function refreshDlqSummary", 1
     )[0]
     assert "/persistence-summary" in persistence_poll
-    assert "setTimeout(resolve, 3000)" in persistence_poll
+    assert "setTimeout(resolve, PERSISTENCE_POLL_INTERVAL_MS)" in persistence_poll
+    assert "while (!producerState.completed" in persistence_poll
+    assert "producerState.completed ? acceptedTarget : expectedCount" in persistence_poll
+    assert "recordDbPersisted(persistedCount, uiSession)" in persistence_poll
     assert "/v1/event-requests/" not in persistence_poll
+
+    worker_scaling_poll = demo.split("async function pollRunWorkerScaling", 1)[1].split(
+        "function finishProcessingRun", 1
+    )[0]
+    assert "/health/ready" in worker_scaling_poll
+    assert "recordWorkerScaling(readiness.worker, uiSession)" in worker_scaling_poll
+    assert "WORKER_SCALING_POLL_INTERVAL_MS" in worker_scaling_poll
+    assert "queueStats.workerPeak" in demo
+    assert "queueStats.workerStart}→${queueStats.workerPeak}" in demo
 
     verify_envelope = demo.split("async function verifyGenericEnvelope", 1)[1].split(
         "async function refreshDlqSummary", 1
@@ -1041,8 +1063,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert "deepEqualJson(left[key], right[key])" in deep_equal
     assert "Object.assign(event, accepted)" in send_function
 
-    assert process_reserved.index("await pollStreamPersistence") < process_reserved.index(
-        "await verifyGenericEnvelope"
+    assert process_reserved.index("const persistenceConfirmed = await persistencePromise") < (
+        process_reserved.index("await verifyGenericEnvelope")
     )
     assert "queueStats.envelopeVerified = persistenceConfirmed" in process_reserved
     update_metrics = demo.split("function updateQueueMetrics()", 1)[1].split(

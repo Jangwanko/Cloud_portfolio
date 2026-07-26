@@ -294,7 +294,7 @@
     }
 
     .queue-metrics {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
     .proof,
@@ -512,7 +512,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.0.0 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.2.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -617,6 +617,7 @@
             <div class="queue-metric"><strong data-i18n="reserved">예약 건수</strong><span id="queued-count">0</span></div>
             <div class="queue-metric"><strong data-i18n="kafkaAppended">Kafka 적재</strong><span id="processed-count">0</span></div>
             <div class="queue-metric"><strong data-i18n="dbPersisted">DB 저장</strong><span id="db-persisted-count">0</span></div>
+            <div class="queue-metric"><strong data-i18n="workerReplicas">Worker</strong><span id="run-worker-status">-</span></div>
             <div class="queue-metric"><strong data-i18n="totalElapsed">총 소요시간</strong><span id="elapsed-seconds">0.0s</span></div>
           </div>
         </div>
@@ -762,7 +763,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.0.0";
+    const DEMO_UI_VERSION = "2.2.0";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -1034,6 +1035,9 @@
     const eventList = document.querySelector("#event-list");
     const logBox = document.querySelector("#log");
     const SEND_CONCURRENCY = 40;
+    const PERSISTENCE_POLL_INTERVAL_MS = 1000;
+    const PERSISTENCE_ATTEMPTS_AFTER_SEND = 120;
+    const WORKER_SCALING_POLL_INTERVAL_MS = 5000;
     let latestReadiness = null;
     let latestDlqSummary = null;
     const queueStats = {
@@ -1047,6 +1051,10 @@
       sendFailed: 0,
       cancelled: 0,
       envelopeVerified: null,
+      workerStart: null,
+      workerCurrent: null,
+      workerPeak: null,
+      workerMax: null,
       uiSession: 0
     };
 
@@ -1184,6 +1192,16 @@
       );
       setText("#processed-count", String(queueStats.kafkaAppended));
       setText("#db-persisted-count", String(queueStats.dbPersisted));
+      const workerStatus = Number.isFinite(queueStats.workerCurrent) && Number.isFinite(queueStats.workerMax)
+        ? (
+            Number.isFinite(queueStats.workerStart)
+            && Number.isFinite(queueStats.workerPeak)
+            && queueStats.workerPeak > queueStats.workerStart
+              ? `${queueStats.workerStart}→${queueStats.workerPeak} / max ${queueStats.workerMax}`
+              : `${queueStats.workerCurrent}/${queueStats.workerMax}`
+          )
+        : "-";
+      setText("#run-worker-status", workerStatus);
       const endAt = queueStats.runCompletedAt || Date.now();
       const elapsedSeconds = queueStats.runStartedAt
         ? Math.max((endAt - queueStats.runStartedAt) / 1000, 0.1)
@@ -1225,6 +1243,10 @@
       queueStats.sendFailed = 0;
       queueStats.cancelled = 0;
       queueStats.envelopeVerified = null;
+      queueStats.workerStart = null;
+      queueStats.workerCurrent = null;
+      queueStats.workerPeak = null;
+      queueStats.workerMax = null;
       setText("#envelope-verification", t("waiting"));
       updateQueueMetrics();
       log(`${t("queueStart")} target=${count}`);
@@ -1267,6 +1289,42 @@
       queueStats.sendFailed += 1;
       queueStats.runProcessed = queueStats.dbPersisted + queueStats.sendFailed;
       updateQueueMetrics();
+    }
+
+    function recordWorkerScaling(worker, uiSession) {
+      if (
+        !isCurrentUiSession(uiSession)
+        || !Number.isFinite(worker?.available_replicas)
+        || !Number.isFinite(worker?.max_replicas)
+      ) {
+        return;
+      }
+      const scaleCandidate = Math.max(
+        worker.available_replicas,
+        Number.isFinite(worker.desired_replicas) ? worker.desired_replicas : 0,
+        Number.isFinite(worker.hpa_desired_replicas) ? worker.hpa_desired_replicas : 0
+      );
+      queueStats.workerStart ??= worker.available_replicas;
+      queueStats.workerCurrent = worker.available_replicas;
+      queueStats.workerPeak = Math.max(queueStats.workerPeak || 0, scaleCandidate);
+      queueStats.workerMax = worker.max_replicas;
+      updateQueueMetrics();
+    }
+
+    async function pollRunWorkerScaling(baseUrl, uiSession) {
+      while (isCurrentUiSession(uiSession) && !queueStats.runCompletedAt) {
+        try {
+          const response = await fetch(`${baseUrl}/health/ready`);
+          const readiness = await response.json();
+          latestReadiness = readiness;
+          setDemoVersion(readiness.app_version);
+          updateReadinessPanel(readiness);
+          recordWorkerScaling(readiness.worker, uiSession);
+        } catch (error) {
+          log(`worker scaling status retry: ${describeFetchFailure(error)}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, WORKER_SCALING_POLL_INTERVAL_MS));
+      }
     }
 
     function finishProcessingRun(uiSession) {
@@ -1329,25 +1387,43 @@
       setProof("-", "-", "-", "-");
     }
 
-    async function pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession) {
-      const target = acceptedEvents.length;
-      if (!isCurrentUiSession(uiSession) || target === 0) {
-        return target === 0;
+    async function pollStreamPersistence(
+      baseUrl,
+      token,
+      streamId,
+      expectedCount,
+      acceptedEvents,
+      producerState,
+      uiSession
+    ) {
+      if (!isCurrentUiSession(uiSession) || expectedCount === 0) {
+        return expectedCount === 0;
       }
       setPipelineStep("worker", "waiting", `GET /v1/streams/${streamId}/persistence-summary polling`);
-      for (let attempt = 0; attempt < 40; attempt += 1) {
+      let attemptsAfterSend = 0;
+      while (!producerState.completed || attemptsAfterSend < PERSISTENCE_ATTEMPTS_AFTER_SEND) {
+        if (!isCurrentUiSession(uiSession)) {
+          return false;
+        }
         try {
           const response = await fetch(`${baseUrl}/v1/streams/${streamId}/persistence-summary`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (response.ok) {
             const summary = await response.json();
-            const persistedCount = Math.min(Number(summary.persisted_count || 0), target);
+            const acceptedTarget = acceptedEvents.length;
+            const displayTarget = producerState.completed ? acceptedTarget : expectedCount;
+            const persistedCount = Math.min(Number(summary.persisted_count || 0), displayTarget);
             recordDbPersisted(persistedCount, uiSession);
-            setPipelineStep("worker", persistedCount >= target ? "done" : "waiting", `persisted=${persistedCount}/${target}`);
-            setPipelineStep("db", persistedCount >= target ? "done" : "waiting", `${t("savedPrefix")} ${persistedCount}/${target}`);
-            setProof(summary.latest_request_id || "batch", "message-ingress", `persisted=${persistedCount}/${target}`, `latest_event_id=${summary.latest_event_id || "-"}`);
-            if (persistedCount >= target) {
+            const persistenceComplete = (
+              producerState.completed
+              && acceptedTarget > 0
+              && persistedCount >= acceptedTarget
+            );
+            setPipelineStep("worker", persistenceComplete ? "done" : "waiting", `persisted=${persistedCount}/${displayTarget}`);
+            setPipelineStep("db", persistenceComplete ? "done" : "waiting", `${t("savedPrefix")} ${persistedCount}/${displayTarget}`);
+            setProof(summary.latest_request_id || "batch", "message-ingress", `persisted=${persistedCount}/${displayTarget}`, `latest_event_id=${summary.latest_event_id || "-"}`);
+            if (persistenceComplete) {
               acceptedEvents.forEach((event) => {
                 event.status = "persisted";
                 event.db_row = `stream_id=${streamId}`;
@@ -1356,11 +1432,17 @@
               log(`worker persisted stream_id=${streamId} count=${persistedCount}`);
               return true;
             }
+            if (producerState.completed && acceptedTarget === 0) {
+              return false;
+            }
           }
         } catch (error) {
           log(`persistence summary retry: ${describeFetchFailure(error)}`);
         }
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        if (producerState.completed) {
+          attemptsAfterSend += 1;
+        }
+        await new Promise((resolve) => setTimeout(resolve, PERSISTENCE_POLL_INTERVAL_MS));
       }
       setPipelineStep("worker", "waiting", currentLanguage === "en" ? "Persistence summary is still catching up." : "DB 저장 수 확인이 아직 따라오는 중입니다.");
       setPipelineStep("db", "waiting", currentLanguage === "en" ? "Some DB writes remain unconfirmed." : "일부 DB 저장을 아직 확인하지 못했습니다.");
@@ -1859,8 +1941,10 @@
       renderEvents();
 
       const acceptedEvents = [];
+      const producerState = { completed: false };
       let nextIndex = 0;
       let acceptedCount = 0;
+      void pollRunWorkerScaling(baseUrl, uiSession);
 
       async function sendNextReservedEvent() {
         const index = nextIndex;
@@ -1908,8 +1992,27 @@
       }
 
       const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length);
-      await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()));
-      const persistenceConfirmed = await pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession);
+      const persistencePromise = pollStreamPersistence(
+        baseUrl,
+        token,
+        streamId,
+        activeEvents.length,
+        acceptedEvents,
+        producerState,
+        uiSession
+      );
+      let sendError = null;
+      try {
+        await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()));
+      } catch (error) {
+        sendError = error;
+      } finally {
+        producerState.completed = true;
+      }
+      const persistenceConfirmed = await persistencePromise;
+      if (sendError) {
+        throw sendError;
+      }
       queueStats.envelopeVerified = persistenceConfirmed
         ? await verifyGenericEnvelope(baseUrl, token, streamId, acceptedEvents, uiSession)
         : false;

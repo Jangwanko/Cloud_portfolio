@@ -1,8 +1,8 @@
 # Demo Guide
 
-Master source UI version: `2.0.0`
+Dev-kafka source UI version: `2.2.0`
 
-Public demo-lite UI version: `1.4.1` (branch/deployment-specific)
+Public demo-lite last verified UI version: `2.1.0`
 
 ## Purpose
 
@@ -19,7 +19,7 @@ Public demo-lite UI version: `1.4.1` (branch/deployment-specific)
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `1.4.1` reference scenario 시연 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite generic v2 reference scenario 시연 |
 | Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
 | Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
@@ -35,10 +35,10 @@ Grafana 접근:
 
 Version boundary:
 
-- `master` source: UI `2.0.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
+- `dev-kafka` source: UI `2.2.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
 - local `dev-kafka` live 2026-07-21: title `Reliable Event Processing Console`, UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
-- public demo-lite live GET 2026-07-21: title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, API image `e481a21`, generic v2 route 없음, event route `200`
-- generic `2.0.0` 변경: local `dev-kafka`에는 배포 완료, public demo-lite에는 미배포
+- public demo-lite last verified: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 event `202`
+- UI `2.2.0` release `626e8296b79d`: public runtime 확인 대기
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
 API boundary:
@@ -56,7 +56,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.0.0` image build/load:
+- 현재 `2.2.0` image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -83,13 +83,13 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- 화면 `ver. 2.0.0`과 API version `2.0.0` 표시 확인
+- 화면 `ver. 2.2.0`과 API version `2.0.0` 표시 확인
 
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
-- 현재 기대 title/badge: `Post-Order Event Console` / `1.4.1`; OpenAPI `1.0.0`, generic v2 route 없음, order event success `200`
-- `master` source `2.0.0` 기능 확인용으로 사용하지 않음
+- 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.1.0`; OpenAPI `2.0.0`, generic v2 event success `202`
+- UI `2.2.0` badge와 동시 진행률은 release rollout 뒤 별도 확인
 
 ## English Demo Script
 
@@ -114,7 +114,8 @@ Persistence 확인 방식:
 
 - 한 batch에서 reference stream 1개 생성
 - event append: `POST /v2/streams/{stream_id}/events`
-- event append 뒤 `GET /v1/streams/{stream_id}/persistence-summary`를 3초 간격으로 polling
+- event append 전송과 동시에 `GET /v1/streams/{stream_id}/persistence-summary`를 1초 간격으로 polling
+- 실행 중 `/health/ready`를 5초 간격으로 확인해 Worker 시작·peak replica 유지
 - accepted event 수와 `persisted_count` 비교
 - 최대 polling 안에 확인되지 않은 row는 `일부 미확인`
 - API append 실패 event는 `send_failed`로 종료, 전체 화면이 무한 처리 중에 남지 않음
