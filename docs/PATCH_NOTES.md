@@ -2,6 +2,15 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-27 Grafana 현재 상태 패널 정정
+
+- Kafka intake·PostgreSQL primary·standby 신호를 현재 시점 `min` 집계의 단일값으로 변경
+- Worker 상단 신호를 Kubernetes Deployment `available/spec replicas` 가용률로 변경
+- 종료된 Pod의 과거 시계열과 replica별 중복 숫자가 Stat 패널에 남는 문제 제거
+- API 5xx 비율 축을 `0~100%`로 고정해 무오류 구간의 `10000%` 자동축 제거
+- API·stage latency quantile 창을 `1m`에서 `5m`으로 변경해 희소 트래픽 변동 완화
+- dashboard version `10`, Grafana config hash 갱신
+
 ## 2026-07-21 README Kubernetes 중심 재구성
 
 - 포트폴리오 첫 화면을 Kubernetes·GitOps 운영 플랫폼 설계로 고정

@@ -1126,8 +1126,9 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_health_status{job=\"api\",component=\"kafka\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(messaging_health_status{job=\"api\",component=\"kafka\"})",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
                            "title":  "Kafka Intake Health",
@@ -1186,8 +1187,9 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_postgres_is_primary{job=\"api\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(messaging_postgres_is_primary{job=\"api\"})",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
                            "title":  "PostgreSQL Primary",
@@ -1246,13 +1248,14 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_health_status{job=\"worker\",component=\"worker\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}) / clamp_min(min(kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}), 1)",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
-                           "title":  "Worker Health",
+                           "title":  "Worker Availability",
                            "type":  "stat",
-                           "description":  "Worker consumer loop health."
+                           "description":  "Available replicas divided by desired replicas for the Kubernetes Worker Deployment."
                        },
                        {
                            "datasource":  {
@@ -1310,8 +1313,9 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_postgres_standby_count{job=\"api\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(messaging_postgres_standby_count{job=\"api\"})",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
                            "title":  "PostgreSQL Standbys",
@@ -1359,6 +1363,8 @@ data:
                            "fieldConfig":  {
                                                "defaults":  {
                                                                 "unit":  "percentunit",
+                                                                "min":  0,
+                                                                "max":  1,
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
                                                                           }
@@ -1411,12 +1417,12 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                                "refId":  "A"
                                            },
                                            {
                                                "legendFormat":  "p99",
-                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                                "refId":  "B"
                                            }
                                        ],
@@ -1450,7 +1456,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "{{stage}} p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[5m])) by (le, stage))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -2222,7 +2228,7 @@ data:
         "timezone":  "browser",
         "title":  "Reliable Event Processing Operations Overview",
         "uid":  "messaging-portfolio-overview",
-        "version":  9
+        "version":  10
     }
 ---
 apiVersion: apps/v1
@@ -2240,7 +2246,7 @@ spec:
       labels:
         app: grafana
       annotations:
-        portfolio.jangwanko.dev/config-hash: "d92faa8761514e7d"
+        portfolio.jangwanko.dev/config-hash: "214fb00bfc9b687c"
     spec:
       automountServiceAccountToken: false
       securityContext:

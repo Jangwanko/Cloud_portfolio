@@ -26,9 +26,14 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 
 | Panel | PromQL / Metric | Interpretation |
 | --- | --- | --- |
+| `Kafka Intake Health` | `min(messaging_health_status{job="api",component="kafka"})` instant query | 현재 API replica 전체의 Kafka append 경로 상태를 단일값으로 표시 |
+| `PostgreSQL Primary` | `min(messaging_postgres_is_primary{job="api"})` instant query | 현재 API replica 전체에서 Pgpool writable primary 도달 가능 여부 |
+| `Worker Availability` | Worker Deployment `available replicas / spec replicas` instant query | Kubernetes가 요구한 Worker replica와 실제 available replica 일치 여부 |
+| `PostgreSQL Standbys` | `min(messaging_postgres_standby_count{job="api"})` instant query | API pod별 중복을 제거한 현재 standby 수 |
 | `API Request Rate` | `sum(rate(messaging_api_requests_total[1m])) by (status)` | HTTP status별 request rate |
-| `API Latency` | `messaging_api_request_latency_seconds_bucket` | API intake 요청이 응답을 받기까지의 p95 / p99 |
-| `API Stage Latency` | `messaging_api_stage_latency_seconds_bucket` | membership, Kafka publish 등 hot path 구간 |
+| `API 5xx Ratio` | 전체 request 대비 `5xx`의 5분 비율, 표시 범위 `0~100%` | user-visible server error ratio |
+| `API Latency` | `messaging_api_request_latency_seconds_bucket[5m]` | API intake 요청이 응답을 받기까지의 p95 / p99 |
+| `API Stage Latency` | `messaging_api_stage_latency_seconds_bucket[5m]` | membership, Kafka publish 등 hot path 구간 |
 | `Worker Throughput By Result` | `sum(rate(messaging_worker_processed_total{job="worker"}[1m])) by (result)` | core Worker의 `success` / `rejected` / `dlq` / failure 처리량 |
 | `Worker Failure Ratio` | `messaging_worker_processed_total{job="worker",result="failure"}` 비율 | core Worker unexpected failure와 seek-back 확인 |
 | `Worker Last Success Age` | `time() - max(messaging_worker_last_success_timestamp{job="worker"})` | Worker pod는 살아 있지만 실제 처리가 멈춘 상태 감지 |
@@ -56,6 +61,7 @@ Prometheus scrape topology:
 - API, Worker, notification-worker, DLQ Replayer: headless Service의 DNS A record discovery로 ready replica별 scrape
 - kafka-exporter와 Kubernetes metrics: 별도 scrape job
 - 여러 replica의 counter/rate: `sum`으로 집계, pod별 이상은 `instance`/`pod` label로 분리
+- 상단 상태 패널: 현재 시점 instant query와 `min` 집계로 과거 종료 pod 및 replica별 중복값 제외
 - `MessagingMetricsTargetMissing`: API, core Worker, DLQ Replayer, kafka-exporter의 `up=0` 또는 series 부재 감지
 - `MessagingNotificationConsumerLagHigh`: notification-worker consumer group lag이 5분 동안 `100` 초과 시 warning
 

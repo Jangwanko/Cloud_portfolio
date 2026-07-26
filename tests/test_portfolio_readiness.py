@@ -802,7 +802,7 @@ class TestOperationsDashboard:
             "Kafka Consumer Group Lag",
             "Kafka Topic Partitions",
             "PostgreSQL Primary",
-            "Worker Health",
+            "Worker Availability",
             "API 5xx Ratio",
             "Worker Failure Ratio",
             "Worker Last Success Age",
@@ -818,6 +818,29 @@ class TestOperationsDashboard:
         assert "producer_append_path" not in serialized
         assert "consumer_read_path" not in serialized
         assert "worker_consumer_group" not in serialized
+
+        panels = {panel["title"]: panel for panel in dashboard["panels"]}
+        for title in (
+            "Kafka Intake Health",
+            "PostgreSQL Primary",
+            "Worker Availability",
+            "PostgreSQL Standbys",
+        ):
+            target = panels[title]["targets"][0]
+            assert target["instant"] is True
+            assert target["expr"].startswith("min(")
+
+        api_5xx_defaults = panels["API 5xx Ratio"]["fieldConfig"]["defaults"]
+        assert api_5xx_defaults["unit"] == "percentunit"
+        assert api_5xx_defaults["min"] == 0
+        assert api_5xx_defaults["max"] == 1
+
+        assert (
+            "kube_deployment_status_replicas_available"
+            in panels["Worker Availability"]["targets"][0]["expr"]
+        )
+        assert "[5m]" in panels["API Latency"]["targets"][0]["expr"]
+        assert "[5m]" in panels["API Stage Latency"]["targets"][0]["expr"]
 
         for metric in (
             "messaging_db_pool_in_use",
