@@ -25,9 +25,9 @@
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
-| Demo-lite candidate UI `2.2.0` | generic v2, Kafka append·DB persistence 동시 진행 표시, 실행 중 Worker peak, 저사양 overlay | `demo-dev` source contract; public deployment 미실행 |
-| Public demo-lite UI `2.1.0` | branch/deployment-specific | 2026-07-27 live GET: title `Reliable Event Processing Console`, API `2.0.0`, generic v2와 event `202`; source `2.2.0` 동시 진행률 미배포 |
-| Unit / contract / infrastructure suite | `368 passed` (2026-07-27) | demo-lite overlay·rollout·CI gate·동시 진행률·Worker peak contract 포함; cluster rollout과 별도 판정 |
+| Demo-lite candidate UI `2.3.0` | generic v2, Kafka append·DB persistence 동시 진행 표시, 중복 Worker 카드 제거, compact DB 저장 증거, 처리 중 Advisor 분리 | `demo-dev` source contract; public deployment 미실행 |
+| Public demo-lite UI `2.1.0` | branch/deployment-specific | 2026-07-27 live GET: title `Reliable Event Processing Console`, API `2.0.0`, generic v2와 event `202`; candidate `2.3.0` 미배포 |
+| Unit / contract / infrastructure suite | `368 passed` (2026-07-27) | UI `2.3.0` 정보 구조·Advisor 상태와 demo-lite overlay·rollout·CI gate contract 포함 |
 | Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
 
 원본 위치:
@@ -346,7 +346,7 @@ Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Work
 
 응답의 Worker와 materialized cache 정보는 운영 문맥이며 readiness state 결정 조건이 아닙니다. 아래 신호는 Prometheus, alerts, `check_portfolio_status.ps1`에서 별도로 확인합니다.
 
-응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`입니다. Demo UI badge는 `master`의 `2.0.0`, `demo-dev` candidate의 `2.2.0`, public demo-lite의 `2.1.0`을 각각 구분합니다.
+응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`입니다. Demo UI badge는 `master`의 `2.0.0`, `demo-dev` candidate의 `2.3.0`, public demo-lite의 `2.1.0`을 각각 구분합니다.
 
 - Kafka broker count
 - PostgreSQL standby count와 replication delay는 API readiness의 degraded reason에도 반영
