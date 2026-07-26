@@ -2,19 +2,19 @@
 
 이 문서는 현재 포트폴리오의 다음 투자 순서를 정의합니다. 완료 여부는 코드 존재보다 재현 가능한 장애 주입과 원본 증거로 판단합니다.
 
-## Immediate Direction — 2026-07-21
+## Immediate Direction — 2026-07-27
 
 현재 투자 순서:
 
-1. **public generic v2 demo 동기화**: 현재 legacy demo-lite의 UI `1.4.1`·API `1.0.0`·event `200`을 current generic v2 source와 맞춤. `demo-dev`에서 저사양 overlay를 이식하고 schema migration → Worker → API gate 순서로 검증한 뒤 `demo-lite`에 최소 push
-2. **배포 validation gate 고정**: `dev-kafka` image publication을 `ci.yml`의 `needs: validate` job으로 통합한 source 변경 완료. remote Actions success, verified digest, overlay bot commit, Argo workload image 일치까지 확인해야 완료
+1. **public demo 상호작용 동기화**: public demo-lite의 generic v2·API `2.0.0`·event `202` 전환 완료. 남은 범위는 source UI `2.2.0`의 Kafka append·DB persistence 동시 진행률과 실행 중 Worker peak 표시를 `demo-dev`에서 확인한 뒤 `demo-lite`에 반영하고 공개 badge·동작 재검증
+2. **배포 validation gate 증거 유지**: `dev-kafka` image publication의 `needs: validate`, remote Actions success, verified digest, overlay bot commit 확인 완료. 이후 변경도 source SHA·image tag·Argo workload image 일치로 판정
 3. **generic v2 지속 가능 처리량 확정**: single hot stream 클린 조건 3회와 64-stream fixed Worker/KEDA A/B 1회 완료. 다음 단계는 A/B 3회 반복, notification-worker capacity 분리, registry image 재검증, PostgreSQL 처리량과 Worker commit lag의 유효 bucket 재측정
 4. **신뢰성 gap 제거**: accepted-state read model, transactional outbox, offset crash/rebalance 장애 주입을 각각 재현 가능한 검증으로 닫음
 5. **복구 지점 자동화**: 같은 local cluster의 disposable database를 사용한 수동 host logical dump restore는 통과. 남은 범위는 object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 
 2026-07-21 회복 후보는 clean DB/topic, API min `6`, 모든 cache hydration과 lag `0`을 확인한 동일 hot-stream 조건에서 3회 실행했습니다. 평균 event `29,168`, p95 `101.27ms`, p99 `140.59ms`, main drain `508.58s`이며 첫 v2 후보보다 세 번 모두 개선됐습니다. historical stable legacy baseline보다 평균 event가 `7.92%` 적고 p95가 `25.57%` 높으며, dirty local image와 API floor 변경을 포함합니다. 64-stream A/B 1회에서는 KEDA drain이 `13.35%` 줄었으나 intake가 악화되고 notification backlog가 커졌습니다. stable generic v2 baseline 승격은 A/B 반복과 registry image 재검증 뒤 판정합니다.
 
-Public 동기화는 branch promotion과 실제 배포를 포함하므로 uncommitted worktree에서 완료할 수 없습니다. 먼저 current source를 local test와 benchmark로 확정하고 사용자 승인 뒤 `dev-kafka` commit/push, `master` promotion, `demo-dev` 저사양 검증, `demo-lite` staged rollout 순서로 진행합니다. Public 배포 workflow도 validation 성공에 종속되어야 합니다.
+Public UI `2.2.0` 동기화는 `demo-dev` 검증과 실제 배포를 포함합니다. Current source를 local test와 저사양 overlay render로 확정하고 사용자 승인 뒤 `demo-dev` commit/push, 검증된 tree와 image tag의 `demo-lite` release, staged rollout 순서로 진행합니다. 공개 화면 badge, Kafka·DB 카운터 동시 변화, Worker peak 유지까지 확인해야 완료입니다.
 
 ## P0 — 데이터 유실 경계와 API 계약
 

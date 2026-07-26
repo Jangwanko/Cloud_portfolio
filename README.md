@@ -214,8 +214,8 @@ Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소
 | --- | --- | --- |
 | `master` source | UI `2.0.0`, API `2.0.0` | generic v2 + `202` source contract |
 | local `dev-kafka` live evidence, 2026-07-21 | API `2.0.0`, image `9349ba9` | cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
-| `demo-dev` candidate | UI `2.1.0`, API `2.0.0` | 저사양 자원 유지, generic v2 source 검증 완료, 공개 미배포 |
-| public demo-lite deployment | UI `1.4.1`, API `1.0.0`, image `e481a21` | legacy branch deployment, generic v2 없음, event `200` |
+| `demo-dev` candidate | UI `2.2.0`, API `2.0.0` | 저사양 자원 유지, Kafka append·DB persistence 동시 갱신, 실행 중 Worker peak 유지 |
+| public demo-lite deployment, 2026-07-27 확인 | UI `2.1.0`, API `2.0.0` | generic v2 + `202`; persistence polling은 sender 완료 뒤 시작 |
 
 ### Local Quick Start
 
@@ -229,9 +229,9 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 - 화면: `Reserved → Kafka Appended → DB Persisted`; `DLQ summary`의 `by_reason`·`replayable`·`blocked` 확인
 - 절차: [Quick Start](docs/QUICK_START.md) · [Demo Guide](docs/DEMO_GUIDE.md)
 
-### Public legacy demo-lite
+### Public demo-lite
 
-2코어급 legacy compatibility deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 현재 source의 generic v2 검증 링크에서 제외합니다.
+2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). UI `2.1.0` / API `2.0.0` generic v2 배포이며, `demo-dev` UI `2.2.0`의 동시 진행률 표시는 아직 반영 전입니다. 2026-07-27 public Prometheus에서 consumer lag peak `828`, HPA desired와 실제 Worker replica `1→2`를 확인했습니다.
 
 ## Validation Summary
 
