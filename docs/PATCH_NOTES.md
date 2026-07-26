@@ -2,6 +2,17 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-27 Demo UI 정보 구조와 진행 상태 판정 정리
+
+- Demo UI `2.3.0`
+- 처리 현황의 중복 Worker 카드와 run 전용 readiness polling 제거
+- Worker 현재/최대 replica 표시는 기존 운영 상태 패널로 단일화
+- 화면 아래에 분리됐던 `DB 저장 컬럼`을 Pipeline Evidence의 DB 단계 뒤로 이동
+- Kafka append·DB persistence 진행 중 Operations Advisor를 `처리 중`으로 표시
+- run 종료 뒤에만 예약·Kafka·DB 수치 불일치 경고
+- local unit / contract / infrastructure suite: `364 passed`
+- local rollout 대기
+
 ## 2026-07-27 Local Demo Kafka·DB 진행률 병렬 관측
 
 - Demo UI `2.2.0`

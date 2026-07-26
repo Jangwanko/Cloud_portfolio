@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka source UI version: `2.2.0`
+Dev-kafka source UI version: `2.3.0`
 
 Public demo-lite last verified UI version: `2.1.0`
 
@@ -35,7 +35,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source: UI `2.2.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
+- `dev-kafka` source: UI `2.3.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
 - local `dev-kafka` live 2026-07-27: UI `2.2.0`, API `2.0.0`, image `1cd84d4df742`, API `6/6`, Worker `2/2`, Argo CD `Synced / Healthy`
 - public demo-lite last verified: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 event `202`
 - UI `2.2.0` release `626e8296b79d`: public runtime 확인 대기
@@ -56,7 +56,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.2.0` image build/load:
+- 현재 `2.3.0` image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -83,7 +83,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- 화면 `ver. 2.2.0`과 API version `2.0.0` 표시 확인
+- 화면 `ver. 2.3.0`과 API version `2.0.0` 표시 확인
 
 Public demo-lite 확인:
 
@@ -108,15 +108,16 @@ Public demo-lite 확인:
 | `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append에 성공한 수 |
 | `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 끝낸 수 |
 | `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간 |
-| `Worker` | 현재 Worker replica / 최대 replica. 예: `2/8`, `6/8` |
+| `Worker` | 오른쪽 운영 상태 패널에서 현재 Worker replica / 최대 replica 확인. 예: `2/8`, `6/8` |
 
 Persistence 확인 방식:
 
 - 한 batch에서 reference stream 1개 생성
 - event append: `POST /v2/streams/{stream_id}/events`
 - event append 전송과 동시에 `GET /v1/streams/{stream_id}/persistence-summary`를 1초 간격으로 polling
-- 실행 중 `/health/ready`를 5초 간격으로 확인해 Worker 시작·peak replica 유지
 - accepted event 수와 `persisted_count` 비교
+- 전송 진행 중 Operations Advisor는 `처리 중`, 종료 뒤에만 카운터 불일치 판정
+- Pipeline Evidence의 DB 단계 아래에서 저장 컬럼과 envelope 샘플 검증 확인
 - 최대 polling 안에 확인되지 않은 row는 `일부 미확인`
 - API append 실패 event는 `send_failed`로 종료, 전체 화면이 무한 처리 중에 남지 않음
 

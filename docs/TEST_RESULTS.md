@@ -24,9 +24,9 @@
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
-| Dev-kafka Demo UI `2.2.0` | generic v2 intake, Kafka append·DB persistence 동시 진행 표시, 실행 중 Worker peak, envelope evidence | local image `1cd84d4df742`; live HTML에서 concurrent polling·Worker peak asset 확인 |
+| Dev-kafka source Demo UI `2.3.0` | generic v2 intake, Kafka append·DB persistence 동시 진행 표시, 중복 Worker 카드 제거, DB 저장 컬럼 pipeline 배치, 처리 중 Advisor 분리 | source / contract 검증; local live rollout 전 |
 | Public demo-lite UI | last verified `2.1.0`; `2.2.0` release image `626e8296b79d` | generic v2·API `2.0.0`·event `202`; `2.2.0` runtime 확인 대기 |
-| Unit / contract / infrastructure suite | `364 passed` (2026-07-27) | 동시 진행률·Worker peak contract 포함; cluster rollout과 별도 판정 |
+| Unit / contract / infrastructure suite | `364 passed` (2026-07-27) | UI `2.3.0` 정보 구조·Advisor 상태 contract 포함; cluster rollout과 별도 판정 |
 | Local live cluster | 2026-07-27 Argo revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2` | readiness `ready`, API `2.0.0`, UI `2.2.0`, Worker `2/8`; functional browser run은 별도 확인 |
 
 원본 위치:
@@ -345,7 +345,7 @@ Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Work
 
 응답의 Worker와 materialized cache 정보는 운영 문맥이며 readiness state 결정 조건이 아닙니다. 아래 신호는 Prometheus, alerts, `check_portfolio_status.ps1`에서 별도로 확인합니다.
 
-응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`이며 dev-kafka Demo UI `2.2.0` badge와 함께 확인합니다. Public demo-lite runtime은 별도 branch/image 상태입니다.
+응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`이며 dev-kafka source Demo UI `2.3.0` badge와 함께 확인합니다. Local live와 public demo-lite runtime은 각각 별도 branch/image 상태입니다.
 
 - Kafka broker count
 - PostgreSQL standby count와 replication delay는 API readiness의 degraded reason에도 반영

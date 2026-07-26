@@ -115,7 +115,7 @@ Response의 `app_version`은 실행 중인 API build version입니다. 2026-07-2
 
 ## Demo Access
 
-Dev-kafka source Demo UI: `2.2.0`
+Dev-kafka source Demo UI: `2.3.0`
 
 Public demo-lite Demo UI: last verified `2.1.0`, `2.2.0` release runtime 확인 대기
 
@@ -133,7 +133,7 @@ Demo counter semantics:
 - `Kafka 적재`: API가 ingress topic append를 완료한 수
 - `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
 - `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
-- Worker: 실행 중 5초 간격 readiness에서 확인한 시작 replica와 peak replica
+- Worker: 운영 상태 refresh 시점의 현재 replica / 최대 replica
 
 UI operating behavior:
 
@@ -142,7 +142,9 @@ UI operating behavior:
 - readiness/DLQ refresh: 기본 30초, 선택 60초
 - auth token: 동일 base/user에서 memory cache 재사용, UI 기준 30분
 - persistence: event append 전송과 동시에 stream 단위 `/persistence-summary`를 1초 간격 polling
-- Worker scaling: 실행 중 `/health/ready`를 5초 간격 polling하고 시작·peak replica를 run 종료까지 유지
+- Worker scaling: 운영 상태 패널에서 현재 replica / 최대 replica 확인, 시계열 확장 증거는 Grafana에서 확인
+- Advisor: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
+- DB storage evidence: Pipeline Evidence의 DB 단계 아래에 저장 컬럼과 envelope 검증 배치
 - send failure: event `send_failed` 종료
 - persistence timeout: 일부 미확인 상태, 완료 표시 제외
 - structured evidence: `schema_version`, producer-defined `event_type`, JSON `payload`, JSON `metadata`

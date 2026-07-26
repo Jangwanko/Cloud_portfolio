@@ -95,6 +95,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-21 performance recovery, cache replay, clean benchmark reset, HPA 안정화 보강 뒤 local suite는 `363 passed`입니다.
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
+- 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
+- 현재 `dev-kafka` source Demo UI는 `2.3.0`입니다. 처리 현황의 중복 Worker 카드를 제거하고 Worker 현재/최대 수는 운영 상태 패널에서만 표시합니다. DB 저장 컬럼은 Pipeline Evidence의 DB 단계 뒤에 배치하며, Operations Advisor는 진행 중 카운터 차이를 `처리 중`으로 판정합니다. Local runtime 배포 증거는 아직 UI `2.2.0`입니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
 - 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
@@ -198,14 +200,14 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
-- 현재 `dev-kafka` source Demo UI version은 `2.2.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, 실행 중 Worker readiness `5초` polling과 시작·peak replica 유지, `send_failed`/일부 미확인 종료, 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
+- 현재 `dev-kafka` source Demo UI version은 `2.3.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
 - 문서에 등록된 public demo-lite live evidence는 UI `2.1.0` / API `2.0.0`이며 UI `2.2.0` release의 runtime 반영은 별도 확인합니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
 - `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
-- Worker 표시는 실행 중 확장 시 `시작→peak / max 최대` 형식으로 둡니다. 확장 전에는 `현재/최대` 형식을 사용합니다.
+- Worker 표시는 운영 상태 패널 한 곳에서 `현재 replica/최대 replica` 형식으로 둡니다. 예: `2/8`, `6/8`. 실행 중 시계열 확장 증거는 Grafana에서 확인합니다.
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 event persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
