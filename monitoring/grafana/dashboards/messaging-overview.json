@@ -59,8 +59,9 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "",
-                                           "expr":  "messaging_health_status{job=\"api\",component=\"kafka\"}",
-                                           "refId":  "A"
+                                           "expr":  "min(messaging_health_status{job=\"api\",component=\"kafka\"})",
+                                           "refId":  "A",
+                                           "instant":  true
                                        }
                                    ],
                        "title":  "Kafka Intake Health",
@@ -119,8 +120,9 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "",
-                                           "expr":  "messaging_postgres_is_primary{job=\"api\"}",
-                                           "refId":  "A"
+                                           "expr":  "min(messaging_postgres_is_primary{job=\"api\"})",
+                                           "refId":  "A",
+                                           "instant":  true
                                        }
                                    ],
                        "title":  "PostgreSQL Primary",
@@ -179,13 +181,14 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "",
-                                           "expr":  "messaging_health_status{job=\"worker\",component=\"worker\"}",
-                                           "refId":  "A"
+                                           "expr":  "min(kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}) / clamp_min(min(kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}), 1)",
+                                           "refId":  "A",
+                                           "instant":  true
                                        }
                                    ],
-                       "title":  "Worker Health",
+                       "title":  "Worker Availability",
                        "type":  "stat",
-                       "description":  "Worker consumer loop health."
+                       "description":  "Available replicas divided by desired replicas for the Kubernetes Worker Deployment."
                    },
                    {
                        "datasource":  {
@@ -202,10 +205,6 @@
                                                                                              },
                                                                                              {
                                                                                                  "value":  1,
-                                                                                                 "color":  "yellow"
-                                                                                             },
-                                                                                             {
-                                                                                                 "value":  2,
                                                                                                  "color":  "green"
                                                                                              }
                                                                                          ],
@@ -243,13 +242,14 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "",
-                                           "expr":  "messaging_postgres_standby_count{job=\"api\"}",
-                                           "refId":  "A"
+                                           "expr":  "min(kafka_brokers)",
+                                           "refId":  "A",
+                                           "instant":  true
                                        }
                                    ],
-                       "title":  "PostgreSQL Standbys",
+                       "title":  "Kafka Broker Availability",
                        "type":  "stat",
-                       "description":  "Local HA target is two standbys."
+                       "description":  "The demo-lite profile expects one available Kafka broker."
                    },
                    {
                        "datasource":  {
@@ -292,6 +292,8 @@
                        "fieldConfig":  {
                                            "defaults":  {
                                                             "unit":  "percentunit",
+                                                            "min":  0,
+                                                            "max":  1,
                                                             "color":  {
                                                                           "mode":  "palette-classic"
                                                                       }
@@ -310,7 +312,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "5xx_ratio",
-                                           "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1))",
+                                           "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -344,12 +346,12 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "p95",
-                                           "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                           "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                            "refId":  "A"
                                        },
                                        {
                                            "legendFormat":  "p99",
-                                           "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                           "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                            "refId":  "B"
                                        }
                                    ],
@@ -383,7 +385,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "{{stage}} p95",
-                                           "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                           "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[5m])) by (le, stage))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -450,7 +452,7 @@
                        "targets":  [
                                        {
                                            "legendFormat":  "failure_ratio",
-                                           "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1))",
+                                           "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001))",
                                            "refId":  "A"
                                        }
                                    ],
@@ -997,7 +999,7 @@
                                    },
                        "options":  {
                                        "mode":  "markdown",
-                                       "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_age_seconds`, and `by_stream`."
+                                       "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_sample_age_seconds`, and `by_stream`. `oldest_sample_age_seconds` is the age of the oldest record in the bounded sample, not total unresolved-backlog age or an SLO measurement."
                                    }
                    },
                    {
@@ -1028,12 +1030,8 @@
                                                                                                  "value":  null
                                                                                              },
                                                                                              {
-                                                                                                 "color":  "yellow",
-                                                                                                 "value":  2
-                                                                                             },
-                                                                                             {
                                                                                                  "color":  "green",
-                                                                                                 "value":  3
+                                                                                                 "value":  1
                                                                                              }
                                                                                          ]
                                                                            }
@@ -1060,7 +1058,8 @@
                                        {
                                            "expr":  "kafka_brokers",
                                            "legendFormat":  "brokers",
-                                           "refId":  "A"
+                                           "refId":  "A",
+                                           "instant":  true
                                        }
                                    ]
                    },
@@ -1068,7 +1067,7 @@
                        "id":  27,
                        "title":  "Kafka Consumer Group Lag",
                        "type":  "timeseries",
-                       "description":  "Direct kafka-exporter lag for the message-worker consumer group.",
+                       "description":  "Direct kafka-exporter lag for the persistence and notification consumer groups.",
                        "datasource":  {
                                           "type":  "prometheus",
                                           "uid":  "prometheus"
@@ -1091,13 +1090,13 @@
                                        },
                        "targets":  [
                                        {
-                                           "expr":  "sum by (topic) (kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                           "legendFormat":  "{{topic}} lag",
+                                           "expr":  "sum by (consumergroup, topic) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
+                                           "legendFormat":  "{{consumergroup}} / {{topic}} lag",
                                            "refId":  "A"
                                        },
                                        {
-                                           "expr":  "sum(kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                           "legendFormat":  "total lag",
+                                           "expr":  "sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
+                                           "legendFormat":  "{{consumergroup}} total",
                                            "refId":  "B"
                                        }
                                    ]
@@ -1153,7 +1152,7 @@
                  "from":  "now-30m"
              },
     "timezone":  "browser",
-    "title":  "Messaging Portfolio Operations Overview",
+    "title":  "Reliable Event Processing Operations Overview",
     "uid":  "messaging-portfolio-overview",
-    "version":  7
+    "version":  11
 }

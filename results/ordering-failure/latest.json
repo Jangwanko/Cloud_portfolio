@@ -1,0 +1,359 @@
+{
+  "started_at": "2026-06-08T10:21:26.747289+00:00",
+  "base_url": "http://127.0.0.1",
+  "namespace": "messaging-app",
+  "event_count_per_stream": 100,
+  "db_failure_target": "messaging-postgresql-ha-pgpool",
+  "results": [
+    {
+      "result": "PASS",
+      "scenario": "single_no_failure",
+      "checks": {
+        "ordering": "PASS",
+        "no_loss": "PASS",
+        "no_duplicate": "PASS",
+        "no_mixed_payload": "PASS",
+        "dlq_empty": "PASS"
+      },
+      "counts": {
+        "expected": 100,
+        "accepted": 100,
+        "persisted": 100,
+        "missing": 0,
+        "duplicate": 0,
+        "mixed_payload": 0,
+        "dlq": 0
+      },
+      "timing": {
+        "total_duration_seconds": 6.125,
+        "db_outage_seconds": null,
+        "recovery_to_completion_seconds": null
+      },
+      "outage": {},
+      "streams": [
+        {
+          "name": "A",
+          "stream_id": 22,
+          "prefix": "A",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:A001",
+            "2:A002",
+            "3:A003",
+            "4:A004",
+            "5:A005"
+          ],
+          "tail": [
+            "96:A096",
+            "97:A097",
+            "98:A098",
+            "99:A099",
+            "100:A100"
+          ],
+          "first_mismatch": null
+        }
+      ],
+      "failure_details": {
+        "missing_request_ids": [],
+        "duplicate_request_ids": [],
+        "mixed_payload": [],
+        "dlq_request_ids": []
+      }
+    },
+    {
+      "result": "PASS",
+      "scenario": "multi_no_failure",
+      "checks": {
+        "ordering": "PASS",
+        "no_loss": "PASS",
+        "no_duplicate": "PASS",
+        "no_mixed_payload": "PASS",
+        "dlq_empty": "PASS"
+      },
+      "counts": {
+        "expected": 300,
+        "accepted": 300,
+        "persisted": 300,
+        "missing": 0,
+        "duplicate": 0,
+        "mixed_payload": 0,
+        "dlq": 0
+      },
+      "timing": {
+        "total_duration_seconds": 8.438,
+        "db_outage_seconds": null,
+        "recovery_to_completion_seconds": null
+      },
+      "outage": {},
+      "streams": [
+        {
+          "name": "A",
+          "stream_id": 23,
+          "prefix": "A",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:A001",
+            "2:A002",
+            "3:A003",
+            "4:A004",
+            "5:A005"
+          ],
+          "tail": [
+            "96:A096",
+            "97:A097",
+            "98:A098",
+            "99:A099",
+            "100:A100"
+          ],
+          "first_mismatch": null
+        },
+        {
+          "name": "B",
+          "stream_id": 24,
+          "prefix": "B",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:B001",
+            "2:B002",
+            "3:B003",
+            "4:B004",
+            "5:B005"
+          ],
+          "tail": [
+            "96:B096",
+            "97:B097",
+            "98:B098",
+            "99:B099",
+            "100:B100"
+          ],
+          "first_mismatch": null
+        },
+        {
+          "name": "C",
+          "stream_id": 25,
+          "prefix": "C",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:C001",
+            "2:C002",
+            "3:C003",
+            "4:C004",
+            "5:C005"
+          ],
+          "tail": [
+            "96:C096",
+            "97:C097",
+            "98:C098",
+            "99:C099",
+            "100:C100"
+          ],
+          "first_mismatch": null
+        }
+      ],
+      "failure_details": {
+        "missing_request_ids": [],
+        "duplicate_request_ids": [],
+        "mixed_payload": [],
+        "dlq_request_ids": []
+      }
+    },
+    {
+      "result": "PASS",
+      "scenario": "single_db_failure",
+      "checks": {
+        "ordering": "PASS",
+        "no_loss": "PASS",
+        "no_duplicate": "PASS",
+        "no_mixed_payload": "PASS",
+        "dlq_empty": "PASS"
+      },
+      "counts": {
+        "expected": 100,
+        "accepted": 100,
+        "persisted": 100,
+        "missing": 0,
+        "duplicate": 0,
+        "mixed_payload": 0,
+        "dlq": 0
+      },
+      "timing": {
+        "total_duration_seconds": 22.969,
+        "db_outage_seconds": 20.828,
+        "recovery_to_completion_seconds": 1.375
+      },
+      "outage": {
+        "target": "deployment.apps/messaging-postgresql-ha-pgpool",
+        "original_replicas": 2,
+        "down_started_at": "2026-06-08T10:21:44.544157+00:00",
+        "restore_started_at": "2026-06-08T10:21:48.690273+00:00",
+        "db_ready_at": "2026-06-08T10:22:05.374747+00:00"
+      },
+      "streams": [
+        {
+          "name": "A",
+          "stream_id": 26,
+          "prefix": "A",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:A001",
+            "2:A002",
+            "3:A003",
+            "4:A004",
+            "5:A005"
+          ],
+          "tail": [
+            "96:A096",
+            "97:A097",
+            "98:A098",
+            "99:A099",
+            "100:A100"
+          ],
+          "first_mismatch": null
+        }
+      ],
+      "failure_details": {
+        "missing_request_ids": [],
+        "duplicate_request_ids": [],
+        "mixed_payload": [],
+        "dlq_request_ids": []
+      }
+    },
+    {
+      "result": "PASS",
+      "scenario": "multi_db_failure",
+      "checks": {
+        "ordering": "PASS",
+        "no_loss": "PASS",
+        "no_duplicate": "PASS",
+        "no_mixed_payload": "PASS",
+        "dlq_empty": "PASS"
+      },
+      "counts": {
+        "expected": 300,
+        "accepted": 300,
+        "persisted": 300,
+        "missing": 0,
+        "duplicate": 0,
+        "mixed_payload": 0,
+        "dlq": 0
+      },
+      "timing": {
+        "total_duration_seconds": 23.703,
+        "db_outage_seconds": 21.61,
+        "recovery_to_completion_seconds": 1.218
+      },
+      "outage": {
+        "target": "deployment.apps/messaging-postgresql-ha-pgpool",
+        "original_replicas": 2,
+        "down_started_at": "2026-06-08T10:22:08.553132+00:00",
+        "restore_started_at": "2026-06-08T10:22:13.073190+00:00",
+        "db_ready_at": "2026-06-08T10:22:30.164381+00:00"
+      },
+      "streams": [
+        {
+          "name": "A",
+          "stream_id": 27,
+          "prefix": "A",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:A001",
+            "2:A002",
+            "3:A003",
+            "4:A004",
+            "5:A005"
+          ],
+          "tail": [
+            "96:A096",
+            "97:A097",
+            "98:A098",
+            "99:A099",
+            "100:A100"
+          ],
+          "first_mismatch": null
+        },
+        {
+          "name": "B",
+          "stream_id": 28,
+          "prefix": "B",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:B001",
+            "2:B002",
+            "3:B003",
+            "4:B004",
+            "5:B005"
+          ],
+          "tail": [
+            "96:B096",
+            "97:B097",
+            "98:B098",
+            "99:B099",
+            "100:B100"
+          ],
+          "first_mismatch": null
+        },
+        {
+          "name": "C",
+          "stream_id": 29,
+          "prefix": "C",
+          "result": "PASS",
+          "expected_count": 100,
+          "persisted_count": 100,
+          "sequence_min": 1,
+          "sequence_max": 100,
+          "head": [
+            "1:C001",
+            "2:C002",
+            "3:C003",
+            "4:C004",
+            "5:C005"
+          ],
+          "tail": [
+            "96:C096",
+            "97:C097",
+            "98:C098",
+            "99:C099",
+            "100:C100"
+          ],
+          "first_mismatch": null
+        }
+      ],
+      "failure_details": {
+        "missing_request_ids": [],
+        "duplicate_request_ids": [],
+        "mixed_payload": [],
+        "dlq_request_ids": []
+      }
+    }
+  ],
+  "completed_at": "2026-06-08T10:22:31.831025+00:00",
+  "result": "PASS"
+}

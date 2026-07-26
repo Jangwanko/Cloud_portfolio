@@ -35,8 +35,13 @@ function Get-HpaCurrentReplicas([string]$Name) {
   return $count
 }
 
-function Get-HpaTargetState([string]$Name) {
+function Get-HpaCpuUtilization([string]$Name) {
   $raw = kubectl -n $Namespace get hpa $Name -o jsonpath="{.status.currentMetrics[0].resource.current.averageUtilization}"
+  return ($raw | Out-String).Trim()
+}
+
+function Get-HpaCpuTarget([string]$Name) {
+  $raw = kubectl -n $Namespace get hpa $Name -o jsonpath="{.spec.metrics[0].resource.target.averageUtilization}"
   return ($raw | Out-String).Trim()
 }
 
@@ -51,6 +56,14 @@ kubectl -n $Namespace delete job k6-load-test --ignore-not-found | Out-Null
 kubectl -n $Namespace delete configmap k6-script --ignore-not-found | Out-Null
 kubectl -n $Namespace create configmap k6-script --from-file=load_test_k6.js=$ScriptPath | Out-Null
 kubectl apply -f $JobManifest | Out-Null
+kubectl -n $Namespace wait `
+  --for=condition=Ready `
+  pod `
+  -l job-name=k6-load-test `
+  --timeout="120s" | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Timed out waiting for the k6 HPA probe container to become ready."
+}
 
 $scaled = $false
 $maxReplicas = $initialReplicas
@@ -79,24 +92,28 @@ while ((Get-Date) -lt $deadline) {
   [void][int]::TryParse(($jobFailed | Out-String).Trim(), [ref]$failedCount)
 
   if ($succeededCount -ge 1 -or $failedCount -ge 1) {
-    Start-Sleep -Seconds 10
-  } else {
-    Start-Sleep -Seconds 5
+    break
   }
+  Start-Sleep -Seconds 5
 }
 
-$cpuTarget = Get-HpaTargetState -Name $HpaName
+$cpuCurrent = Get-HpaCpuUtilization -Name $HpaName
+$cpuTarget = Get-HpaCpuTarget -Name $HpaName
 $hpaDescribe = kubectl describe hpa $HpaName -n $Namespace | Out-String
 $jobLogs = kubectl -n $Namespace logs job/k6-load-test 2>$null | Out-String
 kubectl -n $Namespace delete job k6-load-test --ignore-not-found | Out-Null
 kubectl -n $Namespace delete configmap k6-script --ignore-not-found | Out-Null
 
-if (-not $scaled) {
-  if ($cpuTarget -match '^\d+$') {
-    Write-Host "HPA metrics test passed: deployment=$DeploymentName stayed at $initialReplicas replicas because CPU remained below target. cpu_target=$cpuTarget"
-    return
-  }
-  throw "HPA metrics test failed: Deployment/$DeploymentName stayed at $initialReplicas replicas and CPU metric was unavailable. HPA CPU reading: $cpuTarget`n$hpaDescribe`n$jobLogs"
+if ($failedCount -ge 1) {
+  throw "k6 HPA probe failed.`n$jobLogs"
 }
 
-Write-Host "HPA scaling test passed: deployment=$DeploymentName initial_replicas=$initialReplicas max_replicas=$maxReplicas cpu_target=$cpuTarget"
+if (-not $scaled) {
+  if ($cpuCurrent -match '^\d+$' -and $cpuTarget -match '^\d+$') {
+    Write-Host "HPA metrics test passed: deployment=$DeploymentName replicas=$initialReplicas cpu_current=$cpuCurrent cpu_target=$cpuTarget scale_up_stabilization_respected=true"
+    return
+  }
+  throw "HPA metrics test failed: Deployment/$DeploymentName stayed at $initialReplicas replicas and CPU metric was unavailable. HPA CPU current=$cpuCurrent target=$cpuTarget`n$hpaDescribe`n$jobLogs"
+}
+
+Write-Host "HPA scaling test passed: deployment=$DeploymentName initial_replicas=$initialReplicas max_replicas=$maxReplicas cpu_current=$cpuCurrent cpu_target=$cpuTarget"

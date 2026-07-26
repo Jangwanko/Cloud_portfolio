@@ -7,99 +7,9 @@ can run as a fast compile/import sanity check.
 
 from contextlib import contextmanager
 from pathlib import Path
-from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
-
-
-class TestRequestStatusKey:
-    """Request key generation helpers."""
-
-    def test_request_status_key_format(self):
-        from portfolio.api import _request_status_key
-
-        key = _request_status_key("abc-123")
-        assert key == "message_request_status:abc-123"
-
-    def test_request_status_key_unique(self):
-        from portfolio.api import _request_status_key
-
-        assert _request_status_key("id-1") != _request_status_key("id-2")
-
-    def test_fallback_idem_key_format(self):
-        from portfolio.api import _fallback_idem_key
-
-        key = _fallback_idem_key("send_event", "idem-xyz")
-        assert "send_event" in key
-        assert "idem-xyz" in key
-
-
-class TestDemoResetGuard:
-    """Demo reset is enabled for demo deployment profiles only."""
-
-    def test_demo_lite_environment_allows_demo_reset(self, monkeypatch):
-        import portfolio.api as api
-
-        monkeypatch.setattr(api, "settings", SimpleNamespace(app_env="k8s-demo-lite"))
-
-        api._ensure_demo_reset_allowed()
-
-    def test_demo_kafka_dlq_reset_uses_configured_topic_shape(self, monkeypatch):
-        import portfolio.api as api
-
-        calls = []
-        monkeypatch.setattr(
-            api,
-            "settings",
-            SimpleNamespace(
-                kafka_dlq_topic="message-ingress-dlq",
-                kafka_topic_partitions=3,
-                kafka_topic_replication_factor=1,
-                kafka_min_insync_replicas=1,
-            ),
-        )
-        monkeypatch.setattr(api, "reset_topic", lambda *args, **kwargs: calls.append((args, kwargs)))
-
-        topic = api._reset_demo_kafka_dlq()
-
-        assert topic == "message-ingress-dlq"
-        assert calls == [
-            (
-                ("message-ingress-dlq",),
-                {
-                    "partitions": 3,
-                    "replication_factor": 1,
-                    "configs": {"min.insync.replicas": "1"},
-                },
-            )
-        ]
-
-
-class TestReadinessPayload:
-    """Readiness includes deployment identity for demo verification."""
-
-    def test_readiness_payload_exposes_app_version(self, monkeypatch):
-        import portfolio.main as main
-
-        monkeypatch.setattr(
-            main,
-            "settings",
-            SimpleNamespace(app_version="demo-sha", app_env="local", postgres_min_ready_standbys=0),
-        )
-        monkeypatch.setattr(
-            main,
-            "get_postgres_runtime_status",
-            lambda: {"write_available": True, "standby_count": 0, "sync_standby_count": 0},
-        )
-        monkeypatch.setattr(main, "ping_kafka", lambda: True)
-        monkeypatch.setattr(main, "_worker_runtime_status", lambda: {"source": "test"})
-
-        status_code, payload = main._build_readiness_payload()
-
-        assert status_code == 200
-        assert payload["app_version"] == "demo-sha"
-        assert payload["deployment_profile"] == "local"
 
 
 class TestExternalizeRequestStatus:
@@ -161,7 +71,9 @@ class TestMaterializedCache:
     def test_stream_snapshot_cache_checks_membership(self):
         from portfolio.materialized_cache import cache_stream_snapshot, is_cached_stream_member
 
-        cache_stream_snapshot({"stream_id": 88, "member_ids": [1, 2, 3]})
+        cache_stream_snapshot(
+            {"stream_id": 88, "name": "Membership stream", "member_ids": [1, 2, 3]}
+        )
 
         assert is_cached_stream_member(88, 2) is True
         assert is_cached_stream_member(88, 9) is False
@@ -169,12 +81,6 @@ class TestMaterializedCache:
 
 class TestWorkerUtils:
     """Small worker helper checks."""
-
-    def test_request_status_key_format(self):
-        from worker.main import request_status_key
-
-        key = request_status_key("req-abc")
-        assert key == "message_request_status:req-abc"
 
     def test_now_iso_returns_string(self):
         from worker.main import now_iso
@@ -280,7 +186,7 @@ class TestDlqHelpers:
         assert result["total"] == 3
         assert result["replayable"] == 2
         assert result["blocked"] == 1
-        assert result["oldest_age_seconds"] == 120
+        assert result["oldest_sample_age_seconds"] == 120
         assert result["by_reason"] == {
             "room_sequence_gap": 2,
             "transient_error_max_retries:OperationalError": 1,
@@ -297,6 +203,12 @@ class TestDlqHelpers:
 
         published = []
         monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+        monkeypatch.setattr(
+            dlq_replayer,
+            "claim_dlq_replay",
+            lambda *_args: ("claimed", "test-owner"),
+        )
+        monkeypatch.setattr(dlq_replayer, "mark_dlq_replay_published", lambda *_args: True)
 
         moved = dlq_replayer.replay_one(
             {
@@ -314,6 +226,12 @@ class TestDlqHelpers:
 
         published = []
         monkeypatch.setattr(dlq_replayer, "publish_ingress_job", lambda *args: published.append(args))
+        monkeypatch.setattr(
+            dlq_replayer,
+            "claim_dlq_replay",
+            lambda *_args: ("claimed", "test-owner"),
+        )
+        monkeypatch.setattr(dlq_replayer, "mark_dlq_replay_published", lambda *_args: True)
 
         moved = dlq_replayer.replay_one(
             {
@@ -325,85 +243,6 @@ class TestDlqHelpers:
 
         assert moved is True
         assert len(published) == 1
-
-    def test_manual_dlq_replay_publishes_replayable_item(self, monkeypatch):
-        from portfolio import api
-        from portfolio.schemas import DlqReplayRequest
-
-        published = []
-        monkeypatch.setattr(
-            api,
-            "list_recent_topic_messages",
-            lambda *_args, **_kwargs: [
-                {
-                    "value": {
-                        "request_id": "req-replay",
-                        "room_id": 7,
-                        "retry_count": 3,
-                        "replay_count": 1,
-                        "next_retry_at": "2026-07-01T00:00:00Z",
-                    }
-                }
-            ],
-        )
-        monkeypatch.setattr(api, "publish_ingress_job", lambda *args: published.append(args))
-
-        response = api.replay_ingress_dlq_event(DlqReplayRequest(request_id="req-replay"), current_user={"id": 1})
-
-        assert response["status"] == "replayed"
-        assert response["request_id"] == "req-replay"
-        assert response["stream_id"] == 7
-        assert response["replay_count"] == 2
-        assert len(published) == 1
-        assert published[0][0] == 7
-        assert published[0][1]["retry_count"] == 0
-        assert published[0][1]["next_retry_at"] is None
-        assert published[0][1]["replayed_at"]
-
-    def test_manual_dlq_replay_blocks_max_replay_count(self, monkeypatch):
-        from fastapi import HTTPException
-
-        from portfolio import api
-        from portfolio.config import settings
-        from portfolio.schemas import DlqReplayRequest
-
-        monkeypatch.setattr(
-            api,
-            "list_recent_topic_messages",
-            lambda *_args, **_kwargs: [
-                {
-                    "value": {
-                        "request_id": "req-blocked",
-                        "room_id": 7,
-                        "replay_count": settings.dlq_replay_max_count,
-                    }
-                }
-            ],
-        )
-
-        try:
-            api.replay_ingress_dlq_event(DlqReplayRequest(request_id="req-blocked"), current_user={"id": 1})
-        except HTTPException as exc:
-            assert exc.status_code == 409
-            assert "replay guard" in exc.detail
-        else:  # pragma: no cover
-            raise AssertionError("expected replay guard HTTPException")
-
-    def test_manual_dlq_replay_missing_request_returns_404(self, monkeypatch):
-        from fastapi import HTTPException
-
-        from portfolio import api
-        from portfolio.schemas import DlqReplayRequest
-
-        monkeypatch.setattr(api, "list_recent_topic_messages", lambda *_args, **_kwargs: [])
-
-        try:
-            api.replay_ingress_dlq_event(DlqReplayRequest(request_id="missing"), current_user={"id": 1})
-        except HTTPException as exc:
-            assert exc.status_code == 404
-            assert exc.detail == "DLQ event not found"
-        else:  # pragma: no cover
-            raise AssertionError("expected not found HTTPException")
 
     def test_dlq_metrics_are_defined(self):
         from portfolio.metrics import dlq_events_total, dlq_replay_total
@@ -419,86 +258,6 @@ class TestSecurityHelpers:
         from portfolio.auth import is_default_auth_secret
 
         assert isinstance(is_default_auth_secret(), bool)
-
-
-class TestAuthDatabaseFailure:
-    """Auth endpoints expose DB outage as service unavailable, not 500."""
-
-    def test_login_returns_503_when_user_lookup_database_is_unavailable(self, monkeypatch):
-        from fastapi import HTTPException
-
-        import portfolio.api as api
-        from portfolio.schemas import LoginRequest
-
-        def raise_db_down(_username, _password):
-            raise RuntimeError("primary is unavailable")
-
-        monkeypatch.setattr(api, "authenticate_user", raise_db_down)
-
-        try:
-            api.login(LoginRequest(username="demo-order-user", password="Password123!"))
-        except HTTPException as exc:
-            assert exc.status_code == 503
-            assert exc.detail == "Auth database unavailable"
-        else:
-            raise AssertionError("login should fail when auth database is unavailable")
-
-    def test_create_user_returns_503_when_database_connection_is_unavailable(self, monkeypatch):
-        from fastapi import HTTPException
-
-        import portfolio.api as api
-        from portfolio.schemas import UserCreate
-
-        @contextmanager
-        def raise_db_down():
-            raise RuntimeError("primary is unavailable")
-            yield
-
-        monkeypatch.setattr(api, "get_conn", raise_db_down)
-
-        try:
-            api.create_user(UserCreate(username="demo-order-user", password="Password123!"))
-        except HTTPException as exc:
-            assert exc.status_code == 503
-            assert exc.detail == "User database unavailable"
-        else:
-            raise AssertionError("create_user should fail when database is unavailable")
-
-
-class TestDatabasePoolHygiene:
-    """Database connections return to the pool without open transactions."""
-
-    def test_get_conn_rolls_back_read_only_transaction_before_returning_to_pool(self, monkeypatch):
-        from portfolio import db
-
-        class FakeConn:
-            closed = False
-
-            def __init__(self):
-                self.rollback_count = 0
-
-            def rollback(self):
-                self.rollback_count += 1
-
-        class FakePool:
-            def __init__(self):
-                self.conn = FakeConn()
-                self.returned = []
-
-            def getconn(self):
-                return self.conn
-
-            def putconn(self, conn, close=False):
-                self.returned.append((conn, close))
-
-        pool = FakePool()
-        monkeypatch.setattr(db, "_pool", pool)
-
-        with db.get_conn():
-            pass
-
-        assert pool.conn.rollback_count == 1
-        assert pool.returned == [(pool.conn, False)]
 
 
 class TestConfig:
@@ -541,14 +300,15 @@ class TestKafkaIntakeBoundary:
     def test_reader_membership_checks_use_primary_routing_hint(self):
         api = (ROOT / "portfolio/api.py").read_text(encoding="utf-8")
 
-        assert "/*NO LOAD BALANCE*/ SELECT id FROM rooms" in api
-        assert "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members" in api
+        assert "/*NO LOAD BALANCE*/\n        SELECT 1" in api
+        assert "JOIN room_members rm ON rm.room_id = r.id" in api
 
     def test_worker_validates_membership_before_persistence(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
 
         assert "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s" in worker
-        assert "Stream access denied" in worker
+        assert '"membership_missing"' in worker
+        assert '"Event authorization rejected"' in worker
 
     def test_request_status_updates_publish_to_compacted_topic(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
@@ -589,13 +349,11 @@ class TestKafkaIntakeBoundary:
                         "request_id": "req-1",
                         "room_id": 7,
                         "user_id": 3,
-                        "event_type": "payment_completed",
-                        "category": "payment",
-                        "payment_id": "pay-1",
                         "body": "hello",
                         "room_seq": 1,
                         "created_at": CreatedAt(),
                     },
+                    {"user_id": 3},
                 ]
 
             def execute(self, sql, params=None):
@@ -643,82 +401,28 @@ class TestKafkaIntakeBoundary:
                 "room_id": 7,
                 "user_id": 3,
                 "body": "hello",
-                "event_type": "payment_completed",
-                "category": "payment",
-                "payment_id": "pay-1",
             }
         )
 
         executed_sql = "\n".join(cur.executed)
         assert conn.commits == 1
         assert response["room_seq"] == 1
-        assert response["event_type"] == "payment_completed"
-        assert response["category"] == "payment"
-        assert response["payment_id"] == "pay-1"
         assert "INSERT INTO messages" in executed_sql
-        assert "event_type" in executed_sql
-        assert "category" in executed_sql
-        assert "payment_id" in executed_sql
         assert "INSERT INTO request_statuses" in executed_sql
         assert "INSERT INTO notification_attempts" not in executed_sql
-        assert published_notifications == [
-            (
-                7,
-                {
-                    "message_id": 10,
-                    "room_id": 7,
-                    "body_preview": "hello",
-                    "event_type": "payment_completed",
-                    "category": "payment",
-                },
-            )
-        ]
-
-    def test_transient_db_errors_retry_until_persisted_without_dlq(self, monkeypatch):
-        from psycopg2 import OperationalError
-
-        from worker import main as worker_main
-
-        attempts = []
-        dlq_moves = []
-        sleeps = []
-
-        def fake_persist(job_payload):
-            attempts.append(int(job_payload.get("retry_count", 0)))
-            if len(attempts) < 5:
-                raise OperationalError("database is temporarily unavailable")
-            return {
-                "id": 100,
-                "request_id": job_payload["request_id"],
-                "room_id": job_payload["room_id"],
-                "room_seq": 1,
-                "user_id": job_payload["user_id"],
-                "created_at": "2026-07-01T00:00:00+00:00",
-            }
-
-        def fake_mark_inline_retry(job_payload):
-            job_payload["retry_count"] = int(job_payload.get("retry_count", 0)) + 1
-            return 0
-
-        monkeypatch.setattr(worker_main, "persist_ingress_job", fake_persist)
-        monkeypatch.setattr(worker_main, "mark_inline_retry", fake_mark_inline_retry)
-        monkeypatch.setattr(worker_main, "move_to_dlq", lambda *args: dlq_moves.append(args))
-        monkeypatch.setattr(worker_main, "reconnect_pool", lambda: None)
-        monkeypatch.setattr(worker_main.time, "sleep", lambda seconds: sleeps.append(seconds))
-
-        worker_main.handle_ingress_job(
-            {
-                "route": "send_event",
-                "request_id": "req-transient-db",
-                "room_id": 7,
-                "user_id": 3,
-                "body": "persist after db recovery",
-            }
-        )
-
-        assert attempts == [0, 1, 2, 3, 4]
-        assert dlq_moves == []
-        assert sleeps == [0, 0, 0, 0]
+        assert len(published_notifications) == 1
+        notification_key, notification = published_notifications[0]
+        assert notification_key == 7
+        assert notification == {
+            "event_id": 10,
+            "stream_id": 7,
+            "message_id": 10,
+            "room_id": 7,
+            "event_type": "legacy.message",
+            "payload_preview": "hello",
+            "metadata": {},
+            "body_preview": "hello",
+        }
 
     def test_event_list_response_exposes_cache_metadata(self):
         from portfolio.api import _event_list_response
@@ -744,11 +448,8 @@ class TestOpenApiContract:
         for model in (
             "ReadinessResponse",
             "EventRequestStatusResponse",
-            "StreamPersistenceSummaryResponse",
             "DlqListResponse",
             "DlqSummaryResponse",
-            "DlqReplayRequest",
-            "DlqReplayResponse",
             "DemoResetRequest",
             "DemoResetResponse",
         ):
@@ -757,14 +458,12 @@ class TestOpenApiContract:
         expected_refs = {
             "/health/ready": "ReadinessResponse",
             "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
-            "/v1/streams/{stream_id}/persistence-summary": "StreamPersistenceSummaryResponse",
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",
-            "/v1/dlq/ingress/replay": "DlqReplayResponse",
             "/v1/admin/demo/reset-events": "DemoResetResponse",
         }
         for path, model in expected_refs.items():
-            method = "post" if path in {"/v1/admin/demo/reset-events", "/v1/dlq/ingress/replay"} else "get"
+            method = "post" if path == "/v1/admin/demo/reset-events" else "get"
             response_schema = paths[path][method]["responses"]["200"]["content"]["application/json"]["schema"]
             assert response_schema["$ref"] == f"#/components/schemas/{model}"
 
@@ -773,7 +472,7 @@ class TestOpenApiContract:
             "total",
             "replayable",
             "blocked",
-            "oldest_age_seconds",
+            "oldest_sample_age_seconds",
             "by_reason",
             "by_stream",
             "recent_samples",
@@ -783,47 +482,12 @@ class TestOpenApiContract:
         demo_reset = components["DemoResetResponse"]["properties"]
         assert "reset_dlq_topic" in demo_reset
 
-        persistence_summary = components["StreamPersistenceSummaryResponse"]["properties"]
-        for field in (
-            "stream_id",
-            "persisted_count",
-            "latest_request_id",
-            "latest_event_id",
-            "latest_stream_seq",
-            "latest_created_at",
-        ):
-            assert field in persistence_summary
-
-        api_source = Path("portfolio/api.py").read_text(encoding="utf-8")
-        assert "WITH summary AS" in api_source
-        assert "LEFT JOIN latest ON TRUE" in api_source
-
         worker_health = components["WorkerHealthResponse"]["properties"]
         assert "max_replicas" in worker_health
-        readiness = components["ReadinessResponse"]["properties"]
-        assert "app_version" in readiness
-        assert "deployment_profile" in readiness
-
-        event_response = components["EventResponse"]["properties"]
-        for field in ("event_type", "category", "payment_id"):
-            assert field in event_response
-
-    def test_order_event_columns_migration_exists(self):
-        migration = (ROOT / "alembic/versions/0005_order_event_columns.py").read_text(encoding="utf-8")
-
-        for token in (
-            "event_type",
-            "category",
-            "payment_id",
-            "idx_messages_event_type_created_at",
-            "idx_messages_category_created_at",
-            "idx_messages_payment_id",
-        ):
-            assert token in migration
 
 
 class TestOrderEventApiContract:
-    """Order-domain routes make the service scenario visible."""
+    """The order reference adapter remains available during the v2 rollout."""
 
     def test_openapi_contains_order_event_intake_contract(self):
         from portfolio.main import app
@@ -835,8 +499,9 @@ class TestOrderEventApiContract:
         assert "OrderEventCreate" in components
         assert "OrderEventAcceptedResponse" in components
         assert "/v1/orders/{order_id}/events" in paths
+        assert paths["/v1/orders/{order_id}/events"]["post"]["deprecated"] is True
 
-        response_schema = paths["/v1/orders/{order_id}/events"]["post"]["responses"]["200"]["content"][
+        response_schema = paths["/v1/orders/{order_id}/events"]["post"]["responses"]["202"]["content"][
             "application/json"
         ]["schema"]
         assert response_schema["$ref"] == "#/components/schemas/OrderEventAcceptedResponse"

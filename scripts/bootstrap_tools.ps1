@@ -1,6 +1,6 @@
 param(
   [string]$KindVersion = "v0.27.0",
-  [string]$HelmVersion = "v3.17.3",
+  [string]$HelmVersion = "v3.21.3",
   [string]$KubectlVersion = "v1.32.2",
   [switch]$Force
 )
@@ -37,50 +37,108 @@ function Test-DockerReady() {
 function Download-File([string]$Url, [string]$OutFile) {
   Write-Host "Downloading $Url"
   Ensure-Directory -Path (Split-Path $OutFile -Parent)
-  Invoke-WebRequest -Uri $Url -OutFile $OutFile
+  Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $OutFile
+}
+
+function Assert-Sha256([string]$File, [string]$ChecksumFile) {
+  $checksumText = (Get-Content -Raw -Encoding ascii $ChecksumFile).Trim()
+  $match = [regex]::Match($checksumText, '(?i)\b[0-9a-f]{64}\b')
+  if (-not $match.Success) {
+    throw "Official checksum file does not contain a SHA256 digest: $ChecksumFile"
+  }
+
+  $expected = $match.Value.ToLowerInvariant()
+  $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $File).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "SHA256 verification failed for $File. Expected $expected but found $actual."
+  }
+
+  Write-ToolOk "SHA256 verified: $File"
+}
+
+function Assert-ReleaseVersion([string]$Name, [string]$Version) {
+  if ($Version -notmatch '^v\d+\.\d+\.\d+$') {
+    throw "$Name version must be pinned as vMAJOR.MINOR.PATCH. Received: $Version"
+  }
+}
+
+function Remove-ToolDirectory([string]$Path) {
+  $root = [IO.Path]::GetFullPath($downloadDir).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+  $target = [IO.Path]::GetFullPath($Path)
+  if (-not $target.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Refusing to remove a directory outside the managed download directory: $target"
+  }
+  if (Test-Path -LiteralPath $target) {
+    Remove-Item -LiteralPath $target -Recurse -Force
+  }
 }
 
 function Ensure-Kind() {
+  Ensure-Directory -Path $downloadDir
+  $url = "https://github.com/kubernetes-sigs/kind/releases/download/$KindVersion/kind-windows-amd64"
+  $downloadPath = Join-Path $downloadDir "kind-$KindVersion-windows-amd64.exe"
+  $checksumPath = "$downloadPath.sha256"
+
   if ((Test-Path $kindPath) -and -not $Force) {
-    Write-ToolOk "kind already exists: $kindPath"
+    Download-File -Url "$url.sha256" -OutFile $checksumPath
+    Assert-Sha256 -File $kindPath -ChecksumFile $checksumPath
+    Write-ToolOk "kind already exists and is verified: $kindPath"
     return
   }
 
-  $url = "https://github.com/kubernetes-sigs/kind/releases/download/$KindVersion/kind-windows-amd64"
-  Download-File -Url $url -OutFile $kindPath
+  Download-File -Url $url -OutFile $downloadPath
+  Download-File -Url "$url.sha256" -OutFile $checksumPath
+  Assert-Sha256 -File $downloadPath -ChecksumFile $checksumPath
+  Move-Item -LiteralPath $downloadPath -Destination $kindPath -Force
   Write-ToolOk "kind installed: $kindPath"
 }
 
 function Ensure-Kubectl() {
+  Ensure-Directory -Path $downloadDir
+  $url = "https://dl.k8s.io/release/$KubectlVersion/bin/windows/amd64/kubectl.exe"
+  $downloadPath = Join-Path $downloadDir "kubectl-$KubectlVersion-windows-amd64.exe"
+  $checksumPath = "$downloadPath.sha256"
+
   if ((Test-Path $kubectlPath) -and -not $Force) {
-    Write-ToolOk "kubectl already exists: $kubectlPath"
+    Download-File -Url "$url.sha256" -OutFile $checksumPath
+    Assert-Sha256 -File $kubectlPath -ChecksumFile $checksumPath
+    Write-ToolOk "kubectl already exists and is verified: $kubectlPath"
     return
   }
 
-  $url = "https://dl.k8s.io/release/$KubectlVersion/bin/windows/amd64/kubectl.exe"
-  Download-File -Url $url -OutFile $kubectlPath
+  Download-File -Url $url -OutFile $downloadPath
+  Download-File -Url "$url.sha256" -OutFile $checksumPath
+  Assert-Sha256 -File $downloadPath -ChecksumFile $checksumPath
+  Move-Item -LiteralPath $downloadPath -Destination $kubectlPath -Force
   Write-ToolOk "kubectl installed: $kubectlPath"
 }
 
 function Ensure-Helm() {
-  if ((Test-Path $helmPath) -and -not $Force) {
-    Write-ToolOk "helm already exists: $helmPath"
-    return
-  }
-
   Ensure-Directory -Path $downloadDir
   $zipPath = Join-Path $downloadDir "helm-$HelmVersion-windows-amd64.zip"
+  $checksumPath = "$zipPath.sha256sum"
   $extractPath = Join-Path $downloadDir "helm-$HelmVersion"
   $url = "https://get.helm.sh/helm-$HelmVersion-windows-amd64.zip"
 
-  if (Test-Path $extractPath) {
-    Remove-Item -LiteralPath $extractPath -Recurse -Force
-  }
   Download-File -Url $url -OutFile $zipPath
+  Download-File -Url "$url.sha256sum" -OutFile $checksumPath
+  Assert-Sha256 -File $zipPath -ChecksumFile $checksumPath
+  Remove-ToolDirectory -Path $extractPath
   Expand-Archive -LiteralPath $zipPath -DestinationPath $extractPath -Force
 
+  $archiveHelmPath = Join-Path $extractPath "windows-amd64\helm.exe"
+  if ((Test-Path $helmPath) -and -not $Force) {
+    $expected = (Get-FileHash -Algorithm SHA256 -LiteralPath $archiveHelmPath).Hash
+    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $helmPath).Hash
+    if ($actual -ne $expected) {
+      throw "Installed Helm binary does not match the verified $HelmVersion archive. Rerun with -Force to replace it."
+    }
+    Write-ToolOk "helm already exists and is verified: $helmPath"
+    return
+  }
+
   Ensure-Directory -Path (Split-Path $helmPath -Parent)
-  Copy-Item -LiteralPath (Join-Path $extractPath "windows-amd64\helm.exe") -Destination $helmPath -Force
+  Copy-Item -LiteralPath $archiveHelmPath -Destination $helmPath -Force
   Copy-Item -LiteralPath (Join-Path $extractPath "windows-amd64\LICENSE") -Destination (Join-Path (Split-Path $helmPath -Parent) "LICENSE") -Force
   Copy-Item -LiteralPath (Join-Path $extractPath "windows-amd64\README.md") -Destination (Join-Path (Split-Path $helmPath -Parent) "README.md") -Force
   Write-ToolOk "helm installed: $helmPath"
@@ -98,6 +156,9 @@ function Add-ToolsToPath() {
   }
 }
 
+Assert-ReleaseVersion -Name "kind" -Version $KindVersion
+Assert-ReleaseVersion -Name "kubectl" -Version $KubectlVersion
+Assert-ReleaseVersion -Name "Helm" -Version $HelmVersion
 Test-DockerReady
 Ensure-Directory -Path $toolsDir
 Ensure-Kind

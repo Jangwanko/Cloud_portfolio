@@ -1,16 +1,34 @@
 from collections import Counter
 from datetime import datetime, timezone
+import json
+import logging
+from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Query, status
+from psycopg2 import InterfaceError, OperationalError
+from psycopg2.errors import UniqueViolation
+from psycopg2.pool import PoolError
 
 from portfolio.auth import authenticate_user, create_access_token, get_current_user, hash_password
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor
-from portfolio.kafka_client import list_recent_topic_messages, publish_ingress_job, publish_stream_snapshot, reset_topic
+from portfolio.event_envelope import MAX_JSON_WIRE_NESTING_DEPTH, validate_json_structure
+from portfolio.kafka_client import (
+    list_recent_topic_messages,
+    publish_ingress_job,
+    publish_message_snapshot_tombstone,
+    publish_request_status_tombstone,
+    publish_stream_snapshot,
+    publish_stream_snapshot_tombstone,
+    reset_topic,
+    is_invalid_kafka_payload,
+)
 from portfolio.materialized_cache import (
     cache_stream_snapshot,
+    clear_materialized_cache,
     get_cached_request_status,
+    get_materialized_cache_status,
     is_cached_stream_member,
     list_cached_events,
 )
@@ -25,6 +43,10 @@ from portfolio.schemas import (
     DlqSummaryResponse,
     EventCreate,
     EventAcceptedResponse,
+    GenericEventListResponse,
+    GenericEventRequestStatusResponse,
+    GenericEventAcceptedResponse,
+    GenericEventCreate,
     EventListResponse,
     EventRequestStatusResponse,
     EventResponse,
@@ -42,20 +64,15 @@ from portfolio.schemas import (
     UserResponse,
 )
 from portfolio.state_store import (
-    fallback_idem_key,
+    claim_dlq_replay,
     load_request_status,
-    request_status_key,
+    mark_dlq_replay_published,
+    release_dlq_replay_claim,
 )
 
 router = APIRouter(prefix="/v1", tags=["events"])
-
-
-def _request_status_key(request_id: str) -> str:
-    return request_status_key(request_id)
-
-
-def _fallback_idem_key(route: str, idem_key: str) -> str:
-    return fallback_idem_key(route, idem_key)
+generic_router = APIRouter(prefix="/v2", tags=["generic-events"])
+_MAX_POSTGRES_BIGINT = 9_223_372_036_854_775_807
 
 
 def _queue_unavailable_detail() -> str:
@@ -67,30 +84,69 @@ def _load_request_status(request_id: str) -> dict | None:
 
 
 def _ensure_demo_reset_allowed() -> None:
-    allowed_envs = {"local", "k8s", "k8s-ha", "k8s-demo-lite", "development", "dev", "test"}
-    if settings.app_env not in allowed_envs:
+    if not settings.demo_reset_enabled:
         raise HTTPException(status_code=403, detail="Demo reset is disabled in this environment")
 
 
 def _reset_demo_event_data(cur) -> dict:
-    cur.execute("SELECT COUNT(*) AS count FROM messages")
-    message_count = int(cur.fetchone()["count"])
-    cur.execute("SELECT COUNT(*) AS count FROM rooms")
-    stream_count = int(cur.fetchone()["count"])
-    cur.execute("SELECT COUNT(*) AS count FROM request_statuses")
-    request_status_count = int(cur.fetchone()["count"])
+    # Freeze producers before collecting compacted-topic keys. Without this
+    # lock a Worker can commit a row after the SELECTs but before TRUNCATE,
+    # leaving a cache snapshot for a row that the reset removed.
+    cur.execute(
+        """
+        LOCK TABLE idempotency_keys, messages, rooms, request_statuses,
+                   notification_attempts, intake_idempotency_keys
+        IN ACCESS EXCLUSIVE MODE
+        """
+    )
+    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM messages")
+    message_ids = [int(row["id"]) for row in cur.fetchall()]
+    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms")
+    stream_ids = [int(row["id"]) for row in cur.fetchall()]
+    cur.execute("/*NO LOAD BALANCE*/ SELECT request_id FROM request_statuses")
+    request_ids = [str(row["request_id"]) for row in cur.fetchall()]
 
     cur.execute("TRUNCATE TABLE notification_attempts RESTART IDENTITY")
     cur.execute("TRUNCATE TABLE idempotency_keys")
     cur.execute("TRUNCATE TABLE intake_idempotency_keys")
     cur.execute("TRUNCATE TABLE request_statuses")
-    cur.execute("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE")
+    # Preserve room ID monotonicity. An accepted ingress record that was still
+    # queued at reset time must never target a newly-created room that happened
+    # to reuse the old numeric ID.
+    cur.execute("TRUNCATE TABLE rooms CASCADE")
 
     return {
-        "deleted_messages": message_count,
-        "reset_streams": stream_count,
-        "reset_request_statuses": request_status_count,
+        "deleted_messages": len(message_ids),
+        "reset_streams": len(stream_ids),
+        "reset_request_statuses": len(request_ids),
+        "message_ids": message_ids,
+        "stream_ids": stream_ids,
+        "request_ids": request_ids,
     }
+
+
+def _publish_demo_reset_tombstones(result: dict) -> int:
+    failures = 0
+    for request_id in result["request_ids"]:
+        try:
+            publish_request_status_tombstone(request_id)
+        except Exception as exc:  # noqa: BLE001
+            failures += 1
+            logging.warning("Request status tombstone failed request_id=%s error=%s", request_id, exc)
+    for message_id in result["message_ids"]:
+        try:
+            publish_message_snapshot_tombstone(message_id)
+        except Exception as exc:  # noqa: BLE001
+            failures += 1
+            logging.warning("Message snapshot tombstone failed message_id=%s error=%s", message_id, exc)
+    for stream_id in result["stream_ids"]:
+        try:
+            publish_stream_snapshot_tombstone(stream_id)
+        except Exception as exc:  # noqa: BLE001
+            failures += 1
+            logging.warning("Stream snapshot tombstone failed stream_id=%s error=%s", stream_id, exc)
+    clear_materialized_cache()
+    return failures
 
 
 def _reset_demo_kafka_dlq() -> str:
@@ -105,39 +161,181 @@ def _reset_demo_kafka_dlq() -> str:
 
 def _externalize_request_status(payload: dict) -> dict:
     status = dict(payload)
+    if "reason" in status and "failed_reason" not in status:
+        status["failed_reason"] = status.pop("reason")
     if "message_id" in status:
         status["event_id"] = status.pop("message_id")
     if "room_id" in status:
         status["stream_id"] = status.pop("room_id")
     if "room_seq" in status:
         status["stream_seq"] = status.pop("room_seq")
+    if "actor_id" not in status and "user_id" in status:
+        status["actor_id"] = status["user_id"]
     return status
 
 
-def _store_request_and_queue_job(request_id: str, request_payload: dict, job_payload: dict) -> None:
+def _request_status_actor_id(payload: dict) -> int:
+    if not isinstance(payload, dict):
+        raise ValueError("Request status must be an object")
+    actor_id = payload.get("actor_id")
+    user_id = payload.get("user_id")
+    for field_name, value in (("actor_id", actor_id), ("user_id", user_id)):
+        if value is None:
+            continue
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or value <= 0
+            or value > _MAX_POSTGRES_BIGINT
+        ):
+            raise ValueError(f"Invalid request status {field_name}")
+    if actor_id is not None and user_id is not None and actor_id != user_id:
+        raise ValueError("Conflicting request status actor_id/user_id")
+    owner_id = actor_id if actor_id is not None else user_id
+    if owner_id is None:
+        raise ValueError("Request status owner is missing")
+    return owner_id
+
+
+def _store_request_and_queue_job(_request_id: str, _request_payload: dict, job_payload: dict) -> None:
+    # The 202 response is the caller's accepted-state receipt. Durable request
+    # status appears only after the Worker observes this ingress record, so a
+    # status poll may briefly return 404 while consumer lag exists.
     with observe_api_stage("kafka_publish"):
         publish_ingress_job(job_payload["room_id"], job_payload)
 
 
+def _legacy_body_preview(payload: dict) -> str:
+    """Keep the pre-envelope storage column readable during the compatibility window."""
+    for key in ("message", "text", "description"):
+        value = payload.get(key)
+        if isinstance(value, str) and value:
+            return value[:1000]
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))[:1000] or "{}"
+
+
+def _safe_int(value, *, default: int = 0, minimum: int | None = None) -> int:
+    if type(value) is not int:
+        return default
+    parsed = value
+    if minimum is not None and parsed < minimum:
+        return default
+    if parsed > _MAX_POSTGRES_BIGINT:
+        return default
+    return parsed
+
+
+def _safe_optional_positive_int(value) -> int | None:
+    parsed = _safe_int(value, default=0, minimum=1)
+    return parsed if 0 < parsed <= _MAX_POSTGRES_BIGINT else None
+
+
+def _safe_optional_nonnegative_int(value) -> int | None:
+    if type(value) is not int:
+        return None
+    return value if 0 <= value <= _MAX_POSTGRES_BIGINT else None
+
+
+def _safe_optional_text(value, *, max_length: int = 500) -> str | None:
+    if value is None:
+        return None
+    try:
+        text = value if isinstance(value, str) else repr(value)
+    except Exception:  # noqa: BLE001
+        return None
+    text = text[:max_length]
+    try:
+        validate_json_structure(text)
+    except (TypeError, ValueError, RecursionError):
+        return None
+    return text
+
+
+def _selected_event_field(payload: dict, canonical: str, legacy: str):
+    return payload[canonical] if canonical in payload else payload.get(legacy)
+
+
+def _has_conflicting_event_aliases(payload: dict) -> bool:
+    for canonical, legacy in (
+        ("stream_id", "room_id"),
+        ("actor_id", "user_id"),
+        ("stream_seq", "room_seq"),
+    ):
+        if canonical not in payload or legacy not in payload:
+            continue
+        canonical_value = payload[canonical]
+        legacy_value = payload[legacy]
+        if type(canonical_value) is not type(legacy_value) or canonical_value != legacy_value:
+            return True
+    return False
+
+
 def _summarize_dlq_item(item: dict) -> dict:
-    value = item.get("value") or {}
-    replay_count = int(value.get("replay_count", 0) or 0)
+    raw_value = item.get("value")
+    if isinstance(raw_value, dict):
+        value = dict(raw_value)
+    else:
+        value = {
+            "__invalid_kafka_payload__": True,
+            "raw_preview": _safe_optional_text(raw_value) or "unrepresentable payload",
+        }
+    structure_invalid = False
+    try:
+        validate_json_structure(value, max_depth=MAX_JSON_WIRE_NESTING_DEPTH)
+    except (TypeError, ValueError, RecursionError):
+        structure_invalid = True
+        value = {
+            "__invalid_kafka_payload__": True,
+            "raw_preview": _safe_optional_text(raw_value) or "unrepresentable payload",
+        }
+    request_id = value.get("request_id")
+    if (
+        not isinstance(request_id, str)
+        or not request_id
+        or len(request_id) > 80
+        or "\x00" in request_id
+    ):
+        request_id = None
+    stream_raw = _selected_event_field(value, "stream_id", "room_id")
+    user_raw = _selected_event_field(value, "actor_id", "user_id")
+    stream_id = _safe_optional_positive_int(stream_raw)
+    user_id = _safe_optional_positive_int(user_raw)
+    retry_raw = value.get("retry_count", 0)
+    replay_raw = value.get("replay_count", 0)
+    retry_count = _safe_int(retry_raw, default=0, minimum=0)
+    replay_count = _safe_int(replay_raw, default=0, minimum=0)
+    invalid_counters = (
+        type(retry_raw) is not int
+        or not 0 <= retry_raw <= _MAX_POSTGRES_BIGINT
+        or type(replay_raw) is not int
+        or not 0 <= replay_raw <= _MAX_POSTGRES_BIGINT
+    )
+    invalid_payload = (
+        structure_invalid
+        or is_invalid_kafka_payload(value)
+        or _has_conflicting_event_aliases(value)
+        or request_id is None
+        or stream_id is None
+        or user_id is None
+        or invalid_counters
+    )
     return {
-        "topic": item.get("topic"),
-        "partition": item.get("partition"),
-        "offset": item.get("offset"),
-        "timestamp": item.get("timestamp"),
-        "key": item.get("key"),
-        "request_id": value.get("request_id"),
-        "stream_id": value.get("room_id"),
-        "user_id": value.get("user_id"),
-        "failed_reason": value.get("failed_reason"),
-        "retry_count": int(value.get("retry_count", 0) or 0),
+        "topic": _safe_optional_text(item.get("topic"), max_length=200),
+        "partition": _safe_optional_nonnegative_int(item.get("partition")),
+        "offset": _safe_optional_nonnegative_int(item.get("offset")),
+        "timestamp": _safe_optional_nonnegative_int(item.get("timestamp")),
+        "key": _safe_optional_text(item.get("key"), max_length=500),
+        "request_id": request_id,
+        "stream_id": stream_id,
+        "user_id": user_id,
+        "failed_reason": _safe_optional_text(value.get("failed_reason"))
+        or ("invalid_dlq_payload" if invalid_payload else None),
+        "retry_count": retry_count,
         "replay_count": replay_count,
-        "replayable": replay_count < settings.dlq_replay_max_count,
+        "replayable": not invalid_payload and replay_count < settings.dlq_replay_max_count,
         "max_replay_count": settings.dlq_replay_max_count,
-        "failed_at": value.get("failed_at"),
-        "replayed_at": value.get("replayed_at"),
+        "failed_at": _safe_optional_text(value.get("failed_at"), max_length=100),
+        "replayed_at": _safe_optional_text(value.get("replayed_at"), max_length=100),
         "payload": value,
     }
 
@@ -164,7 +362,7 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
     now_ts = (now or datetime.now(timezone.utc)).timestamp()
     reasons: Counter[str] = Counter()
     streams: Counter[int] = Counter()
-    oldest_age_seconds: int | None = None
+    oldest_sample_age_seconds: int | None = None
     replayable_count = 0
     blocked_count = 0
 
@@ -173,8 +371,9 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
         reasons[str(reason)] += 1
 
         stream_id = item.get("stream_id")
-        if stream_id is not None:
-            streams[int(stream_id)] += 1
+        normalized_stream_id = _safe_optional_positive_int(stream_id)
+        if normalized_stream_id is not None:
+            streams[normalized_stream_id] += 1
 
         if item.get("replayable"):
             replayable_count += 1
@@ -184,8 +383,8 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
         event_ts = _parse_dlq_timestamp_seconds(item)
         if event_ts is not None:
             age_seconds = max(0, int(now_ts - event_ts))
-            if oldest_age_seconds is None or age_seconds > oldest_age_seconds:
-                oldest_age_seconds = age_seconds
+            if oldest_sample_age_seconds is None or age_seconds > oldest_sample_age_seconds:
+                oldest_sample_age_seconds = age_seconds
 
     by_stream = [
         {"stream_id": stream_id, "count": count}
@@ -196,19 +395,25 @@ def _summarize_dlq_items(items: list[dict], now: datetime | None = None, sample_
         "total": len(items),
         "replayable": replayable_count,
         "blocked": blocked_count,
-        "oldest_age_seconds": oldest_age_seconds,
+        "oldest_sample_age_seconds": oldest_sample_age_seconds,
         "by_reason": dict(sorted(reasons.items())),
         "by_stream": by_stream,
         "recent_samples": items[:sample_limit],
     }
 
 
-def _find_dlq_item_by_request_id(request_id: str, limit: int = 500) -> dict | None:
-    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
-    for item in items:
-        summarized = _summarize_dlq_item(item)
-        if summarized.get("request_id") == request_id:
-            return summarized
+def _list_recent_dlq_messages(limit: int) -> list[dict]:
+    try:
+        return list_recent_topic_messages(settings.kafka_dlq_topic, limit)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail="Kafka DLQ unavailable") from exc
+
+
+def _find_dlq_item_by_request_id(request_id: str, user_id: int) -> dict | None:
+    for raw_item in _list_recent_dlq_messages(5000):
+        item = _summarize_dlq_item(raw_item)
+        if item.get("request_id") == request_id and item.get("user_id") == user_id:
+            return item
     return None
 
 
@@ -217,51 +422,94 @@ def _replay_dlq_payload(item: dict) -> dict:
         raise HTTPException(status_code=409, detail="DLQ event is blocked by replay guard")
 
     payload = dict(item.get("payload") or {})
-    stream_id = payload.get("room_id")
+    stream_id = _safe_optional_positive_int(
+        _selected_event_field(payload, "stream_id", "room_id")
+    )
     if stream_id is None:
         raise HTTPException(status_code=409, detail="DLQ event is missing stream id")
 
-    replay_count = int(payload.get("replay_count", 0) or 0) + 1
+    current_replay_count = payload.get("replay_count", 0)
+    if (
+        type(current_replay_count) is not int
+        or current_replay_count < 0
+        or current_replay_count >= min(settings.dlq_replay_max_count, _MAX_POSTGRES_BIGINT)
+    ):
+        raise HTTPException(status_code=409, detail="DLQ event is blocked by replay guard")
+    replay_count = current_replay_count + 1
     replayed_at = datetime.now(timezone.utc).isoformat()
-    payload["replay_count"] = replay_count
-    payload["replayed_at"] = replayed_at
-    payload["retry_count"] = 0
-    payload["next_retry_at"] = None
-
+    payload.update(
+        {
+            "replay_count": replay_count,
+            "replayed_at": replayed_at,
+            "retry_count": 0,
+            "next_retry_at": None,
+        }
+    )
     try:
         publish_ingress_job(stream_id, payload)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
-
     return {
-        "status": "replayed",
-        "request_id": payload.get("request_id"),
-        "stream_id": int(stream_id),
+        "status": "replay_requested",
+        "request_id": str(payload["request_id"]),
+        "stream_id": stream_id,
         "replay_count": replay_count,
         "replayed_at": replayed_at,
     }
 
 
-def _ensure_room_exists(cur, room_id: int) -> None:
-    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms WHERE id=%s", (room_id,))
-    if cur.fetchone() is None:
-        raise HTTPException(status_code=404, detail="Stream not found")
+def _claim_manual_replay(item: dict) -> tuple[int, str]:
+    if item.get("replayable") is not True:
+        raise HTTPException(status_code=409, detail="DLQ event is blocked by replay guard")
+    request_id = str(item["request_id"])
+    replay_generation = item.get("replay_count", 0)
+    if (
+        type(replay_generation) is not int
+        or replay_generation < 0
+        or replay_generation >= min(settings.dlq_replay_max_count, _MAX_POSTGRES_BIGINT)
+    ):
+        raise HTTPException(status_code=409, detail="DLQ event is blocked by replay guard")
+    claim_state, owner_token = claim_dlq_replay(request_id, replay_generation)
+    if claim_state == "persisted":
+        raise HTTPException(status_code=409, detail="DLQ event is already persisted")
+    if claim_state == "published":
+        raise HTTPException(status_code=409, detail="DLQ replay was already requested")
+    if claim_state != "claimed" or owner_token is None:
+        raise HTTPException(status_code=409, detail="DLQ replay is already in progress")
+    return replay_generation, owner_token
 
 
 def _ensure_room_member(cur, room_id: int, user_id: int) -> None:
-    _ensure_room_exists(cur, room_id)
     cur.execute(
-        "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
+        """
+        /*NO LOAD BALANCE*/
+        SELECT 1
+        FROM rooms r
+        JOIN room_members rm ON rm.room_id = r.id
+        WHERE r.id=%s AND rm.user_id=%s
+        """,
         (room_id, user_id),
     )
     if cur.fetchone() is None:
-        raise HTTPException(status_code=403, detail="Stream access denied")
+        # Missing streams and non-members share the same external response so
+        # an authenticated caller cannot use this endpoint as an existence oracle.
+        raise HTTPException(status_code=404, detail="Stream not found")
 
 
-def _message_room_id(cur, message_id: int) -> int:
-    cur.execute("SELECT room_id FROM messages WHERE id=%s", (message_id,))
+def _message_room_id_for_member(cur, message_id: int, user_id: int) -> int:
+    cur.execute(
+        """
+        /*NO LOAD BALANCE*/
+        SELECT m.room_id
+        FROM messages m
+        JOIN room_members rm ON rm.room_id = m.room_id
+        WHERE m.id=%s AND rm.user_id=%s
+        """,
+        (message_id, user_id),
+    )
     row = cur.fetchone()
     if row is None:
+        # Missing events and events outside the caller's streams share one response.
         raise HTTPException(status_code=404, detail="Event not found")
     return int(row["room_id"])
 
@@ -271,33 +519,29 @@ def create_user(payload: UserCreate):
     try:
         with get_conn() as conn:
             with get_cursor(conn) as cur:
-                try:
-                    cur.execute(
-                        """
-                        INSERT INTO users (username, password_hash)
-                        VALUES (%s, %s)
-                        RETURNING id, username
-                        """,
-                        (payload.username, hash_password(payload.password)),
-                    )
-                    row = cur.fetchone()
-                    conn.commit()
-                    return row
-                except Exception as exc:  # noqa: BLE001
-                    conn.rollback()
-                    raise HTTPException(status_code=409, detail="Username already exists") from exc
-    except HTTPException:
-        raise
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail="User database unavailable") from exc
+                cur.execute(
+                    """
+                    INSERT INTO users (username, password_hash)
+                    VALUES (%s, %s)
+                    RETURNING id, username
+                    """,
+                    (payload.username, hash_password(payload.password)),
+                )
+                row = cur.fetchone()
+            conn.commit()
+        return row
+    except UniqueViolation as exc:
+        raise HTTPException(status_code=409, detail="Username already exists") from exc
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="User store unavailable") from exc
 
 
 @router.post("/auth/login", response_model=TokenResponse)
 def login(payload: LoginRequest):
     try:
         user = authenticate_user(payload.username, payload.password)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=503, detail="Auth database unavailable") from exc
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Authentication store unavailable") from exc
     if user is None:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = create_access_token(user["id"], user["username"])
@@ -314,78 +558,108 @@ def reset_demo_events(payload: DemoResetRequest, current_user: dict = Depends(ge
     if payload.confirmation != "RESET DEMO DB":
         raise HTTPException(status_code=400, detail="Confirmation must be RESET DEMO DB")
 
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            try:
-                result = _reset_demo_event_data(cur)
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                try:
+                    result = _reset_demo_event_data(cur)
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+                    raise
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Demo event store unavailable") from exc
+    cache_invalidation_failures = _publish_demo_reset_tombstones(result)
     try:
         reset_dlq_topic = _reset_demo_kafka_dlq()
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail="Demo DB reset completed, but Kafka DLQ reset failed") from exc
 
     return {
-        "status": "reset",
+        "status": "reset" if cache_invalidation_failures == 0 else "reset_with_warnings",
+        "deleted_events": result["deleted_messages"],
         "deleted_messages": result["deleted_messages"],
         "reset_streams": result["reset_streams"],
         "reset_request_statuses": result["reset_request_statuses"],
         "reset_dlq_topic": reset_dlq_topic,
-        "note": f"Demo event data and DLQ topic reset by user_id={current_user['id']}. Users were kept.",
+        "cache_invalidation_failures": cache_invalidation_failures,
+        "note": (
+            f"Demo event data and DLQ topic reset by user_id={current_user['id']}. "
+            "Users were kept; compacted state tombstones were published."
+        ),
     }
 
 
 @router.post("/streams", response_model=StreamResponse)
 def create_stream(payload: StreamCreate, current_user: dict = Depends(get_current_user)):
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            cur.execute(
-                "INSERT INTO rooms (name) VALUES (%s) RETURNING id, name",
-                (payload.name,),
-            )
-            room = cur.fetchone()
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                cur.execute(
+                    "INSERT INTO rooms (name) VALUES (%s) RETURNING id, name",
+                    (payload.name,),
+                )
+                room = cur.fetchone()
 
-            requested_member_ids = set(payload.member_ids)
-            requested_member_ids.add(int(current_user["id"]))
-            valid_member_ids: list[int] = []
-            for member_id in sorted(requested_member_ids):
-                cur.execute("SELECT id FROM users WHERE id=%s", (member_id,))
-                if cur.fetchone() is not None:
-                    valid_member_ids.append(member_id)
-                    cur.execute(
-                        """
-                        INSERT INTO room_members (room_id, user_id)
-                        VALUES (%s, %s)
-                        ON CONFLICT DO NOTHING
-                        """,
-                        (room["id"], member_id),
+                requested_member_ids = set(payload.member_ids)
+                requested_member_ids.add(int(current_user["id"]))
+                candidate_member_ids = sorted(requested_member_ids)
+                cur.execute(
+                    "/*NO LOAD BALANCE*/ SELECT id FROM users WHERE id = ANY(%s)",
+                    (candidate_member_ids,),
+                )
+                valid_member_ids = sorted(int(row["id"]) for row in cur.fetchall())
+                missing_member_ids = sorted(set(candidate_member_ids) - set(valid_member_ids))
+                if missing_member_ids:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Unknown member_ids: {missing_member_ids}",
                     )
+                cur.execute(
+                    """
+                    INSERT INTO room_members (room_id, user_id)
+                    SELECT %s, member_id
+                    FROM unnest(%s::bigint[]) AS member_id
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (room["id"], valid_member_ids),
+                )
 
-            conn.commit()
-            stream_snapshot = {
-                "stream_id": int(room["id"]),
-                "name": room["name"],
-                "member_ids": valid_member_ids,
-            }
-            cache_stream_snapshot(stream_snapshot)
-            try:
-                publish_stream_snapshot(int(room["id"]), stream_snapshot)
-            except Exception:
-                pass
-            return {
-                "id": room["id"],
-                "name": room["name"],
-                "member_ids": valid_member_ids,
-            }
+                conn.commit()
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Stream store unavailable") from exc
+
+    stream_snapshot = {
+        "stream_id": int(room["id"]),
+        "name": room["name"],
+        "member_ids": valid_member_ids,
+    }
+    cache_stream_snapshot(stream_snapshot)
+    try:
+        publish_stream_snapshot(int(room["id"]), stream_snapshot)
+    except Exception as exc:  # noqa: BLE001
+        logging.warning("Stream snapshot publish failed stream_id=%s error=%s", room["id"], exc)
+    return {
+        "id": room["id"],
+        "name": room["name"],
+        "member_ids": valid_member_ids,
+    }
 
 
-@router.post("/streams/{stream_id}/events", response_model=EventAcceptedResponse)
+@router.post(
+    "/streams/{stream_id}/events",
+    response_model=EventAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 def create_event(
-    stream_id: int,
+    stream_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
     payload: EventCreate,
-    x_idempotency_key: str | None = Header(default=None),
+    x_idempotency_key: str | None = Header(
+        default=None,
+        min_length=1,
+        max_length=128,
+        pattern=r"^[^\x00]+$",
+    ),
     current_user: dict = Depends(get_current_user),
 ):
     actor_user_id = int(current_user["id"])
@@ -425,11 +699,79 @@ def create_event(
     return accepted_response
 
 
-@router.post("/orders/{order_id}/events", response_model=OrderEventAcceptedResponse)
+@generic_router.post(
+    "/streams/{stream_id}/events",
+    response_model=GenericEventAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def create_generic_event(
+    stream_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
+    payload: GenericEventCreate,
+    x_idempotency_key: str | None = Header(
+        default=None,
+        min_length=1,
+        max_length=128,
+        pattern=r"^[^\x00]+$",
+    ),
+    current_user: dict = Depends(get_current_user),
+):
+    if not settings.generic_events_v2_enabled:
+        raise HTTPException(status_code=503, detail="Generic event v2 intake is not enabled")
+    actor_id = int(current_user["id"])
+    request_id = str(uuid4())
+    queued_at = datetime.now(timezone.utc).isoformat()
+    route = f"POST:/v2/streams/{stream_id}/events"
+    accepted_response = {
+        "request_id": request_id,
+        "status": "accepted",
+        "persistence": "queued",
+        "stream_id": stream_id,
+        "actor_id": actor_id,
+        "event_type": payload.event_type,
+        "schema_version": 2,
+        "payload": payload.payload,
+        "metadata": payload.metadata,
+        "queued_at": queued_at,
+    }
+    try:
+        _store_request_and_queue_job(
+            request_id,
+            accepted_response,
+            {
+                **accepted_response,
+                # Stable aliases keep the current Worker, DLQ and compacted
+                # topic state compatible throughout the expand-contract rollout.
+                "route": route,
+                "room_id": stream_id,
+                "user_id": actor_id,
+                "body": _legacy_body_preview(payload.payload),
+                "room_seq": None,
+                "x_idempotency_key": x_idempotency_key,
+                "retry_count": 0,
+                "next_retry_at": None,
+            },
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=_queue_unavailable_detail()) from exc
+    return accepted_response
+
+
+@router.post(
+    "/orders/{order_id}/events",
+    response_model=OrderEventAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    deprecated=True,
+    tags=["reference-order-adapter"],
+)
 def create_order_event(
-    order_id: int,
+    order_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
     payload: OrderEventCreate,
-    x_idempotency_key: str | None = Header(default=None),
+    x_idempotency_key: str | None = Header(
+        default=None,
+        min_length=1,
+        max_length=128,
+        pattern=r"^[^\x00]+$",
+    ),
     current_user: dict = Depends(get_current_user),
 ):
     actor_user_id = int(current_user["id"])
@@ -451,6 +793,13 @@ def create_order_event(
         "payment_id": payload.payment_id,
         "queued_at": queued_at,
     }
+    metadata = {
+        "reference_scenario": "order-lifecycle",
+        "classification": category,
+        "external_references": (
+            {"payment": payload.payment_id} if payload.payment_id else {}
+        ),
+    }
     try:
         _store_request_and_queue_job(
             request_id,
@@ -466,8 +815,10 @@ def create_order_event(
                 "queued_at": queued_at,
                 "retry_count": 0,
                 "next_retry_at": None,
-                "order_id": order_id,
+                "schema_version": 1,
                 "event_type": payload.event_type,
+                "payload": {"text": payload.body},
+                "metadata": metadata,
                 "category": category,
                 "payment_id": payload.payment_id,
             },
@@ -477,65 +828,91 @@ def create_order_event(
     return accepted_response
 
 
+@generic_router.get(
+    "/event-requests/{request_id}", response_model=GenericEventRequestStatusResponse
+)
 @router.get("/event-requests/{request_id}", response_model=EventRequestStatusResponse)
-def get_event_request_status(request_id: str, current_user: dict = Depends(get_current_user)):
+def get_event_request_status(
+    request_id: Annotated[str, Path(min_length=1, max_length=80, pattern=r"^[^\x00]+$")],
+    current_user: dict = Depends(get_current_user),
+):
     try:
         status = _load_request_status(request_id)
-    except Exception as exc:  # noqa: BLE001
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        if get_materialized_cache_status().get("hydrated") is not True:
+            raise HTTPException(status_code=503, detail="Request status unavailable") from exc
         status = get_cached_request_status(request_id)
         if status is None:
             raise HTTPException(status_code=503, detail="Request status unavailable") from exc
 
     if status is None:
-        status = get_cached_request_status(request_id)
-        if status is None:
-            raise HTTPException(status_code=404, detail="Request not found")
-    status_user_id = status.get("user_id")
-    if status_user_id is not None and int(status_user_id) != int(current_user["id"]):
+        # PostgreSQL owns durable request state. A healthy DB miss must not be
+        # resurrected by an older compacted-cache value that may be followed by
+        # a tombstone later in replay.
+        raise HTTPException(status_code=404, detail="Request not found")
+    try:
+        status_actor_id = _request_status_actor_id(status)
+    except ValueError as exc:
+        logging.warning("Rejected malformed request status request_id=%s error=%s", request_id, exc)
+        raise HTTPException(status_code=403, detail="Request access denied") from exc
+    if status_actor_id != int(current_user["id"]):
         raise HTTPException(status_code=403, detail="Request access denied")
     return _externalize_request_status(status)
 
 
-@router.get("/streams/{stream_id}/persistence-summary", response_model=StreamPersistenceSummaryResponse)
-def get_stream_persistence_summary(stream_id: int, current_user: dict = Depends(get_current_user)):
+@router.get(
+    "/streams/{stream_id}/persistence-summary",
+    response_model=StreamPersistenceSummaryResponse,
+)
+def get_stream_persistence_summary(
+    stream_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
+    current_user: dict = Depends(get_current_user),
+):
     user_id = int(current_user["id"])
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            _ensure_room_member(cur, stream_id, user_id)
-            cur.execute(
-                """
-                WITH summary AS (
-                    SELECT COUNT(*) AS persisted_count
-                    FROM messages
-                    WHERE room_id=%s
-                ),
-                latest AS (
-                    SELECT id, request_id, room_seq, created_at
-                    FROM messages
-                    WHERE room_id=%s
-                    ORDER BY id DESC
-                    LIMIT 1
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                _ensure_room_member(cur, stream_id, user_id)
+                cur.execute(
+                    """
+                    /*NO LOAD BALANCE*/
+                    WITH summary AS (
+                        SELECT COUNT(*) AS persisted_count
+                        FROM messages
+                        WHERE room_id=%s
+                    ), latest AS (
+                        SELECT id, request_id, room_seq, created_at
+                        FROM messages
+                        WHERE room_id=%s
+                        ORDER BY id DESC
+                        LIMIT 1
+                    )
+                    SELECT
+                        summary.persisted_count,
+                        latest.id AS latest_event_id,
+                        latest.request_id AS latest_request_id,
+                        latest.room_seq AS latest_stream_seq,
+                        latest.created_at AS latest_created_at
+                    FROM summary
+                    LEFT JOIN latest ON TRUE
+                    """,
+                    (stream_id, stream_id),
                 )
-                SELECT
-                    summary.persisted_count,
-                    latest.id,
-                    latest.request_id,
-                    latest.room_seq,
-                    latest.created_at
-                FROM summary
-                LEFT JOIN latest ON TRUE
-                """,
-                (stream_id, stream_id),
-            )
-            row = cur.fetchone()
-
+                row = cur.fetchone()
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Stream summary unavailable") from exc
+    latest_created_at = row.get("latest_created_at")
     return {
         "stream_id": stream_id,
         "persisted_count": int(row["persisted_count"]),
-        "latest_request_id": row["request_id"],
-        "latest_event_id": None if row["id"] is None else int(row["id"]),
-        "latest_stream_seq": row["room_seq"],
-        "latest_created_at": None if row["created_at"] is None else row["created_at"].isoformat(),
+        "latest_request_id": row.get("latest_request_id"),
+        "latest_event_id": row.get("latest_event_id"),
+        "latest_stream_seq": row.get("latest_stream_seq"),
+        "latest_created_at": (
+            latest_created_at.isoformat()
+            if hasattr(latest_created_at, "isoformat")
+            else latest_created_at
+        ),
     }
 
 
@@ -544,11 +921,19 @@ def get_ingress_dlq(
     limit: int = Query(default=20, ge=1, le=200),
     current_user: dict = Depends(get_current_user),
 ):
-    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
-    summarized_items = [_summarize_dlq_item(item) for item in items]
+    user_id = int(current_user["id"])
+    scan_limit = min(5000, max(limit, limit * 10))
+    items = _list_recent_dlq_messages(scan_limit)
+    summarized_items = [
+        item
+        for item in (_summarize_dlq_item(raw_item) for raw_item in items)
+        if item.get("user_id") == user_id
+    ][:limit]
     return {
         "queue_backend": "kafka",
         "topic": settings.kafka_dlq_topic,
+        "scope": "recent_log_sample",
+        "user_filtered": True,
         "count": len(summarized_items),
         "max_replay_count": settings.dlq_replay_max_count,
         "items": summarized_items,
@@ -561,12 +946,20 @@ def get_ingress_dlq_summary(
     sample_limit: int = Query(default=5, ge=0, le=20),
     current_user: dict = Depends(get_current_user),
 ):
-    items = list_recent_topic_messages(settings.kafka_dlq_topic, limit)
-    summarized_items = [_summarize_dlq_item(item) for item in items]
+    user_id = int(current_user["id"])
+    scan_limit = min(5000, max(limit, limit * 10))
+    items = _list_recent_dlq_messages(scan_limit)
+    summarized_items = [
+        item
+        for item in (_summarize_dlq_item(raw_item) for raw_item in items)
+        if item.get("user_id") == user_id
+    ][:limit]
     summary = _summarize_dlq_items(summarized_items, sample_limit=sample_limit)
     return {
         "queue_backend": "kafka",
         "topic": settings.kafka_dlq_topic,
+        "scope": "recent_log_sample",
+        "user_filtered": True,
         "limit": limit,
         "sample_limit": sample_limit,
         "max_replay_count": settings.dlq_replay_max_count,
@@ -579,24 +972,57 @@ def replay_ingress_dlq_event(
     payload: DlqReplayRequest,
     current_user: dict = Depends(get_current_user),
 ):
-    item = _find_dlq_item_by_request_id(payload.request_id)
+    item = _find_dlq_item_by_request_id(payload.request_id, int(current_user["id"]))
     if item is None:
         raise HTTPException(status_code=404, detail="DLQ event not found")
-    return _replay_dlq_payload(item)
+    replay_generation, owner_token = _claim_manual_replay(item)
+    try:
+        result = _replay_dlq_payload(item)
+    except Exception:
+        try:
+            release_dlq_replay_claim(payload.request_id, replay_generation, owner_token)
+        except Exception as release_error:  # noqa: BLE001
+            logging.warning(
+                "DLQ replay claim release failed request_id=%s error=%s",
+                payload.request_id,
+                release_error,
+            )
+        raise
+    try:
+        if not mark_dlq_replay_published(payload.request_id, replay_generation, owner_token):
+            logging.warning("DLQ replay publish claim was no longer owned request_id=%s", payload.request_id)
+    except Exception as mark_error:  # noqa: BLE001
+        logging.warning(
+            "DLQ replay was published but claim finalization failed request_id=%s error=%s",
+            payload.request_id,
+            mark_error,
+        )
+    return result
 
 
 def _event_row_to_response(row: dict) -> dict:
     created_at = row["created_at"]
+    stream_id = row.get("stream_id", row.get("room_id"))
+    stream_seq = row.get("stream_seq", row.get("room_seq"))
+    user_id = row.get("user_id", row.get("actor_id"))
+    actor_id = row.get("actor_id", user_id)
+    payload = row.get("payload")
+    if payload is None:
+        payload = {"text": row.get("body", "")}
     return {
         "id": row["id"],
-        "request_id": row["request_id"],
-        "stream_id": row["room_id"],
-        "stream_seq": row["room_seq"],
-        "user_id": row["user_id"],
-        "event_type": row["event_type"],
-        "category": row["category"],
-        "payment_id": row["payment_id"],
-        "body": row["body"],
+        "request_id": row.get("request_id"),
+        "stream_id": stream_id,
+        "stream_seq": stream_seq,
+        "user_id": user_id,
+        "actor_id": actor_id,
+        "event_type": row.get("event_type") or "legacy.message",
+        "category": row.get("category"),
+        "payment_id": row.get("payment_id"),
+        "body": row.get("body", ""),
+        "schema_version": int(row.get("schema_version") or 1),
+        "payload": payload,
+        "metadata": row.get("metadata") or {},
         "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else created_at,
     }
 
@@ -610,39 +1036,86 @@ def _event_list_response(source: str, degraded: bool, items: list[dict], snapsho
     }
 
 
+def _cached_page_matches_stream_watermark(
+    items: list[dict],
+    *,
+    last_stream_seq: int,
+    limit: int,
+) -> bool:
+    expected_count = min(limit, last_stream_seq)
+    if len(items) != expected_count:
+        return False
+    sequences = [item.get("stream_seq") for item in items]
+    if any(type(sequence) is not int for sequence in sequences):
+        return False
+    return sequences == list(
+        range(last_stream_seq, last_stream_seq - expected_count, -1)
+    )
+
+
+@generic_router.get("/streams/{stream_id}/events", response_model=GenericEventListResponse)
 @router.get("/streams/{stream_id}/events", response_model=EventListResponse)
 def list_events(
-    stream_id: int,
+    stream_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
     limit: int = Query(default=20, ge=1, le=100),
-    before_id: int | None = Query(default=None),
+    before_id: int | None = Query(default=None, ge=1, le=_MAX_POSTGRES_BIGINT),
     current_user: dict = Depends(get_current_user),
 ):
     user_id = int(current_user["id"])
-    cached_items, snapshot_age = list_cached_events(stream_id, limit, before_id)
-    if (
-        before_id is None
-        and cached_items
-        and snapshot_age is not None
-        and snapshot_age <= settings.snapshot_cache_fresh_seconds
-        and is_cached_stream_member(stream_id, user_id)
-    ):
-        return _event_list_response("cache", False, cached_items, snapshot_age)
-
+    cache_status = get_materialized_cache_status()
+    cache_hydrated = cache_status.get("hydrated") is True
+    if cache_hydrated:
+        cached_items, snapshot_age = list_cached_events(stream_id, limit, before_id)
+    else:
+        cached_items, snapshot_age = [], None
+    normalized_cached_items = [_event_row_to_response(item) for item in cached_items]
     try:
         with get_conn() as conn:
             with get_cursor(conn) as cur:
                 _ensure_room_member(cur, stream_id, user_id)
+                cur.execute(
+                    "/*NO LOAD BALANCE*/ SELECT last_seq FROM room_sequences WHERE room_id=%s",
+                    (stream_id,),
+                )
+                sequence_row = cur.fetchone()
+                stream_last_seq = 0 if sequence_row is None else sequence_row["last_seq"]
+                if (
+                    type(stream_last_seq) is not int
+                    or stream_last_seq < 0
+                    or stream_last_seq > _MAX_POSTGRES_BIGINT
+                ):
+                    raise ValueError("Invalid stream sequence watermark")
     except HTTPException:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except (OperationalError, InterfaceError, PoolError) as exc:
         if not is_cached_stream_member(stream_id, user_id):
             raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
         if cached_items:
-            return _event_list_response("cache", True, cached_items, snapshot_age)
+            return _event_list_response("cache", True, normalized_cached_items, snapshot_age)
         raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
+    # A compacted Kafka snapshot is a read optimization, not the authorization
+    # source while PostgreSQL is reachable. This prevents a forged cache record
+    # from granting fresh-path access on local PLAINTEXT Kafka deployments.
+    if (
+        before_id is None
+        and cached_items
+        and cache_status.get("ready") is True
+        and snapshot_age is not None
+        and snapshot_age <= settings.snapshot_cache_fresh_seconds
+        and _cached_page_matches_stream_watermark(
+            cached_items,
+            last_stream_seq=stream_last_seq,
+            limit=limit,
+        )
+    ):
+        return _event_list_response("cache", False, normalized_cached_items, snapshot_age)
+
     sql = """
-        SELECT id, request_id, room_id, room_seq, user_id, event_type, category, payment_id, body, created_at
+        /*NO LOAD BALANCE*/
+        SELECT id, request_id, room_id, room_seq, user_id,
+               event_type, category, payment_id, schema_version,
+               payload, metadata, body, created_at
         FROM messages
         WHERE room_id=%s
     """
@@ -660,9 +1133,9 @@ def list_events(
             with get_cursor(conn) as cur:
                 cur.execute(sql, tuple(params))
                 rows = cur.fetchall()
-    except Exception as exc:  # noqa: BLE001
+    except (OperationalError, InterfaceError, PoolError) as exc:
         if cached_items:
-            return _event_list_response("cache", True, cached_items, snapshot_age)
+            return _event_list_response("cache", True, normalized_cached_items, snapshot_age)
         raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
     result = [_event_row_to_response(row) for row in rows]
@@ -671,48 +1144,58 @@ def list_events(
 
 @router.post("/events/{event_id}/read", response_model=ReadReceiptResponse)
 def mark_as_read(
-    event_id: int,
+    event_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
     payload: ReadReceiptCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            room_id = _message_room_id(cur, event_id)
-            _ensure_room_member(cur, room_id, int(current_user["id"]))
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                user_id = int(current_user["id"])
+                _message_room_id_for_member(cur, event_id, user_id)
 
-            cur.execute(
-                """
-                INSERT INTO read_receipts (message_id, user_id)
-                VALUES (%s, %s)
-                ON CONFLICT DO NOTHING
-                """,
-                (event_id, int(current_user["id"])),
-            )
-            conn.commit()
+                cur.execute(
+                    """
+                    INSERT INTO read_receipts (message_id, user_id)
+                    VALUES (%s, %s)
+                    ON CONFLICT DO NOTHING
+                    """,
+                    (event_id, user_id),
+                )
+                conn.commit()
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Read receipt store unavailable") from exc
 
-    return {"status": "ok", "event_id": event_id, "user_id": int(current_user["id"])}
+    return {"status": "ok", "event_id": event_id, "user_id": user_id}
 
 
 @router.get("/streams/{stream_id}/unread-count/{user_id}", response_model=UnreadCountResponse)
-def unread_count(stream_id: int, user_id: int, current_user: dict = Depends(get_current_user)):
+def unread_count(
+    stream_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
+    user_id: Annotated[int, Path(ge=1, le=_MAX_POSTGRES_BIGINT)],
+    current_user: dict = Depends(get_current_user),
+):
     if int(current_user["id"]) != user_id:
         raise HTTPException(status_code=403, detail="Unread count access denied")
-    with get_conn() as conn:
-        with get_cursor(conn) as cur:
-            _ensure_room_member(cur, stream_id, user_id)
-            cur.execute(
-                """
-                SELECT COUNT(*) AS unread
-                FROM messages m
-                WHERE m.room_id=%s
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM read_receipts rr
-                    WHERE rr.message_id = m.id
-                    AND rr.user_id = %s
+    try:
+        with get_conn() as conn:
+            with get_cursor(conn) as cur:
+                _ensure_room_member(cur, stream_id, user_id)
+                cur.execute(
+                    """
+                    /*NO LOAD BALANCE*/ SELECT COUNT(*) AS unread
+                    FROM messages m
+                    WHERE m.room_id=%s
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM read_receipts rr
+                        WHERE rr.message_id = m.id
+                        AND rr.user_id = %s
+                    )
+                    """,
+                    (stream_id, user_id),
                 )
-                """,
-                (stream_id, user_id),
-            )
-            row = cur.fetchone()
+                row = cur.fetchone()
+    except (OperationalError, InterfaceError, PoolError) as exc:
+        raise HTTPException(status_code=503, detail="Unread count unavailable") from exc
     return {"stream_id": stream_id, "user_id": user_id, "unread": int(row["unread"])}

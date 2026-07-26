@@ -67,6 +67,29 @@ function Wait-Ready() {
   throw "Timed out waiting for readiness"
 }
 
+function Wait-MaterializedCacheHydrated([int]$TimeoutSec = 180) {
+  $deadline = (Get-Date).AddSeconds($TimeoutSec)
+  $lastCache = $null
+  while ((Get-Date) -lt $deadline) {
+    try {
+      $health = Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/ready" -TimeoutSec 5
+      Assert-HasProperty $health "materialized_cache" "readiness"
+      Assert-HasProperty $health.materialized_cache "ready" "readiness.materialized_cache"
+      Assert-HasProperty $health.materialized_cache "hydrated" "readiness.materialized_cache"
+      Assert-HasProperty $health.materialized_cache "last_error" "readiness.materialized_cache"
+      $lastCache = $health.materialized_cache
+      if ($lastCache.ready -eq $true -and $lastCache.hydrated -eq $true) {
+        return $health
+      }
+    } catch {
+      Start-Sleep -Seconds 2
+      continue
+    }
+    Start-Sleep -Seconds 2
+  }
+  throw "Timed out waiting for materialized cache hydration; last=$($lastCache | ConvertTo-Json -Compress)"
+}
+
 if (-not $SkipReset) {
   & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
@@ -80,6 +103,9 @@ try {
   Assert-HasProperty $health.kafka "bootstrap_reachable" "readiness.kafka"
   Assert-Equal $health.kafka.bootstrap_reachable $true "readiness.kafka.bootstrap_reachable"
   Assert-HasProperty $health.postgres "primary_reachable" "readiness.postgres"
+  $health = Wait-MaterializedCacheHydrated
+  Assert-Equal $health.materialized_cache.ready $true "readiness.materialized_cache.ready"
+  Assert-Equal $health.materialized_cache.hydrated $true "readiness.materialized_cache.hydrated"
 
   $suffix = "{0}-{1}" -f [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(), (Get-Random -Maximum 999999)
   $password = "Password123!"
@@ -122,17 +148,25 @@ try {
   Assert-True (@($stream.member_ids) -contains [int]$u2.id) "stream must include requested member"
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 401
-  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 403 -Headers $outsiderHeaders
-  Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 200 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
+  Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 404 -Headers $outsiderHeaders
+  Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -ExpectedStatus 401 -Body (@{ event_type = "portfolio.contract.probe"; payload = @{ message = "unauthorized" } } | ConvertTo-Json -Depth 4)
+  Assert-HttpStatus -Method "POST" -Uri "$BaseUrl/v1/streams/999999999/events" -ExpectedStatus 202 -Headers $u1Headers -Body (@{ body = "missing stream" } | ConvertTo-Json)
 
   $eventBody = "contract event $suffix"
   $eventHeaders = @{ Authorization = "Bearer $($u1Login.access_token)"; "X-Idempotency-Key" = "contract-event-$suffix" }
-  $accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -Headers $eventHeaders -ContentType "application/json" -Body (@{ body = $eventBody } | ConvertTo-Json)
+  $accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers $eventHeaders -ContentType "application/json" -Body (@{
+    event_type = "portfolio.contract.probe"
+    payload = @{ message = $eventBody; contract_version = 2 }
+    metadata = @{ scenario = "api-contract" }
+  } | ConvertTo-Json -Depth 4)
   Assert-Equal $accepted.status "accepted" "accepted event status"
   Assert-Equal $accepted.persistence "queued" "accepted event persistence"
   Assert-Equal ([int]$accepted.stream_id) ([int]$stream.id) "accepted stream_id"
-  Assert-Equal ([int]$accepted.user_id) ([int]$u1.id) "accepted user_id"
-  Assert-Equal $accepted.body $eventBody "accepted body"
+  Assert-Equal ([int]$accepted.actor_id) ([int]$u1.id) "accepted actor_id"
+  Assert-Equal $accepted.event_type "portfolio.contract.probe" "accepted event_type"
+  Assert-Equal ([int]$accepted.schema_version) 2 "accepted schema_version"
+  Assert-Equal $accepted.payload.message $eventBody "accepted payload.message"
+  Assert-Equal $accepted.metadata.scenario "api-contract" "accepted metadata.scenario"
   Assert-HasProperty $accepted "request_id" "accepted event response"
   Assert-HasProperty $accepted "queued_at" "accepted event response"
 
@@ -160,8 +194,19 @@ try {
   Assert-Equal ([int]$persisted.stream_id) ([int]$stream.id) "request status stream_id"
   Assert-Equal ([int]$persisted.stream_seq) 1 "request status stream_seq"
   Assert-Equal ([int]$persisted.user_id) ([int]$u1.id) "request status user_id"
+  Assert-Equal ([int]$persisted.actor_id) ([int]$u1.id) "request status actor_id"
+  Assert-Equal $persisted.event_type "portfolio.contract.probe" "request status event_type"
+  Assert-Equal ([int]$persisted.schema_version) 2 "request status schema_version"
+  Assert-Equal $persisted.payload.message $eventBody "request status payload.message"
   Assert-HasProperty $persisted "event_id" "request status"
   Assert-HasProperty $persisted "created_at" "request status"
+  Assert-HasProperty $persisted "persisted_at" "request status"
+
+  $genericStatus = Invoke-RestMethod -Method Get -Headers $u1Headers -Uri "$BaseUrl/v2/event-requests/$requestId"
+  Assert-Equal ([int]$genericStatus.actor_id) ([int]$u1.id) "v2 request status actor_id"
+  Assert-Equal $genericStatus.event_type "portfolio.contract.probe" "v2 request status event_type"
+  Assert-True (-not ($genericStatus.PSObject.Properties.Name -contains "user_id")) "v2 request status must not expose legacy user_id"
+  Assert-True (-not ($genericStatus.PSObject.Properties.Name -contains "body")) "v2 request status must not expose legacy body"
 
   Assert-HttpStatus -Method "GET" -Uri "$BaseUrl/v1/event-requests/$requestId" -ExpectedStatus 403 -Headers $u2Headers
 
@@ -182,7 +227,19 @@ try {
   Assert-Equal ([int]$event.id) ([int]$persisted.event_id) "event id"
   Assert-Equal ([int]$event.stream_seq) 1 "event stream_seq"
   Assert-Equal $event.body $eventBody "event body"
+  Assert-Equal ([int]$event.actor_id) ([int]$u1.id) "event actor_id"
+  Assert-Equal $event.event_type "portfolio.contract.probe" "event type"
+  Assert-Equal ([int]$event.schema_version) 2 "event schema_version"
+  Assert-Equal $event.payload.message $eventBody "event payload.message"
+  Assert-Equal $event.metadata.scenario "api-contract" "event metadata.scenario"
   Assert-HasProperty $event "created_at" "event list item"
+
+  $genericEventsResponse = Invoke-RestMethod -Method Get -Headers $u1Headers -Uri "$BaseUrl/v2/streams/$($stream.id)/events?limit=10"
+  $genericEvent = @($genericEventsResponse.items) | Where-Object { $_.request_id -eq $requestId } | Select-Object -First 1
+  Assert-True ($null -ne $genericEvent) "v2 event list must include request_id=$requestId"
+  Assert-True (-not ($genericEvent.PSObject.Properties.Name -contains "category")) "v2 event must not expose legacy category"
+  Assert-True (-not ($genericEvent.PSObject.Properties.Name -contains "payment_id")) "v2 event must not expose legacy payment_id"
+  Assert-True (-not ($genericEvent.PSObject.Properties.Name -contains "body")) "v2 event must not expose legacy body"
 
   $unreadBefore = Invoke-RestMethod -Method Get -Headers $u2Headers -Uri "$BaseUrl/v1/streams/$($stream.id)/unread-count/$($u2.id)"
   Assert-Equal ([int]$unreadBefore.unread) 1 "unread before read"
@@ -205,11 +262,13 @@ try {
 
   $dlqSummary = Invoke-RestMethod -Method Get -Headers $u1Headers -Uri "$BaseUrl/v1/dlq/ingress/summary?limit=20&sample_limit=3"
   Assert-Equal $dlqSummary.queue_backend "kafka" "dlq summary queue backend"
+  Assert-Equal $dlqSummary.scope "recent_log_sample" "dlq summary scope"
+  Assert-Equal $dlqSummary.user_filtered $true "dlq summary user filter"
   Assert-HasProperty $dlqSummary "topic" "dlq summary response"
   Assert-HasProperty $dlqSummary "total" "dlq summary response"
   Assert-HasProperty $dlqSummary "replayable" "dlq summary response"
   Assert-HasProperty $dlqSummary "blocked" "dlq summary response"
-  Assert-HasProperty $dlqSummary "oldest_age_seconds" "dlq summary response"
+  Assert-HasProperty $dlqSummary "oldest_sample_age_seconds" "dlq summary response"
   Assert-HasProperty $dlqSummary "by_reason" "dlq summary response"
   Assert-HasProperty $dlqSummary "by_stream" "dlq summary response"
   Assert-HasProperty $dlqSummary "recent_samples" "dlq summary response"

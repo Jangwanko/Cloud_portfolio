@@ -1,6 +1,6 @@
 param(
   [string]$Namespace = "messaging-app",
-  [string]$ValuesFile = "k8s/values/postgresql-ha-values.yaml",
+  [string]$ChartVersion = "16.3.2",
   [switch]$PrepareImages
 )
 
@@ -55,24 +55,74 @@ function Ensure-ImagePresent([string]$image) {
   }
 }
 
-function Decode-Base64([string]$value) {
-  return [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($value))
+$script:PostgresAdminShell = @'
+set -eu
+set +x
+
+if [ -n "${POSTGRES_POSTGRES_PASSWORD_FILE:-}" ] && [ -r "$POSTGRES_POSTGRES_PASSWORD_FILE" ]; then
+  PGPASSWORD="$(cat "$POSTGRES_POSTGRES_PASSWORD_FILE")"
+elif [ -r /opt/bitnami/postgresql/secrets/postgres-password ]; then
+  PGPASSWORD="$(cat /opt/bitnami/postgresql/secrets/postgres-password)"
+elif [ -n "${POSTGRES_POSTGRES_PASSWORD:-}" ]; then
+  PGPASSWORD="$POSTGRES_POSTGRES_PASSWORD"
+else
+  exit 41
+fi
+
+export PGPASSWORD
+SQL="$(printf '%s' "$SQL_BASE64" | base64 -d)"
+unset SQL_BASE64
+exec /opt/bitnami/postgresql/bin/psql \
+  -X \
+  --no-psqlrc \
+  -v ON_ERROR_STOP=1 \
+  -U postgres \
+  -d postgres \
+  -qAt \
+  -c "$SQL"
+'@
+$script:PostgresAdminShell = $script:PostgresAdminShell.Replace("`r`n", "`n")
+$script:PostgresAdminShellBase64 = [Convert]::ToBase64String(
+  [Text.Encoding]::UTF8.GetBytes($script:PostgresAdminShell)
+)
+
+function Invoke-PostgresAdminSql(
+  [string]$Namespace,
+  [string]$Pod,
+  [string]$Sql,
+  [switch]$AllowFailure
+) {
+  $encodedSql = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($Sql))
+  $remoteCommand = "printf '%s' '$script:PostgresAdminShellBase64' | base64 -d | bash"
+  $output = kubectl `
+    -n $Namespace `
+    exec $Pod `
+    -- `
+    env "SQL_BASE64=$encodedSql" `
+    bash -lc $remoteCommand 2>$null
+  if ($LASTEXITCODE -ne 0) {
+    if ($AllowFailure) {
+      return $null
+    }
+    throw "PostgreSQL command failed on pod $Pod"
+  }
+  return (($output | Out-String).Trim())
 }
 
 function Grant-PostgresMonitorRole([string]$Namespace) {
-  $encodedPassword = kubectl -n $Namespace get secret messaging-postgresql-ha-postgresql -o jsonpath='{.data.postgres-password}'
-  if (-not $encodedPassword) {
-    Write-Warning "Unable to read postgres-password. Skipping pg_monitor grant for portfolio."
-    return
-  }
-
-  $postgresPassword = Decode-Base64 $encodedPassword
   $pods = kubectl -n $Namespace get pods -l app.kubernetes.io/component=postgresql -o jsonpath='{.items[*].metadata.name}'
   foreach ($pod in ($pods -split " ")) {
     if (-not $pod) { continue }
-    $isPrimary = kubectl -n $Namespace exec $pod -- bash -lc "PGPASSWORD='$postgresPassword' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -At -c 'SELECT NOT pg_is_in_recovery();'" 2>$null
-    if ($LASTEXITCODE -eq 0 -and ($isPrimary | Select-Object -First 1) -eq "t") {
-      kubectl -n $Namespace exec $pod -- bash -lc "PGPASSWORD='$postgresPassword' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -c 'GRANT pg_monitor TO portfolio;'" | Out-Host
+    $isPrimary = Invoke-PostgresAdminSql `
+      -Namespace $Namespace `
+      -Pod $pod `
+      -Sql "SELECT NOT pg_is_in_recovery();" `
+      -AllowFailure
+    if ($isPrimary -eq "t") {
+      Invoke-PostgresAdminSql `
+        -Namespace $Namespace `
+        -Pod $pod `
+        -Sql "GRANT pg_monitor TO portfolio;" | Out-Null
       Write-Host "Granted pg_monitor to portfolio on primary pod: $pod"
       return
     }
@@ -115,11 +165,19 @@ if ($PrepareImages) {
 }
 
 $pgHaSource = if ($pgHaChart) { $pgHaChart.FullName } else { "bitnami/postgresql-ha" }
+$pgHaVersionArgs = if ($pgHaChart) { @() } else { @("--version", $ChartVersion) }
 
 & $helm upgrade --install messaging-postgresql-ha $pgHaSource `
   -n $Namespace `
-  -f $ValuesFile `
+  @pgHaVersionArgs `
+  -f k8s/values/postgresql-ha-values.yaml `
   --wait --timeout 15m
+
+& "$PSScriptRoot\..\..\scripts\configure_postgres_sync.ps1" `
+  -Namespace $Namespace `
+  -StatefulSet "messaging-postgresql-ha-postgresql" `
+  -ExpectedReplicas 3 `
+  -TimeoutSec 300
 
 Grant-PostgresMonitorRole -Namespace $Namespace
 

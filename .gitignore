@@ -30,11 +30,28 @@ htmlcov/
 .vscode/
 .idea/
 *.swp
+.codex_tmp/
 
 # Logs
 *.log
 logs/
-results/
+# Keep the canonical latest evidence and its provenance guide in Git.
+results/*
+!results/README.md
+!results/kafka-performance/
+results/kafka-performance/*
+!results/kafka-performance/latest.txt
+!results/kafka-performance/worker-ab-fixed.txt
+!results/kafka-performance/worker-ab-keda.txt
+!results/ordering-failure/
+results/ordering-failure/*
+!results/ordering-failure/latest.json
+!results/postgres-restore/
+results/postgres-restore/*
+!results/postgres-restore/latest.json
+!results/postgres-recovery/
+results/postgres-recovery/*
+!results/postgres-recovery/latest.json
 k6/results/
 
 # Docker
@@ -43,10 +60,27 @@ k6/results/
 # Backup files
 backups/
 
+# Terraform local state and provider cache
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+!*.tfvars.example
+
 # Tools
 tools/kind.exe
 tools/kubectl.exe
 tools/helm/
-tools/helm-cache/
+tools/helm-cache/*
+!tools/helm-cache/repository/
+tools/helm-cache/repository/*
+!tools/helm-cache/repository/postgresql-ha-16.3.2.tgz
 tools/helm-home/
 tools/downloads/

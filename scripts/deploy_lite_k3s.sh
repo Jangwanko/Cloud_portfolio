@@ -6,7 +6,7 @@ IMAGE_NAME="${IMAGE_NAME:-messaging-portfolio:local}"
 HOST_NAME="${HOST_NAME:-}"
 BASE_URL="${BASE_URL:-http://${HOST_NAME:-localhost}}"
 GRAFANA_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
-GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-1q2w3e4r}"
+GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-}"
 RUN_SMOKE_TEST="${RUN_SMOKE_TEST:-true}"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -66,19 +66,31 @@ helm_chart_source() {
 create_runtime_secret() {
   local auth_secret
   local existing_auth_secret
+  local existing_grafana_password
 
   existing_auth_secret="$(
     kubectl_cmd -n "$NAMESPACE" get secret messaging-runtime-secrets \
       -o jsonpath='{.data.AUTH_SECRET_KEY}' 2>/dev/null | base64 -d 2>/dev/null || true
   )"
+  existing_grafana_password="$(
+    kubectl_cmd -n "$NAMESPACE" get secret messaging-runtime-secrets \
+      -o jsonpath='{.data.GRAFANA_ADMIN_PASSWORD}' 2>/dev/null | base64 -d 2>/dev/null || true
+  )"
 
   if [[ -n "$existing_auth_secret" ]]; then
     auth_secret="$existing_auth_secret"
     ok "Reusing existing AUTH_SECRET_KEY from messaging-runtime-secrets"
-  elif command -v openssl >/dev/null 2>&1; then
-    auth_secret="$(openssl rand -base64 48 | tr -d '\n')"
   else
-    auth_secret="lite-demo-auth-secret-$(date +%s)"
+    auth_secret="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  fi
+
+  if [[ -z "$GRAFANA_ADMIN_PASSWORD" ]]; then
+    if [[ -n "$existing_grafana_password" ]]; then
+      GRAFANA_ADMIN_PASSWORD="$existing_grafana_password"
+      ok "Reusing existing Grafana admin password from messaging-runtime-secrets"
+    else
+      GRAFANA_ADMIN_PASSWORD="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
+    fi
   fi
 
   kubectl_cmd create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl_cmd apply -f -
@@ -120,24 +132,19 @@ create_tls_secret() {
 }
 
 grant_pg_monitor() {
-  local encoded_password
-  local postgres_password
   local pods
 
-  encoded_password="$(kubectl_cmd -n "$NAMESPACE" get secret messaging-postgresql-ha-postgresql -o jsonpath='{.data.postgres-password}' 2>/dev/null || true)"
-  if [[ -z "$encoded_password" ]]; then
-    printf '[warn] Unable to read postgres-password. Skipping pg_monitor grant for portfolio.\n'
-    return 0
-  fi
-
-  postgres_password="$(printf '%s' "$encoded_password" | base64 -d)"
   pods="$(kubectl_cmd -n "$NAMESPACE" get pods -l app.kubernetes.io/component=postgresql -o jsonpath='{.items[*].metadata.name}')"
 
   for pod in $pods; do
-    if kubectl_cmd -n "$NAMESPACE" exec "$pod" -- bash -lc \
-      "PGPASSWORD='$postgres_password' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -At -c 'SELECT NOT pg_is_in_recovery();'" 2>/dev/null | grep -qx 't'; then
-      kubectl_cmd -n "$NAMESPACE" exec "$pod" -- bash -lc \
-        "PGPASSWORD='$postgres_password' /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -c 'GRANT pg_monitor TO portfolio;'"
+    if kubectl_cmd -n "$NAMESPACE" exec "$pod" -- bash -lc '
+      set -eu
+      password_file=/opt/bitnami/postgresql/secrets/postgres-password
+      test -r "$password_file"
+      export PGPASSWORD="$(cat "$password_file")"
+      test "$(/opt/bitnami/postgresql/bin/psql -U postgres -d postgres -At -c "SELECT NOT pg_is_in_recovery();")" = "t"
+      /opt/bitnami/postgresql/bin/psql -U postgres -d postgres -c "GRANT pg_monitor TO portfolio;"
+    ' >/dev/null 2>&1; then
       ok "Granted pg_monitor to portfolio on primary pod: $pod"
       return 0
     fi
@@ -257,6 +264,10 @@ render_manifest_for_k3s
 kubectl_cmd apply -f "$RENDERED_MANIFEST"
 kubectl_cmd rollout status statefulset/kafka -n "$NAMESPACE" --timeout=600s
 kubectl_cmd wait --for=condition=complete job/kafka-topic-bootstrap -n "$NAMESPACE" --timeout=300s
+kubectl_cmd wait --for=condition=complete job/messaging-schema-migration -n "$NAMESPACE" --timeout=600s
+kubectl_cmd rollout status deployment/worker -n "$NAMESPACE" --timeout=600s
+kubectl_cmd set env deployment/api -n "$NAMESPACE" GENERIC_EVENTS_V2_ENABLED=true
+kubectl_cmd rollout status deployment/api -n "$NAMESPACE" --timeout=600s
 
 log "Waiting for deployments"
 wait_deployment kube-state-metrics
@@ -280,5 +291,5 @@ kubectl_cmd get pods -n "$NAMESPACE"
 printf '\nDemo-lite deployment completed.\n'
 printf 'Demo UI: %s/demo/order-dashboard.html\n' "$BASE_URL"
 printf 'Swagger: %s/docs\n' "$BASE_URL"
-printf 'Grafana: %s/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s\n' "$BASE_URL"
+printf 'Grafana: %s/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s\n' "$BASE_URL"
 printf 'Readiness: %s/health/ready\n' "$BASE_URL"

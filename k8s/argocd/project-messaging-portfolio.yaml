@@ -4,17 +4,35 @@ metadata:
   name: messaging-portfolio
   namespace: argocd
 spec:
-  description: GitOps project for the messaging portfolio local HA environment
+  description: GitOps project for the Reliable Event Processing System local HA environment
   sourceRepos:
-    - "*"
+    - https://github.com/Jangwanko/Cloud_portfolio.git
   destinations:
     - namespace: messaging-app
       server: https://kubernetes.default.svc
-    - namespace: argocd
-      server: https://kubernetes.default.svc
   clusterResourceWhitelist:
-    - group: "*"
-      kind: "*"
+    - group: ""
+      kind: Namespace
   namespaceResourceWhitelist:
-    - group: "*"
-      kind: "*"
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: PersistentVolumeClaim
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: batch
+      kind: CronJob
+    - group: batch
+      kind: Job
+    - group: keda.sh
+      kind: ScaledObject
+    - group: networking.k8s.io
+      kind: Ingress

@@ -1,311 +1,277 @@
-# 주문 이후 이벤트 처리 시스템 포트폴리오
+# Kubernetes 기반 이벤트 처리 운영 플랫폼
 
-Post-Order Event Pipeline Portfolio
+Kubernetes & GitOps Operations Platform for an Event-Processing Workload
 
-쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트를 Kafka로 받아 저장, 분류, 알림, 장애 격리, 재처리까지 처리하는 event-driven order pipeline입니다.
+이 포트폴리오는 Kubernetes 위에서 workload를 배포하고 확장하며 관측·복구하는 DevOps·플랫폼 엔지니어링 프로젝트입니다. 직접 만든 **Kafka 기반 고신뢰 이벤트 처리 시스템**(`Reliable Event Processing System`)은 운영 설계를 검증하기 위한 workload입니다. Kafka는 API와 Worker 사이의 비동기 buffer와 scaling signal을 제공합니다.
 
-사용자는 결제 완료와 주문 완료 응답을 빠르게 확인합니다. 이후 주문 이벤트의 영속화, 운영 분류, 알림 발행, 실패 격리, backlog drain은 내부 Kafka / Worker 경로에서 처리합니다.
+This project demonstrates Kubernetes workload design, GitOps delivery, autoscaling, observability, failure recovery, and restore validation. The order lifecycle is a reference scenario built on the generic event contract.
 
-This project demonstrates a Kafka-centered post-order event pipeline. The customer-facing path returns payment/order completion quickly, while persistence, classification, notification, DLQ isolation, replay, and backlog drain are handled through the internal Kafka / Worker path.
+## 핵심 요약 / Executive Summary
 
-## TL;DR
+| 항목 | 현재 구현과 검증 범위 |
+| --- | --- |
+| 지원 방향 | DevOps / Platform / Cloud Operations |
+| Kubernetes 운영 | StatefulSet·Deployment·Job, probes, HPA·KEDA, Argo CD sync wave, `API → Kafka → Worker → PostgreSQL` |
+| 관측·복구 | Prometheus·Grafana, lag·replica·persistence·restore 지표, DB outage·ordering·backup/restore 검증 |
+| Cloud boundary | EKS·MSK·RDS·ECR 중심 Terraform migration blueprint; AWS `plan/apply`와 실제 배포 증거 없음 |
 
-- API는 주문 이후 이벤트를 DB에 직접 쓰지 않고 Kafka에 append한 뒤 `202 Accepted`를 반환합니다.
-- Worker consumer group이 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
-- 실패 event는 inline retry 후 Kafka DLQ topic으로 격리하고, DLQ Replayer가 복구 가능한 event를 replay합니다.
-- KEDA는 CPU가 아니라 Kafka consumer lag 기준으로 Worker를 scale-out합니다.
-- API read path는 DB commit 이후 publish된 `message-snapshots`, `stream-snapshots`를 API local materialized cache로 소비해 cache-first read를 제공합니다.
-- 로컬에서 검증한 구조를 Terraform 기반 AWS migration blueprint로 정리해 EKS, MSK, RDS PostgreSQL, ALB, ACM, Secrets Manager로 이전 가능한 구조를 보여줍니다.
+## Kubernetes 설계 / Kubernetes Architecture
 
-자세한 서비스 기준은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md), 구조는 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 최신 검증 결과는 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 정리했습니다.
+```mermaid
+flowchart LR
+    Git[Git push] --> CI[GitHub Actions<br/>compile · test · render]
+    CI --> Image[GHCR immutable SHA image]
+    Image --> Tag[GitOps image-tag commit]
+    Tag --> Argo[Argo CD]
 
-## What To Look For
+    subgraph Cluster[local kind Kubernetes cluster]
+        Ingress[ingress-nginx]
+        Metrics[metrics-server]
+        KEDA[KEDA controller]
 
-이 프로젝트는 "Kafka를 붙였다"보다, 주문 이후 업무를 어떤 경계로 나누고 어떻게 운영 가능하게 만들었는지를 보여주는 데 초점이 있습니다.
+        subgraph App[messaging-app namespace]
+            API[API Deployment<br/>6–8 pods · CPU HPA]
+            Kafka[Kafka StatefulSet<br/>3 pods · PVC]
+            Worker[Worker Deployment<br/>2–8 pods · lag KEDA]
+            Notify[Notification Worker<br/>1 pod]
+            DLQ[DLQ Replayer<br/>1 pod]
+            Pool[Pgpool<br/>2 pods]
+            DB[PostgreSQL StatefulSet<br/>3 pods · synchronous replica]
+            Exporter[kafka-exporter<br/>1 pod]
+            Prom[Prometheus<br/>1 pod]
+            Grafana[Grafana<br/>1 pod]
+        end
 
-- **설계 관점**: 고객 응답 경로와 내부 운영 경로를 분리했습니다. 사용자는 결제/주문 완료만 보고, 저장/분류/알림/DLQ/replay는 내부 pipeline이 처리합니다.
-- **파이프라인 관점**: API가 Kafka에 append하고 `202 Accepted`를 반환하면, Worker가 PostgreSQL에 저장하고 운영 상태를 갱신합니다.
-- **데모 관점**: 화면에서 `예약 건수 -> Kafka 적재 -> DB 저장`이 따로 움직이기 때문에 비동기 처리 경계가 눈에 보입니다.
-- **운영 관점**: Operations Advisor가 Worker, DB, DLQ, backlog 신호를 규칙 기반으로 해석합니다. 현재는 AI API를 호출하지 않고, 나중에 AX/AI 요약 Worker를 붙일 수 있는 위치를 남겨두었습니다.
-- **확장 관점**: `demo-lite`는 2코어 서버에서 같은 흐름을 보여주고, AWS blueprint는 이 구조를 EKS / MSK / RDS / ALB로 옮기는 방향을 설명합니다.
+        Ingress --> API
+        API --> Kafka
+        Kafka --> Worker
+        Worker --> Pool --> DB
+        Worker --> Notify
+        DLQ --> Kafka
+        Metrics --> API
+        KEDA -. consumer lag .-> Kafka
+        KEDA --> Worker
+        Exporter -. broker · lag .-> Kafka
+        Prom -. scrape .-> API
+        Prom -. scrape .-> Worker
+        Prom -. scrape .-> Notify
+        Prom -. scrape .-> DLQ
+        Prom -. scrape .-> Exporter
+        Prom --> Grafana
+    end
 
-Start with the demo if you want to see the flow move. Open the architecture and GitOps docs if you want to see why the boundary exists.
+    Argo --> App
+```
 
-## Full System vs Demo Lite
+### 설계 결정
 
-이 포트폴리오는 본래 검증용 시스템과 저사양 공개 데모를 나누어 설명합니다.
-
-| Mode | Purpose | How to read it |
+| 설계 영역 | 적용 내용 | 운영 목적 |
 | --- | --- | --- |
-| Full system / 본래 시스템 | Kafka 3 broker, PostgreSQL HA, Pgpool, KEDA scale-out, Grafana, DLQ replay까지 포함한 검증 기준입니다. | HA, ordering, failure recovery, performance baseline은 이 기준으로 설명합니다. |
-| Demo lite / 저사양 데모 | 2코어급 서버에서 API -> Kafka -> Worker -> DB 흐름을 직접 보여주는 축소 실행 모드입니다. | 성능 증명보다 실제 서비스 흐름과 운영 증거를 보여주는 데 집중합니다. |
+| Workload 격리 | application resource를 `messaging-app` namespace에 배치 | lifecycle, secret, monitoring scope 고정 |
+| Stateless workload | API·Worker·notification-worker·DLQ replayer를 Deployment로 구성 | rollout, replica 교체, 수평 확장 |
+| Stateful workload | Kafka와 PostgreSQL을 StatefulSet·PVC로 구성 | stable identity와 데이터 지속성 |
+| API scaling | CPU `65%`, HPA `6→8`, scale-up·down stabilization | 부하 중 동시 cold start와 replica 진동 억제 |
+| Worker scaling | KEDA Kafka scaler, lag threshold `100`, `2→8` | backlog를 처리 수요로 사용 |
+| Rollout ordering | Secret wave `-3` → migration Job `-2` → Worker `-1` → API `0` | schema와 consumer 호환 경계 보호 |
+| Health gate | startup·readiness·liveness probe, DB HA guardrail, cache hydration gate | traffic 진입과 process 생존 상태 분리 |
+| Delivery provenance | tested commit, registry digest, overlay tag, Argo revision, runtime image 확인 | source와 실제 실행 artifact 연결 |
+| Namespace lifecycle | Namespace에 `Prune=false`, stateful bootstrap과 application rollout 분리 | namespace prune에 따른 PVC 연쇄 삭제 방지 |
 
-`demo-lite`는 full HA를 흉내 내기 위한 구성이 아니라, 제한된 서버에서도 같은 이벤트 처리 개념을 실행해 볼 수 있게 만든 profile입니다.
+현재 kind는 single-node 환경입니다. 여러 replica는 process 장애와 rollout 경계를 검증합니다. node 장애, topology spread, AZ failover는 EKS 전환 검증 항목입니다.
 
-- `demo-lite` is a demo site built to show the event-processing concept of this portfolio.
-- 배포 데모: [https://vm118.js-banjiha.cloud/demo/order-dashboard.html](https://vm118.js-banjiha.cloud/demo/order-dashboard.html)
-- 로컬 실행 경로: 아래 Demo의 로컬 실행 절차
-- demo-lite 기준과 제약: [DEMO_LITE.md](docs/DEMO_LITE.md)
+## Pod 구성 / Workload Inventory
+
+### Application namespace
+
+| Kubernetes object | 기준 replica | 역할 | 확장·복구 기준 |
+| --- | ---: | --- | --- |
+| `api` Deployment | `6→8` | ingress 요청, Kafka append, status·snapshot read, `/metrics` | CPU HPA, readiness, pod별 materialized cache hydration |
+| `worker` Deployment | `2→8` | event consume, PostgreSQL persistence, retry·DLQ | KEDA consumer lag, record 단위 offset commit |
+| `notification-worker` Deployment | `1` | notification attempt 저장 | 별도 consumer lag과 처리량 관측 |
+| `dlq-replayer` Deployment | `1` | replay guard 확인 뒤 ingress 재주입 | terminal record 단위 offset commit |
+| `kafka` StatefulSet | `3` | workload buffer, partition ordering, compacted snapshot topics | replication factor `3`, `min.insync.replicas=2`, pod별 PVC |
+| PostgreSQL StatefulSet | `3` | durable source of truth | `synchronous_commit=on`, `ANY 1`, sync/quorum standby 확인 |
+| Pgpool Deployment | `2` | writable primary routing과 connection entrypoint | PDB `minAvailable=1`, readiness |
+| `kafka-exporter` Deployment | `1` | broker·topic·consumer group metric 제공 | Prometheus scrape |
+| `prometheus` Deployment | `1` | application·Kafka·Kubernetes metric 수집과 alert 평가 | scrape target missing alert |
+| `grafana` Deployment | `1` | latency·lag·replica·DB·DLQ dashboard | Prometheus datasource |
+| Schema migration Job | release마다 | Alembic schema 적용 | Argo sync wave `-2` 완료 gate |
+| Topic bootstrap Job | bootstrap 시 | topic partition·replication·compaction 설정 | Kafka ready 이후 실행 |
+| PostgreSQL backup CronJob | 주 1회 | logical backup을 backup PVC에 기록 | restore drill과 별도 검증 |
+
+PostgreSQL·Pgpool은 local HA 설치·복구 경로에서 관리합니다. Argo CD, KEDA, metrics-server, ingress-nginx는 platform controller 영역에 배치됩니다. 세부 manifest는 [GitOps base](k8s/gitops/base), [Architecture](docs/ARCHITECTURE.md), [Quick Start](docs/QUICK_START.md)에 있습니다.
+
+## AWS Migration Blueprint
+
+로컬 Kubernetes 책임을 AWS managed service와 EKS add-on 책임으로 나눈 설계입니다.
+
+| Local Kubernetes design | AWS target | 대응 기능 | Terraform 현재 범위 |
+| --- | --- | --- | --- |
+| kind control plane·node | Amazon EKS + managed node group | managed control plane, private worker nodes, IRSA | cluster·node group·private endpoint skeleton |
+| GHCR SHA image | Amazon ECR | immutable tag, scan-on-push, workload image source | repository 구현 |
+| ingress-nginx | AWS Load Balancer Controller + ALB | public entrypoint와 target registration | controller·ALB 미구현 |
+| self-signed TLS·local host | ACM + Route 53 | certificate validation, application DNS | certificate validation 구현, ALB alias 미구현 |
+| Kafka StatefulSet `3` | Amazon MSK | broker 운영, replicated event log, KEDA lag source | provisioned cluster skeleton |
+| PostgreSQL `3` + Pgpool `2` | RDS PostgreSQL Multi-AZ / Aurora PostgreSQL | managed primary·standby, backup, failover endpoint | encrypted Multi-AZ RDS skeleton |
+| Kubernetes Secret | AWS Secrets Manager + IRSA + ESO/CSI | secret 저장·pod 전달·rotation | secret resource 구현, pod injection 미구현 |
+| Prometheus·Grafana | AMP·AMG 또는 EKS 내부 운영 | metrics retention, dashboard, alert | design only |
+| backup CronJob·PVC | RDS automated backup·snapshot·PITR + S3 logical copy | host·cluster loss 복구 | retention setting만 구현 |
+| Argo CD·KEDA·metrics-server | EKS add-ons | GitOps reconciliation과 autoscaling | 설치 자동화 미구현 |
+
+목표 network topology:
+
+```text
+Internet → ALB(public subnet) → EKS nodes(private subnet)
+                                  ├─ MSK brokers(private subnet)
+                                  └─ RDS PostgreSQL(database subnet)
+```
+
+현재 AWS에 배포된 Terraform stack은 없습니다. Terraform `1.15.8`의 SHA256을 확인했고 `fmt -recursive`, `init -backend=false`, `validate`를 통과했습니다. AWS credential과 비용이 필요한 `plan` / `apply`는 실행하지 않았습니다. Security hardening과 구현 경계는 [AWS IaC Plan](docs/AWS_IAC_PLAN.md)에 있습니다.
+
+English: The Terraform source maps the validated local Kubernetes responsibilities to EKS, ECR, MSK, RDS, ALB, ACM, Route 53, and Secrets Manager. The repository currently contains blueprint validation evidence and no AWS deployment evidence.
+
+## 관측 설계 / Observability Map
+
+Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes metrics를 수집합니다. Grafana는 요청 수락부터 backlog drain과 최종 persistence까지 같은 시간축에서 보여줍니다.
+
+| 관측 지점 | 대표 지표 | 판단 |
+| --- | --- | --- |
+| Ingress·API pod | request rate, API p95/p99, stage latency, HPA desired·available replica | 수락 경로 지연, Kafka publish stage, CPU scale 상태 |
+| Kafka buffer | broker count, topic offset, `message-worker` consumer lag | ingress rate와 처리 capacity 차이 |
+| Worker pod | throughput by result, last success age, queue wait, accepted-to-commit lag, DB stage latency | consume 정지, DB write·lock·pool 병목 |
+| KEDA·Deployment | desired replica, available replica, scale transition, drain time | scale trigger 실행과 backlog 회복 시간 |
+| Notification worker | notification consumer lag, attempt throughput | core Worker 가속 뒤 downstream backlog 이동 |
+| PostgreSQL·Pgpool | primary reachability, standby·sync standby count, replication delay, DB pool in use | writable path와 HA guardrail, connection pressure |
+| DLQ path | DLQ event·replay counter, failure reason, replay guard | retry exhaustion과 재처리 결과 |
+| Pod·rollout | restart, unavailable replica, readiness, Argo revision, runtime image | crash, OOM, scheduling, 잘못된 artifact rollout |
+| Read cache | `source`, `degraded`, `snapshot_age_seconds`, hydration ready | DB membership/watermark 검증과 degraded cache 동작 |
+| Backup·restore | Job/PVC 상태, dump size, schema version, table count, max sequence | backup 생성과 실제 restore 성공 분리 |
+
+판정 규칙:
+
+- API `202`와 API p95: Kafka append 수락 경로
+- consumer lag·queue wait·accepted-to-commit lag: 비동기 persistence capacity
+- Worker replica·lag·drain time: KEDA scale-out 결과
+- Argo `Synced / Healthy`: desired state reconciliation 상태
+- source commit·image digest·overlay tag·runtime image: 실제 배포 revision
+- backup Job 완료: backup artifact 생성 상태
+- disposable DB restore와 row/schema 비교: 복원 성공 증거
+
+Materialized cache는 consumer group을 사용하지 않습니다. pod별 position, captured end offset, remaining record, hydration duration은 개선 예정 custom metric입니다. 현재 dashboard에서 `snapshot consumer group lag`로 표현하지 않습니다. 지표 정의와 alert 연결은 [Observability](docs/OBSERVABILITY.md), [Metrics Reference](docs/METRICS_REFERENCE.md), [Runbook](docs/RUNBOOK.md)에 있습니다.
+
+## STAR 운영 문제 해결 경험 / Operational STAR Cases
+
+### Current cases
+
+### STAR 1 — HPA scale-out과 cache hydration 경합 해결
+
+- **S**: 첫 generic v2 후보 event `25,378`, p95 `123.96ms`, drain `751.76초`; 부하 중 증가한 API pod마다 full cache replay 실행
+- **T**: intake, cache startup, post-commit publish, DB 처리량을 분리한 clean benchmark 확보
+- **A**: cache frame·fetch·poll 조정, producer `linger_ms=0`, API HPA min `3→6`·stabilization, DB·topic reset과 hydration·CPU·lag steady-state gate 적용
+- **R**: 3회 평균 event `29,168`, p95 `101.27ms`; event `14.93%` 증가, p95 `18.30%` 감소, drain 처리율 `69.3%` 증가
+
+### STAR 2 — KEDA scale-out의 병목 이동 확인
+
+- **S**: single hot stream의 partition 순차 처리로 replica 숫자와 API request count의 KEDA 설명력 부족
+- **T**: multi-stream workload에서 fixed Worker와 KEDA의 lag·replica·drain 비교
+- **A**: 64 streams, fixed `2` / KEDA `2→8`, arm별 DB·topic reset과 lag `0` gate, message·notification lag와 p95 수집
+- **R**: drain `301.42초→261.17초` (`13.35%` 감소); notification lag `11,536`, event `7.35%` 감소, p95 `25.62%` 증가로 downstream·single-node contention 식별
+
+### STAR 3 — GitOps namespace prune 사고 복구
+
+- **S**: Namespace desired-state 전환 중 prune으로 PostgreSQL·Pgpool·PVC와 local backup 소실
+- **T**: workload·동기 복제 guardrail 복구, 재발 방지, restore 검증 경계 수립
+- **A**: DB stack 재설치, `synchronous_commit=on`·`ANY 1` 지속 적용, Namespace `Prune=false`, disposable DB restore 비교
+- **R**: PostgreSQL `3/3 ready`, sync/quorum standby `2`; 10개 table, Alembic `0008`, generic v2 `33,840` rows, max id·sequence 일치
+
+### Historical cases
+
+과거 실험은 당시 queue와 계약을 그대로 표기합니다. Redis와 Kafka 결과는 서로 다른 baseline입니다.
+
+### STAR 4 — CPU HPA에서 queue-depth KEDA로 전환
+
+- **S**: Redis queue-first Worker의 DB connection·lock·commit 대기 중 낮은 CPU와 backlog 증가; 초기 `5,434` requests, p95 `8,175ms`
+- **T**: DB connection pressure 축소와 실제 처리 대기량 기반 scaling
+- **A**: Pgpool·DB pool 조정, Worker CPU HPA를 Redis queue-depth KEDA로 전환
+- **R**: pool 단계 `11,314` requests·p95 `3,333ms`; KEDA 단계 `19,528` requests·p95 `1,954ms` — Redis historical evidence
+
+### STAR 5 — Pgpool HA와 same-stream ordering 보강
+
+- **S**: 첫 Kafka baseline의 Pgpool `1` replica와 Worker tail retry ordering 위험; `31,710` requests, p95 `86.95ms`
+- **T**: database entrypoint 가용성·partition ordering 보강 후 intake 유지 검증
+- **A**: Pgpool `1→2`, Pgpool/PostgreSQL PDB, pool 축소, same-offset inline retry 적용
+- **R**: `31,676` requests, error `0.00%`, p95 `80.65ms`, `stream_seq 1..100`, Pgpool `2/2`, PostgreSQL `3/3`; historical stable Kafka intake baseline 채택
+
+### 현재 검증 수치 / Current Evidence
+
+Current generic v2 recovery candidate는 3회 평균 `29,168` event `202`, p95 `101.27ms`입니다. Multi-stream Worker A/B candidate는 fixed/KEDA `22,125`/`20,499`, p95 `169.24ms`/`212.60ms`입니다. Historical Kafka intake baseline은 legacy contract `31,676` requests, p95 `80.65ms`입니다.
+
+Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소를 3회 반복에서 확인했습니다. Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다. 계약과 실행 조건이 달라 직접적인 세대 간 성능 결론에서 제외합니다. 세부 조건과 원본은 [Validation Results](docs/TEST_RESULTS.md)와 [results evidence guide](results/README.md)에 있습니다.
 
 ## Demo
 
-브라우저 데모는 로컬 Kubernetes 환경에서 실제 Kafka / Worker / PostgreSQL 경로로 처리되는 모습을 보여줍니다.
+| Target | Observed / expected version | Contract state |
+| --- | --- | --- |
+| `master` source | UI `2.0.0`, API `2.0.0` | generic v2 + `202` source contract |
+| local `dev-kafka` live evidence, 2026-07-21 | API `2.0.0`, image `9349ba9` | cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
+| `demo-dev` candidate | UI `2.1.0`, API `2.0.0` | 저사양 자원 유지, generic v2 source 검증 완료, 공개 미배포 |
+| public demo-lite deployment | UI `1.4.1`, API `1.0.0`, image `e481a21` | legacy branch deployment, generic v2 없음, event `200` |
 
-The browser demo shows real local processing through API intake, Kafka append, Worker persistence, and PostgreSQL storage.
-
-- Deployed Demo UI: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`
-- Deployed Swagger / API docs: `https://vm118.js-banjiha.cloud/docs`
-- Deployed Grafana: `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Deployed Readiness: `https://vm118.js-banjiha.cloud/health/ready`
-- Deployed DLQ summary: `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5`
-- Deployed DLQ replay: demo UI `DLQ 상세 보기`, `수동 재처리`, `전체 수동 재처리`
-- Local Demo UI: `http://localhost/demo/order-dashboard.html`
-- Local Swagger / API docs: `http://localhost/docs`
-- Local Grafana: `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s`
-- Local Readiness: `http://localhost/health/ready`
-- GitHub repository: `https://github.com/Jangwanko/Cloud_portfolio`
-- Grafana access: anonymous Viewer, no login required for dashboard view
-
-처음 실행할 때는 Docker Desktop을 켠 뒤 아래 명령을 실행합니다. Windows 기준으로는 Docker Desktop만 설치하고 실행되어 있으면 `scripts/bootstrap_tools.ps1`이 `tools/kind.exe`, `tools/kubectl.exe`, `tools/helm/windows-amd64/helm.exe`를 준비합니다.
+### Local Quick Start
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-2코어 2스레드급 서버에서는 full HA 구성을 그대로 올리기보다 `demo-lite` 프로파일을 사용합니다. 이 모드는 Kafka / PostgreSQL HA를 축소하고 API -> Kafka -> Worker -> DB 흐름 시연에 집중합니다.
+Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick start는 `scripts/bootstrap_tools.ps1`을 호출해 pinned kind·kubectl·Helm을 `tools/`에 준비합니다.
 
-On a 2-core demo host, use the `demo-lite` profile instead of the full HA profile. It reduces Kafka and PostgreSQL HA capacity while keeping the visible API -> Kafka -> Worker -> DB flow.
+- Local: [Demo UI](http://localhost/demo/order-dashboard.html) · [Swagger](http://localhost/docs) · [Grafana](http://localhost/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s)
+- 화면: `Reserved → Kafka Appended → DB Persisted`; `DLQ summary`의 `by_reason`·`replayable`·`blocked` 확인
+- 절차: [Quick Start](docs/QUICK_START.md) · [Demo Guide](docs/DEMO_GUIDE.md)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/quick_start_lite.ps1
-```
+### Public legacy demo-lite
 
-서버에 실제 배포할 때는 k3s 기준 스크립트를 사용합니다.
-
-For a real 2-core Linux server deployment, use the k3s deployment script.
-
-```bash
-HOST_NAME=your.domain.example BASE_URL=http://your.domain.example bash scripts/deploy_lite_k3s.sh
-```
-
-이미 로컬 `kind` 클러스터가 있고 화면 변경만 반영하려면 아래 순서로 갱신합니다.
-
-```powershell
-docker build -t messaging-portfolio:local .
-tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
-kubectl rollout restart deployment/api -n messaging-app
-kubectl rollout status deployment/api -n messaging-app --timeout=180s
-```
-
-데모 화면에서는 `샘플 10개/100개/1000개 추가`로 예약 큐를 만들고 `결제 완료 / 주문 완료 이벤트 보내기`를 누릅니다. 화면은 예약 건수, Kafka 적재, DB 저장, 총 소요시간, Worker 현재/최대 replica를 분리해서 보여줍니다.
-
-In the demo UI, add 10, 100, or 1000 reserved sample events, then send the post-order event batch. The screen separates reserved events, Kafka appended events, DB persisted events, total elapsed time, and current/max Worker replicas.
-
-`예약 건수`는 전송 시작 후 `남은 예약/전체 예약` 형식으로 보이며, Kafka append가 성공한 시점에 줄어듭니다. `DB 저장`은 Worker가 PostgreSQL에 persistence한 수를 따로 보여줍니다.
-
-`Reserved` is shown as `remaining/total` after the send run starts. It decreases when the API appends an event to Kafka. `DB Persisted` is counted separately after Worker persistence succeeds.
-
-DLQ가 남으면 운영 패널에서 `DLQ 상세 보기`로 reason을 보고, replay 가능한 건은 `수동 재처리` 또는 `전체 수동 재처리`로 ingress topic에 다시 넣습니다. replay guard 도달 또는 재처리 실패 건은 사용자 확인 대상으로 남깁니다.
-
-When DLQ remains, use `Show DLQ details` to inspect reasons. Replayable events can be sent back to the ingress topic with `Manual replay` or `Replay all`; replay-guarded or failed replay events stay as manual handling items.
-
-The demo also includes a lightweight rule-based Operations Advisor. It does not call an AI API. Instead, it interprets queue, Kafka append, DB persistence, and DLQ signals with deterministic rules. A future AI worker can consume the same advisor signals and produce richer operator-facing summaries outside the core persistence path.
-
-English demo script:
-
-1. Open `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`.
-2. Click `EN`.
-3. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples`.
-4. Click `Send Post-Order Events`.
-5. Watch `Reserved -> Kafka Appended -> DB Persisted`.
-6. If DLQ remains, click `Show DLQ details`.
-7. Use `Manual replay` or `Replay all` for replayable events.
-
-Local demo script:
-
-1. Start Docker Desktop and run `scripts/quick_start_all.ps1`.
-2. Open `http://localhost/demo/order-dashboard.html`.
-3. Click `EN` if you want to run the demo in English.
-4. Click `Add 10 Samples`, `Add 100 Samples`, or `Add 1000 Samples` to reserve post-order events.
-5. Click `Send Post-Order Events` and watch the counters move from Reserved to Kafka Appended to DB Persisted.
-6. Use Swagger, Grafana, Readiness, DLQ details/replay, and Reset Demo DB from the operations panel when you want to show supporting evidence.
-
-실행 세부 절차는 [QUICK_START.md](docs/QUICK_START.md), 데모 시연 순서는 [DEMO_GUIDE.md](docs/DEMO_GUIDE.md), 데모 운영 작업은 [OPERATIONS.md](docs/OPERATIONS.md)를 참고합니다.
-
-## What This Proves
-
-이 프로젝트는 주문 완료 이후에도 계속 발생하는 결제 승인, 주문 생성, 배송 시작, 환불 요청, 알림 발행 같은 이벤트를 운영 가능한 pipeline으로 처리하는 것을 목표로 합니다.
-
-- DB 장애가 API intake 실패로 바로 전파되지 않도록 Kafka append-first 경계를 둡니다.
-- 같은 `stream_id`는 Kafka partition ordering boundary와 Worker inline retry로 순서를 지킵니다.
-- DLQ summary는 `/v1/dlq/ingress/summary`에서 `by_reason`, `replayable`, `blocked`를 기준으로 운영자가 먼저 판단할 수 있게 합니다.
-- DLQ replay는 `/v1/dlq/ingress/replay`와 데모 UI 버튼으로 재투입 요청을 보여줍니다.
-- `check_portfolio_status.ps1`로 readiness, Argo CD `Synced / Healthy`, kafka-exporter lag, KEDA, backup PVC 상태를 한 번에 확인합니다.
-- 정상 event 흐름과 장애 / DLQ 흐름의 상세 `sequenceDiagram`은 [ARCHITECTURE.md](docs/ARCHITECTURE.md)에 둡니다.
-
-## Problem
-
-주문 완료 이후 이벤트를 DB 동기 write 중심으로 처리하면 write 병목, timeout, 장애 전파, 실패 event 유실 위험이 커집니다. 사용자에게 보여줄 완료 응답과 내부 운영 처리 상태가 섞이면 서비스 경계도 흐려집니다.
-
-상세한 사용자 관점, 기능 요구, 비기능 요구, SLO guardrail은 [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md)에 정리했습니다.
-
-## Solution
-
-Kafka 기반 event log를 주문 이후 이벤트 intake 경로에 두고, persistence / 분류 / 알림 / 재처리를 Worker 경로로 분리했습니다.
-
-- API는 Kafka ingress topic에 append하고 빠르게 응답합니다.
-- Worker는 PostgreSQL HA에 최종 영속화하고 request status를 갱신합니다.
-- DB commit 이후 snapshot을 Kafka compacted topic에 publish해 cache-first read 원본으로 사용합니다.
-- 알림은 `message-notifications` topic과 별도 `notification-worker`로 분리합니다.
-- 실패 event는 retry / DLQ / replay guard를 거쳐 복구 가능한 상태로 남깁니다.
-
-구현 세부와 처리 흐름은 [ARCHITECTURE.md](docs/ARCHITECTURE.md), 장애 대응은 [RUNBOOK.md](docs/RUNBOOK.md)에 정리했습니다.
-
-## Architecture Boundary
-
-이 프로젝트는 Kafka-only 구조가 아니라 Kafka-centered 구조입니다.
-
-Kafka 중심:
-- event intake
-- stream ordering boundary
-- Worker consumer group processing
-- retry / DLQ / replay
-- lag based autoscaling
-- DB snapshot compacted topics / local materialized cache
-
-PostgreSQL state path:
-- auth / membership
-- final message persistence
-- stream sequence
-- read model
-
-`X-Idempotency-Key`는 Kafka payload에 포함되고, 최종 deduplication은 Worker persistence 단계에서 처리합니다. API event intake 기준선은 Kafka append 전에 PostgreSQL claim을 만들지 않는 경로입니다. DB read fallback은 Kafka ingress event가 아니라 Worker가 PostgreSQL commit 이후 publish한 DB snapshot을 기준으로 합니다.
-
-## Intake Boundary: Idempotency State Path
-
-현재 event intake 기준선은 PostgreSQL 선조회 없이 Kafka append를 먼저 수행하는 경로입니다. `X-Idempotency-Key`는 Worker persistence 단계의 최종 deduplication에 사용하고, 남은 개선 과제는 idempotency state까지 Kafka compacted topic 또는 별도 state backend로 분리하는 것입니다.
+2코어급 legacy compatibility deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 현재 source의 generic v2 검증 링크에서 제외합니다.
 
 ## Validation Summary
 
-대표 Kafka baseline:
+- current source tests `368 passed`; same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
+- DB 장애 중 Kafka append `202`; 복구 뒤 persistence·consumer lag `0`
+- DB membership/watermark 검증 뒤 fresh cache; DB 장애 중 hydrated degraded cache
+- PostgreSQL restart `3/3 ready`, sync/quorum standby `2`; host dump restore의 schema·table·row·sequence 일치
 
-| 항목 | 결과 |
-| --- | ---: |
-| Kafka intake load | 100 VU / 30s |
-| Requests | `31,676` |
-| Error rate | `0.00%` |
-| Avg latency | `44.13ms` |
-| p95 latency | `80.65ms` |
-| p99 latency | `103.57ms` |
-| Same-stream ordering | `100/100 pass` |
-| Accepted-to-persisted latest p95 | `7.67ms` |
+`202 Accepted`의 완료 범위는 Kafka append입니다. Workload contract와 reliability 경계는 [Architecture](docs/ARCHITECTURE.md)와 [Service Requirements](docs/SERVICE_REQUIREMENTS.md)에 있습니다.
 
-최근 운영 경계 검증:
-- 2026-06-09 재실행: `34,284` requests, error `0.00%`, Worker lag `36394 -> 33274 -> 23563 -> 11971 -> 0`
-- Post-tuning suite: accepted-to-persisted p95 `8.08ms`, Worker lag `29204 -> 23597 -> 15111 -> 6893 -> 0`
-- Notification path split suite: notification-worker lag `0`, 운영 경계 개선으로 해석
-- Ordering / failure injection: single/multi stream, Pgpool outage, missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`
+## Trade-offs
 
-측정 환경은 AMD Ryzen 5 5600, Docker Desktop 12 CPU, 약 15.6GiB memory, kind single-node 기준입니다. 최신 수치와 측정 조건은 [TEST_RESULTS.md](docs/TEST_RESULTS.md)에 둡니다.
-
-Cache-first read 검증에서는 fresh cache read `source=cache`, DB down stale fallback `degraded=true`, `snapshot_age_seconds` 응답 메타데이터를 확인했습니다.
-
-## Trade-off
-
-| 선택 | 얻은 것 | 포기한 것 |
+| Choice | Operational effect | Cost / risk |
 | --- | --- | --- |
-| API -> Kafka append | DB 장애 전파 감소 | 즉시 persistence 보장 약화 |
-| Worker async persistence | 처리량 / 복구성 향상 | eventual consistency 발생 |
-| inline retry | stream 순서 보존 | 뒤 event backpressure |
-| DLQ replay | 실패 event 복구 | 운영 판단 필요 |
-| PostgreSQL read model 유지 | 조회 / 영속성 단순화 | state path 일부 DB 의존 |
-
-Kafka Worker KEDA 효과는 API throughput 증가로 단정하지 않습니다. Worker scaling 효과는 consumer lag, accepted-to-persisted lag, backlog drain time으로 봅니다.
-
-## Ordering Guarantee
-
-같은 `stream_id`는 같은 Kafka partition으로 라우팅되고, Worker는 transient failure에서 tail 재발행이 아니라 inline retry를 사용합니다. 따라서 같은 stream의 event가 실패 event를 추월하지 않도록 설계했습니다. multi-partition 전체 global ordering은 보장하지 않습니다.
-
-## Current Bottleneck
-
-현재 병목 후보는 Worker replica 수보다 다음 구간에 가깝습니다.
-
-- Worker DB write throughput
-- PostgreSQL insert / commit latency
-- `room_sequences` lock wait
-- record-by-record Worker loop
-- Pgpool / DB connection pool
-- consumer group rebalance / partition imbalance
-
-다음 개선 후보는 Kafka consumer batch 처리, offset commit 전략, `room_sequences` lock 완화, idempotency state의 Kafka compacted topic 또는 별도 state backend 분리입니다.
-
-## What I Learned
-
-Kafka는 DB를 대체하는 저장소가 아니라 event transport / ordering / replay 경계로 쓰는 것이 적합했습니다. 장애 대응에서 중요한 것은 실패를 없애는 것이 아니라 실패를 격리하고 복구 가능하게 만드는 것입니다.
+| single-node kind | 전체 운영 경로를 로컬에서 재현 | node·AZ 장애 검증 제외 |
+| KEDA lag scaling | backlog 기반 Worker 확장 | downstream DB·notification 병목 이동 가능 |
+| GitOps sync waves | schema·Worker·API rollout 순서 고정 | release orchestration 복잡도 |
+| Kafka append-first intake | DB 장애 중 수락 경로 유지 | accepted와 persisted 사이 eventual consistency |
 
 ## Next Improvements
 
-1. Worker DB write throughput / commit latency / lock wait 분리 측정
-2. Kafka consumer batch 처리와 offset commit 전략 실험
-3. `room_sequences` lock 완화 또는 stream sequence allocation 방식 재검토
-4. idempotency state를 Kafka compacted topic 또는 별도 state backend로 분리
-5. consumer group rebalance / partition imbalance 시나리오 추가
+- EKS multi-node·multi-AZ topology spread, disruption drill
+- fixed/KEDA 3회 반복, notification capacity 분리
+- ALB·ACM·Route 53, IRSA·ESO/CSI, AMP·AMG 구현
+- RDS failover·PITR, S3 restore, Worker crash·consumer group rebalance·offset recovery
+- transactional outbox와 accepted-state read model
 
-## AWS Managed Service Mapping
-
-로컬에서 검증한 구조를 AWS로 옮기면 아래 책임으로 대응됩니다.
-
-| 로컬 구성 | AWS migration blueprint |
-| --- | --- |
-| `kind` cluster | Amazon EKS |
-| `ingress-nginx` | AWS Load Balancer Controller + ALB |
-| local self-signed TLS | ACM + Route 53 |
-| Kafka 3-broker KRaft | Amazon MSK |
-| PostgreSQL HA + Pgpool | RDS PostgreSQL Multi-AZ / Aurora PostgreSQL |
-| runtime secret | AWS Secrets Manager |
-| local image build/load | Amazon ECR push + EKS deploy |
-| Prometheus / Grafana | EKS 유지 또는 AMP / AMG |
-
-이 Terraform 경로는 AWS에 이미 배포했다는 의미가 아니라, 로컬 검증 구조를 AWS managed architecture로 이전할 수 있게 설계한 migration blueprint입니다. 자세한 내용은 [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md)와 [infra/terraform/README.md](infra/terraform/README.md)에 있습니다.
+완료 기준은 [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)에 있습니다.
 
 ## Operations
 
-운영자는 아래 경로로 상태를 확인합니다.
-
-| Surface | Deployed | Local |
-| --- | --- | --- |
-| Readiness | `https://vm118.js-banjiha.cloud/health/ready` | `http://localhost/health/ready` |
-| Swagger / OpenAPI | `https://vm118.js-banjiha.cloud/docs`, `https://vm118.js-banjiha.cloud/openapi.json` | `http://localhost/docs`, `http://localhost/openapi.json` |
-| Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` | `http://localhost/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s` |
-| Prometheus | `https://vm118.js-banjiha.cloud/prometheus/` | `http://localhost/prometheus/` |
-| DLQ summary | `GET https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary` | `GET http://localhost/v1/dlq/ingress/summary` |
-
-Grafana access:
-
-- dashboard view: anonymous Viewer
-- admin login: secret-managed, configuration changes only
-
-운영 상태 점검:
-
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
 ```
 
-전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](docs/SERVICE_PROCESS_CHECKLIST.md), 관측 지표는 [OBSERVABILITY.md](docs/OBSERVABILITY.md), 사고 대응은 [RUNBOOK.md](docs/RUNBOOK.md), GitOps 흐름은 [GITOPS.md](docs/GITOPS.md)에 정리했습니다.
+Argo CD cluster에서는 `-SkipArgoCd`를 제거합니다. 장애 신호와 대응 절차는 [Observability](docs/OBSERVABILITY.md), [Runbook](docs/RUNBOOK.md), [Operations](docs/OPERATIONS.md)에 있습니다.
 
 ## Documentation Map
 
-- [QUICK_START.md](docs/QUICK_START.md): 실행 가이드
-- [DEMO_GUIDE.md](docs/DEMO_GUIDE.md): 데모 화면 사용법과 시연 스크립트
-- [DEMO_LITE.md](docs/DEMO_LITE.md): 2코어 저사양 서버용 demo-lite 프로파일
-- [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md): 사용자 / 기능 요구 / SLO guardrail
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md): Kafka-centered 구조와 sequenceDiagram
-- [TEST_RESULTS.md](docs/TEST_RESULTS.md): 최신 검증 결과와 과거 baseline
-- [OPERATIONS.md](docs/OPERATIONS.md): 운영 지침, secret, backup, 데모 운영 작업
-- [RUNBOOK.md](docs/RUNBOOK.md): Kafka Intake, PostgreSQL / Pgpool, Worker Consumer Lag, DLQ, API Contract, Resource Contention 대응
-- [OBSERVABILITY.md](docs/OBSERVABILITY.md): Prometheus / Grafana / kafka-exporter 지표
-- [RELIABILITY_POLICY.md](docs/RELIABILITY_POLICY.md): readiness / degraded / not_ready 정책
-- [GITOPS.md](docs/GITOPS.md): Argo CD GitOps
-- [AWS_IAC_PLAN.md](docs/AWS_IAC_PLAN.md): AWS migration blueprint
-- [PATCH_NOTES.md](docs/PATCH_NOTES.md): 최신 변경 이력
-- [REPOSITORY_STRUCTURE.md](docs/REPOSITORY_STRUCTURE.md): 저장소 구조
+- 설계·배포: [Architecture](docs/ARCHITECTURE.md) · [GitOps](docs/GITOPS.md) · [AWS IaC Plan](docs/AWS_IAC_PLAN.md)
+- 관측·대응: [Observability](docs/OBSERVABILITY.md) · [Metrics Reference](docs/METRICS_REFERENCE.md) · [Runbook](docs/RUNBOOK.md) · [Reliability Policy](docs/RELIABILITY_POLICY.md)
+- 실행·검증: [Quick Start](docs/QUICK_START.md) · [SERVICE_PROCESS_CHECKLIST.md](docs/SERVICE_PROCESS_CHECKLIST.md) · [Test Results](docs/TEST_RESULTS.md)
+- 요구·개선: [SERVICE_REQUIREMENTS.md](docs/SERVICE_REQUIREMENTS.md) · [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Post-Order Event Console</title>
+  <title>Reliable Event Processing Console</title>
   <style>
     :root {
       color-scheme: light;
@@ -39,25 +39,6 @@
       gap: 16px;
       justify-content: space-between;
       padding: 20px 28px;
-    }
-
-    .title-row {
-      align-items: center;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .version-badge {
-      background: #eef4ff;
-      border: 1px solid #c8d9ff;
-      border-radius: 999px;
-      color: #214a93;
-      font-size: 12px;
-      font-weight: 700;
-      line-height: 1;
-      padding: 7px 10px;
-      white-space: nowrap;
     }
 
     h1,
@@ -305,7 +286,8 @@
     .pill.needs_review { background: #f1f3f5; color: #4d5966; }
 
     .queue-metrics,
-    .proof-grid {
+    .proof-grid,
+    .result-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 10px;
@@ -321,6 +303,10 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 10px;
+    }
+
+    .proof.envelope-proof {
+      grid-column: 1 / -1;
     }
 
     .proof strong,
@@ -421,87 +407,10 @@
       padding: 12px;
     }
 
-    .db-storage {
-      display: grid;
-      gap: 10px;
-    }
-
-    .db-column-list {
-      display: grid;
-      gap: 8px;
-      max-height: 180px;
-      overflow: auto;
-    }
-
-    .db-column {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      display: grid;
-      gap: 3px;
-      padding: 9px;
-    }
-
-    .db-column strong {
-      overflow-wrap: anywhere;
-    }
-
     .ops-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-    }
-
-    .dlq-detail-panel {
-      border-top: 1px solid var(--line);
-      display: grid;
-      gap: 8px;
-      padding-top: 10px;
-    }
-
-    .dlq-detail-controls {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .dlq-detail-list {
-      display: grid;
-      gap: 8px;
-      max-height: 210px;
-      overflow: auto;
-    }
-
-    .dlq-detail-item {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      display: grid;
-      gap: 6px;
-      padding: 9px;
-    }
-
-    .dlq-detail-item strong,
-    .dlq-detail-item span {
-      overflow-wrap: anywhere;
-    }
-
-    .dlq-detail-meta {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
-    .dlq-detail-actions {
-      align-items: center;
-      display: flex;
-      gap: 8px;
-      justify-content: space-between;
-    }
-
-    .dlq-detail-actions button {
-      padding: 8px 10px;
-      white-space: nowrap;
     }
 
     .ops-refresh {
@@ -531,52 +440,6 @@
       margin: 0;
     }
 
-    .advisor-history {
-      border-top: 1px solid #cdeed6;
-      display: grid;
-      gap: 8px;
-      margin-top: 4px;
-      padding-top: 10px;
-    }
-
-    .advisor-history-header {
-      align-items: center;
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .advisor-history-header strong {
-      font-size: 13px;
-    }
-
-    .advisor-history-list {
-      display: grid;
-      gap: 8px;
-      max-height: 150px;
-      overflow: auto;
-    }
-
-    .advisor-history-item {
-      background: rgba(255, 255, 255, 0.72);
-      border: 1px solid #d7eadc;
-      border-radius: 8px;
-      display: grid;
-      gap: 4px;
-      padding: 8px;
-    }
-
-    .advisor-history-item strong,
-    .advisor-history-item span {
-      overflow-wrap: anywhere;
-    }
-
-    .advisor-history-meta {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.4;
-    }
-
     .danger-zone {
       background: #fff1f0;
       border: 1px solid #ffb4ab;
@@ -594,7 +457,7 @@
     .danger-actions {
       display: grid;
       gap: 10px;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .log {
@@ -636,6 +499,7 @@
       .sample-actions,
       .queue-metrics,
       .proof-grid,
+      .result-grid,
       .status-strip,
       .danger-actions {
         grid-template-columns: 1fr;
@@ -651,10 +515,10 @@
   <header>
     <div>
       <div class="title-row">
-        <h1>Post-Order Event Console</h1>
-        <span class="version-badge" id="demo-version">ver. 1.4.1 / api -</span>
+        <h1>Reliable Event Processing Console</h1>
+        <span class="version-badge" id="demo-version">ver. 2.1.0 / api -</span>
       </div>
-      <p class="subtitle" data-i18n="pageSubtitle">사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.</p>
+      <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
     <div class="language-toggle" aria-label="Language">
       <button class="active" data-language="ko" type="button">KO</button>
@@ -664,20 +528,20 @@
 
   <main class="stack">
     <div class="status-strip">
-      <div class="status"><strong data-i18n="customerResponse">사용자 응답</strong><span id="customer-status">주문 대기</span></div>
+      <div class="status"><strong data-i18n="customerResponse">Producer 상태</strong><span id="customer-status">준비됨</span></div>
       <div class="status"><strong>Kafka intake</strong><span id="kafka-status">미전송</span></div>
-      <div class="status"><strong data-i18n="operatorCategory">운영 분류</strong><span id="category-status">-</span></div>
+      <div class="status"><strong data-i18n="operatorCategory">Producer 분류(metadata)</strong><span id="category-status">-</span></div>
     </div>
 
     <div class="grid">
       <section class="stack">
         <div>
-          <h2 data-i18n="customerFlow">사용자 주문 흐름</h2>
-          <p class="subtitle" data-i18n="customerFlowSubtitle">결제 완료, 주문 완료 응답만 사용자에게 보여준다.</p>
+          <h2 data-i18n="customerFlow">Reference Scenario</h2>
+          <p class="subtitle" data-i18n="customerFlowSubtitle">주문 lifecycle 이벤트를 예제로 범용 stream 처리 경계를 시연한다.</p>
         </div>
 
         <div class="notice" data-i18n="notice">
-          결제 완료와 주문 완료 이후의 저장, 분류, 알림, DLQ 처리는 내부 이벤트 파이프라인에서 이어진다.
+          주문은 예제 payload입니다. 핵심 시스템은 event type과 JSON payload를 도메인과 무관하게 처리합니다.
         </div>
 
         <div class="row">
@@ -687,16 +551,16 @@
             <p class="field-help" data-i18n="baseUrlHelp">API가 노출된 주소입니다.</p>
           </div>
           <div>
-            <label for="order-id">Order ID</label>
-            <input id="order-id" type="number" value="1001">
-            <p class="field-help" data-i18n="orderIdHelp">데모 주문 stream id로 자동 갱신됩니다.</p>
+            <label for="stream-id">Stream ID</label>
+            <input id="stream-id" type="number" value="1001">
+            <p class="field-help" data-i18n="streamIdHelp">매 실행마다 생성되는 reference stream id입니다.</p>
           </div>
         </div>
 
         <div class="row">
           <div>
             <label for="username">Demo username</label>
-            <input id="username" value="demo-order-user">
+            <input id="username" value="demo-event-user">
             <p class="field-help" data-i18n="usernameHelp">데모 인증에 사용할 계정입니다.</p>
           </div>
           <div>
@@ -708,28 +572,28 @@
 
         <div class="row">
           <div>
-            <label for="event-type">Order event type</label>
+            <label for="event-type">Event type</label>
             <select id="event-type">
-              <option value="payment_completed">payment_completed</option>
-              <option value="order_created">order_created</option>
-              <option value="delivery_started">delivery_started</option>
-              <option value="refund_requested">refund_requested</option>
-              <option value="support_requested">support_requested</option>
-              <option value="manual_exception">manual_exception</option>
+              <option value="reference.payment.completed">reference.payment.completed</option>
+              <option value="reference.order.created">reference.order.created</option>
+              <option value="reference.delivery.started">reference.delivery.started</option>
+              <option value="reference.refund.requested">reference.refund.requested</option>
+              <option value="reference.support.requested">reference.support.requested</option>
+              <option value="reference.exception.detected">reference.exception.detected</option>
             </select>
-            <p class="field-help" data-i18n="eventTypeHelp">주문 이후 업무 이벤트 종류입니다.</p>
+            <p class="field-help" data-i18n="eventTypeHelp">Producer가 정의한 namespaced event type입니다.</p>
           </div>
           <div>
-            <label for="payment-id">Payment ID</label>
-            <input id="payment-id" value="pay-demo-1001">
-            <p class="field-help" data-i18n="paymentIdHelp">결제 추적용 외부 식별자입니다.</p>
+            <label for="reference-id">Reference ID</label>
+            <input id="reference-id" value="pay-demo-1001">
+            <p class="field-help" data-i18n="referenceIdHelp">예제 metadata에 포함할 외부 참조 식별자입니다.</p>
           </div>
         </div>
 
         <div>
-          <label for="body">Event body</label>
-          <textarea id="body">결제 완료 후 주문 생성 이벤트</textarea>
-          <p class="field-help" data-i18n="bodyHelp">운영자가 확인할 이벤트 내용입니다.</p>
+          <label for="body">Payload message</label>
+          <textarea id="body">reference lifecycle event</textarea>
+          <p class="field-help" data-i18n="bodyHelp">JSON payload의 message 값으로 전송됩니다.</p>
         </div>
 
         <div class="sample-actions">
@@ -738,7 +602,7 @@
           <button class="secondary" id="add-sample-1000" data-i18n="add1000">1000개 추가</button>
         </div>
         <div class="send-action">
-          <button id="send-event" data-i18n="sendEvents">결제 완료 / 주문 완료 이벤트 보내기</button>
+          <button id="send-event" data-i18n="sendEvents">Reference 이벤트 보내기</button>
         </div>
       </section>
 
@@ -746,7 +610,7 @@
         <div class="section-head">
           <div>
             <h2 data-i18n="operatorQueue">운영자 이벤트 큐</h2>
-            <p class="subtitle" data-i18n="operatorQueueSubtitle">분류, request id, Kafka 수락 상태를 한 화면에서 확인한다.</p>
+            <p class="subtitle" data-i18n="operatorQueueSubtitle">Reference producer가 넣은 metadata 분류, request id, Kafka 수락 상태를 확인한다.</p>
           </div>
           <button class="secondary compact-button" id="clear-event-list" data-i18n="clearQueue">전송 전 예약 비우기</button>
         </div>
@@ -773,6 +637,7 @@
             <div class="proof"><strong>Kafka topic</strong><span id="proof-topic">-</span></div>
             <div class="proof"><strong>Worker status</strong><span id="proof-worker">-</span></div>
             <div class="proof"><strong>DB row</strong><span id="proof-db">-</span></div>
+            <div class="proof envelope-proof"><strong data-i18n="envelopeVerification">Envelope 검증 · schema_version / event_type / payload / metadata</strong><span id="envelope-verification">전송 전</span></div>
           </div>
         </div>
         <div class="pipeline" id="pipeline">
@@ -819,7 +684,7 @@
         <p class="subtitle" data-i18n="opsLinksSubtitle">운영 링크는 확인용 보조 링크입니다. 핵심 증거는 옆 처리 증거에서 확인합니다.</p>
         <div class="links">
           <a href="/docs" data-ops-link="/docs" target="_blank" rel="noreferrer">Swagger /docs</a>
-          <a href="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
+          <a href="/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s" data-ops-link="/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s" target="_blank" rel="noreferrer">Grafana</a>
           <a href="https://github.com/Jangwanko/Cloud_portfolio" target="_blank" rel="noreferrer">GitHub</a>
         </div>
         <div class="ops-checks">
@@ -830,7 +695,6 @@
           <div class="ops-actions">
             <button class="secondary" id="refresh-ops-status" data-i18n="refreshOpsStatus">상태 새로고침</button>
             <select id="ops-refresh-interval" aria-label="ops refresh interval">
-              <option value="10000" data-i18n="interval10">10초마다</option>
               <option value="30000" data-i18n="interval30" selected>30초마다</option>
               <option value="60000" data-i18n="interval60">60초마다</option>
             </select>
@@ -843,19 +707,15 @@
             <div class="proof"><strong data-i18n="dlqIsolated">DLQ</strong><span id="ops-dlq-status">-</span></div>
             <div class="proof"><strong data-i18n="lastChecked">마지막 확인</strong><span id="ops-last-checked">-</span></div>
           </div>
-          <div class="dlq-detail-panel">
-            <div class="dlq-detail-controls">
-              <button class="secondary" id="load-dlq-details" data-i18n="dlqDetailsButton">DLQ 상세 보기</button>
-              <button class="secondary" id="replay-all-dlq" data-i18n="dlqReplayAllButton">전체 수동 재처리</button>
-            </div>
-            <div class="dlq-detail-list" id="dlq-detail-list" hidden>
-              <p class="field-help" data-i18n="dlqDetailsEmpty">DLQ 이벤트가 없습니다.</p>
-            </div>
+          <div class="ops-actions">
+            <button class="secondary" id="load-dlq-details" data-i18n="dlqDetailsButton">DLQ 상세 보기</button>
+            <button class="secondary" id="replay-all-dlq" data-i18n="dlqReplayAllButton">전체 수동 재처리</button>
           </div>
+          <div class="event-list" id="dlq-detail-list" hidden></div>
         </div>
         <div class="danger-zone">
           <h3 data-i18n="dangerTitle">위험 작업</h3>
-          <p class="field-help" data-i18n="dangerHelp">데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.</p>
+          <p class="field-help" data-i18n="dangerHelp">데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 stream, event, request status를 삭제합니다.</p>
           <div class="danger-actions">
             <input id="reset-confirmation" autocomplete="off" placeholder="RESET DEMO DB">
             <button class="danger" id="reset-demo-db" data-i18n="resetDemoDb">데모 이벤트 DB 초기화</button>
@@ -873,54 +733,52 @@
             <div class="proof"><strong data-i18n="advisorReason">판단 근거</strong><span id="advisor-reason">-</span></div>
           </div>
           <p id="advisor-next-step" data-i18n="advisorNextDefault">상태 새로고침 후 다음 확인 항목을 표시합니다.</p>
-          <div class="advisor-history">
-            <div class="advisor-history-header">
-              <strong data-i18n="advisorHistoryTitle">비정상 신호 이력</strong>
-              <span class="advisor-history-meta" id="advisor-signal-count">0</span>
-            </div>
-            <div class="advisor-history-list" id="advisor-signal-history">
-              <p data-i18n="advisorHistoryEmpty">아직 기록된 비정상 신호가 없습니다.</p>
-            </div>
-          </div>
         </div>
-        <div class="db-storage">
-          <div>
-            <h2 data-i18n="dbColumnsTitle">DB 저장 컬럼</h2>
-            <p class="subtitle" data-i18n="dbColumnsSubtitle">Worker가 PostgreSQL messages 테이블에 남기는 분석용 구조입니다.</p>
-          </div>
-          <div class="db-column-list" id="db-column-list"></div>
+        <div>
+          <h2 data-i18n="resultTitle">결과 정리</h2>
+          <p class="subtitle" data-i18n="resultSubtitle">마지막 전송 작업이 끝나면 요청 수와 DB 저장 결과를 요약합니다.</p>
+        </div>
+        <div class="result-grid">
+          <div class="proof"><strong data-i18n="resultRequested">요청 수</strong><span id="result-requested">0</span></div>
+          <div class="proof"><strong data-i18n="resultKafka">Kafka 적재</strong><span id="result-kafka">0</span></div>
+          <div class="proof"><strong data-i18n="resultPersisted">DB 저장</strong><span id="result-persisted">0</span></div>
+          <div class="proof"><strong data-i18n="resultElapsed">총 소요시간</strong><span id="result-elapsed">0.0s</span></div>
+          <div class="proof"><strong data-i18n="resultCancelled">취소된 예약</strong><span id="result-cancelled">0</span></div>
+          <div class="proof"><strong data-i18n="resultFailed">전송 실패</strong><span id="result-failed">0</span></div>
+          <div class="proof"><strong data-i18n="resultStatus">상태</strong><span id="result-status">대기 중</span></div>
         </div>
       </section>
+
     </div>
   </main>
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "1.4.1";
+    const DEMO_UI_VERSION = "2.1.0";
     const translations = {
       ko: {
-        pageSubtitle: "사용자는 결제 완료와 주문 완료를 확인하고, 운영자는 Kafka 이후 이벤트 처리 상태를 본다.",
-        customerResponse: "사용자 응답",
-        operatorCategory: "운영 분류",
-        waitingOrder: "주문 대기",
+        pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
+        customerResponse: "Producer 상태",
+        operatorCategory: "Producer 분류(metadata)",
+        waitingOrder: "준비됨",
         notSent: "미전송",
-        customerFlow: "사용자 주문 흐름",
-        customerFlowSubtitle: "결제 완료, 주문 완료 응답만 사용자에게 보여준다.",
-        notice: "결제 완료와 주문 완료 이후의 저장, 분류, 알림, DLQ 처리는 내부 이벤트 파이프라인에서 이어진다.",
+        customerFlow: "Reference Scenario",
+        customerFlowSubtitle: "주문 lifecycle 이벤트를 예제로 범용 stream 처리 경계를 시연한다.",
+        notice: "주문은 예제 payload입니다. 핵심 시스템은 event type과 JSON payload를 도메인과 무관하게 처리합니다.",
         baseUrlHelp: "API가 노출된 주소입니다.",
-        orderIdHelp: "데모 주문 stream id로 자동 갱신됩니다.",
+        streamIdHelp: "매 실행마다 생성되는 reference stream id입니다.",
         usernameHelp: "데모 인증에 사용할 계정입니다.",
         passwordHelp: "로컬 데모 로그인용 비밀번호입니다.",
-        eventTypeHelp: "주문 이후 업무 이벤트 종류입니다.",
-        paymentIdHelp: "결제 추적용 외부 식별자입니다.",
-        bodyHelp: "운영자가 확인할 이벤트 내용입니다.",
-        defaultBody: "결제 완료 후 주문 생성 이벤트",
+        eventTypeHelp: "Producer가 정의한 namespaced event type입니다.",
+        referenceIdHelp: "예제 metadata에 포함할 외부 참조 식별자입니다.",
+        bodyHelp: "JSON payload의 message 값으로 전송됩니다.",
+        defaultBody: "reference lifecycle event",
         add10: "10개 추가",
         add100: "100개 추가",
         add1000: "1000개 추가",
-        sendEvents: "결제 완료 / 주문 완료 이벤트 보내기",
+        sendEvents: "Reference 이벤트 보내기",
         operatorQueue: "운영자 이벤트 큐",
-        operatorQueueSubtitle: "분류, request id, Kafka 수락 상태를 한 화면에서 확인한다.",
+        operatorQueueSubtitle: "Reference producer가 넣은 metadata 분류, request id, Kafka 수락 상태를 확인한다.",
         clearQueue: "전송 전 예약 비우기",
         processingStatus: "처리 현황",
         queueHelp: "아직 시작하지 않은 예약은 취소할 수 있고, 시작된 작업은 계속 추적합니다.",
@@ -940,7 +798,6 @@
         opsChecksTitle: "운영 상태 확인",
         opsChecksHelp: "Readiness와 DLQ summary를 페이지 이동 없이 요약합니다.",
         refreshOpsStatus: "상태 새로고침",
-        interval10: "10초마다",
         interval30: "30초마다",
         interval60: "60초마다",
         serviceReady: "서비스 상태",
@@ -958,25 +815,14 @@
         workerReady: "{available}/{max} 실행 중",
         workerReadyNoHpa: "{available}개 실행 중",
         workerUnknown: "확인 불가",
-        dlqEmpty: "격리 이벤트 없음",
-        dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
+        dlqEmpty: "최근 DLQ log 표본 없음",
+        dlqSummary: "최근 log 표본={total}, replayable={replayable}, blocked={blocked}",
         dlqDetailsButton: "DLQ 상세 보기",
-        dlqDetailsLoading: "DLQ 상세 조회 중",
-        dlqDetailsEmpty: "DLQ 이벤트가 없습니다.",
         dlqReplayButton: "수동 재처리",
-        dlqReplayAllButton: "전체 수동 재처리",
-        dlqReplayBlocked: "수동 확인",
-        dlqReplayable: "재처리 가능",
-        dlqBlocked: "재처리 제한",
-        dlqReplayRequested: "DLQ 수동 재처리 요청",
-        dlqReplayPending: "재처리 확인 중",
+        dlqReplayRequested: "재처리 요청됨",
         dlqReplayComplete: "재처리 완료",
-        dlqReplayAllComplete: "전체 재처리 요청 완료",
-        dlqReplayAllNeedsManual: "남은 이벤트는 사용자 확인 필요",
-        dlqReplayFailed: "DLQ 수동 재처리 실패",
+        dlqReplayAllButton: "전체 수동 재처리",
         opsRefreshFailed: "운영 상태 확인 실패",
-        authDbUnavailable: "DB primary 연결 불가로 인증 대기 중",
-        reservedQueueKept: "예약 큐 유지",
         advisorHelp: "정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.",
         advisorStatus: "상태",
         advisorReason: "판단 근거",
@@ -984,45 +830,39 @@
         advisorAttention: "확인 필요",
         advisorCritical: "즉시 확인",
         advisorWaiting: "확인 전",
-        advisorHistoryTitle: "비정상 신호 이력",
-        advisorHistoryEmpty: "아직 기록된 비정상 신호가 없습니다.",
-        advisorOccurrenceCount: "{count}회 발생",
-        advisorSituation: "상황",
-        advisorExpectedFix: "예상 해결",
-        advisorSnapshot: "신호",
-        advisorFirstSeen: "처음",
-        advisorLastSeen: "최근",
         advisorNextDefault: "상태 새로고침 후 다음 확인 항목을 표시합니다.",
-        advisorNormalReason: "서비스, Kafka, DB, DLQ 신호가 안정적입니다.",
-        advisorDlqReason: "DLQ에 격리 이벤트가 남아 있습니다.",
-        advisorBlockedReason: "DLQ replay guard에 걸린 이벤트가 있습니다.",
+        advisorNormalReason: "서비스 상태와 현재 전송 카운터가 안정적입니다.",
+        advisorDlqReason: "최근 DLQ log 표본이 있습니다. 현재 request status 확인이 필요합니다.",
+        advisorBlockedReason: "최근 DLQ log 표본에 replay guard 기록이 있습니다.",
         advisorReadinessReason: "서비스 readiness가 ready가 아닙니다.",
         advisorWorkerReason: "Worker replica 정보를 확인하지 못했습니다.",
-        advisorDemoLiteReadinessReason: "demo-lite 저사양 구성에서 readiness가 일시적으로 낮아졌습니다.",
+        advisorPartialReason: "예약, Kafka 적재, DB 저장 수가 일치하지 않습니다.",
         advisorNormalNext: "샘플을 전송해 Kafka 적재와 DB 저장 흐름을 시연할 수 있습니다.",
-        advisorPartialReason: "남은 예약 또는 DB 저장 미확인 이벤트가 있습니다.",
-        advisorPartialNext: "예약 건수, Kafka 적재, DB 저장 숫자를 비교해 미확인 이벤트를 다시 전송하거나 확인합니다.",
-        advisorDlqNext: "DLQ reason과 sample payload를 확인하고 replay 또는 원인 수정을 결정합니다.",
-        advisorBlockedNext: "자동 replay 대상에서 제외된 이벤트입니다. 수동 처리 또는 데이터 보정이 필요합니다.",
+        advisorDlqNext: "append-only log이므로 현재 request status를 먼저 확인한 뒤 replay 여부를 결정합니다.",
+        advisorBlockedNext: "현재 상태를 확인하고 필요하면 수동 처리 또는 데이터 보정을 진행합니다.",
         advisorReadinessNext: "Readiness reason, Kafka, PostgreSQL 상태를 먼저 확인합니다.",
         advisorWorkerNext: "Worker deployment와 KEDA HPA 상태를 확인합니다.",
-        advisorDemoLiteReadinessNext: "demo-lite는 단일 DB와 낮은 replica 기준입니다. 잠시 후 재확인하고, Kafka backlog와 DB 저장 증가 여부를 같이 봅니다.",
-        advisorReadinessSituation: "서비스 상태 확인이 ready가 아닙니다.",
-        advisorWorkerSituation: "Worker replica 상태를 읽지 못했습니다.",
-        advisorDemoLiteReadinessSituation: "저사양 demo-lite 구성에서 degraded readiness가 관측됐습니다.",
-        advisorBlockedSituation: "DLQ에 자동 재처리 대상에서 제외된 이벤트가 있습니다.",
-        advisorDlqSituation: "DLQ에 격리된 이벤트가 남아 있습니다.",
-        advisorPartialSituation: "요청 수와 Kafka 적재 또는 DB 저장 수가 맞지 않습니다.",
+        advisorPartialNext: "전송 실패와 DB 저장 미확인 수를 확인합니다.",
         dangerTitle: "위험 작업",
-        dangerHelp: "데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 주문 stream, 메시지, request status를 삭제합니다.",
+        dangerHelp: "데모 이벤트 DB를 초기화합니다. 사용자 계정은 유지하고 stream, event, request status를 삭제합니다.",
         resetDemoDb: "데모 이벤트 DB 초기화",
-        dbColumnsTitle: "DB 저장 컬럼",
-        dbColumnsSubtitle: "Worker가 PostgreSQL messages 테이블에 남기는 분석용 구조입니다.",
-        dbColumnsUnavailable: "DB 저장 구조를 아직 불러오지 못했습니다.",
+        resultTitle: "결과 정리",
+        resultSubtitle: "마지막 전송 작업이 끝나면 요청 수와 DB 저장 결과를 요약합니다.",
+        resultRequested: "요청 수",
+        resultKafka: "Kafka 적재",
+        resultPersisted: "DB 저장",
+        resultElapsed: "총 소요시간",
+        resultCancelled: "취소된 예약",
+        resultFailed: "전송 실패",
+        resultStatus: "상태",
+        resultWaiting: "대기 중",
+        resultRunning: "처리 중",
+        resultComplete: "완료",
+        resultPartial: "일부 미확인",
         emptyTitle: "아직 이벤트가 없습니다.",
         emptyMeta: "10개, 100개, 1000개 샘플을 추가하거나 API로 이벤트를 보내세요.",
-        paymentDone: "결제 완료",
-        orderDone: "주문 완료",
+        producerReady: "Producer 준비됨",
+        eventsReady: "이벤트 준비됨",
         sending: "전송 중",
         beforeSend: "전송 전",
         waiting: "대기 중",
@@ -1033,31 +873,32 @@
         sendFailed: "전송 실패",
         savedPrefix: "DB 저장됨",
         checkingDlq: "DLQ summary 조회 전",
-        resetNeedsConfirm: "RESET DEMO DB를 입력해야 초기화합니다."
+        resetNeedsConfirm: "RESET DEMO DB를 입력해야 초기화합니다.",
+        envelopeVerification: "Envelope 검증 · schema_version / event_type / payload / metadata"
       },
       en: {
-        pageSubtitle: "Customers only see payment/order completion; operators track post-Kafka processing.",
-        customerResponse: "Customer Response",
-        operatorCategory: "Ops Category",
+        pageSubtitle: "Inspect Kafka acceptance, ordered persistence, failure isolation, and replay for domain events.",
+        customerResponse: "Producer Status",
+        operatorCategory: "Producer Classification (metadata)",
         waitingOrder: "Waiting",
         notSent: "Not sent",
-        customerFlow: "Customer Order Flow",
-        customerFlowSubtitle: "Only payment and order completion are shown to the customer.",
-        notice: "Persistence, classification, notification, and DLQ handling continue inside the internal event pipeline.",
+        customerFlow: "Reference Scenario",
+        customerFlowSubtitle: "Order-lifecycle events demonstrate the domain-neutral stream processing boundary.",
+        notice: "Order data is only a reference payload. The core accepts typed JSON events without domain-specific processing.",
         baseUrlHelp: "Base URL exposed by the API.",
-        orderIdHelp: "Automatically replaced with the demo order stream id.",
+        streamIdHelp: "Replaced with a new reference stream id for each run.",
         usernameHelp: "Account used for demo authentication.",
         passwordHelp: "Password used by the local demo login.",
-        eventTypeHelp: "Business event type after order submission.",
-        paymentIdHelp: "External identifier for payment tracking.",
-        bodyHelp: "Event body reviewed by the operator.",
-        defaultBody: "Payment completed and order creation event",
+        eventTypeHelp: "Namespaced event type defined by the producer.",
+        referenceIdHelp: "External reference included in example metadata.",
+        bodyHelp: "Sent as the message value inside the JSON payload.",
+        defaultBody: "reference lifecycle event",
         add10: "Add 10",
         add100: "Add 100",
         add1000: "Add 1000",
-        sendEvents: "Send Payment / Order Completion Events",
+        sendEvents: "Send Reference Events",
         operatorQueue: "Operator Event Queue",
-        operatorQueueSubtitle: "Track classification, request id, and Kafka acceptance in one view.",
+        operatorQueueSubtitle: "Track reference-producer metadata, request id, and Kafka acceptance in one view.",
         clearQueue: "Clear Pending Reservations",
         processingStatus: "Processing Status",
         queueHelp: "Reservations that have not started can be cancelled; started jobs remain tracked.",
@@ -1077,7 +918,6 @@
         opsChecksTitle: "Operational Checks",
         opsChecksHelp: "Readiness and DLQ summary are shown here without opening raw JSON pages.",
         refreshOpsStatus: "Refresh status",
-        interval10: "Every 10s",
         interval30: "Every 30s",
         interval60: "Every 60s",
         serviceReady: "Service Status",
@@ -1095,25 +935,14 @@
         workerReady: "{available}/{max} running",
         workerReadyNoHpa: "{available} running",
         workerUnknown: "Unavailable",
-        dlqEmpty: "No isolated events",
-        dlqSummary: "total={total}, replayable={replayable}, blocked={blocked}",
+        dlqEmpty: "No recent DLQ log samples",
+        dlqSummary: "recent log samples={total}, replayable={replayable}, blocked={blocked}",
         dlqDetailsButton: "Show DLQ details",
-        dlqDetailsLoading: "Loading DLQ details",
-        dlqDetailsEmpty: "No DLQ events.",
-        dlqReplayButton: "Manual replay",
-        dlqReplayAllButton: "Replay all",
-        dlqReplayBlocked: "Manual check",
-        dlqReplayable: "Replayable",
-        dlqBlocked: "Replay blocked",
-        dlqReplayRequested: "DLQ manual replay requested",
-        dlqReplayPending: "Checking replay",
+        dlqReplayButton: "Replay manually",
+        dlqReplayRequested: "Replay requested",
         dlqReplayComplete: "Replay complete",
-        dlqReplayAllComplete: "Replay-all request complete",
-        dlqReplayAllNeedsManual: "Remaining events need manual handling",
-        dlqReplayFailed: "DLQ manual replay failed",
+        dlqReplayAllButton: "Replay all manually",
         opsRefreshFailed: "Operational status refresh failed",
-        authDbUnavailable: "Authentication is waiting because the DB primary is unreachable",
-        reservedQueueKept: "reserved queue kept",
         advisorHelp: "Interprets operational signals with deterministic rules. No AI API is called.",
         advisorStatus: "Status",
         advisorReason: "Reason",
@@ -1121,45 +950,39 @@
         advisorAttention: "Needs attention",
         advisorCritical: "Immediate check",
         advisorWaiting: "Not checked",
-        advisorHistoryTitle: "Non-normal signal history",
-        advisorHistoryEmpty: "No non-normal signals have been recorded yet.",
-        advisorOccurrenceCount: "{count} occurrence(s)",
-        advisorSituation: "Situation",
-        advisorExpectedFix: "Expected fix",
-        advisorSnapshot: "Signal",
-        advisorFirstSeen: "First",
-        advisorLastSeen: "Latest",
         advisorNextDefault: "Refresh status to show the next operator check.",
-        advisorNormalReason: "Service, Kafka, DB, and DLQ signals are stable.",
-        advisorDlqReason: "Isolated events remain in DLQ.",
-        advisorBlockedReason: "Some DLQ events hit the replay guard.",
+        advisorNormalReason: "Service status and the current send counters are stable.",
+        advisorDlqReason: "Recent DLQ log samples exist; verify current request status.",
+        advisorBlockedReason: "Recent DLQ log samples include replay-guard records.",
         advisorReadinessReason: "Service readiness is not ready.",
         advisorWorkerReason: "Worker replica information is unavailable.",
-        advisorDemoLiteReadinessReason: "Readiness degraded under the reduced demo-lite profile.",
+        advisorPartialReason: "Reserved, Kafka-appended, and DB-persisted counts do not match.",
         advisorNormalNext: "Send samples to demonstrate Kafka append and DB persistence.",
-        advisorPartialReason: "Reserved or unconfirmed DB persistence events remain.",
-        advisorPartialNext: "Compare Reserved, Kafka appended, and DB persisted counts, then resend or verify the unconfirmed events.",
-        advisorDlqNext: "Check DLQ reason and sample payload, then decide replay or root-cause fix.",
-        advisorBlockedNext: "These events are excluded from automatic replay. Manual handling or data correction is required.",
+        advisorDlqNext: "Because this is an append-only log, verify current request status before deciding on replay.",
+        advisorBlockedNext: "Verify current state, then use manual handling or data correction if needed.",
         advisorReadinessNext: "Check readiness reason, Kafka, and PostgreSQL first.",
         advisorWorkerNext: "Check the Worker deployment and KEDA HPA status.",
-        advisorDemoLiteReadinessNext: "demo-lite runs with a single DB and lower replica limits. Refresh shortly and compare Kafka backlog with DB persistence progress.",
-        advisorReadinessSituation: "Service readiness is not ready.",
-        advisorWorkerSituation: "Worker replica status could not be read.",
-        advisorDemoLiteReadinessSituation: "Degraded readiness was observed in the reduced demo-lite profile.",
-        advisorBlockedSituation: "DLQ contains events excluded from automatic replay.",
-        advisorDlqSituation: "DLQ still contains isolated events.",
-        advisorPartialSituation: "Requested, Kafka appended, and DB persisted counts do not match.",
+        advisorPartialNext: "Check send failures and unconfirmed DB persistence.",
         dangerTitle: "Danger Zone",
-        dangerHelp: "Resets demo event data. User accounts are kept; order streams, messages, and request statuses are deleted.",
+        dangerHelp: "Resets demo event data. User accounts are kept; streams, events, and request statuses are deleted.",
         resetDemoDb: "Reset Demo Event DB",
-        dbColumnsTitle: "Stored DB Columns",
-        dbColumnsSubtitle: "Analytics-friendly structure persisted by the Worker into the PostgreSQL messages table.",
-        dbColumnsUnavailable: "DB storage shape has not been loaded yet.",
+        resultTitle: "Result Summary",
+        resultSubtitle: "After the last send run completes, this summarizes requests and DB persistence.",
+        resultRequested: "Requests",
+        resultKafka: "Kafka appended",
+        resultPersisted: "DB persisted",
+        resultElapsed: "Total elapsed",
+        resultCancelled: "Cancelled reservations",
+        resultFailed: "Send failures",
+        resultStatus: "Status",
+        resultWaiting: "Waiting",
+        resultRunning: "Running",
+        resultComplete: "Complete",
+        resultPartial: "Partially confirmed",
         emptyTitle: "No events yet.",
         emptyMeta: "Add 10, 100, or 1000 samples, or send an event through the API.",
-        paymentDone: "Payment completed",
-        orderDone: "Order completed",
+        producerReady: "Producer ready",
+        eventsReady: "Events ready",
         sending: "Sending",
         beforeSend: "Before send",
         waiting: "Waiting",
@@ -1170,28 +993,29 @@
         sendFailed: "Send failed",
         savedPrefix: "DB persisted",
         checkingDlq: "DLQ summary not checked yet",
-        resetNeedsConfirm: "Type RESET DEMO DB before resetting demo event data."
+        resetNeedsConfirm: "Type RESET DEMO DB before resetting demo event data.",
+        envelopeVerification: "Envelope Verification · schema_version / event_type / payload / metadata"
       }
     };
 
     const categoryMap = {
-      payment_completed: "payment",
-      payment_failed: "payment",
-      order_created: "order",
-      order_cancelled: "order",
-      delivery_started: "delivery",
-      delivery_delayed: "delivery",
-      refund_requested: "refund",
-      refund_completed: "refund",
-      support_requested: "support"
+      "reference.payment.completed": "payment",
+      "reference.payment.failed": "payment",
+      "reference.order.created": "order",
+      "reference.order.cancelled": "order",
+      "reference.delivery.started": "delivery",
+      "reference.delivery.delayed": "delivery",
+      "reference.refund.requested": "refund",
+      "reference.refund.completed": "refund",
+      "reference.support.requested": "support"
     };
 
     const events = [];
     const eventList = document.querySelector("#event-list");
     const logBox = document.querySelector("#log");
     const SEND_CONCURRENCY = 40;
-    const DB_SUMMARY_POLL_INTERVAL_MS = 3000;
-    const DB_SUMMARY_POLL_MAX_ATTEMPTS = 120;
+    let latestReadiness = null;
+    let latestDlqSummary = null;
     const queueStats = {
       queued: 0,
       kafkaAppended: 0,
@@ -1200,24 +1024,10 @@
       runCompletedAt: null,
       runProcessed: 0,
       runTarget: 0,
-      lastRunHadFailures: false,
+      sendFailed: 0,
       cancelled: 0,
+      envelopeVerified: null,
       uiSession: 0
-    };
-    const advisorSignalStats = new Map();
-    let lastDlqItems = [];
-    const dlqReplayUiState = new Map();
-    const ensuredDemoUsers = new Set();
-    const demoAuthTokens = new Map();
-    const TOKEN_CACHE_TTL_MS = 50 * 60 * 1000;
-    let lastAdvisorSignalSignature = null;
-    const advisorSituationKeys = {
-      advisorReadinessReason: "advisorReadinessSituation",
-      advisorWorkerReason: "advisorWorkerSituation",
-      advisorDemoLiteReadinessReason: "advisorDemoLiteReadinessSituation",
-      advisorBlockedReason: "advisorBlockedSituation",
-      advisorDlqReason: "advisorDlqSituation",
-      advisorPartialReason: "advisorPartialSituation"
     };
 
     function t(key) {
@@ -1235,12 +1045,44 @@
       document.querySelector(selector).textContent = value;
     }
 
-    function setDemoVersion(apiVersion = "-") {
-      setText("#demo-version", `ver. ${DEMO_UI_VERSION} / api ${apiVersion || "-"}`);
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      })[character]);
     }
 
-    function isDemoLiteProfile(readiness) {
-      return Boolean(readiness) && readiness.deployment_profile === "k8s-demo-lite";
+    function safeCssToken(value) {
+      const token = String(value ?? "needs_review");
+      return /^[a-z0-9_-]+$/.test(token) ? token : "needs_review";
+    }
+
+    function deepEqualJson(left, right) {
+      if (Object.is(left, right)) {
+        return true;
+      }
+      if (Array.isArray(left) || Array.isArray(right)) {
+        return Array.isArray(left)
+          && Array.isArray(right)
+          && left.length === right.length
+          && left.every((value, index) => deepEqualJson(value, right[index]));
+      }
+      if (!left || !right || typeof left !== "object" || typeof right !== "object") {
+        return false;
+      }
+      const leftKeys = Object.keys(left).sort();
+      const rightKeys = Object.keys(right).sort();
+      return leftKeys.length === rightKeys.length
+        && leftKeys.every((key, index) => (
+          key === rightKeys[index] && deepEqualJson(left[key], right[key])
+        ));
+    }
+
+    function setDemoVersion(apiVersion = "-") {
+      setText("#demo-version", `ver. ${DEMO_UI_VERSION} / api ${apiVersion || "-"}`);
     }
 
     function setLanguage(language) {
@@ -1258,11 +1100,6 @@
       if (document.querySelector("#ops-ready-status")) {
         resetOpsStatusIfPending();
         updateQueueMetrics();
-        renderAdvisorSignalHistory();
-        renderDbColumns();
-        if (!document.querySelector("#dlq-detail-list").hidden) {
-          renderDlqDetails(lastDlqItems);
-        }
       }
       renderEvents();
     }
@@ -1291,9 +1128,10 @@
 
     function describeFetchFailure(error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
+        const demoUrl = `${currentBaseUrl() || deriveDefaultBaseUrl()}/demo/order-dashboard.html`;
         return currentLanguage === "en"
-          ? "The browser blocked the API request. Open http://localhost/demo/order-dashboard.html."
-          : "브라우저가 API 요청을 막았습니다. http://localhost/demo/order-dashboard.html 주소로 열었는지 확인하세요.";
+          ? `The browser blocked the API request. Open ${demoUrl}.`
+          : `브라우저가 API 요청을 막았습니다. ${demoUrl} 주소로 열었는지 확인하세요.`;
       }
       return error.message;
     }
@@ -1331,7 +1169,29 @@
         ? Math.max((endAt - queueStats.runStartedAt) / 1000, 0.1)
         : 0;
       setText("#elapsed-seconds", `${elapsedSeconds.toFixed(1)}s`);
+      setText("#result-requested", String(queueStats.runTarget));
+      setText("#result-kafka", String(queueStats.kafkaAppended));
+      setText("#result-persisted", String(queueStats.dbPersisted));
+      setText("#result-elapsed", `${elapsedSeconds.toFixed(1)}s`);
+      setText("#result-cancelled", String(queueStats.cancelled));
+      setText("#result-failed", String(queueStats.sendFailed));
+      const resultStatus = !queueStats.runStartedAt
+        ? t("resultWaiting")
+        : queueStats.runCompletedAt
+          ? (
+              queueStats.sendFailed === 0
+              && queueStats.kafkaAppended === queueStats.runTarget
+              && queueStats.dbPersisted === queueStats.kafkaAppended
+              && queueStats.envelopeVerified === true
+                ? t("resultComplete")
+                : t("resultPartial")
+            )
+          : t("resultRunning");
+      setText("#result-status", resultStatus);
       document.querySelector("#result-panel").classList.toggle("waiting", !queueStats.runStartedAt);
+      if (latestReadiness && latestDlqSummary) {
+        updateOperationsAdvisor(latestReadiness, latestDlqSummary);
+      }
     }
 
     function startProcessingRun(count) {
@@ -1342,8 +1202,10 @@
       queueStats.runTarget = count;
       queueStats.kafkaAppended = 0;
       queueStats.dbPersisted = 0;
-      queueStats.lastRunHadFailures = false;
+      queueStats.sendFailed = 0;
       queueStats.cancelled = 0;
+      queueStats.envelopeVerified = null;
+      setText("#envelope-verification", t("waiting"));
       updateQueueMetrics();
       log(`${t("queueStart")} target=${count}`);
       return uiSession;
@@ -1364,24 +1226,12 @@
       updateQueueMetrics();
     }
 
-    function recordReservationSendFailed(count, uiSession) {
-      if (!isCurrentUiSession(uiSession)) {
-        return;
-      }
-      const failed = Math.min(count, queueStats.queued);
-      queueStats.queued -= failed;
-      updateQueueMetrics();
-    }
-
     function recordDbPersisted(count, uiSession) {
       if (!isCurrentUiSession(uiSession)) {
         return;
       }
-      queueStats.dbPersisted += count;
-      queueStats.runProcessed += count;
-      if (queueStats.runTarget > 0 && queueStats.runProcessed >= queueStats.runTarget && !queueStats.runCompletedAt) {
-        queueStats.runCompletedAt = Date.now();
-      }
+      queueStats.dbPersisted = Math.max(queueStats.dbPersisted, count);
+      queueStats.runProcessed = queueStats.dbPersisted + queueStats.sendFailed;
       updateQueueMetrics();
     }
 
@@ -1389,14 +1239,21 @@
       recordDbPersisted(count, uiSession);
     }
 
-    function finishProcessingRun(uiSession, hadFailures = false) {
+    function recordSendFailed(uiSession) {
       if (!isCurrentUiSession(uiSession)) {
         return;
       }
-      queueStats.lastRunHadFailures = hadFailures || queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget;
-      if (!queueStats.runCompletedAt) {
-        queueStats.runCompletedAt = Date.now();
+      queueStats.queued = Math.max(0, queueStats.queued - 1);
+      queueStats.sendFailed += 1;
+      queueStats.runProcessed = queueStats.dbPersisted + queueStats.sendFailed;
+      updateQueueMetrics();
+    }
+
+    function finishProcessingRun(uiSession) {
+      if (!isCurrentUiSession(uiSession)) {
+        return;
       }
+      queueStats.runCompletedAt = Date.now();
       updateQueueMetrics();
     }
 
@@ -1423,48 +1280,15 @@
       eventList.innerHTML = events.map((event) => `
         <article class="event">
           <div class="event-head">
-            <div class="event-title">${event.event_type}</div>
-            <span class="pill ${event.category}">${event.category}</span>
+            <div class="event-title">${escapeHtml(event.event_type)}</div>
+            <span class="pill ${safeCssToken(event.category)}">${escapeHtml(event.category)}</span>
           </div>
-          <div>${event.body}</div>
-          <div class="meta">order_id=${event.order_id} status=${event.status} request_id=${event.request_id}</div>
-          <div class="meta">db_row=${event.db_row || "-"}</div>
-          <div class="meta">${event.queued_at}</div>
+          <div>${escapeHtml(event.body)}</div>
+          <div class="meta">stream_id=${escapeHtml(event.stream_id)} status=${escapeHtml(event.status)} request_id=${escapeHtml(event.request_id)}</div>
+          <div class="meta">db_row=${escapeHtml(event.db_row || "-")}</div>
+          <div class="meta">${escapeHtml(event.queued_at)}</div>
         </article>
       `).join("");
-    }
-
-    const dbStorageColumns = [
-      ["event_id", "BIGSERIAL", "Worker가 PostgreSQL에 저장한 이벤트 row id입니다."],
-      ["request_id", "TEXT", "API가 Kafka append 요청에 부여한 추적 id입니다."],
-      ["stream_id", "BIGINT", "주문 이후 이벤트를 묶는 주문 stream id입니다."],
-      ["stream_seq", "BIGINT", "같은 stream 안에서 Worker가 DB 저장 시 확정한 순서입니다."],
-      ["user_id", "BIGINT", "이벤트를 보낸 사용자 또는 운영 demo 계정 id입니다."],
-      ["event_type", "TEXT", "주문 이후 업무 이벤트 종류입니다."],
-      ["category", "TEXT", "운영자가 볼 수 있게 분류한 업무 카테고리입니다."],
-      ["payment_id", "TEXT", "결제 추적에 쓰는 외부 식별자입니다."],
-      ["body", "TEXT", "운영자가 읽는 이벤트 내용입니다."],
-      ["created_at", "TIMESTAMPTZ", "Worker가 DB commit으로 영속화한 시각입니다."]
-    ];
-
-    function renderDbColumns() {
-      const columnList = document.querySelector("#db-column-list");
-      if (!columnList) {
-        return;
-      }
-
-      columnList.replaceChildren();
-      dbStorageColumns.forEach(([name, type, purpose]) => {
-        const item = document.createElement("div");
-        item.className = "db-column";
-        const title = document.createElement("strong");
-        title.textContent = `${name} (${type})`;
-        const description = document.createElement("span");
-        description.className = "meta";
-        description.textContent = purpose;
-        item.append(title, description);
-        columnList.appendChild(item);
-      });
     }
 
     function setPipelineStep(step, state, text) {
@@ -1485,60 +1309,82 @@
       setProof("-", "-", "-", "-");
     }
 
-    async function fetchPersistenceSummary(baseUrl, token, streamId) {
-      const response = await fetch(`${baseUrl}/v1/streams/${streamId}/persistence-summary`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (!response.ok) {
-        throw new Error(`persistence summary HTTP ${response.status}`);
+    async function pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession) {
+      const target = acceptedEvents.length;
+      if (!isCurrentUiSession(uiSession) || target === 0) {
+        return target === 0;
       }
-      return response.json();
-    }
-
-    function applyPersistenceSummary(summary, acceptedEvents, uiSession) {
-      if (!isCurrentUiSession(uiSession)) {
-        return 0;
-      }
-      const persisted = Math.min(Number(summary.persisted_count || 0), acceptedEvents.length);
-      const previousPersisted = queueStats.dbPersisted;
-      const delta = Math.max(persisted - previousPersisted, 0);
-      if (delta > 0) {
-        for (let index = previousPersisted; index < persisted; index += 1) {
-          const item = acceptedEvents[index];
-          if (item && item.event.status !== "persisted") {
-            item.event.status = "persisted";
+      setPipelineStep("worker", "waiting", `GET /v1/streams/${streamId}/persistence-summary polling`);
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        try {
+          const response = await fetch(`${baseUrl}/v1/streams/${streamId}/persistence-summary`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const summary = await response.json();
+            const persistedCount = Math.min(Number(summary.persisted_count || 0), target);
+            recordDbPersisted(persistedCount, uiSession);
+            setPipelineStep("worker", persistedCount >= target ? "done" : "waiting", `persisted=${persistedCount}/${target}`);
+            setPipelineStep("db", persistedCount >= target ? "done" : "waiting", `${t("savedPrefix")} ${persistedCount}/${target}`);
+            setProof(summary.latest_request_id || "batch", "message-ingress", `persisted=${persistedCount}/${target}`, `latest_event_id=${summary.latest_event_id || "-"}`);
+            if (persistedCount >= target) {
+              acceptedEvents.forEach((event) => {
+                event.status = "persisted";
+                event.db_row = `stream_id=${streamId}`;
+              });
+              renderEvents();
+              log(`worker persisted stream_id=${streamId} count=${persistedCount}`);
+              return true;
+            }
           }
+        } catch (error) {
+          log(`persistence summary retry: ${describeFetchFailure(error)}`);
         }
-        recordQueueProcessed(delta, uiSession);
-        renderEvents();
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
-
-      const latestRequest = summary.latest_request_id || "stream-summary";
-      const latestDbRow = summary.latest_event_id
-        ? `event_id=${summary.latest_event_id}, stream_seq=${summary.latest_stream_seq}`
-        : "-";
-      setPipelineStep("worker", persisted >= acceptedEvents.length ? "done" : "waiting", `DB summary persisted=${persisted}/${acceptedEvents.length}`);
-      setPipelineStep("db", persisted >= acceptedEvents.length ? "done" : "waiting", `${t("savedPrefix")} ${persisted}/${acceptedEvents.length}`);
-      setProof(latestRequest, "message-ingress", "persisted summary", latestDbRow);
-      return persisted;
+      setPipelineStep("worker", "waiting", currentLanguage === "en" ? "Persistence summary is still catching up." : "DB 저장 수 확인이 아직 따라오는 중입니다.");
+      setPipelineStep("db", "waiting", currentLanguage === "en" ? "Some DB writes remain unconfirmed." : "일부 DB 저장을 아직 확인하지 못했습니다.");
+      return false;
     }
 
-    async function pollDbPersistenceSummary(baseUrl, token, streamId, acceptedEvents, uiSession) {
-      if (acceptedEvents.length === 0) {
-        return { status: "fulfilled", persisted: 0 };
+    async function verifyGenericEnvelope(baseUrl, token, streamId, acceptedEvents, uiSession) {
+      if (!isCurrentUiSession(uiSession) || acceptedEvents.length === 0) {
+        return false;
       }
-      for (let attempt = 0; attempt < DB_SUMMARY_POLL_MAX_ATTEMPTS; attempt += 1) {
-        const summary = await fetchPersistenceSummary(baseUrl, token, streamId);
-        const persisted = applyPersistenceSummary(summary, acceptedEvents, uiSession);
-        if (persisted >= acceptedEvents.length) {
-          log(`db summary confirmed persisted=${persisted}/${acceptedEvents.length}`);
-          return { status: "fulfilled", persisted };
+      try {
+        const response = await fetch(`${baseUrl}/v2/streams/${streamId}/events?limit=100`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          throw new Error(`generic read HTTP ${response.status}`);
         }
-        await new Promise((resolve) => setTimeout(resolve, DB_SUMMARY_POLL_INTERVAL_MS));
+        const result = await response.json();
+        const acceptedById = new Map(acceptedEvents.map((event) => [event.request_id, event]));
+        const sample = (result.items || []).find((item) => acceptedById.has(item.request_id));
+        const expected = sample ? acceptedById.get(sample.request_id) : null;
+        const verified = Boolean(
+          sample
+          && expected
+          && sample.schema_version === 2
+          && sample.event_type === expected.event_type
+          && deepEqualJson(sample.payload, expected.payload)
+          && deepEqualJson(sample.metadata, expected.metadata)
+        );
+        if (!verified) {
+          throw new Error("persisted generic envelope sample did not match the accepted event");
+        }
+        const evidence = `verified event_id=${sample.id} schema_version=${sample.schema_version} event_type=${sample.event_type}`;
+        setText("#envelope-verification", evidence);
+        setProof(sample.request_id, "message-ingress", "persisted", evidence);
+        log(`generic envelope ${evidence}`);
+        return true;
+      } catch (error) {
+        const message = describeFetchFailure(error);
+        setText("#envelope-verification", `${t("apiCheckRequired")}: ${message}`);
+        setPipelineStep("db", "error", message);
+        log(`generic envelope verification failed: ${message}`);
+        return false;
       }
-      setPipelineStep("worker", "waiting", currentLanguage === "en" ? "Persistence summary still catching up." : "DB 저장 수 확인이 아직 따라오는 중입니다.");
-      setPipelineStep("db", "waiting", currentLanguage === "en" ? "DB persistence count is not fully confirmed yet." : "DB 저장 수를 아직 모두 확인하지 못했습니다.");
-      return { status: "rejected", persisted: queueStats.dbPersisted };
     }
 
     async function refreshDlqSummary(baseUrl, token) {
@@ -1553,11 +1399,127 @@
         setPipelineStep(
           "dlq",
           summary.total > 0 ? "waiting" : "done",
-          `total=${summary.total} replayable=${summary.replayable} blocked=${summary.blocked} oldest_age_seconds=${summary.oldest_age_seconds}`
+          `scope=${summary.scope} samples=${summary.total} replayable=${summary.replayable} blocked=${summary.blocked} oldest_sample_age_seconds=${summary.oldest_sample_age_seconds}`
         );
       } catch (error) {
         setPipelineStep("dlq", "error", `DLQ summary failed: ${error.message}`);
       }
+    }
+
+    let latestDlqItems = [];
+
+    async function pollReplayCompletion(baseUrl, token, requestId, button) {
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const response = await fetch(`${baseUrl}/v1/event-requests/${requestId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!response.ok) {
+          continue;
+        }
+        const status = await response.json();
+        if (status.status === "persisted") {
+          button.textContent = t("dlqReplayComplete");
+          button.disabled = true;
+          return;
+        }
+      }
+    }
+
+    async function replayDlqItem(baseUrl, token, item, button) {
+      button.disabled = true;
+      const response = await fetch(`${baseUrl}/v1/dlq/ingress/replay`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ request_id: item.request_id })
+      });
+      if (!response.ok) {
+        button.disabled = false;
+        throw new Error(`DLQ replay HTTP ${response.status}`);
+      }
+      button.textContent = t("dlqReplayRequested");
+      log(`DLQ replay requested request_id=${item.request_id}`);
+      await pollReplayCompletion(baseUrl, token, item.request_id, button);
+    }
+
+    async function loadDlqDetails() {
+      const baseUrl = currentBaseUrl();
+      const token = await ensureToken(
+        baseUrl,
+        document.querySelector("#username").value,
+        document.querySelector("#password").value
+      );
+      const response = await fetch(`${baseUrl}/v1/dlq/ingress?limit=20`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error(`DLQ details HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      const seen = new Set();
+      latestDlqItems = payload.items.filter((item) => {
+        if (!item.request_id || seen.has(item.request_id)) {
+          return false;
+        }
+        seen.add(item.request_id);
+        return true;
+      });
+      const list = document.querySelector("#dlq-detail-list");
+      list.replaceChildren();
+      list.hidden = false;
+      if (latestDlqItems.length === 0) {
+        const empty = document.createElement("p");
+        empty.textContent = t("dlqEmpty");
+        list.appendChild(empty);
+        return;
+      }
+      latestDlqItems.forEach((item) => {
+        const article = document.createElement("article");
+        article.className = "event";
+        const title = document.createElement("div");
+        title.className = "event-title";
+        title.textContent = `${item.failed_reason || "unknown"} · request_id=${item.request_id}`;
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `stream_id=${item.stream_id ?? "-"} retry=${item.retry_count} replay=${item.replay_count}/${item.max_replay_count}`;
+        const button = document.createElement("button");
+        button.className = "secondary";
+        button.textContent = t("dlqReplayButton");
+        button.disabled = !item.replayable;
+        button.addEventListener("click", () => replayDlqItem(baseUrl, token, item, button).catch((error) => log(describeFetchFailure(error))));
+        article.append(title, meta, button);
+        list.appendChild(article);
+      });
+    }
+
+    async function replayAllDlqItems() {
+      if (latestDlqItems.length === 0) {
+        await loadDlqDetails();
+      }
+      const baseUrl = currentBaseUrl();
+      const token = await ensureToken(
+        baseUrl,
+        document.querySelector("#username").value,
+        document.querySelector("#password").value
+      );
+      for (const item of latestDlqItems.filter((candidate) => candidate.replayable)) {
+        const response = await fetch(`${baseUrl}/v1/dlq/ingress/replay`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ request_id: item.request_id })
+        });
+        if (!response.ok && response.status !== 409) {
+          throw new Error(`DLQ replay HTTP ${response.status}`);
+        }
+      }
+      log(`${t("dlqReplayRequested")} count=${latestDlqItems.filter((item) => item.replayable).length}`);
+      await loadDlqDetails();
     }
 
     function resetOpsStatusIfPending() {
@@ -1586,209 +1548,6 @@
               blocked: summary.blocked || 0
             })
       );
-    }
-
-    function renderDlqDetails(items) {
-      const list = document.querySelector("#dlq-detail-list");
-      list.hidden = false;
-      list.replaceChildren();
-
-      if (!items.length) {
-        const empty = document.createElement("p");
-        empty.className = "field-help";
-        empty.textContent = t("dlqDetailsEmpty");
-        list.appendChild(empty);
-        return;
-      }
-
-      items.forEach((item) => {
-        const card = document.createElement("div");
-        card.className = "dlq-detail-item";
-
-        const title = document.createElement("strong");
-        title.textContent = item.failed_reason || "unknown";
-
-        const meta = document.createElement("span");
-        meta.className = "dlq-detail-meta";
-        meta.textContent = `request_id=${item.request_id || "-"} · stream_id=${item.stream_id || "-"} · replay=${item.replay_count}/${item.max_replay_count}`;
-
-        const actions = document.createElement("div");
-        actions.className = "dlq-detail-actions";
-
-        const state = document.createElement("span");
-        state.className = "dlq-detail-meta";
-        state.textContent = item.replayable ? t("dlqReplayable") : t("dlqBlocked");
-
-        const button = document.createElement("button");
-        button.className = "secondary";
-        button.type = "button";
-        button.dataset.dlqReplay = item.request_id || "";
-        const replayState = item.request_id ? dlqReplayUiState.get(item.request_id) : null;
-        button.disabled = !item.replayable || !item.request_id || replayState === "pending" || replayState === "complete";
-        if (replayState === "complete") {
-          button.textContent = t("dlqReplayComplete");
-        } else if (replayState === "pending") {
-          button.textContent = t("dlqReplayPending");
-        } else {
-          button.textContent = item.replayable ? t("dlqReplayButton") : t("dlqReplayBlocked");
-        }
-
-        actions.append(state, button);
-        card.append(title, meta, actions);
-        list.appendChild(card);
-      });
-    }
-
-    async function loadDlqDetails() {
-      const button = document.querySelector("#load-dlq-details");
-      const list = document.querySelector("#dlq-detail-list");
-      button.disabled = true;
-      list.hidden = false;
-      list.replaceChildren();
-      const loading = document.createElement("p");
-      loading.className = "field-help";
-      loading.textContent = t("dlqDetailsLoading");
-      list.appendChild(loading);
-
-      try {
-        const baseUrl = currentBaseUrl();
-        const token = await ensureToken(
-          baseUrl,
-          document.querySelector("#username").value,
-          document.querySelector("#password").value
-        );
-        const response = await fetch(`${baseUrl}/v1/dlq/ingress?limit=200`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          throw new Error(`dlq HTTP ${response.status}`);
-        }
-        const result = await response.json();
-        lastDlqItems = result.items || [];
-        renderDlqDetails(lastDlqItems);
-      } catch (error) {
-        list.replaceChildren();
-        const failed = document.createElement("p");
-        failed.className = "field-help";
-        failed.textContent = `${t("opsRefreshFailed")}: ${describeFetchFailure(error)}`;
-        list.appendChild(failed);
-        log(`${t("opsRefreshFailed")}: ${describeFetchFailure(error)}`);
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    async function requestDlqReplay(baseUrl, token, requestId) {
-      const response = await fetch(`${baseUrl}/v1/dlq/ingress/replay`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ request_id: requestId })
-      });
-      if (!response.ok) {
-        throw new Error(`replay HTTP ${response.status}`);
-      }
-      return response.json();
-    }
-
-    async function replayDlqEvent(requestId, button) {
-      if (!requestId) {
-        return;
-      }
-      button.disabled = true;
-      try {
-        const baseUrl = currentBaseUrl();
-        const token = await ensureToken(
-          baseUrl,
-          document.querySelector("#username").value,
-          document.querySelector("#password").value
-        );
-        const result = await requestDlqReplay(baseUrl, token, requestId);
-        dlqReplayUiState.set(result.request_id, "pending");
-        button.textContent = t("dlqReplayPending");
-        log(`${t("dlqReplayRequested")}: request_id=${result.request_id} stream_id=${result.stream_id} replay_count=${result.replay_count}`);
-        await pollDlqReplayStatus(baseUrl, token, result.request_id, button);
-        await refreshOpsStatus();
-      } catch (error) {
-        dlqReplayUiState.set(requestId, "failed");
-        button.disabled = false;
-        log(`${t("dlqReplayFailed")}: ${describeFetchFailure(error)}`);
-      }
-    }
-
-    async function replayAllDlqEvents() {
-      const button = document.querySelector("#replay-all-dlq");
-      button.disabled = true;
-      try {
-        const baseUrl = currentBaseUrl();
-        const token = await ensureToken(
-          baseUrl,
-          document.querySelector("#username").value,
-          document.querySelector("#password").value
-        );
-        const response = await fetch(`${baseUrl}/v1/dlq/ingress?limit=200`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!response.ok) {
-          throw new Error(`dlq HTTP ${response.status}`);
-        }
-        const result = await response.json();
-        lastDlqItems = result.items || [];
-        renderDlqDetails(lastDlqItems);
-
-        const replayable = lastDlqItems.filter((item) => item.replayable && item.request_id);
-        let requested = 0;
-        let failed = 0;
-        for (const item of replayable) {
-          try {
-            await requestDlqReplay(baseUrl, token, item.request_id);
-            dlqReplayUiState.set(item.request_id, "pending");
-            requested += 1;
-          } catch (_error) {
-            dlqReplayUiState.set(item.request_id, "failed");
-            failed += 1;
-          }
-        }
-        const manual = lastDlqItems.length - replayable.length + failed;
-        log(`${t("dlqReplayAllComplete")}: requested=${requested} failed=${failed} manual=${manual}`);
-        if (manual > 0) {
-          log(`${t("dlqReplayAllNeedsManual")}: count=${manual}`);
-        }
-        await refreshOpsStatus();
-        await loadDlqDetails();
-      } catch (error) {
-        log(`${t("dlqReplayFailed")}: ${describeFetchFailure(error)}`);
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    async function pollDlqReplayStatus(baseUrl, token, requestId, button) {
-      const maxAttempts = 30;
-      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, attempt === 0 ? 300 : 1000));
-        const response = await fetch(`${baseUrl}/v1/event-requests/${requestId}`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (response.status === 404) {
-          continue;
-        }
-        if (!response.ok) {
-          throw new Error(`status HTTP ${response.status}`);
-        }
-        const status = await response.json();
-        if (status.status === "persisted") {
-          dlqReplayUiState.set(requestId, "complete");
-          button.textContent = t("dlqReplayComplete");
-          log(`${t("dlqReplayComplete")}: request_id=${requestId} event_id=${status.event_id} stream_seq=${status.stream_seq}`);
-          return status;
-        }
-      }
-      button.textContent = t("dlqReplayPending");
-      log(`${t("dlqReplayPending")}: request_id=${requestId}`);
-      return null;
     }
 
     function updateReadinessPanel(readiness) {
@@ -1820,138 +1579,46 @@
       }
     }
 
-    function buildAdvisorSignalSnapshot(readiness, dlqSummary) {
-      const worker = readiness?.worker || {};
-      return [
-        `ready=${readiness?.status || "-"}`,
-        `reserved=${queueStats.queued}/${queueStats.runTarget || 0}`,
-        `kafka=${queueStats.kafkaAppended}`,
-        `db=${queueStats.dbPersisted}`,
-        `dlq=${Number(dlqSummary?.total || 0)}`,
-        `blocked=${Number(dlqSummary?.blocked || 0)}`,
-        `worker=${Number.isFinite(worker.available_replicas) ? worker.available_replicas : "-"}/${Number.isFinite(worker.max_replicas) ? worker.max_replicas : "-"}`
-      ].join(", ");
-    }
-
-    function recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary) {
-      const snapshot = buildAdvisorSignalSnapshot(readiness, dlqSummary);
-      const signature = `${statusKey}|${reasonKey}`;
-      const now = Date.now();
-      const existing = advisorSignalStats.get(reasonKey);
-      if (signature === lastAdvisorSignalSignature) {
-        if (existing) {
-          existing.lastSeenAt = now;
-          existing.snapshot = snapshot;
-        }
-        renderAdvisorSignalHistory();
-        return;
-      }
-
-      lastAdvisorSignalSignature = signature;
-      if (existing) {
-        existing.count += 1;
-        existing.lastSeenAt = now;
-        existing.statusKey = statusKey;
-        existing.nextKey = nextKey;
-        existing.snapshot = snapshot;
-      } else {
-        advisorSignalStats.set(reasonKey, {
-          count: 1,
-          firstSeenAt: now,
-          lastSeenAt: now,
-          statusKey,
-          nextKey,
-          snapshot
-        });
-      }
-      renderAdvisorSignalHistory();
-    }
-
-    function formatAdvisorTime(timestamp) {
-      return new Date(timestamp).toLocaleTimeString();
-    }
-
-    function renderAdvisorSignalHistory() {
-      const container = document.querySelector("#advisor-signal-history");
-      const countNode = document.querySelector("#advisor-signal-count");
-      if (!container || !countNode) {
-        return;
-      }
-
-      const entries = Array.from(advisorSignalStats.entries()).sort((a, b) => b[1].lastSeenAt - a[1].lastSeenAt);
-      const totalCount = entries.reduce((total, [, item]) => total + item.count, 0);
-      countNode.textContent = formatText("advisorOccurrenceCount", { count: totalCount });
-      container.replaceChildren();
-
-      if (entries.length === 0) {
-        const empty = document.createElement("p");
-        empty.textContent = t("advisorHistoryEmpty");
-        container.appendChild(empty);
-        return;
-      }
-
-      entries.forEach(([reasonKey, item]) => {
-        const card = document.createElement("div");
-        card.className = "advisor-history-item";
-
-        const title = document.createElement("strong");
-        title.textContent = `${t(item.statusKey)} · ${formatText("advisorOccurrenceCount", { count: item.count })}`;
-
-        const situation = document.createElement("span");
-        situation.textContent = `${t("advisorSituation")}: ${t(advisorSituationKeys[reasonKey] || reasonKey)}`;
-
-        const reason = document.createElement("span");
-        reason.textContent = `${t("advisorReason")}: ${t(reasonKey)}`;
-
-        const fix = document.createElement("span");
-        fix.textContent = `${t("advisorExpectedFix")}: ${t(item.nextKey)}`;
-
-        const snapshot = document.createElement("span");
-        snapshot.className = "advisor-history-meta";
-        snapshot.textContent = `${t("advisorSnapshot")}: ${item.snapshot}`;
-
-        const seen = document.createElement("span");
-        seen.className = "advisor-history-meta";
-        seen.textContent = `${t("advisorFirstSeen")} ${formatAdvisorTime(item.firstSeenAt)} · ${t("advisorLastSeen")} ${formatAdvisorTime(item.lastSeenAt)}`;
-
-        card.append(title, situation, reason, fix, snapshot, seen);
-        container.appendChild(card);
-      });
-    }
-
     function updateOperationsAdvisor(readiness, dlqSummary) {
       let statusKey = "advisorWaiting";
       let reasonKey = "advisorNextDefault";
       let nextKey = "advisorNextDefault";
-      const dlqTotal = Number(dlqSummary?.total || 0);
-      const dlqBlocked = Number(dlqSummary?.blocked || 0);
+      const runHasMismatch = Boolean(queueStats.runStartedAt) && (
+        queueStats.queued > 0
+        || queueStats.sendFailed > 0
+        || queueStats.kafkaAppended !== queueStats.runTarget
+        || queueStats.dbPersisted !== queueStats.kafkaAppended
+        || queueStats.envelopeVerified === false
+      );
+      const dlqSampleTotal = Number(dlqSummary?.total || 0);
+      const dlqBlockedSamples = Number(dlqSummary?.blocked || 0);
 
       if (!readiness || !dlqSummary) {
         statusKey = "advisorWaiting";
-      } else if (readiness.status === "degraded" && isDemoLiteProfile(readiness)) {
-        statusKey = "advisorAttention";
-        reasonKey = "advisorDemoLiteReadinessReason";
-        nextKey = "advisorDemoLiteReadinessNext";
-      } else if (readiness.status !== "ready") {
+      } else if (readiness.status === "not_ready") {
         statusKey = "advisorCritical";
+        reasonKey = "advisorReadinessReason";
+        nextKey = "advisorReadinessNext";
+      } else if (readiness.status !== "ready") {
+        statusKey = "advisorAttention";
         reasonKey = "advisorReadinessReason";
         nextKey = "advisorReadinessNext";
       } else if (!Number.isFinite(readiness.worker?.available_replicas)) {
         statusKey = "advisorAttention";
         reasonKey = "advisorWorkerReason";
         nextKey = "advisorWorkerNext";
-      } else if (dlqBlocked > 0) {
-        statusKey = "advisorCritical";
-        reasonKey = "advisorBlockedReason";
-        nextKey = "advisorBlockedNext";
-      } else if (dlqTotal > 0) {
-        statusKey = "advisorAttention";
-        reasonKey = "advisorDlqReason";
-        nextKey = "advisorDlqNext";
-      } else if (queueStats.runStartedAt && (queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget)) {
+      } else if (runHasMismatch) {
         statusKey = "advisorAttention";
         reasonKey = "advisorPartialReason";
         nextKey = "advisorPartialNext";
+      } else if (dlqBlockedSamples > 0) {
+        statusKey = "advisorAttention";
+        reasonKey = "advisorBlockedReason";
+        nextKey = "advisorBlockedNext";
+      } else if (dlqSampleTotal > 0) {
+        statusKey = "advisorAttention";
+        reasonKey = "advisorDlqReason";
+        nextKey = "advisorDlqNext";
       } else {
         statusKey = "advisorNormal";
         reasonKey = "advisorNormalReason";
@@ -1961,16 +1628,15 @@
       setText("#advisor-status", t(statusKey));
       setText("#advisor-reason", t(reasonKey));
       setText("#advisor-next-step", t(nextKey));
-      if (statusKey === "advisorAttention" || statusKey === "advisorCritical") {
-        recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary);
-      } else {
-        lastAdvisorSignalSignature = null;
-        renderAdvisorSignalHistory();
-      }
     }
 
     let opsRefreshTimer = null;
     let opsRefreshInFlight = false;
+    let cachedAuth = null;
+
+    function invalidateCachedToken() {
+      cachedAuth = null;
+    }
 
     async function refreshOpsStatus() {
       if (opsRefreshInFlight) {
@@ -1980,41 +1646,47 @@
       const button = document.querySelector("#refresh-ops-status");
       button.disabled = true;
       setText("#ops-ready-status", t("checking"));
-      setText("#ops-dlq-status", t("checking"));
       try {
         const baseUrl = currentBaseUrl();
         const readinessResponse = await fetch(`${baseUrl}/health/ready`);
-        if (!readinessResponse.ok) {
-          throw new Error(`readiness HTTP ${readinessResponse.status}`);
-        }
         const readiness = await readinessResponse.json();
+        latestReadiness = readiness;
         setDemoVersion(readiness.app_version);
         updateReadinessPanel(readiness);
+        if (!readinessResponse.ok) {
+          const lastDlqSummary = latestDlqSummary || { total: 0, blocked: 0 };
+          updateOperationsAdvisor(readiness, lastDlqSummary);
+          setText("#ops-last-checked", new Date().toLocaleTimeString());
+          return;
+        }
 
-        try {
-          const username = document.querySelector("#username").value;
-          const password = document.querySelector("#password").value;
-          let token = await ensureToken(baseUrl, username, password);
-          let dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
+        let token = await ensureToken(
+          baseUrl,
+          document.querySelector("#username").value,
+          document.querySelector("#password").value
+        );
+        let dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (dlqResponse.status === 401) {
+          invalidateCachedToken();
+          token = await ensureToken(
+            baseUrl,
+            document.querySelector("#username").value,
+            document.querySelector("#password").value,
+            { force: true }
+          );
+          dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
-          if (dlqResponse.status === 401) {
-            token = await ensureToken(baseUrl, username, password, { forceRefresh: true });
-            dlqResponse = await fetch(`${baseUrl}/v1/dlq/ingress/summary?limit=200&sample_limit=5`, {
-              headers: { "Authorization": `Bearer ${token}` }
-            });
-          }
-          if (!dlqResponse.ok) {
-            throw new Error(`dlq HTTP ${dlqResponse.status}`);
-          }
-          const dlqSummary = await dlqResponse.json();
-          updateDlqSummaryPanel(dlqSummary);
-          updateOperationsAdvisor(readiness, dlqSummary);
-        } catch (dlqError) {
-          setText("#ops-dlq-status", t("notReadySummaryPrefix"));
-          updateOperationsAdvisor(readiness, null);
-          log(`${t("opsRefreshFailed")}: ${describeFetchFailure(dlqError)}`);
         }
+        if (!dlqResponse.ok) {
+          throw new Error(`dlq HTTP ${dlqResponse.status}`);
+        }
+        const dlqSummary = await dlqResponse.json();
+        latestDlqSummary = dlqSummary;
+        updateDlqSummaryPanel(dlqSummary);
+        updateOperationsAdvisor(readiness, dlqSummary);
         setText("#ops-last-checked", new Date().toLocaleTimeString());
       } catch (error) {
         setText("#ops-ready-status", t("notReadySummaryPrefix"));
@@ -2036,45 +1708,41 @@
     }
 
     async function ensureToken(baseUrl, username, password, options = {}) {
-      const demoUserKey = `${baseUrl}|${username}`;
-      const tokenKey = `${baseUrl}|${username}|${password}`;
-      const cached = demoAuthTokens.get(tokenKey);
-      if (!options.forceRefresh && cached && cached.expiresAt > Date.now()) {
-        return cached.token;
-      }
-      if (!ensuredDemoUsers.has(demoUserKey)) {
-        try {
-          await fetch(`${baseUrl}/v1/users`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password })
-          });
-        } catch (_error) {
-          // User may already exist. Login determines whether the demo can continue.
-        }
-        ensuredDemoUsers.add(demoUserKey);
+      const cacheKey = `${baseUrl}|${username}`;
+      if (!options.force && cachedAuth?.key === cacheKey && cachedAuth.expiresAt > Date.now()) {
+        return cachedAuth.token;
       }
 
-      const response = await fetch(`${baseUrl}/v1/auth/login`, {
+      const login = () => fetch(`${baseUrl}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
       });
-      if (!response.ok) {
-        if (response.status === 503) {
-          throw new Error(t("authDbUnavailable"));
+      let response = await login();
+      if (response.status === 401) {
+        const createResponse = await fetch(`${baseUrl}/v1/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+        if (!createResponse.ok && createResponse.status !== 409) {
+          throw new Error(`demo user creation failed: HTTP ${createResponse.status}`);
         }
+        response = await login();
+      }
+      if (!response.ok) {
         throw new Error(`login failed: HTTP ${response.status}`);
       }
       const data = await response.json();
-      demoAuthTokens.set(tokenKey, {
+      cachedAuth = {
+        key: cacheKey,
         token: data.access_token,
-        expiresAt: Date.now() + TOKEN_CACHE_TTL_MS
-      });
+        expiresAt: Date.now() + 30 * 60 * 1000
+      };
       return data.access_token;
     }
 
-    async function createDemoOrderStream(baseUrl, token) {
+    async function createDemoReferenceStream(baseUrl, token) {
       const response = await fetch(`${baseUrl}/v1/streams`, {
         method: "POST",
         headers: {
@@ -2082,52 +1750,58 @@
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          name: `demo-order-${Date.now()}`,
+          name: `demo-reference-${Date.now()}`,
           member_ids: []
         })
       });
       if (!response.ok) {
-        throw new Error(`demo order stream failed: HTTP ${response.status}`);
+        throw new Error(`demo reference stream failed: HTTP ${response.status}`);
       }
       const stream = await response.json();
-      document.querySelector("#order-id").value = stream.id;
-      log(`created demo order stream via /v1/streams stream_id=${stream.id}`);
+      document.querySelector("#stream-id").value = stream.id;
+      log(`created reference stream via /v1/streams stream_id=${stream.id}`);
       return stream.id;
     }
 
     function buildFormEvent() {
       const eventType = document.querySelector("#event-type").value;
-      const paymentId = document.querySelector("#payment-id").value || null;
+      const referenceId = document.querySelector("#reference-id").value || null;
       const body = document.querySelector("#body").value;
       const category = categoryFor(eventType);
       return {
         request_id: `form-${Date.now()}`,
         status: "reserved",
-        order_id: Number(document.querySelector("#order-id").value),
+        stream_id: Number(document.querySelector("#stream-id").value),
         event_type: eventType,
         category,
-        payment_id: paymentId,
+        reference_id: referenceId,
         body,
         queued_at: new Date().toISOString()
       };
     }
 
-    async function sendQueuedEvent(baseUrl, token, orderId, event) {
-      const response = await fetch(`${baseUrl}/v1/orders/${orderId}/events`, {
+    async function sendQueuedEvent(baseUrl, token, streamId, event) {
+      const response = await fetch(`${baseUrl}/v2/streams/${streamId}/events`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Idempotency-Key": `demo-${orderId}-${event.event_type}-${event.request_id}-${Date.now()}`
+          "X-Idempotency-Key": `demo-${streamId}-${event.event_type}-${event.request_id}-${Date.now()}`
         },
         body: JSON.stringify({
           event_type: event.event_type,
-          payment_id: event.payment_id || null,
-          body: event.body
+          payload: {
+            message: event.body
+          },
+          metadata: {
+            reference_scenario: "order-lifecycle",
+            classification: event.category,
+            external_references: event.reference_id ? { payment: event.reference_id } : {}
+          }
         })
       });
-      if (!response.ok) {
-        throw new Error(`order event failed: HTTP ${response.status}`);
+      if (response.status !== 202) {
+        throw new Error(`stream event expected HTTP 202, got ${response.status}`);
       }
       const accepted = await response.json();
       Object.assign(event, accepted);
@@ -2150,8 +1824,8 @@
       const uiSession = startProcessingRun(reservedEvents.length);
 
       const token = await ensureToken(baseUrl, username, password);
-      const orderId = await createDemoOrderStream(baseUrl, token);
-      setText("#customer-status", t("paymentDone"));
+      const streamId = await createDemoReferenceStream(baseUrl, token);
+      setText("#customer-status", t("producerReady"));
       setText("#kafka-status", t("sending"));
       setText("#category-status", `${reservedEvents.length} queued`);
       setPipelineStep("api", "waiting", `reserved=${reservedEvents.length}`);
@@ -2167,7 +1841,6 @@
       const acceptedEvents = [];
       let nextIndex = 0;
       let acceptedCount = 0;
-      let sendFailures = 0;
 
       async function sendNextReservedEvent() {
         const index = nextIndex;
@@ -2185,52 +1858,54 @@
         }
         let accepted;
         try {
-          accepted = await sendQueuedEvent(baseUrl, token, orderId, event);
+          accepted = await sendQueuedEvent(baseUrl, token, streamId, event);
         } catch (error) {
-          sendFailures += 1;
-          if (event.status === "sending") {
-            event.status = "send_failed";
-            renderEvents();
-          }
-          recordReservationSendFailed(1, uiSession);
-          log(`${describeFetchFailure(error)}. reservation marked failed.`);
+          event.status = "send_failed";
+          event.failure_reason = describeFetchFailure(error);
+          recordSendFailed(uiSession);
+          renderEvents();
+          log(`send_failed event_type=${event.event_type}: ${event.failure_reason}`);
           return sendNextReservedEvent();
         }
         recordKafkaAppended(1, uiSession);
         acceptedCount += 1;
-        const progressIndex = acceptedCount;
+        acceptedEvents.push(event);
         if (!isCurrentUiSession(uiSession)) {
           log(`accepted request_id=${accepted.request_id} after visible queue changed`);
           return;
         }
-        markEventStatus(event, accepted.status, null, shouldRenderBatchProgress(progressIndex, activeEvents.length));
-        setText("#customer-status", t("orderDone"));
+        markEventStatus(event, accepted.status, null, shouldRenderBatchProgress(acceptedCount, activeEvents.length));
+        setText("#customer-status", t("eventsReady"));
         setText("#kafka-status", accepted.status);
-        setText("#category-status", accepted.category);
+        setText("#category-status", event.category);
         setPipelineStep("api", "done", `202 Accepted request_id=${accepted.request_id}`);
-        setPipelineStep("kafka", "done", `message-ingress append accepted order_id=${accepted.order_id} category=${accepted.category}`);
+        setPipelineStep("kafka", "done", `message-ingress append accepted stream_id=${accepted.stream_id} classification=${event.category}`);
         setPipelineStep("worker", "waiting", `Worker waiting request_id=${accepted.request_id}`);
         setPipelineStep("db", "waiting", "DB persistence waiting");
         setProof(accepted.request_id, "message-ingress", "queued", t("waiting"));
-        log(`accepted request_id=${accepted.request_id} category=${accepted.category}`);
-        acceptedEvents.push({ event, progressIndex });
+        log(`accepted request_id=${accepted.request_id} classification=${event.category}`);
         return sendNextReservedEvent();
       }
 
       const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length);
-      await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()));
-      const persistenceResult = await pollDbPersistenceSummary(baseUrl, token, orderId, acceptedEvents, uiSession);
-      finishProcessingRun(uiSession, sendFailures > 0 || persistenceResult.status === "rejected");
+      await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()));
+      const persistenceConfirmed = await pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession);
+      queueStats.envelopeVerified = persistenceConfirmed
+        ? await verifyGenericEnvelope(baseUrl, token, streamId, acceptedEvents, uiSession)
+        : false;
+      updateQueueMetrics();
       await refreshDlqSummary(baseUrl, token);
+      finishProcessingRun(uiSession);
     }
 
-    async function sendOrderEvent() {
+    async function sendEvent() {
       const button = document.querySelector("#send-event");
       button.disabled = true;
 
       try {
         await processReservedEvents();
       } catch (error) {
+        finishProcessingRun(queueStats.uiSession);
         const errorMessage = describeFetchFailure(error);
         setText("#kafka-status", t("apiCheckRequired"));
         setPipelineStep("api", "error", errorMessage);
@@ -2238,7 +1913,7 @@
         setPipelineStep("worker", "waiting", "API accepted 이후 처리");
         setPipelineStep("db", "waiting", "DB 저장 전");
         setProof("reserved-batch", t("sendFailed"), "reserved", "-");
-        log(`${errorMessage}. ${t("reservedQueueKept")}.`);
+        log(`${errorMessage}. ${t("resultPartial")}.`);
       } finally {
         button.disabled = false;
       }
@@ -2246,18 +1921,18 @@
 
     function buildSampleEvent(index) {
       const samplesKo = [
-        ["payment_completed", "결제 승인 완료"],
-        ["order_created", "주문 생성 완료"],
-        ["delivery_started", "배송 시작 알림 발행"],
-        ["refund_requested", "환불 요청 접수"],
-        ["manual_exception", "운영자 검토가 필요한 예외 이벤트"]
+        ["reference.payment.completed", "결제 승인 완료"],
+        ["reference.order.created", "주문 생성 완료"],
+        ["reference.delivery.started", "배송 시작 알림 발행"],
+        ["reference.refund.requested", "환불 요청 접수"],
+        ["reference.exception.detected", "운영자 검토가 필요한 예외 이벤트"]
       ];
       const samplesEn = [
-        ["payment_completed", "Payment approval completed"],
-        ["order_created", "Order creation completed"],
-        ["delivery_started", "Delivery started notification published"],
-        ["refund_requested", "Refund request received"],
-        ["manual_exception", "Exception event requiring operator review"]
+        ["reference.payment.completed", "Payment approval completed"],
+        ["reference.order.created", "Order creation completed"],
+        ["reference.delivery.started", "Delivery started notification published"],
+        ["reference.refund.requested", "Refund request received"],
+        ["reference.exception.detected", "Exception event requiring operator review"]
       ];
       const samples = currentLanguage === "en" ? samplesEn : samplesKo;
       const sample = samples[index % samples.length];
@@ -2265,10 +1940,10 @@
       return {
         request_id: `sample-${Date.now()}-${index}`,
         status: "reserved",
-        order_id: Number(document.querySelector("#order-id").value),
+        stream_id: Number(document.querySelector("#stream-id").value),
         event_type: sample[0],
         category,
-        payment_id: sample[0] === "payment_completed" ? `pay-sample-${Date.now()}-${index}` : null,
+        reference_id: sample[0] === "reference.payment.completed" ? `pay-sample-${Date.now()}-${index}` : null,
         body: sample[1],
         queued_at: new Date().toISOString()
       };
@@ -2282,7 +1957,7 @@
         events.unshift(sample);
       }
       recordQueueEnqueued(count);
-      setText("#customer-status", t("orderDone"));
+      setText("#customer-status", t("eventsReady"));
       setText("#kafka-status", t("beforeSend"));
       setText("#category-status", count === 1 ? lastCategory : `${count} reserved`);
       setPipelineStep("api", "waiting", `reserved=${count}`);
@@ -2355,14 +2030,7 @@
           body: JSON.stringify({ confirmation })
         });
         if (!response.ok) {
-          let detail = "";
-          try {
-            const payload = await response.json();
-            detail = payload.detail ? ` ${payload.detail}` : "";
-          } catch (_error) {
-            detail = "";
-          }
-          throw new Error(`reset failed: HTTP ${response.status}${detail}`);
+          throw new Error(`reset failed: HTTP ${response.status}`);
         }
         const result = await response.json();
         events.length = 0;
@@ -2373,21 +2041,15 @@
         queueStats.runCompletedAt = null;
         queueStats.runProcessed = 0;
         queueStats.runTarget = 0;
+        queueStats.sendFailed = 0;
         queueStats.cancelled = 0;
-        lastDlqItems = [];
-        dlqReplayUiState.clear();
-        advisorSignalStats.clear();
-        lastAdvisorSignalSignature = null;
+        queueStats.envelopeVerified = null;
+        setText("#envelope-verification", t("beforeSend"));
         updateQueueMetrics();
-        renderAdvisorSignalHistory();
-        renderDbColumns();
-        if (!document.querySelector("#dlq-detail-list").hidden) {
-          renderDlqDetails(lastDlqItems);
-        }
         renderEvents();
         resetPipeline();
         confirmationInput.value = "";
-        log(`demo event DB reset deleted_messages=${result.deleted_messages} reset_streams=${result.reset_streams} reset_dlq_topic=${result.reset_dlq_topic || "-"}`);
+        log(`demo event DB reset deleted_events=${result.deleted_events} reset_streams=${result.reset_streams} reset_dlq_topic=${result.reset_dlq_topic || "-"}`);
       } catch (error) {
         log(`demo event DB reset failed: ${describeFetchFailure(error)}`);
       } finally {
@@ -2395,21 +2057,18 @@
       }
     }
 
-    document.querySelector("#send-event").addEventListener("click", sendOrderEvent);
+    document.querySelector("#send-event").addEventListener("click", sendEvent);
     document.querySelector("#add-sample-10").addEventListener("click", () => addSampleBatch(10));
     document.querySelector("#add-sample-100").addEventListener("click", () => addSampleBatch(100));
     document.querySelector("#add-sample-1000").addEventListener("click", () => addSampleBatch(1000));
     document.querySelector("#clear-event-list").addEventListener("click", clearEvents);
     document.querySelector("#reset-demo-db").addEventListener("click", resetDemoEventDb);
     document.querySelector("#refresh-ops-status").addEventListener("click", refreshOpsStatus);
-    document.querySelector("#load-dlq-details").addEventListener("click", loadDlqDetails);
-    document.querySelector("#replay-all-dlq").addEventListener("click", replayAllDlqEvents);
-    document.querySelector("#dlq-detail-list").addEventListener("click", (event) => {
-      const button = event.target.closest("[data-dlq-replay]");
-      if (!button) {
-        return;
-      }
-      replayDlqEvent(button.dataset.dlqReplay, button);
+    document.querySelector("#load-dlq-details").addEventListener("click", () => {
+      loadDlqDetails().catch((error) => log(describeFetchFailure(error)));
+    });
+    document.querySelector("#replay-all-dlq").addEventListener("click", () => {
+      replayAllDlqItems().catch((error) => log(describeFetchFailure(error)));
     });
     document.querySelector("#ops-refresh-interval").addEventListener("change", restartOpsAutoRefresh);
     document.querySelectorAll("[data-language]").forEach((button) => {
@@ -2425,7 +2084,6 @@
     resetPipeline();
     updateQueueMetrics();
     renderEvents();
-    renderDbColumns();
     resetOpsStatusIfPending();
     refreshOpsStatus();
     restartOpsAutoRefresh();

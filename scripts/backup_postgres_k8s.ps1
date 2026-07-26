@@ -17,36 +17,79 @@ function Ensure-Dir([string]$Path) {
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $resolvedOutputDir = Join-Path (Get-Location) $OutputDir
 Ensure-Dir -Path $resolvedOutputDir
-$outputFile = Join-Path $resolvedOutputDir "postgres-$timestamp.sql"
+$outputName = "postgres-$timestamp.sql"
+$outputFile = Join-Path $resolvedOutputDir $outputName
+$backupPod = "postgres-backup-client-" + ([guid]::NewGuid().ToString("N").Substring(0, 8))
 
-$encoded = kubectl -n $Namespace get secret messaging-postgresql-ha-postgresql -o jsonpath='{.data.password}'
-if (-not $encoded) {
-  throw "Unable to read PostgreSQL password from secret messaging-postgresql-ha-postgresql."
+$podSpec = @{
+  apiVersion = "v1"
+  kind = "Pod"
+  metadata = @{
+    name = $backupPod
+    namespace = $Namespace
+    labels = @{ app = "postgres-backup-client" }
+  }
+  spec = @{
+    automountServiceAccountToken = $false
+    restartPolicy = "Never"
+    securityContext = @{
+      runAsNonRoot = $true
+      runAsUser = 1001
+      runAsGroup = 1001
+      seccompProfile = @{ type = "RuntimeDefault" }
+    }
+    containers = @(
+      @{
+        name = "postgres-backup-client"
+        image = "bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2"
+        imagePullPolicy = "IfNotPresent"
+        command = @("sh", "-c", "sleep 600")
+        env = @(
+          @{
+            name = "PGPASSWORD"
+            valueFrom = @{
+              secretKeyRef = @{
+                name = "messaging-postgresql-ha-postgresql"
+                key = "password"
+              }
+            }
+          }
+        )
+        securityContext = @{
+          allowPrivilegeEscalation = $false
+          capabilities = @{ drop = @("ALL") }
+        }
+      }
+    )
+  }
 }
 
-$password = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encoded))
+try {
+  $podSpec | ConvertTo-Json -Depth 12 -Compress | kubectl create -f - | Out-Host
+  kubectl wait --for=condition=Ready "pod/$backupPod" -n $Namespace --timeout=180s | Out-Host
 
-$dumpCommand = @(
-  "run", "postgres-backup-$timestamp",
-  "--rm",
-  "-i",
-  "--attach",
-  "--restart=Never",
-  "-n", $Namespace,
-  "--image", "bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
-  "--env", "PGPASSWORD=$password",
-  "--command", "--",
-  "pg_dump",
-  "-h", $ServiceName,
-  "-p", "5432",
-  "-U", $DbUser,
-  "-d", $DbName
-)
+  kubectl exec -n $Namespace $backupPod -- `
+    pg_dump -h $ServiceName -p 5432 -U $DbUser -d $DbName --file=/tmp/postgres-backup.sql | Out-Host
+  if ($LASTEXITCODE -ne 0) {
+    throw "pg_dump failed."
+  }
 
-$dump = & kubectl @dumpCommand
-if ($LASTEXITCODE -ne 0 -or -not $dump) {
-  throw "pg_dump failed."
+  Push-Location $resolvedOutputDir
+  try {
+    kubectl cp "$Namespace/$backupPod`:/tmp/postgres-backup.sql" $outputName | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to copy PostgreSQL backup from the temporary pod."
+    }
+  }
+  finally {
+    Pop-Location
+  }
+
+  if (-not (Test-Path -LiteralPath $outputFile) -or (Get-Item -LiteralPath $outputFile).Length -le 0) {
+    throw "PostgreSQL backup file is missing or empty: $outputFile"
+  }
+  Write-Host "PostgreSQL backup written to $outputFile"
 }
-
-[System.IO.File]::WriteAllText($outputFile, ($dump -join [Environment]::NewLine) + [Environment]::NewLine)
-Write-Host "PostgreSQL backup written to $outputFile"
+finally {
+  kubectl delete pod $backupPod -n $Namespace --ignore-not-found | Out-Host
+}

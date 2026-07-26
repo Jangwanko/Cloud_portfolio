@@ -10,7 +10,6 @@ from typing import Sequence, Union
 from alembic import op
 
 
-# revision identifiers, used by Alembic.
 revision: str = "0005_order_event_columns"
 down_revision: Union[str, None] = "0004_kafka_state_backend"
 branch_labels: Union[str, Sequence[str], None] = None
@@ -35,6 +34,7 @@ def upgrade() -> None:
         CREATE INDEX IF NOT EXISTS idx_messages_payment_id
         ON messages(payment_id)
         WHERE payment_id IS NOT NULL;
+
         """
     )
 

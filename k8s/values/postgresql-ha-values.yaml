@@ -9,11 +9,18 @@ postgresql:
     repository: bitnamilegacy/postgresql-repmgr
     tag: 17.6.0-debian-12-r2
   username: portfolio
-  password: portfolio
   database: portfolio
-  repmgrPassword: repmgr-secret
-  syncReplication: true
-  numSynchronousReplicas: 1
+  # Passwords are generated in the chart-managed Secret on first install and
+  # reused from that Secret during upgrades. Do not commit local credentials.
+  # Chart 16.3.2 maps syncReplication=true to replicaCount-1 and does not
+  # support numSynchronousReplicas. This env sets the fresh-boot target to one
+  # standby. install/recovery scripts also persist the setting on every pod
+  # because the image only regenerates it during first boot.
+  syncReplication: false
+  syncReplicationMode: ANY
+  extraEnvVars:
+    - name: POSTGRESQL_NUM_SYNCHRONOUS_REPLICAS
+      value: "1"
   podAntiAffinityPreset: soft
   pdb:
     create: true
@@ -26,7 +33,6 @@ pgpool:
     repository: bitnamilegacy/pgpool
     tag: 4.6.3-debian-12-r0
   adminUsername: admin
-  adminPassword: admin-secret
   podAntiAffinityPreset: soft
   pdb:
     create: true

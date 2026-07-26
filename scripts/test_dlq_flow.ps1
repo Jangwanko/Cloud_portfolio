@@ -34,17 +34,20 @@ stream_id = int(os.environ["STREAM_ID"])
 user_id = int(os.environ["USER_ID"])
 payload = {
     "request_id": request_id,
-    "route": f"POST:/v1/streams/{stream_id}/events",
-    "room_id": stream_id,
-    "user_id": user_id,
-    "body": "poison event for dlq verification",
-    "room_seq": 999,
+    "route": f"POST:/v2/streams/{stream_id}/events",
+    "stream_id": stream_id,
+    "actor_id": user_id,
+    "schema_version": 2,
+    "event_type": "portfolio.dlq.flow.poison",
+    "payload": {"message": "poison event for dlq verification"},
+    "metadata": {"scenario": "dlq-flow", "injected": True},
+    "stream_seq": 999,
     "x_idempotency_key": None,
     "queued_at": "1970-01-01T00:00:00+00:00",
     "retry_count": settings.ingress_max_retries,
     "next_retry_at": None,
 }
-publish_ingress_job(payload["room_id"], payload)
+publish_ingress_job(payload["stream_id"], payload)
 '@
   $encodedCode = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($code))
   kubectl -n $Namespace exec deploy/api -- env "REQUEST_ID=$RequestId" "STREAM_ID=$StreamId" "USER_ID=$UserId" python -c "import base64; exec(base64.b64decode('$encodedCode'))" | Out-Null

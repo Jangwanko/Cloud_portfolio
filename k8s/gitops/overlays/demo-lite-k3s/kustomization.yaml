@@ -4,7 +4,14 @@ kind: Kustomization
 resources:
   - ../demo-lite
 
+images:
+  - name: messaging-portfolio
+    newName: ghcr.io/jangwanko/cloud_portfolio
+    newTag: b4fd8beffffe
+
 patches:
+  - path: patches/api-generic-v2-k3s.yaml
+  - path: patches/messaging-env-k3s.yaml
   - path: patches/ingress-api-k3s.yaml
     target:
       group: networking.k8s.io

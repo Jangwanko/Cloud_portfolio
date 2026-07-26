@@ -4,10 +4,46 @@ param(
   [string]$Revision = "master",
   [string]$ClusterName = "messaging-ha",
   [string]$Namespace = "messaging-app",
-  [string]$BaseUrl = "http://localhost"
+  [string]$BaseUrl = "http://localhost",
+  [string]$ImageRepository = "",
+  [string]$ImageTag = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+if ($Namespace -ne "messaging-app") {
+  throw "GitOps manifests currently target the fixed namespace 'messaging-app'."
+}
+if ($RepoUrl -notmatch '^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?$') {
+  throw "RepoUrl must be an HTTPS GitHub repository URL."
+}
+if ($Revision -notmatch '^[A-Za-z0-9._/-]+$') {
+  throw "Revision contains unsupported characters."
+}
+if ([string]::IsNullOrWhiteSpace($ImageRepository) -xor [string]::IsNullOrWhiteSpace($ImageTag)) {
+  throw "ImageRepository and ImageTag must be supplied together."
+}
+
+$useImageOverride = -not [string]::IsNullOrWhiteSpace($ImageTag)
+$effectiveImageRepository = $ImageRepository
+$effectiveImageTag = $ImageTag
+
+if (-not $useImageOverride) {
+  $repoPath = ($RepoUrl -replace '^https://github\.com/', '') -replace '\.git$', ''
+  $overlayUrl = "https://raw.githubusercontent.com/$repoPath/$Revision/k8s/gitops/overlays/local-ha/kustomization.yaml"
+  try {
+    $overlay = (Invoke-WebRequest -UseBasicParsing -Uri $overlayUrl -TimeoutSec 20).Content
+  } catch {
+    throw "Unable to read the committed local-ha overlay from $overlayUrl`nFor a private repository, pass both -ImageRepository and -ImageTag explicitly."
+  }
+  $repositoryMatch = [regex]::Match($overlay, '(?m)^\s*newName:\s*(\S+)\s*$')
+  $tagMatch = [regex]::Match($overlay, '(?m)^\s*newTag:\s*(\S+)\s*$')
+  if (-not $repositoryMatch.Success -or -not $tagMatch.Success) {
+    throw "Unable to resolve the registry image from $overlayUrl."
+  }
+  $effectiveImageRepository = $repositoryMatch.Groups[1].Value
+  $effectiveImageTag = $tagMatch.Groups[1].Value
+}
 
 function Resolve-KindPath {
   $cmd = Get-Command kind -ErrorAction SilentlyContinue
@@ -32,9 +68,19 @@ function Remove-ClusterIfExists([string]$Name) {
   }
 }
 
-function Load-ImageIntoKind([string]$Cluster, [string]$Image) {
-  $kind = Resolve-KindPath
-  & $kind load docker-image $Image --name $Cluster
+function Assert-RegistryImageAvailable([string]$Repository, [string]$Tag) {
+  $docker = Get-Command docker -ErrorAction SilentlyContinue
+  if (-not $docker) {
+    throw "Docker CLI is required to verify the GitOps registry image."
+  }
+
+  $image = "${Repository}:${Tag}"
+  & $docker.Source manifest inspect $image *> $null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Registry image is not accessible: $image`nPublish the initial master image first and make the GHCR package public, or authenticate with 'docker login ghcr.io'."
+  }
+
+  Write-Host "[ok] Registry image is accessible: $image"
 }
 
 function Wait-UrlReady([string]$Url, [int]$TimeoutSec = 180) {
@@ -53,12 +99,12 @@ function Wait-UrlReady([string]$Url, [int]$TimeoutSec = 180) {
 }
 
 Write-Host ""
-Write-Host "==> Removing previous cluster if it exists"
-Remove-ClusterIfExists -Name $ClusterName
+Write-Host "==> Verifying registry-backed GitOps image"
+Assert-RegistryImageAvailable -Repository $effectiveImageRepository -Tag $effectiveImageTag
 
 Write-Host ""
-Write-Host "==> Building application image"
-docker build -t messaging-portfolio:local . | Out-Host
+Write-Host "==> Removing previous cluster if it exists"
+Remove-ClusterIfExists -Name $ClusterName
 
 Write-Host ""
 Write-Host "==> Bootstrapping local cluster and shared runtime components"
@@ -68,18 +114,20 @@ Write-Host "==> Bootstrapping local cluster and shared runtime components"
 & "$PSScriptRoot/../k8s/scripts/install-keda.ps1"
 
 Write-Host ""
-Write-Host "==> Loading application image into kind"
-Load-ImageIntoKind -Cluster $ClusterName -Image "messaging-portfolio:local"
-
-Write-Host ""
 Write-Host "==> Installing Argo CD"
 & "$PSScriptRoot/../k8s/scripts/install-argocd.ps1"
 
 Write-Host ""
 Write-Host "==> Registering Argo CD application"
-& "$PSScriptRoot/../k8s/scripts/bootstrap-argocd-app.ps1" `
-  -RepoUrl $RepoUrl `
-  -Revision $Revision
+$bootstrapArgs = @{
+  RepoUrl  = $RepoUrl
+  Revision = $Revision
+}
+if ($useImageOverride) {
+  $bootstrapArgs.ImageRepository = $effectiveImageRepository
+  $bootstrapArgs.ImageTag = $effectiveImageTag
+}
+& "$PSScriptRoot/../k8s/scripts/bootstrap-argocd-app.ps1" @bootstrapArgs
 
 Write-Host ""
 Write-Host "==> Waiting for API readiness"
@@ -96,4 +144,6 @@ Write-Host ""
 Write-Host "GitOps quick start completed successfully."
 Write-Host "Argo CD namespace: argocd"
 Write-Host "Application name: messaging-portfolio-local-ha"
+Write-Host "Application image: ${effectiveImageRepository}:${effectiveImageTag}"
+Write-Host "Image source: $(if ($useImageOverride) { 'explicit Application override' } else { 'committed remote local-ha overlay' })"
 Write-Host "API URL: $BaseUrl"

@@ -1,11 +1,14 @@
-﻿from contextlib import contextmanager
+from contextlib import contextmanager
+from pathlib import Path
+import threading
 import time
+from urllib.parse import quote
 
 from alembic import command
 from alembic.config import Config
 from psycopg2 import InterfaceError, OperationalError
 from psycopg2.extras import RealDictCursor
-from psycopg2.pool import SimpleConnectionPool
+from psycopg2.pool import PoolError, ThreadedConnectionPool
 
 from portfolio.config import settings
 from portfolio.metrics import (
@@ -21,7 +24,10 @@ from portfolio.metrics import (
     postgres_sync_standby_count,
 )
 
-_pool: SimpleConnectionPool | None = None
+_pool: ThreadedConnectionPool | None = None
+_pool_lock = threading.RLock()
+_pool_active: dict[int, int] = {}
+_retired_pools: dict[int, ThreadedConnectionPool] = {}
 
 
 def classify_db_error(exc: Exception) -> str:
@@ -43,8 +49,8 @@ def classify_db_error(exc: Exception) -> str:
     return "unknown"
 
 
-def _create_pool() -> SimpleConnectionPool:
-    return SimpleConnectionPool(
+def _create_pool() -> ThreadedConnectionPool:
+    return ThreadedConnectionPool(
         minconn=settings.db_pool_minconn,
         maxconn=settings.db_pool_maxconn,
         host=settings.db_host,
@@ -56,12 +62,57 @@ def _create_pool() -> SimpleConnectionPool:
     )
 
 
-def init_pool_with_retry(retries: int, delay_sec: float) -> None:
+def _install_pool(new_pool: ThreadedConnectionPool) -> None:
+    """Atomically replace the pool without closing checked-out connections."""
     global _pool
+
+    with _pool_lock:
+        old_pool = _pool
+        _pool = new_pool
+        _pool_active.setdefault(id(new_pool), 0)
+        if old_pool is None or old_pool is new_pool:
+            return
+        old_id = id(old_pool)
+        if _pool_active.get(old_id, 0) == 0:
+            old_pool.closeall()
+            _pool_active.pop(old_id, None)
+        else:
+            _retired_pools[old_id] = old_pool
+
+
+def _checkout_connection() -> tuple[ThreadedConnectionPool, object]:
+    with _pool_lock:
+        pool = _pool
+        if pool is None:
+            raise PoolError("DB pool is not initialized")
+        conn = pool.getconn()
+        _pool_active[id(pool)] = _pool_active.get(id(pool), 0) + 1
+    db_pool_in_use.inc()
+    return pool, conn
+
+
+def _return_connection(pool: ThreadedConnectionPool, conn, *, close: bool) -> None:
+    pool_id = id(pool)
+    try:
+        with _pool_lock:
+            try:
+                pool.putconn(conn, close=close)
+            finally:
+                remaining = max(0, _pool_active.get(pool_id, 1) - 1)
+                _pool_active[pool_id] = remaining
+                if remaining == 0 and pool_id in _retired_pools:
+                    retired = _retired_pools.pop(pool_id)
+                    retired.closeall()
+                    _pool_active.pop(pool_id, None)
+    finally:
+        db_pool_in_use.dec()
+
+
+def init_pool_with_retry(retries: int, delay_sec: float) -> None:
     last_error = None
     for _ in range(retries):
         try:
-            _pool = _create_pool()
+            _install_pool(_create_pool())
             health_status.labels(component="db").set(1)
             return
         except Exception as exc:  # noqa: BLE001
@@ -74,16 +125,20 @@ def init_pool_with_retry(retries: int, delay_sec: float) -> None:
 
 def close_pool() -> None:
     global _pool
-    if _pool is not None:
-        _pool.closeall()
+    with _pool_lock:
+        pools = list(_retired_pools.values())
+        _retired_pools.clear()
+        if _pool is not None:
+            pools.append(_pool)
         _pool = None
+        _pool_active.clear()
+    for pool in pools:
+        pool.closeall()
 
 
 def reconnect_pool() -> None:
-    global _pool
     try:
-        close_pool()
-        _pool = _create_pool()
+        _install_pool(_create_pool())
     except Exception as exc:  # noqa: BLE001
         db_reconnect_total.labels(result="failure").inc()
         health_status.labels(component="db").set(0)
@@ -99,44 +154,36 @@ def get_conn():
         reconnect_pool()
 
     try:
-        conn = _pool.getconn()
-        db_pool_in_use.inc()
-    except Exception:
+        origin_pool, conn = _checkout_connection()
+    except Exception as exc:
         db_failure_total.labels(reason="pool_getconn_failure").inc()
-        reconnect_pool()
-        conn = _pool.getconn()
-        db_pool_in_use.inc()
+        health_status.labels(component="db").set(0)
+        raise exc
 
+    discard = False
     try:
         if conn.closed:
-            if _pool is not None:
-                _pool.putconn(conn, close=True)
-            db_pool_in_use.dec()
-            reconnect_pool()
-            conn = _pool.getconn()
-            db_pool_in_use.inc()
+            discard = True
+            raise InterfaceError("DB pool returned a closed connection")
         yield conn
     except (OperationalError, InterfaceError) as exc:
+        discard = True
         db_failure_total.labels(reason=classify_db_error(exc)).inc()
-        reconnect_pool()
-        raise
-    except Exception:
-        try:
-            if not conn.closed:
-                conn.rollback()
-        except Exception:  # noqa: BLE001
-            pass
+        health_status.labels(component="db").set(0)
         raise
     finally:
         try:
-            if _pool is not None and not conn.closed:
-                try:
-                    conn.rollback()
-                except Exception:  # noqa: BLE001
-                    pass
-                _pool.putconn(conn)
+            if not conn.closed:
+                # psycopg2 starts a transaction for SELECT statements too.
+                # Returning an idle transaction to the pool pins snapshots and
+                # can break later callers, so every checkout is reset.
+                conn.rollback()
+            else:
+                discard = True
+        except Exception:  # noqa: BLE001
+            discard = True
         finally:
-            db_pool_in_use.dec()
+            _return_connection(origin_pool, conn, close=discard)
 
 
 @contextmanager
@@ -149,13 +196,17 @@ def get_cursor(conn):
 
 
 def run_alembic_migrations() -> None:
-    alembic_cfg = Config("alembic.ini")
+    project_root = Path(__file__).resolve().parents[1]
+    alembic_cfg = Config(str(project_root / "alembic.ini"))
+    alembic_cfg.set_main_option("script_location", str(project_root / "alembic"))
+    database_url = (
+        f"postgresql+psycopg2://{quote(settings.db_user, safe='')}:"
+        f"{quote(settings.db_password, safe='')}@{settings.db_host}:{settings.db_port}/"
+        f"{settings.db_name}"
+    )
     alembic_cfg.set_main_option(
         "sqlalchemy.url",
-        (
-            f"postgresql+psycopg2://{settings.db_user}:{settings.db_password}"
-            f"@{settings.db_host}:{settings.db_port}/{settings.db_name}"
-        ),
+        database_url.replace("%", "%%"),
     )
     command.upgrade(alembic_cfg, "head")
 

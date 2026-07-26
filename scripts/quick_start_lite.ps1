@@ -174,6 +174,10 @@ try {
     kubectl apply -k $liteOverlay | Out-Host
     kubectl rollout status statefulset/kafka -n $Namespace --timeout=600s | Out-Host
     kubectl wait --for=condition=complete job/kafka-topic-bootstrap -n $Namespace --timeout=300s | Out-Host
+    kubectl wait --for=condition=complete job/messaging-schema-migration -n $Namespace --timeout=600s | Out-Host
+    kubectl rollout status deployment/worker -n $Namespace --timeout=600s | Out-Host
+    kubectl set env deployment/api -n $Namespace GENERIC_EVENTS_V2_ENABLED=true | Out-Host
+    kubectl rollout status deployment/api -n $Namespace --timeout=600s | Out-Host
   }
 
   Invoke-Step "Waiting for lite deployments" {
@@ -202,7 +206,7 @@ try {
   Write-Host "Lite demo run completed."
   Write-Host "Demo UI: $BaseUrl/demo/order-dashboard.html"
   Write-Host "API docs: $BaseUrl/docs"
-  Write-Host "Grafana: $BaseUrl/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"
+  Write-Host "Grafana: $BaseUrl/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s"
   Write-Host "Profile: demo-lite keeps the Kafka -> Worker -> DB flow, but reduces HA and scale-out capacity for 2-core demo hosts."
 }
 catch {
