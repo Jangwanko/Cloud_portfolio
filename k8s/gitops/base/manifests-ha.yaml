@@ -400,8 +400,16 @@ spec:
               imagePullPolicy: IfNotPresent
               securityContext:
                 allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
                 capabilities:
                   drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: "100m"
+                  memory: "128Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
               env:
                 - name: PGPASSWORD
                   valueFrom:
@@ -421,10 +429,14 @@ spec:
               volumeMounts:
                 - name: postgres-backups
                   mountPath: /backups
+                - name: tmp
+                  mountPath: /tmp
           volumes:
             - name: postgres-backups
               persistentVolumeClaim:
                 claimName: postgres-backups
+            - name: tmp
+              emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment

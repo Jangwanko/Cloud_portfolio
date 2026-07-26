@@ -93,13 +93,16 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-14 generic v2 전환 작업 중간 checkpoint의 local suite는 `195 passed`입니다. 같은 날 이후 reliability 보강 결과나 현재 pass count로 해석하지 않으며, 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
 - 2026-07-21 benchmark/tooling, PostgreSQL restart recovery, backup/restore, cache readiness 보강 뒤 local suite는 `359 passed`입니다.
 - 2026-07-21 performance recovery, cache replay, clean benchmark reset, HPA 안정화 보강 뒤 local suite는 `363 passed`입니다.
+- 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
+- 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
 - 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
-- Public demo-lite는 title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event response `200`인 branch/deployment 전용 상태입니다. Local generic v2 배포와 같은 환경으로 표현하지 않습니다.
+- Public demo-lite는 2026-07-27 live 기준 title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 route와 event `202` 계약이 반영된 branch/deployment 전용 상태입니다. 같은 날 Prometheus에서 `message-worker` lag peak `828`, HPA desired와 actual Worker replica `1→2`를 확인했습니다. Candidate UI `2.3.0`은 public deployment 확인 전입니다.
+- `demo-dev`에는 저사양 자원 경계를 유지한 UI `2.3.0` candidate가 있습니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, API `2.0.0`, migration → Worker → API gate를 포함합니다.
 
 ## Important Docs
 
@@ -197,13 +200,14 @@ Latest ordering / failure injection result after fixing local client skew:
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
 - 현재 `master` source Demo UI version은 `2.0.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, stream persistence summary `3초` polling, `send_failed`/일부 미확인 종료, 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
-- 문서에 등록된 public demo-lite deployment는 branch/deployment 전용 `1.4.1`입니다. `master` source `2.0.0`은 아직 해당 배포에 반영되지 않았으며, 두 버전을 같은 환경 상태로 표현하지 않습니다.
+- 문서에 등록된 public demo-lite deployment는 UI `2.1.0` / API `2.0.0` branch/deployment 전용 상태입니다.
+- `demo-dev` candidate의 source Demo UI는 `2.3.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
 - `DB 저장`은 Worker가 PostgreSQL commit까지 완료한 수입니다.
 - `총 소요시간`은 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간입니다.
-- Worker 표시는 `현재 replica/최대 replica` 형식으로 둡니다. 예: `2/8`, `6/8`. 화면에는 `HPA 목표`처럼 여러 의미로 읽히는 표현을 쓰지 않습니다.
+- Worker 표시는 운영 상태 패널 한 곳에서 `현재 replica/최대 replica` 형식으로 둡니다. 예: demo-lite `1/2`, full profile `2/8`. 실행 중 시계열 확장 증거는 Grafana에서 확인합니다.
 - Operations Advisor는 rule-based AX 보조 영역입니다. AI API를 호출하지 않고, 예약 / Kafka 적재 / DB 저장 / DLQ 신호를 정해진 규칙으로 해석합니다.
 - AI 연동은 향후 별도 Worker나 operator summary 경로로 넣을 수 있습니다. 핵심 event persistence path에는 넣지 않습니다.
 - `RESET DEMO DB`는 로컬 데모 이벤트 DB와 `message-ingress-dlq` topic을 초기화합니다. 실제 운영에서 DLQ 이력을 지우는 절차로 설명하지 않습니다.
@@ -232,7 +236,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - 데모 UI는 운영 증거를 과장하지 않습니다. Kafka append와 DB persistence는 다른 단계이므로 항상 별도 카운터로 표시합니다.
 - `예약 건수`는 Kafka append 성공 시 감소합니다. `DB 저장`은 Worker가 PostgreSQL commit까지 완료했을 때 증가합니다.
 - 일부 이벤트가 전송 실패하거나 DB 저장 확인이 끝나지 않았으면 결과 상태를 `완료`로 표시하지 않습니다. `일부 미확인` 또는 같은 의미의 상태로 닫습니다.
-- Operations Advisor는 readiness와 DLQ뿐 아니라 남은 예약, Kafka 적재 수, DB 저장 수의 불일치도 확인해야 합니다. 미확인 이벤트가 남아 있으면 `정상`이 아니라 확인 필요 상태로 표시합니다.
+- Operations Advisor는 readiness, DLQ, 남은 예약, Kafka 적재 수, DB 저장 수의 불일치를 함께 확인해야 합니다. 전송·저장 추적 중에는 `처리 중`, run 종료 뒤 미확인 이벤트가 남아 있으면 `확인 필요`로 표시합니다.
 - 운영 링크는 `localhost`를 하드코딩하지 않습니다. 현재 API Base URL 또는 접속 origin을 기준으로 생성합니다.
 - batch 전송 로직은 일부 실패 때문에 전체 UI 상태가 무한 `처리 중`에 남지 않도록 종료 상태를 명시적으로 정리합니다.
 

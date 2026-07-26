@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 포트폴리오의 현재 검증 상태와 역사적 측정 원본을 분리합니다. 문서 정합성 감사 기준은 `2026-07-14`, 최신 local cluster generic v2 성능 실행은 `2026-07-21`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·public runtime 확인은 `2026-07-27`, 최신 local cluster generic v2 성능 실행은 `2026-07-21`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
@@ -16,17 +16,19 @@
 | Same-stream ordering | `stream_seq 1..100` | performance suite와 failure injection에서 통과 |
 | Ordering / DB outage | 네 시나리오 accepted = persisted | 2026-06-08 원본 추적 |
 | Materialized cache fallback | fresh cache와 DB-down stale cache | 2026-07-21 tracked rerun: fresh age `0.112s`, DB-down degraded age `11.462s`, recovery exit `0` |
-| Worker scaling | Kafka consumer lag 기반 KEDA | lag / persistence proxy / drain 관찰 |
+| Worker scaling | Kafka consumer lag 기반 KEDA | public demo 2026-07-27: `message-worker` lag peak `828`, HPA desired·actual replica `1→2`; demo-lite max `2` 도달 |
 | Fixed Worker 대 KEDA | 64-stream 동일 조건 1회 A/B: fixed all drain `301.42s`, KEDA `261.17s`, KEDA final `8` | drain `13.35%` 감소; KEDA intake event `7.35%` 감소·p95 `25.62%` 증가, 반복 전 candidate |
 | Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
 | Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | CI run `#55` validate/publish success; image `8f5d78c6963a`, bot commit `717e0ca`; master-targeted runtime rollout은 미검증 |
 | Dev GitOps validation gate | `publish-dev-kafka-image` requires `validate`, exact SHA candidate digest verify, branch advance guard | source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`; local runtime rollout 별도 확인 대기 |
+| Local container candidate | BuildKit cache, non-root UID/GID `10001`, `SIGTERM`, core import | `messaging-portfolio:doc-opt` build 성공, cached rebuild 성공, size `59,783,039` bytes; registry publication·cluster rollout 제외 |
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
-| Public demo-lite UI `1.4.1` | branch/deployment-specific | live GET: title `Post-Order Event Console`, API `1.0.0`, generic v2 없음, order event success `200`; master `2.0.0` 미배포 |
-| Unit / contract / infrastructure suite | `363 passed` (2026-07-21) | cluster rollout·v2 performance와 별도 판정 |
+| Demo-lite candidate UI `2.3.0` | 병렬 Kafka·DB 진행 표시, Worker 표시 단일화, Advisor 진행 상태 | `demo-dev` tests `368 passed`; public deployment 미확인 |
+| Public demo-lite UI `2.1.0` | branch/deployment-specific | 2026-07-27 live: title `Reliable Event Processing Console`, API `2.0.0`, generic v2와 event `202` |
+| Master unit / contract / infrastructure suite | `365 passed` (2026-07-27) | 현재 `master` worktree; cluster rollout·v2 performance와 별도 판정 |
 | Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
 
 원본 위치:
@@ -345,7 +347,7 @@ Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Work
 
 응답의 Worker와 materialized cache 정보는 운영 문맥이며 readiness state 결정 조건이 아닙니다. 아래 신호는 Prometheus, alerts, `check_portfolio_status.ps1`에서 별도로 확인합니다.
 
-응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. 현재 `master` source 기준 값은 `2.0.0`이며 Demo UI `2.0.0` badge와 함께 확인합니다. Public demo-lite UI `1.4.1`은 별도 branch/image 상태입니다.
+응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`입니다. Demo UI badge는 `master`의 `2.0.0`, public demo-lite의 `2.1.0`, `demo-dev` candidate의 `2.3.0`을 구분합니다.
 
 - Kafka broker count
 - PostgreSQL standby count와 replication delay는 API readiness의 degraded reason에도 반영

@@ -2,6 +2,20 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-27 문서 정합성과 container build 최적화
+
+- README에 master source, local runtime, public demo-lite, `demo-dev` candidate 상태를 최신순으로 분리
+- Public demo-lite를 UI `2.1.0`, API `2.0.0`, generic v2, event `202` 기준으로 갱신
+- `demo-dev` UI `2.3.0` candidate와 public deployment 경계 명시
+- Kafka 실험 문서를 generic v2 recovery → multi-stream A/B → first candidate → historical legacy 순으로 재구성
+- Roadmap의 완료된 public v2 동기화를 완료 항목으로 이동하고 다음 투자 순서 갱신
+- 부정·대조형 상투 문장 제거, current evidence와 historical evidence 분리
+- Docker BuildKit pip cache, bytecode 제외, runtime `HOME`, `SIGTERM`, build context 제외 규칙 적용
+- k6 Job과 PostgreSQL backup CronJob에 resource requests/limits 적용
+- PostgreSQL backup container read-only root filesystem과 `/tmp` `emptyDir` 적용
+- candidate image build·핵심 import 성공, UID/GID `10001`, size `59,783,039` bytes 확인
+- local unit / contract / infrastructure suite: `365 passed`
+
 ## 2026-07-27 Grafana 제출 화면 정정
 
 - Kafka intake·PostgreSQL primary·Worker 신호에 `Healthy`·`Active`·`Available` 상태 매핑 추가
@@ -269,7 +283,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - `docs/AWS_IAC_PLAN.md`: AWS managed service mapping과 Terraform 구조 중심 정리
 - `docs/SERVICE_REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/RELIABILITY_POLICY.md`: 서비스 기준, 구조 경계, readiness 판단 기준 불렛형 정리
 - `docs/OBSERVABILITY.md`, `docs/RUNBOOK.md`, `docs/OPERATIONS.md`, `docs/METRICS_REFERENCE.md`: 운영 신호, 장애 절차, 지표 해석 문장 축약
-- `docs/KAFKA_EXPERIMENT.md`: `단순히` 표현 제거, Kafka append path 분리 기준 직접 표현
+- `docs/KAFKA_EXPERIMENT.md`: Kafka append path 분리 기준을 직접적인 문장으로 정리
 
 ## 2026-06-24 업데이트: README 소개 문구 톤 조정
 
@@ -340,7 +354,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 
 해석:
 
-- 이제 포트폴리오 시연에서 Kafka 처리 흐름뿐 아니라, 분석 가능한 DB 저장 구조까지 한 화면에서 설명할 수 있다.
+- 포트폴리오 시연 한 화면에서 Kafka 처리 흐름과 분석 가능한 DB 저장 구조를 함께 설명할 수 있다.
 - 이 구조는 향후 batch export, CDC, warehouse load, 운영 통계 대시보드 같은 데이터 분석 파이프라인으로 이어질 수 있다.
 
 ## 2026-06-21 업데이트: 2코어 서버용 demo-lite 프로파일 추가
@@ -371,7 +385,7 @@ demo-lite 기준:
 
 해석:
 
-- demo-lite는 HA 성능 증명이 아니라 저사양 서버용 시연 profile입니다.
+- demo-lite의 목적은 저사양 서버 시연입니다. HA 성능 증거에서 제외합니다.
 - 장애 허용성, Kafka 3 broker, PostgreSQL HA, KEDA scale-out baseline은 full-ha profile에서 설명합니다.
 - demo-lite 성능 수치는 `docs/TEST_RESULTS.md`의 Kafka baseline과 섞지 않습니다.
 
@@ -449,7 +463,7 @@ demo-lite 기준:
 해석:
 
 - 이 업데이트는 Kafka 처리 성능 개선보다 포트폴리오 시연성과 운영 의미 전달을 강화한 변경입니다.
-- 화면 카운터는 사용자 주문 완료 응답이 아니라 운영자 관점의 내부 처리 흐름을 보여줍니다.
+- 화면 카운터는 운영자 관점의 내부 처리 흐름을 표시합니다. 사용자 주문 완료 응답으로 해석하지 않습니다.
 - `예약 건수`는 아직 DB 저장 완료 전인 데모 예약 / 진행 중 작업의 남은 수를 의미합니다.
 - `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료의 단계 차이를 보여줍니다.
 - `전송 전 예약 비우기`는 시작 전 예약 취소입니다. 이미 시작한 Kafka / Worker 작업을 취소하는 기능은 아닙니다.

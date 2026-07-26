@@ -1,6 +1,18 @@
 # Terraform AWS Migration Blueprint
 
-로컬 `kind + Kafka + PostgreSQL HA` 검증 구조를 AWS managed architecture로 옮길 때 사용할 `Terraform` blueprint입니다. 현재 목적은 실제 운영 배포 완료가 아니라, EKS / MSK / RDS / ALB / Secrets Manager로 책임이 어떻게 이전되는지 보여주는 것입니다.
+로컬 `kind + Kafka + PostgreSQL HA` 검증 구조를 AWS managed architecture로 옮길 때 사용할 `Terraform` blueprint입니다. EKS / MSK / RDS / ALB / Secrets Manager의 책임 경계를 정의합니다. 실제 AWS 배포는 현재 검증 범위에서 제외합니다.
+
+## 현재 검증 상태 — 2026-07-14
+
+- Terraform required version: `>= 1.15.8, < 1.16.0`
+- direct providers: AWS `5.100.0`, Random `3.9.0`
+- root modules: VPC `5.21.0`, EKS `20.37.2`, RDS `6.13.1`
+- provider selection/checksum: `envs/dev/.terraform.lock.hcl`
+- Terraform `1.15.8` 공식 SHA256 확인
+- `fmt -recursive`, `init -backend=false`, `validate` 통과
+- `plan`, `apply`, AWS resource 생성 미실행
+
+저장소 test는 MSK module, Kafka bootstrap secret, 별도 cache queue resource 미포함을 확인합니다.
 
 ## 디렉터리 구조
 
@@ -46,19 +58,6 @@ terraform plan -var-file=terraform.tfvars
 - `terraform plan`과 `terraform apply`는 AWS credential이 필요합니다.
 - `terraform apply`는 EKS, MSK, RDS 비용이 발생할 수 있습니다.
 - 포트폴리오 기본 범위는 migration blueprint와 정적 검증이며, 실제 apply는 선택 작업입니다.
-
-## 검증 상태
-
-현재 저장소에서는 Terraform 코드의 구조와 Kafka 기준 정합성을 테스트로 검증합니다.
-
-- `.venv\Scripts\python.exe -m pytest -q`
-- Terraform 관련 테스트는 MSK module, Kafka bootstrap secret, 별도 cache queue 리소스 미포함을 확인합니다.
-- Terraform required version: `>= 1.15.8, < 1.16.0`
-- direct providers: AWS `5.100.0`, Random `3.9.0`
-- root modules: VPC `5.21.0`, EKS `20.37.2`, RDS `6.13.1`
-- provider selection/checksum: `envs/dev/.terraform.lock.hcl`
-
-2026-07-14 기준 공식 SHA256을 확인한 Terraform `1.15.8`로 `fmt -recursive`, `init -backend=false`, `validate`를 실행해 통과했습니다. `terraform plan`과 `terraform apply`는 실행하지 않았고, 실제 AWS 리소스도 생성하지 않았습니다.
 
 ## Kafka 기준
 

@@ -34,7 +34,7 @@
 - `results/`: 마지막 성능/ordering 원본과 provenance guide; 중간 산출물 기본 추적 제외
 
 ## 주요 파일 설명
-- `Dockerfile`: Kubernetes에서 실행할 애플리케이션 이미지 빌드 기준
+- `Dockerfile`: digest-pinned Python base, BuildKit pip cache, bytecode 제외, UID/GID `10001` non-root 실행
 - `k8s/app/manifests-ha.yaml`: 로컬 HA 검증용 통합 매니페스트
 - `k8s/gitops/base/manifests-ha.yaml`: GitOps 기준 통합 매니페스트
 - `k8s/gitops/base/migration-job.yaml`: Argo 일반 Sync wave `-2` Alembic migration Job

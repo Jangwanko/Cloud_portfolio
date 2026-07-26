@@ -111,13 +111,15 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. `master` source의 예상 조합인 `ver. 2.0.0 / api 2.0.0`과 비교해 UI asset과 API image가 각각 반영됐는지 확인합니다. 2026-07-21 local `dev-kafka` live는 title `Reliable Event Processing Console`, UI/API `2.0.0`, generic event `202`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite는 title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, image `e481a21`, generic v2 route 없음, event `200`인 별도 deployment이며 generic `2.0.0` 변경은 아직 반영되지 않았습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. UI badge와 함께 확인해 static asset과 API image의 배포 상태를 구분합니다. `master` source 예상 조합은 `ver. 2.0.0 / api 2.0.0`입니다. Public demo-lite는 2026-07-27 기준 title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic event `202`입니다. `demo-dev` UI `2.3.0`은 public deployment 확인 전입니다.
 
 ## Demo Access
 
 Master source Demo UI: `2.0.0`
 
-Public demo-lite Demo UI: `1.4.1` (branch/deployment-specific, master `2.0.0` 미배포)
+Demo-lite candidate Demo UI: `2.3.0` (`demo-dev`, not deployed)
+
+Public demo-lite Demo UI: `2.1.0` (2026-07-27 live)
 
 Local surfaces:
 
@@ -133,7 +135,7 @@ Demo counter semantics:
 - `Kafka 적재`: API가 ingress topic append를 완료한 수
 - `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
 - `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
-- Worker: 현재 replica / 최대 replica
+- Worker: 현재 replica / 최대 replica; full profile `2/8`, demo-lite `1/2`
 
 UI operating behavior:
 
@@ -141,7 +143,10 @@ UI operating behavior:
 - event intake: `POST /v2/streams/{stream_id}/events`
 - readiness/DLQ refresh: 기본 30초, 선택 60초
 - auth token: 동일 base/user에서 memory cache 재사용, UI 기준 30분
-- persistence: stream 단위 `/persistence-summary`를 3초 간격 polling
+- persistence: `master` UI `2.0.0`과 public UI `2.1.0`은 sender 완료 뒤 polling
+- candidate persistence: `demo-dev` UI `2.3.0`은 sender와 1초 polling을 함께 시작
+- candidate Worker 표시: 운영 상태 패널 한 곳에서 현재 replica / 최대 replica 확인
+- candidate Advisor: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
 - send failure: event `send_failed` 종료
 - persistence timeout: 일부 미확인 상태, 완료 표시 제외
 - structured evidence: `schema_version`, producer-defined `event_type`, JSON `payload`, JSON `metadata`
@@ -372,7 +377,7 @@ Generic v2 manual local rollout:
 
 ### Generic v2 Downgrade Safety
 
-Alembic `0008` downgrade는 v2 row뿐 아니라 기존 컬럼만으로 복원할 수 없는 schema v1 `payload`/`metadata`가 하나라도 있으면 lossy downgrade를 거부합니다. Order reference adapter의 추가 metadata도 여기에 포함됩니다. 아래 조건을 순서대로 모두 확인한 뒤에만 `0007_drop_legacy_room_sequence_allocations`로 내립니다.
+Alembic `0008` downgrade는 모든 v2 row와 기존 컬럼만으로 복원할 수 없는 schema v1 `payload`/`metadata`를 검사합니다. 하나라도 있으면 lossy downgrade를 거부합니다. Order reference adapter의 추가 metadata도 검사 대상입니다. 아래 조건을 순서대로 모두 확인한 뒤에만 `0007_drop_legacy_room_sequence_allocations`로 내립니다.
 
 1. 모든 desired state에서 `GENERIC_EVENTS_V2_ENABLED=false` 적용
 2. API rollout 완료와 모든 API pod의 gate `false` 확인; v2 POST가 `503`인지 확인

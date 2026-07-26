@@ -2,7 +2,9 @@
 
 Master source UI version: `2.0.0`
 
-Public demo-lite UI version: `1.4.1` (branch/deployment-specific)
+Demo-lite candidate UI version: `2.3.0` (`demo-dev`, not deployed)
+
+Public demo-lite UI version: `2.1.0` (2026-07-27 live, branch/deployment-specific)
 
 ## Purpose
 
@@ -19,7 +21,7 @@ Public demo-lite UI version: `1.4.1` (branch/deployment-specific)
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `1.4.1` reference scenario 시연 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.1.0` generic v2 reference scenario 시연 |
 | Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
 | Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
@@ -36,9 +38,10 @@ Grafana 접근:
 Version boundary:
 
 - `master` source: UI `2.0.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
+- `demo-dev` candidate: UI `2.3.0`, API `2.0.0`, 저사양 Kubernetes overlay와 UI 진행 상태 개선, 공개 서버 미배포
 - local `dev-kafka` live 2026-07-21: title `Reliable Event Processing Console`, UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
-- public demo-lite live GET 2026-07-21: title `Post-Order Event Console`, UI `1.4.1`, API `1.0.0`, API image `e481a21`, generic v2 route 없음, event route `200`
-- generic `2.0.0` 변경: local `dev-kafka`에는 배포 완료, public demo-lite에는 미배포
+- public demo-lite live GET 2026-07-27: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 route, event `202`
+- `demo-dev` UI `2.3.0`: public demo-lite 미배포
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
 API boundary:
@@ -56,14 +59,14 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.0.0` image build/load:
+- 현재 `master` image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
 tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 ```
 
-기존 cluster에서 API만 restart하는 UI-only 갱신은 `2.0.0`에 사용하지 않습니다. 수동 local manifest는 `GENERIC_EVENTS_V2_ENABLED=false`로 시작해 API startup migration 동안 v2 intake를 막습니다. Quick start는 Worker rollout을 기다린 뒤 API env를 `true`로 바꾸고 API rollout을 확인합니다. GitOps는 gate `false`인 `messaging-env` Secret wave `-3`, 일반 Sync migration Job wave `-2`, Worker wave `-1`, `local-ha` overlay가 API에 gate `true`를 넣는 wave `0` 순서입니다. 구 Worker가 v2 job을 처리하면 body preview만 남고 JSON `payload`/`metadata`가 보존되지 않습니다.
+기존 cluster에서 API만 restart하는 UI-only 갱신은 generic v2 rollout에 사용하지 않습니다. 수동 local manifest는 `GENERIC_EVENTS_V2_ENABLED=false`로 시작해 migration 동안 v2 intake를 막습니다. Quick start는 Worker rollout을 기다린 뒤 API env를 `true`로 바꾸고 API rollout을 확인합니다. GitOps는 gate `false`인 `messaging-env` Secret wave `-3`, 일반 Sync migration Job wave `-2`, Worker wave `-1`, API wave `0` 순서입니다. 구 Worker가 v2 job을 처리하면 body preview만 남고 JSON `payload`/`metadata`가 보존되지 않습니다.
 
 ## Demo Flow
 
@@ -83,13 +86,13 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- 화면 `ver. 2.0.0`과 API version `2.0.0` 표시 확인
+- `master` 화면 `ver. 2.0.0`과 API version `2.0.0` 표시 확인
 
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
-- 현재 기대 title/badge: `Post-Order Event Console` / `1.4.1`; OpenAPI `1.0.0`, generic v2 route 없음, order event success `200`
-- `master` source `2.0.0` 기능 확인용으로 사용하지 않음
+- 현재 기대 title/badge: `Reliable Event Processing Console` / `2.1.0`; OpenAPI `2.0.0`, generic v2 route, event success `202`
+- `demo-dev` candidate `2.3.0`의 동시 진행률·Advisor 판정 확인용으로 사용하지 않음
 
 ## English Demo Script
 
@@ -108,13 +111,14 @@ Public demo-lite 확인:
 | `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append에 성공한 수 |
 | `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 끝낸 수 |
 | `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간 |
-| `Worker` | 현재 Worker replica / 최대 replica. 예: `2/8`, `6/8` |
+| `Worker` | 현재 Worker replica / 최대 replica. full profile `2/8`, demo-lite `1/2` |
 
 Persistence 확인 방식:
 
 - 한 batch에서 reference stream 1개 생성
 - event append: `POST /v2/streams/{stream_id}/events`
-- event append 뒤 `GET /v1/streams/{stream_id}/persistence-summary`를 3초 간격으로 polling
+- `master` UI `2.0.0`과 public UI `2.1.0`: sender 완료 뒤 persistence summary polling
+- `demo-dev` UI `2.3.0`: sender와 persistence summary polling을 함께 시작, 1초 간격으로 DB 저장 수 반영
 - accepted event 수와 `persisted_count` 비교
 - 최대 polling 안에 확인되지 않은 row는 `일부 미확인`
 - API append 실패 event는 `send_failed`로 종료, 전체 화면이 무한 처리 중에 남지 않음
@@ -124,8 +128,8 @@ Persistence 확인 방식:
 - `예약 건수`와 `DB 저장`은 같은 숫자가 아니다.
 - API는 Kafka에 event를 전달한다.
 - Worker는 Kafka event를 소비해 DB에 저장한다.
-- Kafka append가 먼저 움직이고, DB 저장이 뒤따라온다.
-- 이 차이가 데모에서 봐야 할 핵심이다.
+- Kafka append와 DB 저장은 서로 다른 완료 조건으로 갱신
+- UI `2.3.0`에서는 Kafka append가 끝나기 전에도 DB 저장 증가 확인 가능
 - 일부 `send_failed` 또는 persistence 미확인 존재: `완료` 대신 부분 확인 상태
 
 ## Authentication Reuse
@@ -138,13 +142,15 @@ Persistence 확인 방식:
 
 ## Structured DB Evidence
 
-결과 패널의 `DB 저장 컬럼 / Stored DB Columns`:
+DB 저장 증거:
 
 - `schema_version`: envelope contract version
 - `event_type`: producer-defined event type
 - `payload`: domain-neutral JSON event data
 - `metadata`: classification, external reference 같은 선택적 JSON context
 - DB row 조회: 로그인 user와 stream membership 범위
+- `master` UI `2.0.0`: 별도 DB 저장 컬럼 패널
+- `demo-dev` UI `2.3.0`: Pipeline Evidence의 DB 단계 뒤 compact evidence
 
 주문 reference sample은 `reference.payment.completed`, `reference.order.created` 같은 `event_type`과 `metadata.external_references.payment`를 사용합니다. 이 값은 generic core의 필수 domain 규칙이 아닙니다.
 
@@ -165,6 +171,7 @@ Legacy compatibility:
 - 현재 방식:
   - rule-based
   - AI API 미사용
+  - `demo-dev` UI `2.3.0`: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
 - 확장 여지:
   - 별도 AI Worker
   - 운영 요약 생성

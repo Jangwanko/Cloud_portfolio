@@ -400,6 +400,32 @@ def test_application_image_and_pods_run_non_root() -> None:
     assert 'drop: ["ALL"]' in manifest
 
 
+def test_batch_containers_have_resource_budgets_and_read_only_roots() -> None:
+    k6_job = _read("k8s/app/k6-job.yaml")
+    manifest = _read("k8s/gitops/base/manifests-ha.yaml")
+    backup = manifest.split("name: postgres-weekly-backup", 1)[1].split("---", 1)[0]
+
+    for token in (
+        "readOnlyRootFilesystem: true",
+        'cpu: "250m"',
+        'cpu: "2000m"',
+        'memory: "128Mi"',
+        'memory: "512Mi"',
+    ):
+        assert token in k6_job
+
+    for token in (
+        "readOnlyRootFilesystem: true",
+        'cpu: "100m"',
+        'cpu: "500m"',
+        'memory: "128Mi"',
+        'memory: "512Mi"',
+        "mountPath: /tmp",
+        "emptyDir: {}",
+    ):
+        assert token in backup
+
+
 def test_prometheus_discovers_every_worker_replica_and_notification_lag() -> None:
     prometheus = _read("monitoring/prometheus/prometheus.yml")
     alerts = _read("monitoring/prometheus/alerts.yml")
@@ -466,6 +492,7 @@ def test_verified_toolchain_pins_stay_aligned() -> None:
     linux = _read("scripts/install_linux_prereqs.sh")
 
     assert dockerfile.startswith(
+        "# syntax=docker/dockerfile:1.7\n"
         "FROM python:3.11.15-slim-bookworm@sha256:"
         "f5cf0344c9886ff24d34797578d5d7dd6e8911ae0fe5962bb55d0f89603ec361\n"
     )
