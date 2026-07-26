@@ -7,10 +7,10 @@
 | 대상 | 현재 상태 |
 | --- | --- |
 | `master` source | Demo UI `2.0.0`, API `2.0.0`, generic v2 |
-| `demo-dev` candidate | Demo UI `2.2.0`, API `2.0.0`, generic v2, 저사양 overlay |
+| `demo-dev` candidate | Demo UI `2.3.0`, API `2.0.0`, generic v2, 저사양 overlay |
 | public `demo-lite` | UI `2.1.0`, API `2.0.0`, generic v2, event `202` |
 
-`demo-dev` UI `2.2.0` candidate는 아직 공개 서버의 상태가 아닙니다. 공개 URL이 새 image와 GitOps revision으로 전환되고 UI badge, readiness `app_version`, Kafka·DB 동시 진행률, Worker peak 표시를 확인한 뒤 public 상태를 갱신합니다.
+`demo-dev` UI `2.3.0` candidate는 아직 공개 서버의 상태가 아닙니다. 공개 URL이 새 image와 GitOps revision으로 전환되고 UI badge, readiness `app_version`, Kafka·DB 동시 진행률, compact DB 저장 증거, Advisor 진행 상태를 확인한 뒤 public 상태를 갱신합니다.
 
 ## 유지하는 기능
 
@@ -85,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_lite.ps1
 - GitHub Actions `validate`와 `publish-demo-lite-image` 성공
 - Argo CD `Synced / Healthy`
 - API/Worker image가 동일 immutable SHA
-- Demo UI `ver. 2.2.0`
+- Demo UI `ver. 2.3.0`
 - readiness `app_version`이 배포 SHA와 일치
 - generic event POST `202`
 - Kafka broker `1`, Worker availability `1`, consumer lag 최종 `0`

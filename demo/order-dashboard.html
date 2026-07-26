@@ -294,7 +294,7 @@
     }
 
     .queue-metrics {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .proof,
@@ -516,7 +516,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.2.0 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.3.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -621,7 +621,6 @@
             <div class="queue-metric"><strong data-i18n="reserved">예약 건수</strong><span id="queued-count">0</span></div>
             <div class="queue-metric"><strong data-i18n="kafkaAppended">Kafka 적재</strong><span id="processed-count">0</span></div>
             <div class="queue-metric"><strong data-i18n="dbPersisted">DB 저장</strong><span id="db-persisted-count">0</span></div>
-            <div class="queue-metric"><strong data-i18n="workerReplicas">Worker</strong><span id="run-worker-status">-</span></div>
             <div class="queue-metric"><strong data-i18n="totalElapsed">총 소요시간</strong><span id="elapsed-seconds">0.0s</span></div>
           </div>
         </div>
@@ -638,7 +637,6 @@
             <div class="proof"><strong>Kafka topic</strong><span id="proof-topic">-</span></div>
             <div class="proof"><strong>Worker status</strong><span id="proof-worker">-</span></div>
             <div class="proof"><strong>DB row</strong><span id="proof-db">-</span></div>
-            <div class="proof envelope-proof"><strong data-i18n="envelopeVerification">Envelope 검증 · schema_version / event_type / payload / metadata</strong><span id="envelope-verification">전송 전</span></div>
           </div>
         </div>
         <div class="pipeline" id="pipeline">
@@ -677,6 +675,10 @@
               <div class="evidence">DLQ summary 조회 전</div>
             </div>
           </div>
+        </div>
+        <div class="proof envelope-proof">
+          <strong data-i18n="envelopeVerification">DB 저장 컬럼 · schema_version / event_type / payload / metadata</strong>
+          <span id="envelope-verification">전송 전</span>
         </div>
       </section>
 
@@ -755,7 +757,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.2.0";
+    const DEMO_UI_VERSION = "2.3.0";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -831,14 +833,17 @@
         advisorAttention: "확인 필요",
         advisorCritical: "즉시 확인",
         advisorWaiting: "확인 전",
+        advisorProcessing: "처리 중",
         advisorNextDefault: "상태 새로고침 후 다음 확인 항목을 표시합니다.",
         advisorNormalReason: "서비스 상태와 현재 전송 카운터가 안정적입니다.",
+        advisorProcessingReason: "Kafka 적재와 DB 저장이 진행 중입니다.",
         advisorDlqReason: "최근 DLQ log 표본이 있습니다. 현재 request status 확인이 필요합니다.",
         advisorBlockedReason: "최근 DLQ log 표본에 replay guard 기록이 있습니다.",
         advisorReadinessReason: "서비스 readiness가 ready가 아닙니다.",
         advisorWorkerReason: "Worker replica 정보를 확인하지 못했습니다.",
         advisorPartialReason: "예약, Kafka 적재, DB 저장 수가 일치하지 않습니다.",
         advisorNormalNext: "샘플을 전송해 Kafka 적재와 DB 저장 흐름을 시연할 수 있습니다.",
+        advisorProcessingNext: "전송 종료 뒤 요청 수와 DB 저장 수를 판정합니다.",
         advisorDlqNext: "append-only log이므로 현재 request status를 먼저 확인한 뒤 replay 여부를 결정합니다.",
         advisorBlockedNext: "현재 상태를 확인하고 필요하면 수동 처리 또는 데이터 보정을 진행합니다.",
         advisorReadinessNext: "Readiness reason, Kafka, PostgreSQL 상태를 먼저 확인합니다.",
@@ -875,7 +880,7 @@
         savedPrefix: "DB 저장됨",
         checkingDlq: "DLQ summary 조회 전",
         resetNeedsConfirm: "RESET DEMO DB를 입력해야 초기화합니다.",
-        envelopeVerification: "Envelope 검증 · schema_version / event_type / payload / metadata"
+        envelopeVerification: "DB 저장 컬럼 · schema_version / event_type / payload / metadata"
       },
       en: {
         pageSubtitle: "Inspect Kafka acceptance, ordered persistence, failure isolation, and replay for domain events.",
@@ -951,14 +956,17 @@
         advisorAttention: "Needs attention",
         advisorCritical: "Immediate check",
         advisorWaiting: "Not checked",
+        advisorProcessing: "Processing",
         advisorNextDefault: "Refresh status to show the next operator check.",
         advisorNormalReason: "Service status and the current send counters are stable.",
+        advisorProcessingReason: "Kafka append and DB persistence are in progress.",
         advisorDlqReason: "Recent DLQ log samples exist; verify current request status.",
         advisorBlockedReason: "Recent DLQ log samples include replay-guard records.",
         advisorReadinessReason: "Service readiness is not ready.",
         advisorWorkerReason: "Worker replica information is unavailable.",
         advisorPartialReason: "Reserved, Kafka-appended, and DB-persisted counts do not match.",
         advisorNormalNext: "Send samples to demonstrate Kafka append and DB persistence.",
+        advisorProcessingNext: "Evaluate request and persistence counts after the run finishes.",
         advisorDlqNext: "Because this is an append-only log, verify current request status before deciding on replay.",
         advisorBlockedNext: "Verify current state, then use manual handling or data correction if needed.",
         advisorReadinessNext: "Check readiness reason, Kafka, and PostgreSQL first.",
@@ -995,7 +1003,7 @@
         savedPrefix: "DB persisted",
         checkingDlq: "DLQ summary not checked yet",
         resetNeedsConfirm: "Type RESET DEMO DB before resetting demo event data.",
-        envelopeVerification: "Envelope Verification · schema_version / event_type / payload / metadata"
+        envelopeVerification: "Stored DB Columns · schema_version / event_type / payload / metadata"
       }
     };
 
@@ -1017,7 +1025,6 @@
     const SEND_CONCURRENCY = 40;
     const PERSISTENCE_POLL_INTERVAL_MS = 1000;
     const PERSISTENCE_ATTEMPTS_AFTER_SEND = 120;
-    const WORKER_SCALING_POLL_INTERVAL_MS = 5000;
     let latestReadiness = null;
     let latestDlqSummary = null;
     const queueStats = {
@@ -1031,10 +1038,6 @@
       sendFailed: 0,
       cancelled: 0,
       envelopeVerified: null,
-      workerStart: null,
-      workerCurrent: null,
-      workerPeak: null,
-      workerMax: null,
       uiSession: 0
     };
 
@@ -1172,16 +1175,6 @@
       );
       setText("#processed-count", String(queueStats.kafkaAppended));
       setText("#db-persisted-count", String(queueStats.dbPersisted));
-      const workerStatus = Number.isFinite(queueStats.workerCurrent) && Number.isFinite(queueStats.workerMax)
-        ? (
-            Number.isFinite(queueStats.workerStart)
-            && Number.isFinite(queueStats.workerPeak)
-            && queueStats.workerPeak > queueStats.workerStart
-              ? `${queueStats.workerStart}→${queueStats.workerPeak} / max ${queueStats.workerMax}`
-              : `${queueStats.workerCurrent}/${queueStats.workerMax}`
-          )
-        : "-";
-      setText("#run-worker-status", workerStatus);
       const endAt = queueStats.runCompletedAt || Date.now();
       const elapsedSeconds = queueStats.runStartedAt
         ? Math.max((endAt - queueStats.runStartedAt) / 1000, 0.1)
@@ -1223,10 +1216,6 @@
       queueStats.sendFailed = 0;
       queueStats.cancelled = 0;
       queueStats.envelopeVerified = null;
-      queueStats.workerStart = null;
-      queueStats.workerCurrent = null;
-      queueStats.workerPeak = null;
-      queueStats.workerMax = null;
       setText("#envelope-verification", t("waiting"));
       updateQueueMetrics();
       log(`${t("queueStart")} target=${count}`);
@@ -1269,42 +1258,6 @@
       queueStats.sendFailed += 1;
       queueStats.runProcessed = queueStats.dbPersisted + queueStats.sendFailed;
       updateQueueMetrics();
-    }
-
-    function recordWorkerScaling(worker, uiSession) {
-      if (
-        !isCurrentUiSession(uiSession)
-        || !Number.isFinite(worker?.available_replicas)
-        || !Number.isFinite(worker?.max_replicas)
-      ) {
-        return;
-      }
-      const scaleCandidate = Math.max(
-        worker.available_replicas,
-        Number.isFinite(worker.desired_replicas) ? worker.desired_replicas : 0,
-        Number.isFinite(worker.hpa_desired_replicas) ? worker.hpa_desired_replicas : 0
-      );
-      queueStats.workerStart ??= worker.available_replicas;
-      queueStats.workerCurrent = worker.available_replicas;
-      queueStats.workerPeak = Math.max(queueStats.workerPeak || 0, scaleCandidate);
-      queueStats.workerMax = worker.max_replicas;
-      updateQueueMetrics();
-    }
-
-    async function pollRunWorkerScaling(baseUrl, uiSession) {
-      while (isCurrentUiSession(uiSession) && !queueStats.runCompletedAt) {
-        try {
-          const response = await fetch(`${baseUrl}/health/ready`);
-          const readiness = await response.json();
-          latestReadiness = readiness;
-          setDemoVersion(readiness.app_version);
-          updateReadinessPanel(readiness);
-          recordWorkerScaling(readiness.worker, uiSession);
-        } catch (error) {
-          log(`worker scaling status retry: ${describeFetchFailure(error)}`);
-        }
-        await new Promise((resolve) => setTimeout(resolve, WORKER_SCALING_POLL_INTERVAL_MS));
-      }
     }
 
     function finishProcessingRun(uiSession) {
@@ -1665,7 +1618,8 @@
       let statusKey = "advisorWaiting";
       let reasonKey = "advisorNextDefault";
       let nextKey = "advisorNextDefault";
-      const runHasMismatch = Boolean(queueStats.runStartedAt) && (
+      const runInProgress = Boolean(queueStats.runStartedAt) && !queueStats.runCompletedAt;
+      const runHasMismatch = Boolean(queueStats.runCompletedAt) && (
         queueStats.queued > 0
         || queueStats.sendFailed > 0
         || queueStats.kafkaAppended !== queueStats.runTarget
@@ -1685,6 +1639,10 @@
         statusKey = "advisorAttention";
         reasonKey = "advisorReadinessReason";
         nextKey = "advisorReadinessNext";
+      } else if (runInProgress) {
+        statusKey = "advisorProcessing";
+        reasonKey = "advisorProcessingReason";
+        nextKey = "advisorProcessingNext";
       } else if (!Number.isFinite(readiness.worker?.available_replicas)) {
         statusKey = "advisorAttention";
         reasonKey = "advisorWorkerReason";
@@ -1924,7 +1882,6 @@
       const producerState = { completed: false };
       let nextIndex = 0;
       let acceptedCount = 0;
-      void pollRunWorkerScaling(baseUrl, uiSession);
 
       async function sendNextReservedEvent() {
         const index = nextIndex;

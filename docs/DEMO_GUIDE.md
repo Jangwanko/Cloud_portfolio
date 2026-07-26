@@ -2,7 +2,7 @@
 
 Master source UI version: `2.0.0`
 
-Demo-lite candidate UI version: `2.2.0` (`demo-dev`, not deployed)
+Demo-lite candidate UI version: `2.3.0` (`demo-dev`, not deployed)
 
 Public demo-lite UI version: `2.1.0` (2026-07-27 live, branch/deployment-specific)
 
@@ -38,10 +38,10 @@ Grafana 접근:
 Version boundary:
 
 - `master` source: UI `2.0.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
-- `demo-dev` candidate: UI `2.2.0`, API `2.0.0`, generic v2와 저사양 Kubernetes overlay, Kafka·DB 동시 진행률과 Worker peak 표시, 공개 서버 미배포
+- `demo-dev` candidate: UI `2.3.0`, API `2.0.0`, generic v2와 저사양 Kubernetes overlay, Kafka·DB 동시 진행률·compact DB 저장 증거·Advisor 진행 상태, 공개 서버 미배포
 - local `dev-kafka` live 2026-07-21: title `Reliable Event Processing Console`, UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
 - public demo-lite live GET 2026-07-27: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 route, event `202`
-- `demo-dev` UI `2.2.0`의 Kafka append·DB persistence 동시 진행률과 Worker peak: public demo-lite 미배포
+- `demo-dev` UI `2.3.0`: public demo-lite 미배포
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
 API boundary:
@@ -59,7 +59,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.2.0` image build/load:
+- 현재 `2.3.0` image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -78,7 +78,6 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - `예약 건수`
   - `Kafka 적재`
   - `DB 저장`
-  - `Worker`: 실행 시작 replica와 peak replica. 확장 시 `1→2 / max 2`
   - `총 소요시간`
 - 오른쪽 패널 확인:
   - `Operations Advisor`
@@ -87,13 +86,13 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- `demo-dev` candidate 화면 `ver. 2.2.0`과 API version `2.0.0` 표시 확인
+- `demo-dev` candidate 화면 `ver. 2.3.0`과 API version `2.0.0` 표시 확인
 
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
 - 현재 기대 title/badge: `Reliable Event Processing Console` / `2.1.0`; OpenAPI `2.0.0`, generic v2 route, event success `202`
-- `demo-dev` candidate `2.2.0`의 동시 진행률 확인용으로 사용하지 않음
+- `demo-dev` candidate `2.3.0`의 동시 진행률·Advisor 판정 확인용으로 사용하지 않음
 
 ## English Demo Script
 
@@ -112,7 +111,7 @@ Public demo-lite 확인:
 | `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append에 성공한 수 |
 | `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 끝낸 수 |
 | `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간 |
-| `Worker` | 실행 중 5초 간격으로 확인한 시작 replica와 peak replica. 확장 시 `1→2 / max 2`, 확장 전에는 현재/max |
+| `Worker` | 오른쪽 운영 상태 패널에서 현재 replica / 최대 replica 확인. 시계열 확장은 Grafana에서 확인 |
 
 Persistence 확인 방식:
 
@@ -121,6 +120,8 @@ Persistence 확인 방식:
 - event append 전송과 동시에 `GET /v1/streams/{stream_id}/persistence-summary`를 1초 간격으로 polling
 - Kafka append 진행 중에도 `persisted_count`를 `DB 저장` 카운터에 반영
 - accepted event 수와 `persisted_count` 비교
+- 전송 진행 중 Operations Advisor는 `처리 중`, 종료 뒤에만 카운터 불일치 판정
+- Pipeline Evidence의 DB 단계 뒤에서 compact 저장 컬럼 증거 확인
 - 최대 polling 안에 확인되지 않은 row는 `일부 미확인`
 - API append 실패 event는 `send_failed`로 종료, 전체 화면이 무한 처리 중에 남지 않음
 
