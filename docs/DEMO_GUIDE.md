@@ -36,7 +36,7 @@ Grafana 접근:
 Version boundary:
 
 - `dev-kafka` source: UI `2.2.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
-- local `dev-kafka` live 2026-07-21: title `Reliable Event Processing Console`, UI/API `2.0.0`, generic v2 event route `202`, Argo CD `Synced / Healthy`
+- local `dev-kafka` live 2026-07-27: UI `2.2.0`, API `2.0.0`, image `1cd84d4df742`, API `6/6`, Worker `2/2`, Argo CD `Synced / Healthy`
 - public demo-lite last verified: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 event `202`
 - UI `2.2.0` release `626e8296b79d`: public runtime 확인 대기
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인

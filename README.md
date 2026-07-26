@@ -213,7 +213,7 @@ Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
 | `dev-kafka` source | UI `2.2.0`, API `2.0.0` | generic v2 + `202`; Kafka append·DB persistence 동시 갱신, 실행 중 Worker peak 유지 |
-| local `dev-kafka` live evidence, 2026-07-21 | API `2.0.0`, image `9349ba9` | cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
+| local `dev-kafka` live, 2026-07-27 | UI `2.2.0`, API `2.0.0`, image `1cd84d4df742` | API `6/6`, Worker `2/2`, Argo `Synced / Healthy`, concurrent polling·Worker peak asset 확인 |
 | public demo-lite, 마지막 live 확인 | UI `2.1.0`, API `2.0.0` | generic v2 + `202`; UI `2.2.0` release `626e8296b79d` 게시, runtime 확인 대기 |
 
 ### Local Quick Start

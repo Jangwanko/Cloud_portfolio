@@ -10,6 +10,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - 실행 중 `/health/ready`를 5초 간격 확인하고 Worker 시작·peak replica 유지
 - producer 완료 뒤 실제 accepted event 수로 최종 persistence 목표 확정
 - local unit / contract / infrastructure suite: `364 passed`
+- local rollout: image `1cd84d4df742`, Argo revision `ddb888a`, `Synced / Healthy`, API `6/6`, Worker `2/2`, UI `2.2.0`
 
 ## 2026-07-27 Grafana 제출 화면 정정
 
