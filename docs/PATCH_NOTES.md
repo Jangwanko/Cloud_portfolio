@@ -2,6 +2,17 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-07-27 Demo UI Kafka·DB 진행률 병렬 관측
+
+- Demo UI `2.2.0`
+- event sender 완료 뒤 시작하던 persistence summary polling을 전송 시작 시점으로 이동
+- Kafka append 진행 중에도 1초 간격 `persisted_count`를 `DB 저장` 카운터에 반영
+- producer 완료 뒤 send failure를 제외한 실제 accepted event 수로 최종 persistence 목표 확정
+- 실행 중 `/health/ready`를 5초 간격으로 확인하고 Worker 시작 replica와 peak replica를 `1→2 / max 2` 형식으로 유지
+- 2026-07-27 public demo Prometheus 확인: `message-worker` lag peak `828`, HPA desired와 실제 Worker replica `1→2`
+- polling과 sender가 함께 종료된 뒤 envelope 검증과 결과 상태 확정
+- local unit / contract / infrastructure suite: `368 passed`
+
 ## 2026-07-27 demo-lite generic v2 동기화 candidate
 
 - 2코어급 자원 경계 유지: Kafka `1`, PostgreSQL/Pgpool `1`, API/Worker `1..2`

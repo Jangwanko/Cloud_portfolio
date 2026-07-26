@@ -76,7 +76,7 @@ class TestOperationalDocumentation:
             "Historical Kafka intake baseline",
             "Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다",
             "## Demo",
-            "### Public legacy demo-lite",
+            "### Public demo-lite",
             "## Validation Summary",
             "31,676",
             "same-stream ordering: `100/100`",
