@@ -33,15 +33,27 @@ $u2Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -Conten
 $streamBody = @{ name = "smoke-stream-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json
 $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body $streamBody
 
-$msgBody = @{ body = "hello smoke" } | ConvertTo-Json
-$accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-event-$suffix"} -ContentType "application/json" -Body $msgBody
+$eventBody = @{
+  event_type = "portfolio.smoke.probe"
+  payload = @{ message = "hello smoke" }
+  metadata = @{ scenario = "smoke-test" }
+} | ConvertTo-Json -Depth 4
+$acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="smoke-event-$suffix"} -ContentType "application/json" -Body $eventBody
+if ([int]$acceptedResponse.StatusCode -ne 202) {
+  throw "Expected HTTP 202 from event intake, got $($acceptedResponse.StatusCode)"
+}
+$accepted = $acceptedResponse.Content | ConvertFrom-Json
+
+if ($accepted.schema_version -ne 2 -or $accepted.event_type -ne "portfolio.smoke.probe") {
+  throw "Generic event envelope was not accepted as expected"
+}
 
 $requestId = $accepted.request_id
 $eventId = $null
 $deadline = (Get-Date).AddSeconds(90)
 while ((Get-Date) -lt $deadline) {
   try {
-    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/event-requests/$requestId"
+    $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v2/event-requests/$requestId"
     if ($status.status -eq "persisted" -and $status.event_id) {
       $eventId = $status.event_id
       break
@@ -56,8 +68,11 @@ if ($null -eq $eventId) {
   throw "Event was not persisted in time"
 }
 
-$events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/events"
+$events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v2/streams/$($stream.id)/events"
 $eventItems = @($events.items)
+if (@($eventItems | Where-Object { $_.request_id -eq $requestId -and $_.payload.message -eq "hello smoke" }).Count -ne 1) {
+  throw "Persisted generic event payload was not returned by the read model"
+}
 
 Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/events/$eventId/read" -Headers @{ Authorization = "Bearer $u2Token" } -ContentType "application/json" -Body "{}" | Out-Null
 

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: messaging-env
+  namespace: messaging-app
+stringData:
+  APP_VERSION: "e481a21"

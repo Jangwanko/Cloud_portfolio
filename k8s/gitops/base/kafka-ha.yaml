@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: kafka-headless
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
@@ -21,6 +23,8 @@ kind: Service
 metadata:
   name: kafka
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   selector:
     app: kafka
@@ -34,6 +38,8 @@ kind: StatefulSet
 metadata:
   name: kafka
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   serviceName: kafka-headless
   replicas: 3
@@ -46,11 +52,23 @@ spec:
       labels:
         app: kafka
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       terminationGracePeriodSeconds: 60
       containers:
         - name: kafka
           image: apache/kafka:3.7.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           command:
             - sh
             - -c
@@ -135,15 +153,35 @@ kind: Job
 metadata:
   name: kafka-topic-bootstrap
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   backoffLimit: 8
+  activeDeadlineSeconds: 600
   template:
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       restartPolicy: OnFailure
       containers:
         - name: topic-bootstrap
           image: apache/kafka:3.7.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           command:
             - sh
             - -c
@@ -159,3 +197,15 @@ spec:
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic stream-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-notifications --partitions 8 --replication-factor 3 --config min.insync.replicas=2
+              for topic in message-ingress message-ingress-dlq message-request-status message-snapshots stream-snapshots message-notifications; do
+                /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$bootstrap" --alter --entity-type topics --entity-name "$topic" --add-config min.insync.replicas=2
+                description="$(/opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --describe --topic "$topic" | head -n 1)"
+                echo "$description" | grep -q 'PartitionCount: 8' || { echo "Unexpected partition count for $topic: $description" >&2; exit 1; }
+                echo "$description" | grep -q 'ReplicationFactor: 3' || { echo "Unexpected replication factor for $topic: $description" >&2; exit 1; }
+              done
+              for topic in message-request-status message-snapshots stream-snapshots; do
+                /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$bootstrap" --alter --entity-type topics --entity-name "$topic" --add-config cleanup.policy=compact,min.insync.replicas=2
+              done
+      volumes:
+        - name: tmp
+          emptyDir: {}

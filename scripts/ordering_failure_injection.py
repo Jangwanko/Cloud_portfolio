@@ -151,7 +151,7 @@ from portfolio.db import get_conn, get_cursor
 stream_ids = [int(value) for value in os.environ["STREAM_IDS"].split(",") if value]
 placeholders = ",".join(["%s"] * len(stream_ids))
 sql = (
-    "SELECT id, request_id, room_id, room_seq, user_id, body, created_at "
+    "SELECT id, request_id, room_id, room_seq, user_id, event_type, payload, body, created_at "
     "FROM messages "
     f"WHERE room_id IN ({placeholders}) "
     "ORDER BY room_id ASC, room_seq ASC"
@@ -170,7 +170,9 @@ for row in rows:
         "stream_id": row["room_id"],
         "stream_seq": row["room_seq"],
         "user_id": row["user_id"],
-        "body": row["body"],
+        "event_type": row["event_type"],
+        "payload": row["payload"],
+        "body": (row["payload"] or {}).get("message", row["body"]),
         "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at),
     })
 print(json.dumps(items))
@@ -228,9 +230,13 @@ def send_event(base_url, token, stream_id, body, delay, host_header=None):
     accepted_at = time.monotonic()
     response = http_json(
         "POST",
-        f"{base_url}/v1/streams/{stream_id}/events",
+        f"{base_url}/v2/streams/{stream_id}/events",
         token=token,
-        payload={"body": body},
+        payload={
+            "event_type": "portfolio.ordering-failure.probe",
+            "payload": {"message": body, "sequence_label": body},
+            "metadata": {"scenario": "ordering-failure-injection"},
+        },
         host_header=host_header,
     )
     if response.get("status") != "accepted":

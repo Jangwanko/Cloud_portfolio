@@ -1,8 +1,10 @@
 # Order Event Service Surface Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. The order surface is now a deprecated reference/compatibility adapter on top of the generic `/v2/streams/{stream_id}/events` contract. This record is preserved to explain why the adapter and legacy fields exist.
 
-**Goal:** Make the project look like a real post-order event service by adding order-domain API contracts and an operational category classifier on top of the existing Kafka intake path.
+> Historical completed plan from 2026-06-18. Current behavior and verification live in `docs/ARCHITECTURE.md` and `docs/TEST_RESULTS.md`; this file is not an active instruction set.
+
+**Goal at the time:** Add an order-domain API contract and operational category classifier on top of the existing Kafka intake path.
 
 **Architecture:** Keep the current Kafka/Worker/message table internals intact. Add order-facing schemas and a `/v1/orders/{order_id}/events` endpoint that translates order events into the existing ingress job payload, then expose category metadata for operators.
 
@@ -116,5 +118,5 @@ Expected: full suite passes or report exact failures.
 ### Self-Review
 
 - Covers the first service-facing slice: order event classification and order-domain API surface.
-- Leaves database schema redesign, AI classification, automatic CS response, and UI work out of this first slice.
+- This first slice originally excluded database schema and UI changes. Later revisions added structured persistence fields and Demo UI evidence.
 - Keeps existing internal `room_id` / `stream_id` implementation while exposing `order_id` at the service boundary.

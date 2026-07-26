@@ -13,7 +13,9 @@ $apiPortForwardProcess = $null
 $prometheusPortForwardProcess = $null
 $kindConfig = Join-Path $PSScriptRoot "..\k8s\kind-config.yaml"
 $kindPath = Join-Path $PSScriptRoot "..\tools\kind.exe"
+$kubectlPath = Join-Path $PSScriptRoot "..\tools\kubectl.exe"
 $helmPath = Join-Path $PSScriptRoot "..\tools\helm\windows-amd64\helm.exe"
+$script:kubectlCommand = $null
 
 function Fail-Friendly([string]$Message) {
   throw $Message
@@ -50,6 +52,20 @@ function Resolve-HelmPath {
   if ($resolved) {
     return $resolved.Path
   }
+  return $null
+}
+
+function Resolve-KubectlPath {
+  $resolved = Resolve-Path $kubectlPath -ErrorAction SilentlyContinue
+  if ($resolved) {
+    return $resolved.Path
+  }
+
+  $cmd = Get-Command kubectl -ErrorAction SilentlyContinue
+  if ($cmd) {
+    return $cmd.Source
+  }
+
   return $null
 }
 
@@ -101,7 +117,11 @@ function Assert-Preflight {
   }
   Write-CheckOk "Using helm: $resolvedHelm"
 
-  $resolvedKubectl = Require-Command "kubectl" "Preflight check failed: kubectl is not available.`nInstall kubectl or make sure Docker Desktop's kubectl is on PATH."
+  $resolvedKubectl = Resolve-KubectlPath
+  if (-not $resolvedKubectl) {
+    Fail-Friendly "Preflight check failed: kubectl is not available.`nRun scripts/bootstrap_tools.ps1 or install kubectl."
+  }
+  $script:kubectlCommand = $resolvedKubectl
   Write-CheckOk "Using kubectl: $resolvedKubectl"
 }
 
@@ -136,7 +156,7 @@ function Test-UrlReady([string]$Url) {
 
 function Test-HttpOk([string]$Url) {
   try {
-    Invoke-WebRequest -Method Get -Uri $Url -TimeoutSec 5 | Out-Null
+    Invoke-WebRequest -UseBasicParsing -Method Get -Uri $Url -TimeoutSec 5 | Out-Null
     return $true
   } catch {
     return $false
@@ -170,15 +190,15 @@ function Wait-HttpsReady([string]$Url, [int]$TimeoutSec = 180) {
 }
 
 function Wait-Deployment([string]$Name, [int]$TimeoutSec = 600) {
-  Wait-NamespacedDeployment -Name $Name -Namespace $Namespace -TimeoutSec $TimeoutSec
+  Wait-NamespacedDeployment -Name $Name -NamespaceToUse $Namespace -TimeoutSec $TimeoutSec
 }
 
 function Wait-NamespacedDeployment([string]$Name, [string]$NamespaceToUse, [int]$TimeoutSec = 600) {
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
-    $resource = kubectl get "deployment/$Name" -n $NamespaceToUse --ignore-not-found -o name 2>$null
+    $resource = & $script:kubectlCommand get "deployment/$Name" -n $NamespaceToUse --ignore-not-found -o name 2>$null
     if ($resource) {
-      kubectl rollout status "deployment/$Name" -n $NamespaceToUse --timeout="$($TimeoutSec)s" | Out-Host
+      & $script:kubectlCommand rollout status "deployment/$Name" -n $NamespaceToUse --timeout="$($TimeoutSec)s" | Out-Host
       return
     }
     Start-Sleep -Seconds 2
@@ -222,14 +242,16 @@ function Wait-TcpPort([string]$Host, [int]$Port, [int]$TimeoutSec = 30) {
 }
 
 function Start-PortForward([string]$ServiceName, [int]$LocalPort, [int]$RemotePort) {
+  $escapedKubectl = $script:kubectlCommand.Replace("'", "''")
   $process = Start-Process powershell `
     -ArgumentList @(
       "-NoProfile",
       "-ExecutionPolicy",
       "Bypass",
       "-Command",
-      "kubectl port-forward -n $Namespace svc/$ServiceName $LocalPort`:$RemotePort"
+      "& '$escapedKubectl' port-forward -n $Namespace svc/$ServiceName $LocalPort`:$RemotePort"
     ) `
+    -WindowStyle Hidden `
     -PassThru
 
   Wait-TcpPort -Host "127.0.0.1" -Port $LocalPort -TimeoutSec 30
@@ -280,7 +302,7 @@ try {
   }
 
   Invoke-Step "Creating application namespace" {
-    kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f - | Out-Host
+    & $script:kubectlCommand create namespace $Namespace --dry-run=client -o yaml | & $script:kubectlCommand apply -f - | Out-Host
   }
 
   Invoke-Step "Installing runtime secrets" {
@@ -317,22 +339,25 @@ try {
   }
 
   Invoke-Step "Applying Kafka runtime" {
-    kubectl apply -f k8s/gitops/base/kafka-ha.yaml | Out-Host
-    kubectl rollout status statefulset/kafka -n $Namespace --timeout=600s | Out-Host
-    kubectl wait --for=condition=complete job/kafka-topic-bootstrap -n $Namespace --timeout=300s | Out-Host
+    & $script:kubectlCommand apply -f k8s/gitops/base/kafka-ha.yaml | Out-Host
+    & $script:kubectlCommand rollout status statefulset/kafka -n $Namespace --timeout=600s | Out-Host
+    & $script:kubectlCommand wait --for=condition=complete job/kafka-topic-bootstrap -n $Namespace --timeout=300s | Out-Host
   }
 
   Invoke-Step "Applying application manifests" {
-    kubectl apply -f k8s/app/manifests-ha.yaml | Out-Host
+    & $script:kubectlCommand apply -f k8s/app/manifests-ha.yaml | Out-Host
   }
 
   Invoke-Step "Waiting for deployments" {
     Wait-NamespacedDeployment -Name "ingress-nginx-controller" -NamespaceToUse "ingress-nginx"
     Wait-Deployment -Name "kube-state-metrics"
     Wait-NamespacedDeployment -Name "keda-operator" -NamespaceToUse "keda"
-    Wait-Deployment -Name "api"
     Wait-Deployment -Name "worker"
+    & $script:kubectlCommand set env deployment/api -n $Namespace GENERIC_EVENTS_V2_ENABLED=true | Out-Host
+    Wait-Deployment -Name "api"
+    Wait-Deployment -Name "notification-worker"
     Wait-Deployment -Name "dlq-replayer"
+    Wait-Deployment -Name "kafka-exporter"
     Wait-Deployment -Name "prometheus"
     Wait-Deployment -Name "grafana"
   }
@@ -371,7 +396,8 @@ try {
   Write-Host "Quick Start all-in-one run completed successfully."
   Write-Host "API URL: $BaseUrl"
   Write-Host "Grafana URL: http://localhost/grafana"
-  Write-Host "Grafana login: admin / 1q2w3e4r"
+  Write-Host "Grafana anonymous viewer: enabled"
+  Write-Host "Grafana admin password: generated in secret messaging-runtime-secrets"
   Write-Host "Prometheus URL: http://localhost/prometheus"
   Write-Host "TLS ingress is also available from $TlsBaseUrl for the same paths."
   Write-Host "k6 load tests remain separate: powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1"

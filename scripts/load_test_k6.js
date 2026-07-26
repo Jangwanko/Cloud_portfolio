@@ -7,6 +7,7 @@ const STAGE_DURATION = __ENV.STAGE_DURATION || "60s";
 const THINK_TIME = Number(__ENV.THINK_TIME || "0.2");
 const PROFILE = __ENV.K6_PROFILE || "mixed";
 const SINGLE_VUS = Number(__ENV.K6_SINGLE_VUS || "500");
+const STREAM_COUNT = Number(__ENV.K6_STREAM_COUNT || "1");
 const K6_WRITE_RESULT_FILES =
   (__ENV.K6_WRITE_RESULT_FILES || "true").toLowerCase() !== "false";
 const SETUP_RETRIES = Number(__ENV.SETUP_RETRIES || "5");
@@ -14,7 +15,7 @@ const SETUP_RETRY_SLEEP = Number(__ENV.SETUP_RETRY_SLEEP || "1");
 const SEND_IDEMPOTENCY_KEY =
   (__ENV.SEND_IDEMPOTENCY_KEY || "false").toLowerCase() === "true";
 
-const eventStatus200 = new Counter("event_status_200");
+const eventStatus202 = new Counter("event_status_202");
 const eventStatus401 = new Counter("event_status_401");
 const eventStatus403 = new Counter("event_status_403");
 const eventStatus404 = new Counter("event_status_404");
@@ -89,6 +90,7 @@ export const options = {
   scenarios: buildScenarios(),
   summaryTrendStats: ["avg", "min", "med", "p(90)", "p(95)", "p(99)", "max"],
   thresholds: {
+    checks: ["rate==1"],
     http_req_failed: ["rate<0.05"],
     http_req_duration: ["p(95)<1000", "p(99)<2000"],
   },
@@ -160,17 +162,23 @@ export function setup() {
     Authorization: `Bearer ${u1Token}`,
   };
 
-  const streamRes = postJsonWithRetry(
-    `${BASE_URL}/v1/streams`,
-    { name: `k6-stream-${suffix}`, member_ids: [u1.id, u2.id] },
-    { headers: authHeaders },
-    200,
-    "create stream",
-  );
-  check(streamRes, { "create stream (200)": (r) => r.status === 200 });
-  const stream = JSON.parse(streamRes.body);
+  if (!Number.isInteger(STREAM_COUNT) || STREAM_COUNT < 1 || STREAM_COUNT > 1000) {
+    throw new Error(`K6_STREAM_COUNT must be an integer from 1 to 1000: ${STREAM_COUNT}`);
+  }
+  const streamIds = [];
+  for (let index = 0; index < STREAM_COUNT; index += 1) {
+    const streamRes = postJsonWithRetry(
+      `${BASE_URL}/v1/streams`,
+      { name: `k6-stream-${suffix}-${index}`, member_ids: [u1.id, u2.id] },
+      { headers: authHeaders },
+      200,
+      `create stream ${index}`,
+    );
+    check(streamRes, { "create stream (200)": (r) => r.status === 200 });
+    streamIds.push(JSON.parse(streamRes.body).id);
+  }
 
-  return { streamId: stream.id, token: u1Token };
+  return { streamIds, token: u1Token };
 }
 
 export function eventFlow(data) {
@@ -183,15 +191,22 @@ export function eventFlow(data) {
   }
 
   const payload = JSON.stringify({
-    body: `k6 event vu=${__VU} iter=${__ITER}`,
+    event_type: "portfolio.load.probe",
+    payload: {
+      message: `k6 event vu=${__VU} iter=${__ITER}`,
+      virtual_user: __VU,
+      iteration: __ITER,
+    },
+    metadata: { scenario: "k6-intake-baseline", stream_count: STREAM_COUNT },
   });
+  const streamIndex = (__VU + __ITER) % data.streamIds.length;
 
   const res = http.post(
-    `${BASE_URL}/v1/streams/${data.streamId}/events`,
+    `${BASE_URL}/v2/streams/${data.streamIds[streamIndex]}/events`,
     payload,
     { headers },
   );
-  if (res.status === 200) eventStatus200.add(1);
+  if (res.status === 202) eventStatus202.add(1);
   else if (res.status === 401) eventStatus401.add(1);
   else if (res.status === 403) eventStatus403.add(1);
   else if (res.status === 404) eventStatus404.add(1);
@@ -201,7 +216,7 @@ export function eventFlow(data) {
   else eventStatusOther.add(1);
 
   check(res, {
-    "event request accepted (200)": (r) => r.status === 200,
+    "event request accepted (202)": (r) => r.status === 202,
   });
 
   sleep(THINK_TIME);
@@ -216,7 +231,7 @@ export function handleSummary(data) {
   const p95Latency = metricValue(data, "http_req_duration", "p(95)", 0);
   const p99Latency = metricValue(data, "http_req_duration", "p(99)", 0);
   const eventStatusLines = [
-    ["200", "event_status_200"],
+    ["202", "event_status_202"],
     ["401", "event_status_401"],
     ["403", "event_status_403"],
     ["404", "event_status_404"],
@@ -234,6 +249,7 @@ export function handleSummary(data) {
     "=== k6 Load Test Summary ===",
     `Base URL           : ${BASE_URL}`,
     `Profile            : ${PROFILE}`,
+    `Stream count       : ${STREAM_COUNT}`,
     `Stage duration     : ${STAGE_DURATION}${PROFILE === "single500" ? ` (${SINGLE_VUS} concurrent users)` : " (100 -> 500 -> 1000 concurrent users)"}`,
     `Idempotency header  : ${SEND_IDEMPOTENCY_KEY ? "enabled" : "disabled"}`,
     `Total HTTP requests: ${totalRequests}`,

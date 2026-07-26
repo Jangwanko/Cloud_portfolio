@@ -2,7 +2,7 @@ param(
   [string]$Namespace = "messaging-app",
   [string]$AuthSecretKey = "",
   [string]$GrafanaAdminUser = "admin",
-  [string]$GrafanaAdminPassword = "1q2w3e4r",
+  [string]$GrafanaAdminPassword = "",
   [string]$SecretName = "messaging-runtime-secrets",
   [switch]$ShowCredentials
 )

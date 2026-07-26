@@ -1,33 +1,121 @@
+import base64
+import hashlib
 import json
 import time
 from functools import lru_cache
 
 from portfolio.config import settings
+from portfolio.event_envelope import MAX_JSON_WIRE_NESTING_DEPTH, validate_json_structure
 from portfolio.metrics import health_status
+
+
+INVALID_KAFKA_PAYLOAD_MARKER = "__invalid_kafka_payload__"
+_CONSUMER_FETCH_MAX_BYTES = 50 * 1024 * 1024
+_CONSUMER_RECEIVE_MAX_BYTES = 64 * 1024 * 1024
+
+
+class InvalidKafkaPayload(dict):
+    """In-process marker carrying provenance captured from undecodable Kafka bytes."""
+
+
+def _reject_nonfinite_json(value: str):
+    raise ValueError(f"Non-finite JSON value: {value}")
 
 
 def _bootstrap_servers() -> list[str]:
     return [server.strip() for server in settings.kafka_bootstrap_servers.split(",") if server.strip()]
 
 
-@lru_cache(maxsize=1)
-def get_kafka_producer():
+def _serialize_json(value):
+    if value is None:
+        return None
+    validate_json_structure(value, max_depth=MAX_JSON_WIRE_NESTING_DEPTH)
+    return json.dumps(value, allow_nan=False).encode("utf-8")
+
+
+def _decode_json(value: bytes | None, *, validate_structure: bool):
+    if value is None:
+        return None
+    try:
+        decoded = json.loads(value.decode("utf-8"), parse_constant=_reject_nonfinite_json)
+        if validate_structure:
+            validate_json_structure(decoded, max_depth=MAX_JSON_WIRE_NESTING_DEPTH)
+        return decoded
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError, RecursionError) as exc:
+        return InvalidKafkaPayload(
+            {
+                INVALID_KAFKA_PAYLOAD_MARKER: True,
+                "decode_error": type(exc).__name__,
+                "raw_base64": base64.b64encode(value[:2048]).decode("ascii"),
+                "raw_size": len(value),
+                "raw_sha256": hashlib.sha256(value).hexdigest(),
+            }
+        )
+
+
+def _deserialize_json(value: bytes | None):
+    return _decode_json(value, validate_structure=True)
+
+
+def _deserialize_materialized_json(value: bytes | None):
+    # Materialized-cache normalizers validate the complete record and nested
+    # payload before it becomes readable. Avoid repeating that recursive walk
+    # while replaying the changelog during API startup.
+    return _decode_json(value, validate_structure=False)
+
+
+def _deserialize_utf8_key(value: bytes | None) -> str | None:
+    if value is None:
+        return None
+    try:
+        return value.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+
+def is_invalid_kafka_payload(value) -> bool:
+    return isinstance(value, dict) and value.get(INVALID_KAFKA_PAYLOAD_MARKER) is True
+
+
+def _consumer_frame_limits() -> dict[str, int]:
+    # A fetch response can contain batches from several partitions. Keep the
+    # network frame ceiling above the aggregate fetch ceiling so compacted
+    # state replay cannot enter a reconnect loop as the changelog grows.
+    return {
+        "fetch_max_bytes": _CONSUMER_FETCH_MAX_BYTES,
+        "receive_message_max_bytes": _CONSUMER_RECEIVE_MAX_BYTES,
+    }
+
+
+def _build_kafka_producer(*, linger_ms: int):
     from kafka import KafkaProducer
 
     return KafkaProducer(
         bootstrap_servers=_bootstrap_servers(),
         key_serializer=lambda value: str(value).encode("utf-8"),
-        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
+        value_serializer=_serialize_json,
+        enable_idempotence=True,
         acks="all",
         retries=3,
-        linger_ms=5,
+        max_in_flight_requests_per_connection=1,
+        linger_ms=linger_ms,
         max_block_ms=3000,
         request_timeout_ms=3000,
     )
 
 
+@lru_cache(maxsize=1)
+def get_kafka_ingress_producer():
+    return _build_kafka_producer(linger_ms=5)
+
+
+@lru_cache(maxsize=1)
+def get_kafka_producer():
+    return _build_kafka_producer(linger_ms=0)
+
+
 def publish_ingress_job(key: int | str, payload: dict) -> None:
-    producer = get_kafka_producer()
+    producer = get_kafka_ingress_producer()
     future = producer.send(settings.kafka_ingress_topic, key=key, value=payload)
     future.get(timeout=10)
 
@@ -71,9 +159,9 @@ def build_ingress_consumer():
         group_id=settings.kafka_consumer_group,
         enable_auto_commit=False,
         auto_offset_reset="earliest",
-        key_deserializer=lambda value: value.decode("utf-8") if value else None,
-        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -86,9 +174,10 @@ def build_dlq_consumer():
         group_id=f"{settings.kafka_consumer_group}-dlq-replayer",
         enable_auto_commit=False,
         auto_offset_reset="earliest",
-        key_deserializer=lambda value: value.decode("utf-8") if value else None,
-        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        key_deserializer=_deserialize_utf8_key,
+        value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -101,9 +190,10 @@ def build_notification_consumer():
         group_id=settings.kafka_notification_consumer_group,
         enable_auto_commit=False,
         auto_offset_reset="earliest",
-        key_deserializer=lambda value: value.decode("utf-8") if value else None,
-        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        key_deserializer=_deserialize_utf8_key,
+        value_deserializer=_deserialize_json,
         consumer_timeout_ms=1000,
+        **_consumer_frame_limits(),
     )
 
 
@@ -114,9 +204,27 @@ def build_materialized_cache_consumer():
         bootstrap_servers=_bootstrap_servers(),
         enable_auto_commit=False,
         consumer_timeout_ms=1000,
-        key_deserializer=lambda value: value.decode("utf-8") if value else None,
-        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        key_deserializer=_deserialize_utf8_key,
+        value_deserializer=_deserialize_materialized_json,
+        **_consumer_frame_limits(),
     )
+
+
+def publish_state_tombstone(topic: str, key: int | str) -> None:
+    producer = get_kafka_producer()
+    producer.send(topic, key=key, value=None).get(timeout=10)
+
+
+def publish_request_status_tombstone(request_id: str) -> None:
+    publish_state_tombstone(settings.kafka_request_status_topic, request_id)
+
+
+def publish_message_snapshot_tombstone(message_id: int | str) -> None:
+    publish_state_tombstone(settings.kafka_message_snapshot_topic, message_id)
+
+
+def publish_stream_snapshot_tombstone(stream_id: int | str) -> None:
+    publish_state_tombstone(settings.kafka_stream_snapshot_topic, stream_id)
 
 
 def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
@@ -126,8 +234,9 @@ def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
         bootstrap_servers=_bootstrap_servers(),
         enable_auto_commit=False,
         consumer_timeout_ms=1000,
-        key_deserializer=lambda value: value.decode("utf-8") if value else None,
-        value_deserializer=lambda value: json.loads(value.decode("utf-8")),
+        key_deserializer=_deserialize_utf8_key,
+        value_deserializer=_deserialize_json,
+        **_consumer_frame_limits(),
     )
     try:
         partitions = consumer.partitions_for_topic(topic)
@@ -139,15 +248,25 @@ def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
         beginning_offsets = consumer.beginning_offsets(topic_partitions)
         end_offsets = consumer.end_offsets(topic_partitions)
 
+        target_end_offsets: dict[object, int] = {}
         for topic_partition in topic_partitions:
             beginning = int(beginning_offsets.get(topic_partition, 0))
             end = int(end_offsets.get(topic_partition, 0))
             consumer.seek(topic_partition, max(beginning, end - limit))
+            target_end_offsets[topic_partition] = end
 
         items: list[dict] = []
         deadline = time.monotonic() + 2
-        while len(items) < limit and time.monotonic() < deadline:
-            records = consumer.poll(timeout_ms=200, max_records=limit)
+        while time.monotonic() < deadline:
+            if all(
+                consumer.position(topic_partition) >= target_end_offsets[topic_partition]
+                for topic_partition in topic_partitions
+            ):
+                break
+            records = consumer.poll(
+                timeout_ms=200,
+                max_records=max(limit, limit * len(topic_partitions)),
+            )
             if not records:
                 break
             for topic_partition, messages in records.items():
@@ -162,10 +281,6 @@ def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:
                             "value": message.value,
                         }
                     )
-                    if len(items) >= limit:
-                        break
-                if len(items) >= limit:
-                    break
 
         items.sort(key=lambda item: (item["timestamp"] or 0, item["partition"], item["offset"]), reverse=True)
         return items[:limit]

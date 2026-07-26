@@ -1,21 +1,20 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: messaging-app
----
-apiVersion: v1
 kind: Secret
 metadata:
   name: messaging-env
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
 type: Opaque
 stringData:
   APP_ENV: "k8s-ha"
+  REQUEST_BODY_MAX_BYTES: "1048576"
+  DEMO_RESET_ENABLED: "true"
+  GENERIC_EVENTS_V2_ENABLED: "false"
   DB_HOST: "messaging-postgresql-ha-pgpool.messaging-app.svc.cluster.local"
   DB_PORT: "5432"
   DB_NAME: "portfolio"
   DB_USER: "portfolio"
-  DB_PASSWORD: "portfolio"
   KAFKA_BOOTSTRAP_SERVERS: "kafka.messaging-app.svc.cluster.local:9092"
   KAFKA_INGRESS_TOPIC: "message-ingress"
   KAFKA_DLQ_TOPIC: "message-ingress-dlq"
@@ -33,7 +32,7 @@ stringData:
   DB_CONNECT_TIMEOUT: "3"
   READINESS_DEGRADED_GRACE_SECONDS: "30"
   POSTGRES_MIN_READY_STANDBYS: "2"
-  POSTGRES_MIN_SYNC_STANDBYS: "0"
+  POSTGRES_MIN_SYNC_STANDBYS: "1"
   POSTGRES_REPLICATION_DELAY_DEGRADED_BYTES: "1048576"
   UVICORN_WORKERS: "1"
 ---
@@ -42,8 +41,10 @@ kind: Deployment
 metadata:
   name: api
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
-  replicas: 3
+  replicas: 6
   selector:
     matchLabels:
       app: api
@@ -52,14 +53,27 @@ spec:
       labels:
         app: api
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: api
           image: messaging-portfolio:local
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           command:
             - sh
             - -c
-            - python -m uvicorn portfolio.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}
+            - exec python -m uvicorn portfolio.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}
           ports:
             - containerPort: 8000
           envFrom:
@@ -67,6 +81,15 @@ spec:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-postgresql-ha-postgresql
+                  key: password
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "300m"
@@ -96,6 +119,9 @@ spec:
             initialDelaySeconds: 60
             timeoutSeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -107,6 +133,20 @@ spec:
     app: api
   ports:
     - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-metrics
+  namespace: messaging-app
+spec:
+  clusterIP: None
+  selector:
+    app: api
+  ports:
+    - name: metrics
       port: 8000
       targetPort: 8000
 ---
@@ -140,6 +180,8 @@ kind: Deployment
 metadata:
   name: worker
   namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   replicas: 2
   selector:
@@ -150,16 +192,41 @@ spec:
       labels:
         app: worker
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: worker
           image: messaging-portfolio:local
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           command: ["python", "-m", "worker.main"]
+          ports:
+            - name: metrics
+              containerPort: 9101
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-postgresql-ha-postgresql
+                  key: password
           envFrom:
             - secretRef:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "200m"
@@ -167,6 +234,24 @@ spec:
             limits:
               cpu: "800m"
               memory: "512Mi"
+          startupProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -174,6 +259,7 @@ metadata:
   name: worker
   namespace: messaging-app
 spec:
+  clusterIP: None
   selector:
     app: worker
   ports:
@@ -196,19 +282,43 @@ spec:
       labels:
         app: notification-worker
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: notification-worker
           image: messaging-portfolio:local
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           command: ["python", "-m", "worker.main"]
+          ports:
+            - name: metrics
+              containerPort: 9101
           env:
             - name: WORKER_MODE
               value: "notification"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-postgresql-ha-postgresql
+                  key: password
           envFrom:
             - secretRef:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "100m"
@@ -216,6 +326,24 @@ spec:
             limits:
               cpu: "400m"
               memory: "384Mi"
+          startupProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -223,6 +351,7 @@ metadata:
   name: notification-worker
   namespace: messaging-app
 spec:
+  clusterIP: None
   selector:
     app: notification-worker
   ports:
@@ -256,11 +385,23 @@ spec:
     spec:
       template:
         spec:
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            fsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
           restartPolicy: OnFailure
           containers:
             - name: postgres-backup
               image: bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2
               imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
               env:
                 - name: PGPASSWORD
                   valueFrom:
@@ -300,16 +441,41 @@ spec:
       labels:
         app: dlq-replayer
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: dlq-replayer
           image: messaging-portfolio:local
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           command: ["python", "-m", "worker.dlq_replayer"]
+          ports:
+            - name: metrics
+              containerPort: 9102
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-postgresql-ha-postgresql
+                  key: password
           envFrom:
             - secretRef:
                 name: messaging-env
             - secretRef:
                 name: messaging-runtime-secrets
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "100m"
@@ -317,6 +483,24 @@ spec:
             limits:
               cpu: "400m"
               memory: "256Mi"
+          startupProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -324,6 +508,7 @@ metadata:
   name: dlq-replayer
   namespace: messaging-app
 spec:
+  clusterIP: None
   selector:
     app: dlq-replayer
   ports:
@@ -346,18 +531,41 @@ spec:
       labels:
         app: kafka-exporter
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: kafka-exporter
           image: danielqsj/kafka-exporter:v1.7.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           args:
             - --kafka.server=kafka.messaging-app.svc.cluster.local:9092
             - --web.listen-address=:9308
             - --topic.filter=message-.*
-            - --group.filter=message-.*
+            - --group.filter=(message-.*|notification-worker)
           ports:
             - name: metrics
               containerPort: 9308
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
           resources:
             requests:
               cpu: "50m"
@@ -396,23 +604,35 @@ data:
     scrape_configs:
       - job_name: api
         metrics_path: /metrics
-        static_configs:
-          - targets: ["api:8000"]
+        dns_sd_configs:
+          - names: ["api-metrics.messaging-app.svc.cluster.local"]
+            type: A
+            port: 8000
+            refresh_interval: 15s
 
       - job_name: worker
         metrics_path: /metrics
-        static_configs:
-          - targets: ["worker:9101"]
+        dns_sd_configs:
+          - names: ["worker.messaging-app.svc.cluster.local"]
+            type: A
+            port: 9101
+            refresh_interval: 15s
 
       - job_name: notification-worker
         metrics_path: /metrics
-        static_configs:
-          - targets: ["notification-worker:9101"]
+        dns_sd_configs:
+          - names: ["notification-worker.messaging-app.svc.cluster.local"]
+            type: A
+            port: 9101
+            refresh_interval: 15s
 
       - job_name: dlq-replayer
         metrics_path: /metrics
-        static_configs:
-          - targets: ["dlq-replayer:9102"]
+        dns_sd_configs:
+          - names: ["dlq-replayer.messaging-app.svc.cluster.local"]
+            type: A
+            port: 9102
+            refresh_interval: 15s
 
       - job_name: kafka-exporter
         metrics_path: /metrics
@@ -436,6 +656,21 @@ data:
               summary: "Kafka unavailable"
               description: "Kafka bootstrap is unavailable, so event intake cannot append to the replicated event log."
 
+          - alert: MessagingMetricsTargetMissing
+            expr: |
+              (up{job=~"api|worker|dlq-replayer|kafka-exporter"} == 0)
+              or absent(up{job="api"})
+              or absent(up{job="worker"})
+              or absent(up{job="dlq-replayer"})
+              or absent(up{job="kafka-exporter"})
+            for: 2m
+            labels:
+              severity: critical
+              service: messaging
+            annotations:
+              summary: "Required metrics target missing"
+              description: "Prometheus cannot scrape a required application or Kafka exporter target."
+
           - alert: MessagingDbDown
             expr: messaging_health_status{job="api",component="db"} == 0
             labels:
@@ -450,7 +685,7 @@ data:
               (
                 (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
                 /
-                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001)
               ) > 0.05
             for: 5m
             labels:
@@ -527,12 +762,9 @@ data:
           - alert: MessagingPostgresDegraded
             expr: |
               (
-                (
-                  messaging_postgres_standby_count{job="api"} <= 1
-                  or sum(messaging_postgres_replication_state_count{job="api",state!="streaming"}) > 0
-                  or messaging_postgres_replication_delay_bytes_max{job="api"} > 1048576
-                )
-                unless on() (messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1)
+                messaging_postgres_standby_count{job="api"} <= 1
+                or sum(messaging_postgres_replication_state_count{job="api",state!="streaming"}) > 0
+                or messaging_postgres_replication_delay_bytes_max{job="api"} > 1048576
               )
             for: 30s
             labels:
@@ -557,7 +789,7 @@ data:
               (
                 (sum(rate(messaging_worker_processed_total{result="failure"}[5m])) or vector(0))
                 /
-                clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1)
+                clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001)
               ) > 0.1
             for: 5m
             labels:
@@ -586,7 +818,7 @@ data:
               (
                 (sum(rate(messaging_api_requests_total{status=~"5.."}[5m])) or vector(0))
                 /
-                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1)
+                clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001)
               ) > 0.01
             for: 5m
             labels:
@@ -625,7 +857,7 @@ data:
               description: "Queue wait p95 is above 10 seconds for 5 minutes."
 
           - alert: MessagingKafkaConsumerLagHigh
-            expr: sum(kafka_consumergroup_lag{consumergroup="message-worker"}) > 100
+            expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 100
             for: 5m
             labels:
               severity: warning
@@ -634,10 +866,20 @@ data:
               summary: "Kafka consumer group lag high"
               description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
+          - alert: MessagingNotificationConsumerLagHigh
+            expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0)) > 100
+            for: 5m
+            labels:
+              severity: warning
+              service: messaging
+            annotations:
+              summary: "Notification consumer lag high"
+              description: "notification-worker consumer group lag is above 100 messages for 5 minutes."
+
           - alert: MessagingWorkerLastSuccessStale
             expr: |
               (
-                (sum(rate(messaging_worker_processed_total[5m])) > 0)
+                (sum(clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0)) > 0)
                 and
                 (time() - max(messaging_worker_last_success_timestamp{job="worker"}) > 60)
               )
@@ -647,7 +889,7 @@ data:
               service: messaging
             annotations:
               summary: "Worker success timestamp stale"
-              description: "Worker has recent processing activity but no successful event for over 60 seconds."
+              description: "Worker has pending consumer lag but no successful event for over 60 seconds."
 
           - alert: MessagingDlqEventsIncreasing
             expr: sum(increase(messaging_dlq_events_total[5m])) > 0
@@ -693,18 +935,53 @@ spec:
     metadata:
       labels:
         app: prometheus
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "964b227076466205"
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: prometheus
           image: prom/prometheus:v2.54.1
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           args:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
             - --web.external-url=http://localhost/prometheus/
             - --web.route-prefix=/prometheus/
           ports:
-            - containerPort: 9090
+            - name: http
+              containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: /prometheus/-/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /prometheus/-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
           volumeMounts:
             - name: prometheus-config
               mountPath: /etc/prometheus
@@ -759,6 +1036,7 @@ metadata:
 data:
   datasource.yml: |
     apiVersion: 1
+
     datasources:
       - name: Prometheus
         uid: prometheus
@@ -769,10 +1047,11 @@ data:
         editable: false
   dashboard.yml: |
     apiVersion: 1
+
     providers:
-      - name: Messaging Portfolio
+      - name: Reliable Event Processing
         orgId: 1
-        folder: Messaging Portfolio
+        folder: Reliable Event Processing
         type: file
         disableDeletion: false
         editable: true
@@ -847,8 +1126,9 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_health_status{job=\"api\",component=\"kafka\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(messaging_health_status{job=\"api\",component=\"kafka\"})",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
                            "title":  "Kafka Intake Health",
@@ -907,8 +1187,9 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_postgres_is_primary{job=\"api\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(messaging_postgres_is_primary{job=\"api\"})",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
                            "title":  "PostgreSQL Primary",
@@ -967,13 +1248,14 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_health_status{job=\"worker\",component=\"worker\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(kube_deployment_status_replicas_available{namespace=\"messaging-app\",deployment=\"worker\"}) / clamp_min(min(kube_deployment_spec_replicas{namespace=\"messaging-app\",deployment=\"worker\"}), 1)",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
-                           "title":  "Worker Health",
+                           "title":  "Worker Availability",
                            "type":  "stat",
-                           "description":  "Worker consumer loop health."
+                           "description":  "Available replicas divided by desired replicas for the Kubernetes Worker Deployment."
                        },
                        {
                            "datasource":  {
@@ -990,10 +1272,6 @@ data:
                                                                                                  },
                                                                                                  {
                                                                                                      "value":  1,
-                                                                                                     "color":  "yellow"
-                                                                                                 },
-                                                                                                 {
-                                                                                                     "value":  2,
                                                                                                      "color":  "green"
                                                                                                  }
                                                                                              ],
@@ -1031,13 +1309,14 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "",
-                                               "expr":  "messaging_postgres_standby_count{job=\"api\"}",
-                                               "refId":  "A"
+                                               "expr":  "min(kafka_brokers)",
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ],
-                           "title":  "PostgreSQL Standbys",
+                           "title":  "Kafka Broker Availability",
                            "type":  "stat",
-                           "description":  "Local HA target is two standbys."
+                           "description":  "The demo-lite profile expects one available Kafka broker."
                        },
                        {
                            "datasource":  {
@@ -1080,6 +1359,8 @@ data:
                            "fieldConfig":  {
                                                "defaults":  {
                                                                 "unit":  "percentunit",
+                                                                "min":  0,
+                                                                "max":  1,
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
                                                                           }
@@ -1098,7 +1379,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "5xx_ratio",
-                                               "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 1))",
+                                               "expr":  "((sum(rate(messaging_api_requests_total{status=~\"5..\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_api_requests_total[5m])) or vector(0)), 0.001))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -1132,12 +1413,12 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                                "refId":  "A"
                                            },
                                            {
                                                "legendFormat":  "p99",
-                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_api_request_latency_seconds_bucket[5m])) by (le))",
                                                "refId":  "B"
                                            }
                                        ],
@@ -1171,7 +1452,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "{{stage}} p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[5m])) by (le, stage))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -1238,7 +1519,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "failure_ratio",
-                                               "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 1))",
+                                               "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -1785,7 +2066,7 @@ data:
                                        },
                            "options":  {
                                            "mode":  "markdown",
-                                           "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_age_seconds`, and `by_stream`."
+                                           "content":  "### DLQ operator links\n\n- DLQ summary API: `GET /v1/dlq/ingress/summary?limit=200\u0026sample_limit=5`\n- Recent DLQ samples: `GET /v1/dlq/ingress?limit=20`\n- Runbook: `docs/RUNBOOK.md#dlq-summary-triage`\n\nUse the summary API after `DLQ Events And Replay` changes to split failures by `by_reason`, `replayable`, `blocked`, `oldest_sample_age_seconds`, and `by_stream`. `oldest_sample_age_seconds` is the age of the oldest record in the bounded sample, not total unresolved-backlog age or an SLO measurement."
                                        }
                        },
                        {
@@ -1816,12 +2097,8 @@ data:
                                                                                                      "value":  null
                                                                                                  },
                                                                                                  {
-                                                                                                     "color":  "yellow",
-                                                                                                     "value":  2
-                                                                                                 },
-                                                                                                 {
                                                                                                      "color":  "green",
-                                                                                                     "value":  3
+                                                                                                     "value":  1
                                                                                                  }
                                                                                              ]
                                                                                }
@@ -1848,7 +2125,8 @@ data:
                                            {
                                                "expr":  "kafka_brokers",
                                                "legendFormat":  "brokers",
-                                               "refId":  "A"
+                                               "refId":  "A",
+                                               "instant":  true
                                            }
                                        ]
                        },
@@ -1856,7 +2134,7 @@ data:
                            "id":  27,
                            "title":  "Kafka Consumer Group Lag",
                            "type":  "timeseries",
-                           "description":  "Direct kafka-exporter lag for the message-worker consumer group.",
+                           "description":  "Direct kafka-exporter lag for the persistence and notification consumer groups.",
                            "datasource":  {
                                               "type":  "prometheus",
                                               "uid":  "prometheus"
@@ -1879,13 +2157,13 @@ data:
                                            },
                            "targets":  [
                                            {
-                                               "expr":  "sum by (topic) (kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                               "legendFormat":  "{{topic}} lag",
+                                               "expr":  "sum by (consumergroup, topic) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
+                                               "legendFormat":  "{{consumergroup}} / {{topic}} lag",
                                                "refId":  "A"
                                            },
                                            {
-                                               "expr":  "sum(kafka_consumergroup_lag{consumergroup=\"message-worker\"})",
-                                               "legendFormat":  "total lag",
+                                               "expr":  "sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
+                                               "legendFormat":  "{{consumergroup}} total",
                                                "refId":  "B"
                                            }
                                        ]
@@ -1941,9 +2219,9 @@ data:
                      "from":  "now-30m"
                  },
         "timezone":  "browser",
-        "title":  "Messaging Portfolio Operations Overview",
+        "title":  "Reliable Event Processing Operations Overview",
         "uid":  "messaging-portfolio-overview",
-        "version":  7
+        "version":  11
     }
 ---
 apiVersion: apps/v1
@@ -1960,13 +2238,46 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        portfolio.jangwanko.dev/config-hash: "6a0acb71d5972ee3"
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: grafana/grafana:11.2.0
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
-            - containerPort: 3000
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           env:
             - name: GF_SECURITY_ADMIN_USER
               valueFrom:
@@ -1982,6 +2293,10 @@ spec:
               value: "%(protocol)s://%(domain)s/grafana"
             - name: GF_SERVER_SERVE_FROM_SUB_PATH
               value: "true"
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Viewer"
           volumeMounts:
             - name: grafana-datasources
               mountPath: /etc/grafana/provisioning/datasources
@@ -2054,8 +2369,23 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: api
-  minReplicas: 3
+  minReplicas: 6
   maxReplicas: 8
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      selectPolicy: Max
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
   metrics:
     - type: Resource
       resource:

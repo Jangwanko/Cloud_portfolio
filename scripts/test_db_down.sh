@@ -5,6 +5,7 @@ BASE_URL="${BASE_URL:-http://localhost}"
 NAMESPACE="${NAMESPACE:-messaging-app}"
 API_DEPLOYMENT="${API_DEPLOYMENT:-api}"
 DB_WORKLOAD="${DB_WORKLOAD:-messaging-postgresql-ha-postgresql}"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || {
@@ -88,14 +89,48 @@ run_migrations() {
   kubectl -n "$NAMESPACE" exec "deploy/$API_DEPLOYMENT" -- python -c "from portfolio.db import run_alembic_migrations; run_alembic_migrations()" >/dev/null
 }
 
+wait_workload_replicas() {
+  local workload="$1"
+  local expected="$2"
+  local timeout="${3:-240}"
+  local deadline=$((SECONDS + timeout))
+  local desired
+  local ready
+
+  while (( SECONDS < deadline )); do
+    desired="$(kubectl -n "$NAMESPACE" get "$workload" -o jsonpath='{.spec.replicas}' 2>/dev/null || true)"
+    ready="$(kubectl -n "$NAMESPACE" get "$workload" -o jsonpath='{.status.readyReplicas}' 2>/dev/null || true)"
+    ready="${ready:-0}"
+    if [[ "$desired" == "$expected" && "$ready" == "$expected" ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+
+  echo "Timed out waiting for $workload replicas (expected=$expected desired=${desired:-unknown} ready=${ready:-unknown})" >&2
+  return 1
+}
+
+configure_postgres_sync() {
+  if [[ "$DB_WORKLOAD" == "messaging-postgresql-ha-postgresql" ]]; then
+    NAMESPACE="$NAMESPACE" bash "$ROOT_DIR/scripts/configure_postgres_sync.sh"
+  fi
+}
+
 require_command kubectl
 require_command python3
 
 db_ref="$(workload_ref "$DB_WORKLOAD")"
 target_replicas="$(base_replicas "$DB_WORKLOAD")"
+db_was_scaled_down=false
 
 restore_db() {
-  kubectl -n "$NAMESPACE" scale "$db_ref" --replicas="$target_replicas" >/dev/null || true
+  if [[ "$db_was_scaled_down" == "true" ]]; then
+    kubectl -n "$NAMESPACE" scale "$db_ref" --replicas="$target_replicas" >/dev/null || true
+    wait_workload_replicas "$db_ref" "$target_replicas" 180 || true
+    kubectl -n "$NAMESPACE" rollout status "$db_ref" --timeout=180s >/dev/null || true
+    POSTGRES_SYNC_TIMEOUT_SEC=60 configure_postgres_sync >/dev/null 2>&1 || true
+  fi
 }
 trap restore_db EXIT
 
@@ -139,9 +174,13 @@ import os
 import urllib.request
 
 setup = json.loads(os.environ["SETUP_JSON"])
-payload = json.dumps({"body": f"cache warmup {setup['suffix']}"}).encode()
+payload = json.dumps({
+    "event_type": "portfolio.cache-warmup.probe",
+    "payload": {"message": f"cache warmup {setup['suffix']}"},
+    "metadata": {"scenario": "db-outage-cache-warmup"},
+}).encode()
 req = urllib.request.Request(
-    f"http://127.0.0.1:8000/v1/streams/{setup['stream_id']}/events",
+    f"http://127.0.0.1:8000/v2/streams/{setup['stream_id']}/events",
     data=payload,
     headers={
         "Authorization": f"Bearer {setup['token']}",
@@ -150,11 +189,12 @@ req = urllib.request.Request(
     method="POST",
 )
 with urllib.request.urlopen(req, timeout=10) as res:
-    if res.status >= 300:
-        raise SystemExit(res.status)
+    if res.status != 202:
+        raise SystemExit(f"Expected HTTP 202 from cache warmup event, got {res.status}")
 PY
 done
 
+db_was_scaled_down=true
 kubectl -n "$NAMESPACE" scale "$db_ref" --replicas=0 >/dev/null
 sleep 4
 
@@ -191,18 +231,25 @@ if health.get("postgres", {}).get("primary_reachable") is not False:
     raise SystemExit(f"Expected postgres.primary_reachable=false, got: {json.dumps(health, separators=(',', ':'))}")
 status, accepted = request(
     "POST",
-    f"/v1/streams/{setup['stream_id']}/events",
-    {"body": "event while db down"},
+    f"/v2/streams/{setup['stream_id']}/events",
+    {
+        "event_type": "portfolio.db-outage.probe",
+        "payload": {"message": "event while db down"},
+        "metadata": {"scenario": "db-outage-recovery"},
+    },
     token=setup["token"],
 )
-if status >= 300 or accepted.get("status") != "accepted":
+if status != 202 or accepted.get("status") != "accepted":
     raise SystemExit(f"Expected accepted during DB down, got HTTP {status}: {json.dumps(accepted, separators=(',', ':'))}")
 print(accepted["request_id"])
 PY
 )"
 
 kubectl -n "$NAMESPACE" scale "$db_ref" --replicas="$target_replicas" >/dev/null
+wait_workload_replicas "$db_ref" "$target_replicas" 240
 kubectl -n "$NAMESPACE" rollout status "$db_ref" --timeout=180s >/dev/null
+configure_postgres_sync
+db_was_scaled_down=false
 wait_db_query 240
 run_migrations
 wait_ready 180
@@ -227,8 +274,10 @@ def request(method, path, token=None):
 
 deadline = time.time() + 300
 while time.time() < deadline:
-    status = request("GET", f"/v1/event-requests/{request_id}", token=setup["token"])
+    status = request("GET", f"/v2/event-requests/{request_id}", token=setup["token"])
     if status.get("status") == "persisted":
+        if status.get("payload", {}).get("message") != "event while db down":
+            raise SystemExit("Persisted generic payload did not match the outage event")
         print("DB outage test passed (k8s/linux): accepted during DB down and persisted after recovery")
         raise SystemExit(0)
     time.sleep(2)

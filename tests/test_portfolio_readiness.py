@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,13 +20,10 @@ class TestOperationalDocumentation:
         test_results = read_text("docs/TEST_RESULTS.md")
 
         for token in (
-            "실시간 협업 메시징",
-            "적용 가능한 서비스 관점",
-            "주문 이후 이벤트 처리",
-            "알림 발송 파이프라인",
-            "고객 문의 / CS 이벤트",
-            "감사 로그 / 활동 로그",
-            "IoT / 센서 수집",
+            "Reliable Event Processing System",
+            "domain-neutral typed event acceptance",
+            "`POST /v2/streams/{stream_id}/events`",
+            "reference scenario",
             "사용자와 관심사",
             "기능 요구",
             "비기능 요구",
@@ -34,8 +32,8 @@ class TestOperationalDocumentation:
             "accepted-to-persisted p95",
             "Kafka topic wait p95",
             "DLQ oldest age",
-            "oldest_age_seconds > 600",
-            "oldest_age_seconds > 1800",
+            "oldest_sample_age_seconds",
+            "unresolved SLO 제외",
             "stream_id",
             "Worker inline retry",
             "Kafka DLQ topic",
@@ -46,43 +44,56 @@ class TestOperationalDocumentation:
         for document in (readme, architecture, reliability, repository_structure, test_results):
             assert "SERVICE_REQUIREMENTS.md" in document
 
-        assert "쇼핑몰에서 결제와 주문 완료 이후 발생하는 이벤트" in readme
-        assert "AWS Managed Service Mapping" in readme
-        assert "## TL;DR" in readme
-        assert "## Trade-off" in readme
+        assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
+        assert "reference scenario built on the generic event contract" in readme
+        assert "## 핵심 요약 / Executive Summary" in readme
+        assert "## AWS Migration Blueprint" in readme
+        assert "## Trade-offs" in readme
         assert "서비스 문제" in architecture
-        assert "서비스 기준" in readme
+        assert "서비스 기준" in architecture
 
     def test_readme_is_interview_friendly_about_boundary_and_tradeoffs(self):
         readme = read_text("README.md")
 
         for token in (
-            "## TL;DR",
-            "## Problem",
-            "## Solution",
-            "## Architecture Boundary",
-            "Kafka-only 구조가 아니라 Kafka-centered 구조",
-            "PostgreSQL state path",
+            "## 핵심 요약 / Executive Summary",
+            "## Kubernetes 설계 / Kubernetes Architecture",
+            "## Pod 구성 / Workload Inventory",
+            "## AWS Migration Blueprint",
+            "## 관측 설계 / Observability Map",
+            "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
+            "STAR 1 — HPA scale-out과 cache hydration 경합 해결",
+            "STAR 2 — KEDA scale-out의 병목 이동 확인",
+            "STAR 3 — GitOps namespace prune 사고 복구",
+            "STAR 4 — CPU HPA에서 queue-depth KEDA로 전환",
+            "STAR 5 — Pgpool HA와 same-stream ordering 보강",
+            "`5,434` requests, p95 `8,175ms`",
+            "`19,528` requests·p95 `1,954ms`",
+            "`31,710` requests, p95 `86.95ms`",
+            "API → Kafka → Worker → PostgreSQL",
+            "### 현재 검증 수치 / Current Evidence",
+            "Current generic v2 recovery candidate",
+            "Historical Kafka intake baseline",
+            "Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다",
+            "## Demo",
+            "### Public legacy demo-lite",
             "## Validation Summary",
             "31,676",
-            "100/100 pass",
-            "## Trade-off",
-            "API -> Kafka append",
-            "Worker async persistence",
-            "## Ordering Guarantee",
-            "multi-partition 전체 global ordering은 보장하지 않습니다",
-            "## Intake Boundary: Idempotency State Path",
-            "X-Idempotency-Key",
-            "Kafka append 전에 PostgreSQL claim",
-            "## What I Learned",
-            "## Current Bottleneck",
-            "Worker DB write throughput",
-            "room_sequences",
+            "same-stream ordering: `100/100`",
+            "## Trade-offs",
+            "Kafka append-first intake",
             "## Next Improvements",
-            "Kafka compacted topic",
+            "transactional outbox",
             "consumer group rebalance",
         ):
             assert token in readme
+
+        architecture_index = readme.index("## Kubernetes 설계 / Kubernetes Architecture")
+        inventory_index = readme.index("## Pod 구성 / Workload Inventory")
+        aws_index = readme.index("## AWS Migration Blueprint")
+        observability_index = readme.index("## 관측 설계 / Observability Map")
+        star_index = readme.index("## STAR 운영 문제 해결 경험 / Operational STAR Cases")
+        assert architecture_index < inventory_index < aws_index < observability_index < star_index
 
     def test_db_snapshot_materialized_cache_is_declared(self):
         config = read_text("portfolio/config.py")
@@ -112,6 +123,7 @@ class TestOperationalDocumentation:
         assert "start_materialized_cache" in cache
         assert "get_cached_request_status(request_id)" in api
         assert "list_cached_events(stream_id, limit, before_id)" in api
+        assert "_cached_page_matches_stream_watermark" in api
         assert "snapshot_cache_fresh_seconds" in api
         assert "response_model=EventListResponse" in api
         assert "API started without PostgreSQL startup readiness" in main
@@ -137,16 +149,19 @@ class TestOperationalDocumentation:
         assert 'value: "notification"' in app_manifest
         assert "job_name: notification-worker" in app_manifest
 
-        readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
-        for document in (readme, architecture):
-            assert "cache-first" in document
+        for document in (architecture,):
+            assert "DB membership" in document
+            assert "watermark" in document
             assert "snapshot_age_seconds" in document
             assert "degraded=true" in document
             assert "message-snapshots" in document
             assert "stream-snapshots" in document
             assert "API local materialized cache" in document
 
+        readme = read_text("README.md")
+        assert "DB membership/watermark 검증" in readme
+        assert "degraded cache" in readme
         assert "Prometheus --> KEDA" not in readme
         assert "KEDA `type: kafka`" in architecture
         assert "Prometheus / kafka-exporter는 같은 lag를 운영자가 관측" in architecture
@@ -180,7 +195,8 @@ class TestOperationalDocumentation:
             "Cache rebuild time",
             "Stale response count",
             "Degraded read count",
-            "Snapshot consumer lag",
+            "Per-pod snapshot replay progress",
+            "미구현 custom metric",
             "snapshot_age_seconds > 30s",
             "snapshot_age_seconds > 120s",
             "Degraded read ratio",
@@ -190,7 +206,8 @@ class TestOperationalDocumentation:
         for token in (
             "Read cache operating signals",
             "Read cache hit ratio",
-            "Snapshot consumer lag",
+            "Per-pod snapshot replay progress",
+            "consumer group lag와 섞어 해석하지 않습니다",
             "source=cache",
             "degraded=true",
         ):
@@ -200,19 +217,25 @@ class TestOperationalDocumentation:
             "read cache hit ratio",
             "snapshot age",
             "degraded read count",
-            "snapshot consumer lag",
+            "pod별 hydration 상태",
+            "captured initial end offset",
         ):
             assert token in observability
 
+        for document in (requirements, metrics_reference, observability):
+            assert "| Snapshot consumer lag |" not in document
+
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
-        readme = read_text("README.md")
         architecture = read_text("docs/ARCHITECTURE.md")
 
-        for document in (readme, architecture):
-            assert "정상 event 흐름" in document
-            assert "장애 / DLQ 흐름" in document
-            assert "sequenceDiagram" in document
-            assert "inline retry" in document
+        assert "정상 event 흐름" in architecture
+        assert "장애 / DLQ 흐름" in architecture
+        assert "sequenceDiagram" in architecture
+        assert "inline retry" in architecture
+
+        readme = read_text("README.md")
+        assert "API → Kafka → Worker → PostgreSQL" in readme
+        assert "[Architecture](docs/ARCHITECTURE.md)" in readme
 
     def test_operations_docs_include_dlq_and_security_policy(self):
         operations = read_text("docs/OPERATIONS.md")
@@ -220,7 +243,9 @@ class TestOperationalDocumentation:
         assert "## DLQ 운영 기준" in operations
         assert "DLQ_REPLAY_MAX_COUNT" in operations
         assert "## 보안 기본선" in operations
-        assert "dev-secret-change-me" in operations
+        assert ".env.example` placeholder" in operations
+        assert "32-byte 미만 `AUTH_SECRET_KEY`" in operations
+        assert "non-local readiness와 business API에서 차단" in operations
         assert "외부 secret manager" in operations
 
     def test_test_results_and_patch_notes_keep_experiment_rounds(self):
@@ -294,11 +319,10 @@ class TestOperationalDocumentation:
             assert "ordering_failure_injection.py" in document
 
     def test_reproducibility_environment_is_documented(self):
-        readme = read_text("README.md")
         quick_start = read_text("docs/QUICK_START.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (readme, quick_start, test_results):
+        for document in (quick_start, test_results):
             assert "AMD Ryzen 5 5600" in document
             assert "12 CPU" in document
             assert "15.6GiB" in document
@@ -309,14 +333,21 @@ class TestOperationalDocumentation:
         assert "리소스 부족 가능성" in test_results
         assert "Poison event did not reach Kafka DLQ in time" in quick_start
 
-    def test_public_docs_do_not_describe_redis_migration(self):
-        public_docs = [read_text("README.md")]
-        public_docs.extend(path.read_text(encoding="utf-8") for path in (ROOT / "docs").glob("*.md"))
-        combined = "\n".join(public_docs).lower()
+    def test_redis_results_are_kept_as_explicit_historical_context(self):
+        architecture = read_text("docs/ARCHITECTURE.md")
+        test_results = read_text("docs/TEST_RESULTS.md")
+        requirements = read_text("requirements.txt").lower()
+        terraform = "\n".join(
+            path.read_text(encoding="utf-8")
+            for path in (ROOT / "infra" / "terraform").rglob("*.tf")
+            if ".terraform" not in path.parts
+        ).lower()
 
-        blocked_terms = ["redis", "elasticache", "마이그레이션", "기존 redis", "처음부터 kafka"]
-        for term in blocked_terms:
-            assert term not in combined
+        assert "Redis queue 단계" in architecture
+        assert "## Redis Historical Context" in test_results
+        assert "Kafka append-first baseline, Worker Kafka KEDA 효과와 분리" in test_results
+        assert "redis" not in requirements
+        assert "elasticache" not in terraform
 
     def test_public_docs_do_not_use_stale_operating_claims(self):
         public_docs = [read_text("README.md")]
@@ -335,12 +366,18 @@ class TestOperationalDocumentation:
         )
         for term in blocked_terms:
             assert term not in combined
+        assert "cache-first" not in combined.lower()
 
-        assert "Kafka append-first path" in combined
-        assert "60 passed" in combined
-        assert "9f7fc62be6f202abf98e12c8c108075502cd29a6" in combined
+        assert "Kafka append-first intake" in combined
+        assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
+        assert "status `200`" in combined
+        assert "`202 Accepted`의 완료 범위는 Kafka append" in combined
+        assert "plan` / `apply`는 실행하지 않았" in combined
+        assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined
-        assert "fresh cache read는 `source=cache`, `degraded=false`" in combined
+        assert "DB membership/watermark 검증 뒤 fresh cache" in combined
+        assert "DB-down read는 `source=cache`, `degraded=true`" in combined
+        assert "`source=cache`, `degraded=true`" in combined
         assert "Worker success path transaction 통합" in combined
         assert "28839" in combined
         assert "8.08ms" in combined
@@ -379,365 +416,6 @@ class TestOperationalDocumentation:
         assert "tools/kubectl.exe" in gitignore
         assert "tools/downloads/" in gitignore
 
-    def test_static_order_dashboard_demo_exists(self):
-        demo = read_text("demo/order-dashboard.html")
-        readme = read_text("README.md")
-        repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
-        main = read_text("portfolio/main.py")
-        dockerfile = read_text("Dockerfile")
-
-        for token in (
-            "Post-Order Event Console",
-            "demo-version",
-            "DEMO_UI_VERSION",
-            'const DEMO_UI_VERSION = "1.1.0"',
-            "ver. 1.1.0 / api -",
-            "setDemoVersion",
-            "ver.",
-            "api",
-            "language-toggle",
-            "setLanguage",
-            "translations",
-            "data-i18n",
-            "KO",
-            "EN",
-            "결제 완료",
-            "주문 완료",
-            "운영자 이벤트 큐",
-            "/v1/orders/",
-            "/v1/dlq/ingress/summary",
-            "payment_completed",
-            "delivery_started",
-            "needs_review",
-            "Pipeline Evidence",
-            "API accepted",
-            "Kafka appended",
-            "Worker persisted",
-            "1. API 접수됨",
-            "2. Kafka 적재됨",
-            "3. Worker 처리 중",
-            "4. DB 저장됨",
-            "DLQ summary",
-            "GitHub",
-            "https://github.com/Jangwanko/Cloud_portfolio",
-            "/v1/event-requests/",
-            "/v1/streams",
-            "createDemoOrderStream",
-            "10개 추가",
-            "100개 추가",
-            "1000개 추가",
-            "Add 10",
-            "Add 100",
-            "Add 1000",
-            "주문 이후 업무 이벤트 종류입니다.",
-            "API가 노출된 주소입니다.",
-            "데모 주문 stream id로 자동 갱신됩니다.",
-            "전송 전 예약 비우기",
-            "clear-event-list",
-            "sample-actions",
-            "send-action",
-            "처리 증거",
-            "처리 현황",
-            "예약 건수",
-            "Kafka 적재",
-            "DB 저장",
-            "총 소요시간",
-            "queue-metrics",
-            "grid-template-columns: repeat(4, minmax(0, 1fr))",
-            "grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1fr) minmax(300px, 0.78fr) minmax(300px, 0.78fr)",
-            "height: 170px",
-            "max-height: 170px",
-            "queued-count",
-            "processed-count",
-            "db-persisted-count",
-            "elapsed-seconds",
-            "result-panel",
-            "result-requested",
-            "result-kafka",
-            "result-persisted",
-            "result-cancelled",
-            "result-status",
-            "결과 정리",
-            "Result Summary",
-            "recordQueueEnqueued",
-            "recordQueueProcessed",
-            "recordKafkaAppended",
-            "recordDbPersisted",
-            "finishProcessingRun",
-            "updateQueueMetrics",
-            "startProcessingRun",
-            "lastRunHadFailures",
-            "runStartedAt",
-            "runCompletedAt",
-            "runProcessed",
-            "markEventStatus",
-            "db_row",
-            "pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length)",
-            "아직 시작하지 않은 예약은 취소할 수 있고, 시작된 작업은 계속 추적합니다.",
-            "processReservedEvents",
-            "buildFormEvent",
-            "sendQueuedEvent",
-            "SEND_CONCURRENCY",
-            "sendNextReservedEvent",
-            "activeEvents",
-            "shouldRenderBatchProgress",
-            "Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))",
-            "await Promise.allSettled(pollTasks)",
-            "sendFailures",
-            "queueStats.queued > 0 || queueStats.runProcessed < queueStats.runTarget",
-            "예약 큐 처리 시작",
-            "cancelPendingReservations",
-            "events.splice(index, 1)",
-            "queueStats.cancelled += cancelledCount",
-            "queueStats.runTarget = Math.max(queueStats.runTarget - cancelledCount, queueStats.runProcessed)",
-            "proof-grid",
-            "Kafka topic",
-            "DB row",
-            "운영 링크는 확인용 보조 링크입니다.",
-            "운영 상태 확인",
-            "Readiness와 DLQ summary를 페이지 이동 없이 요약합니다.",
-            "상태 새로고침",
-            "5초마다",
-            "10초마다",
-            "Every 5s",
-            "Every 10s",
-            "Operational Checks",
-            "Refresh status",
-            "refresh-ops-status",
-            "ops-refresh-interval",
-            "ops-ready-status",
-            "ops-kafka-status",
-            "ops-postgres-status",
-            "ops-worker-status",
-            "ops-dlq-status",
-            "ops-last-checked",
-            "DB 저장 컬럼",
-            "Stored DB Columns",
-            "db-column-list",
-            "renderDbColumns",
-            "dbStorageColumns",
-            "event_type",
-            "category",
-            "payment_id",
-            "{available}/{max} 실행 중",
-            "{available}/{max} running",
-            "Operations Advisor",
-            "operations-advisor",
-            "advisor-status",
-            "advisor-reason",
-            "advisor-next-step",
-            "advisor-signal-count",
-            "advisor-signal-history",
-            "advisorHistoryTitle",
-            "advisorHistoryEmpty",
-            "advisorOccurrenceCount",
-            "advisorSituation",
-            "advisorExpectedFix",
-            "advisorDemoLiteReadinessReason",
-            "advisorDemoLiteReadinessNext",
-            "advisorDemoLiteReadinessSituation",
-            "isDemoLiteProfile",
-            "readiness.deployment_profile === \"k8s-demo-lite\"",
-            "advisorSignalStats",
-            "recordAdvisorSignal",
-            "renderAdvisorSignalHistory",
-            "updateOperationsAdvisor",
-            "AI API는 호출하지 않습니다.",
-            "No AI API is called.",
-            "refreshOpsStatus",
-            "restartOpsAutoRefresh",
-            "window.setInterval(refreshOpsStatus, intervalMs)",
-            "updateOperationLinks",
-            'document.querySelector("#base-url").addEventListener("input", updateOperationLinks)',
-            "updateReadinessPanel",
-            "updateDlqSummaryPanel",
-            "queueStats.runTarget > 0 ? `${queueStats.queued}/${queueStats.runTarget}` : String(queueStats.queued)",
-            "reset_dlq_topic",
-            "/health/ready",
-            "브라우저가 API 요청을 막았습니다.",
-            "http://localhost/demo/order-dashboard.html",
-            "deriveDefaultBaseUrl",
-            "describeFetchFailure",
-            "addSampleBatch",
-            "add-sample-1000",
-            "add1000",
-            "clearEvents",
-        ):
-            assert token in demo
-
-        assert 'document.documentElement.lang = language' in demo
-        assert 'document.querySelectorAll("[data-i18n]")' in demo
-        assert 'document.querySelectorAll("[data-language]")' in demo
-        assert "../docs/RUNBOOK.md" not in demo
-        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function cancelPendingReservations()", 1)[0]
-        assert "recordQueueEnqueued(count)" in sample_batch
-        assert "startQueueDrain" not in sample_batch
-        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
-        assert "reservedEvents.length === 0" in process_reserved
-        assert "recordQueueEnqueued(1)" in process_reserved
-        assert "startProcessingRun(reservedEvents.length)" in process_reserved
-        assert "const token = await ensureToken" in process_reserved
-        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
-        assert "const activeEvents = reservedEvents.filter" in process_reserved
-        assert "async function sendNextReservedEvent()" in process_reserved
-        assert "await sendQueuedEvent" in process_reserved
-        assert process_reserved.index('event.status = "sending"') < process_reserved.index("await sendQueuedEvent")
-        assert "recordKafkaAppended(1, uiSession)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event, uiSession, acceptedCount, activeEvents.length))" in process_reserved
-        assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
-        assert "await Promise.allSettled(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in process_reserved
-        assert "const pollResults = await Promise.allSettled(pollTasks)" in process_reserved
-        assert "finishProcessingRun(uiSession, sendFailures > 0 || pollResults.some((result) => result.status === \"rejected\"))" in process_reserved
-        record_kafka_appended = demo.split("function recordKafkaAppended(count, uiSession) {", 1)[1].split("function recordDbPersisted", 1)[0]
-        assert "queueStats.queued -= appended" in record_kafka_appended
-        record_db_persisted = demo.split("function recordDbPersisted(count, uiSession) {", 1)[1].split("function recordQueueProcessed", 1)[0]
-        assert "queueStats.queued -=" not in record_db_persisted
-        assert "queueStats.dbPersisted += count" in record_db_persisted
-        finish_run = demo.split("function finishProcessingRun(uiSession, hadFailures = false) {", 1)[1].split("function markEventStatus", 1)[0]
-        assert "queueStats.lastRunHadFailures = hadFailures" in finish_run
-        assert "queueStats.runCompletedAt = Date.now()" in finish_run
-        advisor_logic = demo.split("function updateOperationsAdvisor(readiness, dlqSummary) {", 1)[1].split("let opsRefreshTimer", 1)[0]
-        assert 'readiness.status === "degraded" && isDemoLiteProfile(readiness)' in advisor_logic
-        assert "advisorDemoLiteReadinessReason" in advisor_logic
-        assert "advisorDemoLiteReadinessNext" in advisor_logic
-        assert 'statusKey === "advisorAttention" || statusKey === "advisorCritical"' in advisor_logic
-        assert "recordAdvisorSignal(statusKey, reasonKey, nextKey, readiness, dlqSummary)" in advisor_logic
-        assert "lastAdvisorSignalSignature = null" in advisor_logic
-        signal_recorder = demo.split("function recordAdvisorSignal(", 1)[1].split("function renderAdvisorSignalHistory", 1)[0]
-        assert "if (signature === lastAdvisorSignalSignature)" in signal_recorder
-        assert "existing.count += 1" in signal_recorder
-        assert "existing.lastSeenAt = now" in signal_recorder
-        reset_demo_db = demo.split("async function resetDemoEventDb()", 1)[1].split('document.querySelector("#send-event")', 1)[0]
-        assert "advisorSignalStats.clear()" in reset_demo_db
-        assert "renderAdvisorSignalHistory()" in reset_demo_db
-        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
-        assert "processReservedEvents" in send_order_event
-        clear_events = demo.split("function clearEvents()", 1)[1].split("async function resetDemoEventDb()", 1)[0]
-        assert "cancelPendingReservations()" in clear_events
-        assert "events.length = 0" not in clear_events
-        result_panel_markup = demo.split('<section class="stack result-panel waiting" id="result-panel">', 1)[1].split("</section>", 1)[0]
-        assert result_panel_markup.index("operations-advisor") < result_panel_markup.index("resultTitle")
-        links_markup = demo.split('<div class="links">', 1)[1].split("</div>", 1)[0]
-        assert 'data-ops-link="/docs"' in links_markup
-        assert 'data-ops-link="/grafana/d/messaging-portfolio-overview/messaging-portfolio-operations-overview?orgId=1&refresh=5s"' in links_markup
-        assert 'href="https://github.com/Jangwanko/Cloud_portfolio"' in links_markup
-        assert ">GitHub<" in links_markup
-        assert "http://localhost/docs" not in links_markup
-        assert "http://localhost/grafana" not in links_markup
-        assert "/v1/dlq/ingress/summary" not in links_markup
-        assert "/health/ready" not in links_markup
-
-        assert "demo/order-dashboard.html" in readme
-        assert "demo/order-dashboard.html" in repository_structure
-        assert 'app.mount("/demo"' in main
-        assert "COPY demo ./demo" in dockerfile
-        return
-
-        for token in (
-            "Post-Order Event Console",
-            "결제 완료",
-            "주문 완료",
-            "운영자 이벤트 큐",
-            "/v1/orders/",
-            "/v1/dlq/ingress/summary",
-            "payment_completed",
-            "delivery_started",
-            "needs_review",
-            "Pipeline Evidence",
-            "API accepted",
-            "Kafka appended",
-            "Worker persisted",
-            "1. API 접수됨",
-            "2. Kafka 적재됨",
-            "3. Worker 처리 중",
-            "4. DB 저장됨",
-            "DLQ summary",
-            "/v1/event-requests/",
-            "/v1/streams",
-            "createDemoOrderStream",
-            "샘플 1개 추가",
-            "샘플 10개 추가",
-            "샘플 100개 추가",
-            "주문 이후 업무 이벤트 종류입니다.",
-            "API가 노출된 주소입니다.",
-            "데모 주문 stream id로 자동 갱신됩니다.",
-            "운영자 이벤트 큐 비우기",
-            "clear-event-list",
-            "sample-actions",
-            "send-action",
-            "처리 증거",
-            "처리 현황",
-            "예약 건수",
-            "Kafka 적재",
-            "DB 저장",
-            "총 소요시간",
-            "처리량/sec",
-            "queue-metrics",
-            "height: 280px",
-            "align-content: start",
-            "height: 160px",
-            "max-height: 160px",
-            "queued-count",
-            "processed-count",
-            "db-persisted-count",
-            "elapsed-seconds",
-            "throughput-rate",
-            "recordQueueEnqueued",
-            "recordQueueProcessed",
-            "recordKafkaAppended",
-            "recordDbPersisted",
-            "updateQueueMetrics",
-            "startProcessingRun",
-            "runStartedAt",
-            "runCompletedAt",
-            "runProcessed",
-            "이번 처리 시퀀스",
-            "markEventStatus",
-            "db_row",
-            "pollRequestStatus(baseUrl, token, event)",
-            "샘플은 전송 전 예약 큐에 추가됩니다.",
-            "Kafka 적재와 DB 저장을 분리해서 집계합니다.",
-            "processReservedEvents",
-            "buildFormEvent",
-            "sendQueuedEvent",
-            "예약 큐 처리 시작",
-            "proof-grid",
-            "Kafka topic",
-            "DB row",
-            "운영 링크는 확인용 보조 링크입니다.",
-            "/health/ready",
-            "브라우저가 API 요청을 막았습니다.",
-            "http://localhost/demo/order-dashboard.html",
-            "deriveDefaultBaseUrl",
-            "describeFetchFailure",
-            "addSampleBatch",
-            "clearEvents",
-        ):
-            assert token in demo
-
-        assert "../docs/RUNBOOK.md" not in demo
-        sample_batch = demo.split("function addSampleBatch(count) {", 1)[1].split("function addSample()", 1)[0]
-        assert "recordQueueEnqueued(count)" in sample_batch
-        assert "startQueueDrain" not in sample_batch
-        process_reserved = demo.split("async function processReservedEvents()", 1)[1].split("async function sendOrderEvent()", 1)[0]
-        assert "reservedEvents.length === 0" in process_reserved
-        assert "recordQueueEnqueued(1)" in process_reserved
-        assert "startProcessingRun(reservedEvents.length)" in process_reserved
-        assert "const token = await ensureToken" in process_reserved
-        assert process_reserved.index("startProcessingRun(reservedEvents.length)") < process_reserved.index("const token = await ensureToken")
-        assert "for (const event of reservedEvents)" in process_reserved
-        assert "await sendQueuedEvent" in process_reserved
-        assert "recordKafkaAppended(1)" in process_reserved
-        assert "pollTasks.push(pollRequestStatus(baseUrl, token, event))" in process_reserved
-        assert "await Promise.all(pollTasks)" in process_reserved
-        send_order_event = demo.split("async function sendOrderEvent()", 1)[1].split("function buildSampleEvent", 1)[0]
-        assert "processReservedEvents" in send_order_event
-
-        assert "demo/order-dashboard.html" in readme
-        assert "demo/order-dashboard.html" in repository_structure
-        assert 'app.mount("/demo"' in main
-        assert "COPY demo ./demo" in dockerfile
-
 
 class TestManifestContracts:
     def test_dlq_replay_limit_is_set_in_kubernetes_manifests(self):
@@ -756,64 +434,36 @@ class TestManifestContracts:
         assert "AUTH_SECRET_KEY" in install_script
         assert "GRAFANA_ADMIN_PASSWORD" in install_script
 
-    def test_lite_deploy_preserves_existing_runtime_auth_secret(self):
-        script = read_text("scripts/deploy_lite_k3s.sh")
-
-        assert "existing_auth_secret" in script
-        assert "Reusing existing AUTH_SECRET_KEY" in script
-        assert "kubectl_cmd create secret generic messaging-runtime-secrets" in script
-        assert "openssl rand -base64 48" in script
-
-    def test_demo_lite_gitops_uses_registry_image_and_action_tag_update(self):
-        kustomization = read_text("k8s/gitops/overlays/demo-lite/kustomization.yaml")
-        env_patch = read_text("k8s/gitops/overlays/demo-lite/patches/messaging-env-lite.yaml")
-        workflow = read_text(".github/workflows/demo-lite-image.yml")
+    def test_dev_kafka_gitops_uses_registry_image_and_action_tag_update(self):
+        kustomization = read_text("k8s/gitops/overlays/local-ha/kustomization.yaml")
+        workflow = read_text(".github/workflows/ci.yml")
 
         assert "images:" in kustomization
         assert "name: messaging-portfolio" in kustomization
         assert "newName: ghcr.io/jangwanko/cloud_portfolio" in kustomization
         assert "newTag:" in kustomization
-        assert "APP_VERSION:" in env_patch
 
-        assert "branches: [demo-lite]" in workflow
+        assert "publish-dev-kafka-image:" in workflow
+        dev_publish = workflow.split("publish-dev-kafka-image:", 1)[1].split(
+            "publish-master-image:", 1
+        )[0]
+        assert "needs: validate" in dev_publish
+        assert "github.ref == 'refs/heads/dev-kafka'" in dev_publish
+        assert "ref: ${{ github.sha }}" in dev_publish
         assert "ghcr.io/jangwanko/cloud_portfolio" in workflow
-        assert "[skip demo-lite image]" in workflow
-        assert "docker/build-push-action" in workflow
-        assert "yq -i" in workflow
-        assert "k8s/gitops/overlays/demo-lite/kustomization.yaml" in workflow
-        assert "DEMO_LITE_ENV_PATCH" in workflow
-        assert ".stringData.APP_VERSION" in workflow
-
-    def test_k3s_profile_reconcile_script_detects_specs_and_updates_argocd(self):
-        script = read_text("scripts/reconcile_profile_k3s.sh")
-        gitops_docs = read_text("docs/GITOPS.md")
-        demo_lite_docs = read_text("docs/DEMO_LITE.md")
-
-        for token in (
-            "detect_node_profile",
-            "LOCAL_HA_MIN_MILLICORES",
-            "LOCAL_HA_MIN_MEMORY_MIB",
-            "Detected server",
-            "Recommended profile",
-            "Current Argo CD path",
-            "k8s/gitops/overlays/demo-lite-k3s",
-            "k8s/gitops/overlays/local-ha",
-            "targetRevision",
-            "kubectl apply -f -",
-            "--dry-run",
-            "--profile",
-        ):
-            assert token in script
-
-        for document in (gitops_docs, demo_lite_docs):
-            assert "scripts/reconcile_profile_k3s.sh" in document
-            assert "demo-lite" in document
-            assert "local-ha" in document
+        assert "[skip dev-kafka image]" in dev_publish
+        assert "docker/build-push-action" in dev_publish
+        assert "Verify published candidate digest" in dev_publish
+        assert "docker buildx imagetools create" in dev_publish
+        assert "git rev-parse origin/dev-kafka" in dev_publish
+        assert "k8s/gitops/overlays/local-ha/kustomization.yaml" in dev_publish
+        assert not (ROOT / ".github/workflows/dev-kafka-image.yml").exists()
 
     def test_terraform_uses_msk_instead_of_redis(self):
         terraform_files = [
             path.read_text(encoding="utf-8").lower()
             for path in (ROOT / "infra" / "terraform").rglob("*.tf")
+            if ".terraform" not in path.parts
         ]
         combined = "\n".join(terraform_files)
 
@@ -839,7 +489,85 @@ class TestManifestContracts:
         assert 'targets: ["kafka-exporter:9308"]' in prometheus
         assert "MessagingKafkaExporterDown" in alerts
         assert "MessagingKafkaConsumerLagHigh" in alerts
-        assert 'kafka_consumergroup_lag{consumergroup="message-worker"}' in alerts
+        assert alerts.count("sum(clamp_min(kafka_consumergroup_lag") == 3
+        assert "sum(kafka_consumergroup_lag" not in alerts
+
+        status_script = read_text("scripts/check_portfolio_status.ps1")
+        suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
+        k6_script = read_text("scripts/load_test_k6.js")
+        k6_runner = read_text("scripts/test_k6_load.ps1")
+        assert status_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
+        assert suite_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
+        for script in (status_script, suite_script):
+            assert "sum(kafka_consumergroup_lag" not in script
+        assert 'checks: ["rate==1"]' in k6_script
+        assert "K6_STREAM_COUNT" in k6_script
+        assert "data.streamIds[streamIndex]" in k6_script
+        assert "-K6StreamCount $K6StreamCount" in suite_script
+        assert '[ValidateSet("keda", "fixed")]' in suite_script
+        assert "Restore-WorkerScaling" in suite_script
+        assert "k6 job did not finish within $TimeoutSec seconds" in k6_runner
+        assert "-AllowThresholdFailure" not in suite_script
+        assert "$failedResultPath" in suite_script
+        assert "$overallSucceeded = $suiteSucceeded -and $null -eq $resetError" in suite_script
+        assert "if ($overallSucceeded) { $resultPath } else { $failedResultPath }" in suite_script
+        assert "Final reset failed:" in suite_script
+        assert suite_script.index("Final reset failed:") < suite_script.index(
+            "[System.IO.File]::WriteAllLines"
+        ) < suite_script.index("if ($null -ne $suiteError)")
+        assert suite_script.index("if ($null -ne $suiteError)") < suite_script.index(
+            "if ($null -ne $resetError)"
+        ) < suite_script.index("if ($null -ne $writeError)")
+
+    def test_kafka_performance_suite_drains_post_hpa_backlog(self):
+        suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
+
+        assert "function Wait-ConsumerLagDrain" in suite_script
+        assert '-Phase "main_load"' in suite_script
+        assert '-Phase "post_hpa"' in suite_script
+        assert suite_script.count("-RequiredConsecutiveZeroSamples 2") == 2
+        assert "function Get-ConsumerLagSample" in suite_script
+        assert suite_script.count("min(timestamp(kafka_consumergroup_lag") == 2
+        assert "$sourceTimestampBefore -eq $sourceTimestampAfter" in suite_script
+        assert "after 3 attempts" in suite_script
+        assert "$workerSample.Fresh -and $notificationSample.Fresh -and $timestampsAdvanced" in suite_script
+        assert "$workerSample.SourceTimestampSeconds -gt $lastAcceptedWorkerSourceTimestamp" in suite_script
+        assert "$notificationSample.SourceTimestampSeconds -gt $lastAcceptedNotificationSourceTimestamp" in suite_script
+        assert "max_lag_metric_age_seconds:" in suite_script
+        for metric_suffix in (
+            "_message_worker_peak_consumer_lag",
+            "_notification_worker_peak_consumer_lag",
+            "_all_consumer_backlog_drain_seconds",
+            "_message_worker_final_consumer_lag",
+            "_notification_worker_final_consumer_lag",
+        ):
+            assert metric_suffix in suite_script
+        assert "consumer lag did not drain to zero within" in suite_script
+        assert suite_script.index('Invoke-SuiteStep "HPA and metrics sanity"') < suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        )
+        assert suite_script.index(
+            'Invoke-SuiteStep "Post-HPA Kafka consumer lag drain"'
+        ) < suite_script.index('Invoke-SuiteStep "Final runtime snapshot"')
+        assert "[System.Text.UTF8Encoding]::new($false)" in suite_script
+        assert "[System.IO.File]::WriteAllLines" in suite_script
+        assert "$temporaryOutputPath" in suite_script
+        assert "Move-Item -LiteralPath $temporaryOutputPath -Destination $outputPath -Force" in suite_script
+
+    def test_api_contract_waits_for_real_materialized_cache_hydration(self):
+        contract_script = read_text("scripts/test_api_contracts.ps1")
+
+        assert "function Wait-MaterializedCacheHydrated" in contract_script
+        assert 'Assert-HasProperty $health "materialized_cache" "readiness"' in contract_script
+        assert (
+            'Assert-HasProperty $health.materialized_cache "hydrated" '
+            '"readiness.materialized_cache"'
+        ) in contract_script
+        assert "$lastCache.ready -eq $true -and $lastCache.hydrated -eq $true" in contract_script
+        assert (
+            'Assert-Equal $health.materialized_cache.hydrated $true '
+            '"readiness.materialized_cache.hydrated"'
+        ) in contract_script
 
     def test_argocd_gitops_contract_matches_local_ha_runtime(self):
         install_script = read_text("k8s/scripts/install-argocd.ps1")
@@ -848,9 +576,13 @@ class TestManifestContracts:
         app_example = read_text("k8s/argocd/application-messaging-portfolio-local-ha.example.yaml")
         gitops_docs = read_text("docs/GITOPS.md")
 
-        for document in (bootstrap_script, quick_start, app_example, gitops_docs):
+        for document in (bootstrap_script, quick_start, app_example):
             assert "master" in document
             assert "dev-kafka" not in document
+
+        assert "master" in gitops_docs
+        assert "dev-kafka" in gitops_docs
+        assert "ghcr.io/jangwanko/cloud_portfolio:<12-char-sha>" in gitops_docs
 
         for manifest in (bootstrap_script, app_example):
             assert "RespectIgnoreDifferences=true" in manifest
@@ -956,10 +688,17 @@ class TestManifestContracts:
 
         assert "-Revision master" in quick_start
         assert "consumer_lag > 100" in checklist
-        assert "`passed with warnings`는 실패가 아닙니다" in checklist
+        assert "Fresh install에서 PVC가 첫 consumer를 기다릴 때만" in checklist
+        assert "2026-07-21 현재 local PVC는 수동 backup Job 실행 뒤 `Bound`" in checklist
 
 
 class TestApiContractAndRunbook:
+    def test_windows_web_requests_use_basic_parsing(self):
+        for path in (ROOT / "scripts").glob("*.ps1"):
+            source = path.read_text(encoding="utf-8")
+            for match in re.finditer(r"Invoke-WebRequest", source):
+                assert "-UseBasicParsing" in source[match.start() : match.start() + 160], path
+
     def test_api_contract_script_is_in_recommended_flow_and_docs(self):
         script = read_text("scripts/test_api_contracts.ps1")
         recommended = read_text("scripts/run_recommended_tests.ps1")
@@ -972,6 +711,10 @@ class TestApiContractAndRunbook:
         assert "/v1/dlq/ingress" in script
         assert "/v1/dlq/ingress/summary" in script
         assert "Expected HTTP $ExpectedStatus" in script
+        assert (
+            '"$BaseUrl/v1/streams/$($stream.id)/events" -ExpectedStatus 404 '
+            "-Headers $outsiderHeaders"
+        ) in script
         assert "test_api_contracts.ps1" in recommended
         assert "test_api_contracts.ps1" in quick_start
         assert "API contract test" in test_results
@@ -983,7 +726,11 @@ class TestApiContractAndRunbook:
         observability = read_text("docs/OBSERVABILITY.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (readme, operations, runbook, observability, test_results):
+        assert "DLQ summary" in readme
+        for token in ("by_reason", "replayable", "blocked"):
+            assert token in readme
+
+        for document in (operations, runbook, observability, test_results):
             assert "/v1/dlq/ingress/summary" in document
             assert "by_reason" in document
             assert "replayable" in document
@@ -1055,7 +802,7 @@ class TestOperationsDashboard:
             "Kafka Consumer Group Lag",
             "Kafka Topic Partitions",
             "PostgreSQL Primary",
-            "Worker Health",
+            "Worker Availability",
             "API 5xx Ratio",
             "Worker Failure Ratio",
             "Worker Last Success Age",
@@ -1071,6 +818,30 @@ class TestOperationsDashboard:
         assert "producer_append_path" not in serialized
         assert "consumer_read_path" not in serialized
         assert "worker_consumer_group" not in serialized
+
+        panels = {panel["title"]: panel for panel in dashboard["panels"]}
+        for title in (
+            "Kafka Intake Health",
+            "PostgreSQL Primary",
+            "Worker Availability",
+            "Kafka Broker Availability",
+        ):
+            target = panels[title]["targets"][0]
+            assert target["instant"] is True
+            assert target["expr"].startswith("min(")
+
+        api_5xx_defaults = panels["API 5xx Ratio"]["fieldConfig"]["defaults"]
+        assert api_5xx_defaults["unit"] == "percentunit"
+        assert api_5xx_defaults["min"] == 0
+        assert api_5xx_defaults["max"] == 1
+
+        assert (
+            "kube_deployment_status_replicas_available"
+            in panels["Worker Availability"]["targets"][0]["expr"]
+        )
+        assert panels["Kafka Broker Availability"]["targets"][0]["expr"] == "min(kafka_brokers)"
+        assert "[5m]" in panels["API Latency"]["targets"][0]["expr"]
+        assert "[5m]" in panels["API Stage Latency"]["targets"][0]["expr"]
 
         for metric in (
             "messaging_db_pool_in_use",
@@ -1093,11 +864,13 @@ class TestOperationsDashboard:
 
         for manifest in (app_manifest, gitops_manifest):
             assert "name: dlq-replayer" in manifest
-            assert 'targets: ["dlq-replayer:9102"]' in manifest
-            assert "Messaging Portfolio Operations Overview" in manifest
+            assert "dlq-replayer.messaging-app.svc.cluster.local" in manifest
+            assert "dns_sd_configs:" in manifest
+            assert "Reliable Event Processing Operations Overview" in manifest
             assert "messaging_dlq_replay_total" in manifest
 
-        assert "Messaging Portfolio Operations Overview" in dashboard
+        assert "Reliable Event Processing Operations Overview" in dashboard
+        assert "Messaging Portfolio Operations Overview" not in dashboard
 
 
 class TestAlertPolicy:
@@ -1130,8 +903,6 @@ class TestAlertPolicy:
             "skipped_max_replay",
             "kube_pod_container_status_restarts_total",
             "kube_deployment_status_replicas_unavailable",
-            'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1',
-            "unless on()",
         ):
             assert threshold in alerts
 
@@ -1140,8 +911,6 @@ class TestAlertPolicy:
         gitops_manifest = read_text("k8s/gitops/base/manifests-ha.yaml")
 
         for manifest in (app_manifest, gitops_manifest):
-            assert 'messaging_deployment_profile_info{profile="k8s-demo-lite"} == 1' in manifest
-            assert "unless on()" in manifest
             for alert in (
                 "MessagingApi5xxRateWarning",
                 "MessagingEventPersistLagCritical",
@@ -1159,14 +928,22 @@ class TestAlertPolicy:
         metrics_reference = read_text("docs/METRICS_REFERENCE.md")
         test_results = read_text("docs/TEST_RESULTS.md")
 
-        for document in (reliability, runbook, test_results):
-            assert "API 5xx" in document
-            assert "accepted-to-persisted" in document
-            assert "Kafka topic wait" in document
-            assert "MessagingDlqReplayBlocked" in document
-            assert "oldest_age_seconds" in document
-            assert "> 600" in document
-            assert "> 1800" in document
+        assert "API 5xx" in reliability
+        assert "accepted-to-persisted" in reliability
+        assert "Kafka topic wait" in reliability
+        assert "MessagingDlqReplayBlocked" in reliability
+        assert "oldest_sample_age_seconds" in reliability
+
+        assert "API 5xx" in runbook
+        assert "accepted-to-commit" in runbook
+        assert "Kafka topic wait" in runbook
+        assert "MessagingDlqReplayBlocked" in runbook
+        assert "oldest_sample_age_seconds" in runbook
+
+        assert "accepted-to-persisted" in test_results
+        assert "MessagingDlqReplayBlocked" in test_results
+        assert "oldest_sample_age_seconds" in test_results
+        assert "현재 DLQ sample age는 alert SLO가 아닙니다" in test_results
 
         for document in (observability, metrics_reference, runbook, test_results):
             assert "kafka-exporter" in document
@@ -1175,7 +952,11 @@ class TestAlertPolicy:
 
         for document in (metrics_reference, runbook, test_results):
             assert "GET /v1/dlq/ingress/summary" in document
-            assert "oldest_age_seconds" in document
+            assert "oldest_sample_age_seconds" in document
+
+        assert "unresolved SLO로 사용하지 않습니다" in reliability
+        assert "unresolved event age 또는 backlog SLO로 사용 제외" in runbook
+        assert "현재 DLQ sample age는 alert SLO가 아닙니다" in test_results
 
         assert "3974 -> 4008" in test_results
         assert "stream_seq 1..20" in test_results

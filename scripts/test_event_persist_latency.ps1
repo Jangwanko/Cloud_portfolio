@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 function Get-MetricLines([string]$MetricName) {
   try {
-    $raw = Invoke-WebRequest -Method Get -Uri "$BaseUrl/metrics" -TimeoutSec 10
+    $raw = Invoke-WebRequest -UseBasicParsing -Method Get -Uri "$BaseUrl/metrics" -TimeoutSec 10
     return ($raw.Content -split "`n" | Where-Object { $_ -match "^$MetricName" })
   } catch {
     return @()
@@ -46,6 +46,20 @@ function Get-Stats([System.Collections.Generic.List[double]]$Values) {
   }
 }
 
+function Get-CountStats([System.Collections.Generic.List[double]]$Values) {
+  if ($Values.Count -eq 0) {
+    return [ordered]@{ count = 0; avg = 0; p95 = 0; max = 0 }
+  }
+  $sorted = $Values | Sort-Object
+  $index = [math]::Max(0, [math]::Min($sorted.Count - 1, [math]::Ceiling($sorted.Count * 0.95) - 1))
+  return [ordered]@{
+    count = $sorted.Count
+    avg = [math]::Round(($Values | Measure-Object -Average).Average, 2)
+    p95 = [math]::Round([double]$sorted[$index], 2)
+    max = [math]::Round([double]$sorted[-1], 2)
+  }
+}
+
 if (-not $SkipReset) {
   & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
 }
@@ -67,12 +81,20 @@ try {
   $pollCounts = [System.Collections.Generic.List[double]]::new()
 
   for ($i = 1; $i -le $EventCount; $i++) {
-    $body = @{ body = "latency event $i" } | ConvertTo-Json
+    $body = @{
+      event_type = "portfolio.persistence-latency.probe"
+      payload = @{ message = "latency event $i"; index = $i }
+      metadata = @{ scenario = "accepted-to-persisted-latency" }
+    } | ConvertTo-Json -Depth 4
     $idempotencyKey = "latency-$suffix-$i"
 
     $acceptWatch = [System.Diagnostics.Stopwatch]::StartNew()
-    $accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key" = $idempotencyKey } -ContentType "application/json" -Body $body
+    $acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key" = $idempotencyKey } -ContentType "application/json" -Body $body
     $acceptWatch.Stop()
+    if ([int]$acceptedResponse.StatusCode -ne 202) {
+      throw "Expected HTTP 202 from event intake, got $($acceptedResponse.StatusCode)"
+    }
+    $accepted = $acceptedResponse.Content | ConvertFrom-Json
     Add-StatSample -List $acceptLatencies -Value $acceptWatch.Elapsed.TotalMilliseconds
 
     $queuedAt = [DateTimeOffset]::Parse($accepted.queued_at)
@@ -83,7 +105,7 @@ try {
       $pollCount += 1
       $status = $null
       try {
-        $status = Invoke-RestMethod -Method Get -Uri "$BaseUrl/v1/event-requests/$($accepted.request_id)" -Headers @{ Authorization = "Bearer $u1Token" }
+        $status = Invoke-RestMethod -Method Get -Uri "$BaseUrl/v2/event-requests/$($accepted.request_id)" -Headers @{ Authorization = "Bearer $u1Token" }
       } catch {
         $response = $_.Exception.Response
         if ($response -and [int]$response.StatusCode -eq 404) {
@@ -92,8 +114,9 @@ try {
         }
         throw
       }
-      if ($status.status -eq "persisted" -and $status.created_at) {
+      if ($status.status -eq "persisted") {
         $persisted = $status
+        $persistedObservedAt = [DateTimeOffset]::UtcNow
         break
       }
       Start-Sleep -Milliseconds 200
@@ -103,20 +126,20 @@ try {
       throw "Event request did not become persisted in time for request_id=$($accepted.request_id)"
     }
 
-    $persistedAt = [DateTimeOffset]::Parse($persisted.created_at)
-    Add-StatSample -List $persistLatencies -Value ($persistedAt - $queuedAt).TotalMilliseconds
+    Add-StatSample -List $persistLatencies -Value ($persistedObservedAt - $queuedAt).TotalMilliseconds
     Add-StatSample -List $pollCounts -Value $pollCount
   }
 
   $acceptStats = Get-Stats -Values $acceptLatencies
   $persistStats = Get-Stats -Values $persistLatencies
-  $pollStats = Get-Stats -Values $pollCounts
+  $pollStats = Get-CountStats -Values $pollCounts
 
   $result = [ordered]@{
     event_count = $EventCount
     stream_id = $stream.id
-    accept_latency = $acceptStats
-    persist_latency = $persistStats
+    measurement = "queued_at to client observation of persisted status; includes polling interval and network delay"
+    accept_http_latency_ms = $acceptStats
+    accepted_to_status_observed_ms = $persistStats
     status_poll_count = $pollStats
   }
 

@@ -34,18 +34,21 @@ stream_id = int(os.environ["STREAM_ID"])
 user_id = int(os.environ["USER_ID"])
 payload = {
     "request_id": request_id,
-    "route": f"POST:/v1/streams/{stream_id}/events",
-    "room_id": stream_id,
-    "user_id": user_id,
-    "body": "poison event for replay guard verification",
-    "room_seq": 999,
+    "route": f"POST:/v2/streams/{stream_id}/events",
+    "stream_id": stream_id,
+    "actor_id": user_id,
+    "schema_version": 2,
+    "event_type": "portfolio.dlq.replay-guard.poison",
+    "payload": {"message": "poison event for replay guard verification"},
+    "metadata": {"scenario": "dlq-replay-guard", "injected": True},
+    "stream_seq": 999,
     "x_idempotency_key": None,
     "queued_at": "1970-01-01T00:00:00+00:00",
     "retry_count": settings.ingress_max_retries,
     "replay_count": settings.dlq_replay_max_count,
     "next_retry_at": None,
 }
-publish_ingress_job(payload["room_id"], payload)
+publish_ingress_job(payload["stream_id"], payload)
 '@
   $encodedCode = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($code))
   kubectl -n $Namespace exec deploy/api -- env "REQUEST_ID=$RequestId" "STREAM_ID=$StreamId" "USER_ID=$UserId" python -c "import base64; exec(base64.b64decode('$encodedCode'))" | Out-Null
@@ -86,9 +89,9 @@ try {
   }
 
   Start-Sleep -Seconds 5
-  $eventsResponse = Invoke-RestMethod -Method Get -Headers $headers -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=20"
+  $eventsResponse = Invoke-RestMethod -Method Get -Headers $headers -Uri "$BaseUrl/v2/streams/$($stream.id)/events?limit=20"
   $events = @($eventsResponse.items)
-  $persistedPoison = @($events | Where-Object { $_.body -eq "poison event for replay guard verification" }).Count
+  $persistedPoison = @($events | Where-Object { $_.payload.message -eq "poison event for replay guard verification" }).Count
   if ($persistedPoison -ne 0) {
     throw "Replay guard failed: max replay poison event was persisted"
   }

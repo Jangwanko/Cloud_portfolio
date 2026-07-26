@@ -16,6 +16,31 @@ function Get-WorkloadRef([string]$Name) {
   throw "Workload not found: $Name"
 }
 
+function Restore-DbWorkload(
+  [string]$WorkloadRef,
+  [int]$ReplicaCount,
+  [int]$TimeoutSec = 180
+) {
+  kubectl -n $Namespace scale $WorkloadRef --replicas=$ReplicaCount | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to scale $WorkloadRef to $ReplicaCount replicas"
+  }
+
+  kubectl -n $Namespace rollout status $WorkloadRef --timeout="$($TimeoutSec)s" | Out-Host
+  if ($LASTEXITCODE -ne 0) {
+    throw "Timed out waiting for rollout of $WorkloadRef"
+  }
+
+  if ($WorkloadRef -like "statefulset/*" -and $ReplicaCount -ge 2) {
+    $statefulSetName = ($WorkloadRef -split "/", 2)[1]
+    & "$PSScriptRoot/configure_postgres_sync.ps1" `
+      -Namespace $Namespace `
+      -StatefulSet $statefulSetName `
+      -ExpectedReplicas $ReplicaCount `
+      -TimeoutSec $TimeoutSec
+  }
+}
+
 function Wait-Ready([int]$TimeoutSec = 180) {
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
@@ -32,7 +57,7 @@ function Wait-RequestPersisted([string]$RequestId, [string]$Token, [int]$Timeout
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
     try {
-      $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $Token" } -Uri "$BaseUrl/v1/event-requests/$RequestId"
+      $status = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $Token" } -Uri "$BaseUrl/v2/event-requests/$RequestId"
       if ($status.status -eq "persisted" -and $status.event_id) {
         return $status
       }
@@ -48,7 +73,7 @@ function Wait-RequestPersisted([string]$RequestId, [string]$Token, [int]$Timeout
 function Wait-FreshCacheRead([int]$StreamId, [string]$Token, [int]$TimeoutSec = 90) {
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   while ((Get-Date) -lt $deadline) {
-    $events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $Token" } -Uri "$BaseUrl/v1/streams/$StreamId/events"
+    $events = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $Token" } -Uri "$BaseUrl/v2/streams/$StreamId/events"
     if ($events.source -eq "cache" -and $events.degraded -eq $false -and $null -ne $events.snapshot_age_seconds -and @($events.items).Count -gt 0) {
       return $events
     }
@@ -74,7 +99,15 @@ try {
   $u1Token = (Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/auth/login" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)).access_token
 
   $stream = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams" -Headers @{ Authorization = "Bearer $u1Token" } -ContentType "application/json" -Body (@{ name = "cache-fallback-$suffix"; member_ids = @($u1.id, $u2.id) } | ConvertTo-Json)
-  $accepted = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="cache-fallback-$suffix" } -ContentType "application/json" -Body (@{ body = "cache fallback probe" } | ConvertTo-Json)
+  $acceptedResponse = Invoke-WebRequest -UseBasicParsing -Method Post -Uri "$BaseUrl/v2/streams/$($stream.id)/events" -Headers @{ Authorization = "Bearer $u1Token"; "X-Idempotency-Key"="cache-fallback-$suffix" } -ContentType "application/json" -Body (@{
+    event_type = "portfolio.cache-fallback.probe"
+    payload = @{ message = "cache fallback probe" }
+    metadata = @{ scenario = "cache-fallback" }
+  } | ConvertTo-Json -Depth 4)
+  if ([int]$acceptedResponse.StatusCode -ne 202) {
+    throw "Expected HTTP 202 from event intake, got $($acceptedResponse.StatusCode)"
+  }
+  $accepted = $acceptedResponse.Content | ConvertFrom-Json
 
   Wait-RequestPersisted -RequestId $accepted.request_id -Token $u1Token | Out-Null
   $fresh = Wait-FreshCacheRead -StreamId $stream.id -Token $u1Token -TimeoutSec $FreshTimeoutSec
@@ -90,7 +123,7 @@ try {
     kubectl -n $Namespace scale $dbRef --replicas=0 | Out-Null
     Start-Sleep -Seconds 5
 
-    $degraded = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v1/streams/$($stream.id)/events"
+    $degraded = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u1Token" } -Uri "$BaseUrl/v2/streams/$($stream.id)/events"
     if ($degraded.source -ne "cache" -or $degraded.degraded -ne $true -or $null -eq $degraded.snapshot_age_seconds -or @($degraded.items).Count -lt 1) {
       throw "Expected degraded cache read while DB is down, got: $($degraded | ConvertTo-Json -Compress)"
     }
@@ -98,8 +131,10 @@ try {
     Write-Host "Cache read fallback test passed: fresh source=$($fresh.source) degraded=$($fresh.degraded) age=$($fresh.snapshot_age_seconds); db_down source=$($degraded.source) degraded=$($degraded.degraded) age=$($degraded.snapshot_age_seconds)"
   }
   finally {
-    kubectl -n $Namespace scale $dbRef --replicas=$targetReplicas | Out-Null
-    kubectl -n $Namespace rollout status $dbRef --timeout=180s | Out-Host
+    Restore-DbWorkload `
+      -WorkloadRef $dbRef `
+      -ReplicaCount $targetReplicas `
+      -TimeoutSec 180
     Wait-Ready
   }
 }

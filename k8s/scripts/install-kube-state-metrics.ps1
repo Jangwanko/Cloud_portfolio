@@ -1,5 +1,6 @@
 param(
-  [string]$Namespace = "messaging-app"
+  [string]$Namespace = "messaging-app",
+  [string]$ChartVersion = "5.31.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +29,7 @@ kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f 
 
 & $helm upgrade --install kube-state-metrics prometheus-community/kube-state-metrics `
   -n $Namespace `
+  --version $ChartVersion `
   --wait --timeout 10m
 
 kubectl rollout status deployment/kube-state-metrics -n $Namespace --timeout=300s | Out-Host

@@ -1,6 +1,6 @@
 param(
   [string]$Namespace = "argocd",
-  [string]$ManifestUrl = "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+  [string]$ManifestUrl = "https://raw.githubusercontent.com/argoproj/argo-cd/v3.1.0/manifests/install.yaml"
 )
 
 $ErrorActionPreference = "Stop"

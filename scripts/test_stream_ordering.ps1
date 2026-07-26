@@ -28,8 +28,8 @@ if (-not $SkipReset) {
 
 try {
   $suffix = "{0}-{1}" -f [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds(), (Get-Random -Maximum 999999)
-  $u1Name = "order_a_" + ([guid]::NewGuid().ToString("N").Substring(0, 10))
-  $u2Name = "order_b_" + ([guid]::NewGuid().ToString("N").Substring(0, 10))
+  $u1Name = "stream_a_" + ([guid]::NewGuid().ToString("N").Substring(0, 10))
+  $u2Name = "stream_b_" + ([guid]::NewGuid().ToString("N").Substring(0, 10))
   $password = "Password123!"
 
   $u1 = Invoke-RestMethod -Method Post -Uri "$BaseUrl/v1/users" -ContentType "application/json" -Body (@{ username = $u1Name; password = $password } | ConvertTo-Json)
@@ -47,12 +47,19 @@ try {
   $accepted = [System.Collections.Generic.List[object]]::new()
   for ($i = 1; $i -le $EventCount; $i++) {
     $body = New-EventBody -Index $i
-    $response = Invoke-RestMethod `
+    $intakeResponse = Invoke-WebRequest `
+      -UseBasicParsing `
       -Method Post `
-      -Uri "$BaseUrl/v1/streams/$($stream.id)/events" `
+      -Uri "$BaseUrl/v2/streams/$($stream.id)/events" `
       -Headers $headers `
       -ContentType "application/json" `
-      -Body (@{ body = $body } | ConvertTo-Json)
+      -Body (@{
+        event_type = "portfolio.ordering.probe"
+        payload = @{ message = $body; index = $i }
+        metadata = @{ scenario = "same-stream-ordering" }
+      } | ConvertTo-Json -Depth 4)
+    Assert-Condition ([int]$intakeResponse.StatusCode -eq 202) "Expected HTTP 202 for index=$i got=$($intakeResponse.StatusCode)"
+    $response = $intakeResponse.Content | ConvertFrom-Json
 
     Assert-Condition ($response.status -eq "accepted") "Unexpected accept status for index=$i status=$($response.status)"
     [void]$accepted.Add([pscustomobject]@{
@@ -67,11 +74,11 @@ try {
   while ((Get-Date) -lt $deadline) {
     $eventsResponse = Invoke-RestMethod `
       -Method Get `
-      -Uri "$BaseUrl/v1/streams/$($stream.id)/events?limit=$EventCount" `
+      -Uri "$BaseUrl/v2/streams/$($stream.id)/events?limit=$EventCount" `
       -Headers $headers
     $events = @($eventsResponse.items)
 
-    $matchedCount = @($events | Where-Object { $_.body -like "ordering-event-*" }).Count
+    $matchedCount = @($events | Where-Object { $_.event_type -eq "portfolio.ordering.probe" }).Count
     if ($matchedCount -ge $EventCount) {
       break
     }
@@ -79,7 +86,7 @@ try {
   }
 
   $ordered = @($events |
-    Where-Object { $_.body -like "ordering-event-*" } |
+    Where-Object { $_.event_type -eq "portfolio.ordering.probe" } |
     Sort-Object -Property stream_seq)
 
   Assert-Condition ($ordered.Count -eq $EventCount) "Expected $EventCount persisted events, got $($ordered.Count)"
@@ -88,8 +95,9 @@ try {
   for ($i = 1; $i -le $EventCount; $i++) {
     $event = $ordered[$i - 1]
     $expectedBody = New-EventBody -Index $i
-    Assert-Condition ([int]$event.stream_seq -eq $i) "Expected stream_seq=$i got=$($event.stream_seq) body=$($event.body)"
-    Assert-Condition ($event.body -eq $expectedBody) "Expected body=$expectedBody at stream_seq=$i got=$($event.body)"
+    Assert-Condition ([int]$event.stream_seq -eq $i) "Expected stream_seq=$i got=$($event.stream_seq) payload.message=$($event.payload.message)"
+    Assert-Condition ($event.payload.message -eq $expectedBody) "Expected payload.message=$expectedBody at stream_seq=$i got=$($event.payload.message)"
+    Assert-Condition ([int]$event.payload.index -eq $i) "Expected payload.index=$i at stream_seq=$i got=$($event.payload.index)"
     Assert-Condition (-not $seenSeq.ContainsKey([string]$event.stream_seq)) "Duplicate stream_seq=$($event.stream_seq)"
     $seenSeq[[string]$event.stream_seq] = $true
   }
@@ -99,8 +107,8 @@ try {
     event_count = $EventCount
     first_stream_seq = [int]$ordered[0].stream_seq
     last_stream_seq = [int]$ordered[-1].stream_seq
-    first_body = $ordered[0].body
-    last_body = $ordered[-1].body
+    first_payload_message = $ordered[0].payload.message
+    last_payload_message = $ordered[-1].payload.message
     ordering = "pass"
   }
 
