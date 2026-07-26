@@ -270,10 +270,10 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | `MessagingApiHigh5xxRate` | API 5xx ratio `> 5%` for 5m | API 5xx Ratio | intake 장애로 보고 Kafka Intake / PostgreSQL 절차 진입 |
 | `MessagingApiP95LatencyHigh` | API p95 `> 2s` for 10m | API Latency | API pod CPU, DB pool, Kafka publish 지연 확인 |
 | `MessagingApiP95LatencyCritical` | API p95 `> 4s` for 5m | API Latency | client 영향 장애로 보고 scale/resource 상태 확인 |
-| `MessagingEventPersistLagHigh` | Worker-observed accepted-to-commit p95 `> 5s` for 5m | Accepted To Persisted Lag | Worker 처리량과 PostgreSQL 상태 확인 |
-| `MessagingEventPersistLagCritical` | Worker-observed accepted-to-commit p95 `> 15s` for 5m | Accepted To Persisted Lag | persistence 장애로 보고 Worker / PostgreSQL 절차 진입 |
-| `MessagingQueueWaitHigh` | Kafka topic wait p95 `> 10s` for 5m | Kafka Topic Wait Time | Worker replica와 KEDA desired replica 확인 |
-| `MessagingQueueWaitCritical` | Kafka topic wait p95 `> 30s` for 5m | Kafka Topic Wait Time | backlog 장애로 보고 Worker Consumer Lag 절차 진입 |
+| `MessagingEventPersistLagHigh` | API queued-at-to-commit p95 `> 5s` for 5m | API Queue To DB Commit | Worker 처리량과 PostgreSQL 상태 확인 |
+| `MessagingEventPersistLagCritical` | API queued-at-to-commit p95 `> 15s` for 5m | API Queue To DB Commit | persistence 장애로 보고 Worker / PostgreSQL 절차 진입 |
+| `MessagingQueueWaitHigh` | API queued-at-to-Worker-start p95 `> 10s` for 5m | API Queue To Worker Start | Worker replica와 KEDA desired replica 확인 |
+| `MessagingQueueWaitCritical` | API queued-at-to-Worker-start p95 `> 30s` for 5m | API Queue To Worker Start | backlog 장애로 보고 Worker Consumer Lag 절차 진입 |
 | `MessagingDlqEventsIncreasing` | DLQ event 1건 이상 증가 | DLQ Events And Replay | failed_reason을 확인하고 replay 가능 여부 판단 |
 | `MessagingDlqReplayBlocked` | `skipped_max_replay` 누적값 `> 0` | DLQ Events And Replay | 자동 replay 중단 상태로 보고 원인 수정 전 수동 재시도 금지 |
 | `MessagingPodRestarting` | 15분 안에 pod restart 증가 | Pod Restarts (15m) | `kubectl describe pod`로 OOMKilled/CrashLoopBackOff 확인 |

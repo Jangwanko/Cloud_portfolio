@@ -101,8 +101,8 @@
 | --- | --- | --- |
 | Request intake | Kafka append 중심 경로에서 100 VU / 30초 기준 error `0.00%` | `scripts/run_kafka_performance_suite.ps1` |
 | API latency | 100 VU / 30초 기준 p95 `80.65ms`, p99 `103.57ms` baseline | k6 `http_req_duration` |
-| Persistence lag | Worker-observed accepted-to-commit p95 warning `> 5s`, critical `> 15s` | `messaging_event_persist_lag_seconds`; PowerShell status-observed와 역사적 row-visible proxy에서 분리 |
-| Kafka backlog | topic wait p95 warning `> 10s`, critical `> 30s` | `messaging_queue_wait_seconds` |
+| Persistence lag | API queued-at-to-DB-commit p95 warning `> 5s`, critical `> 15s` | `messaging_event_persist_lag_seconds`; PowerShell status-observed와 역사적 row-visible proxy에서 분리 |
+| Kafka backlog | API queued-at-to-Worker-start p95 warning `> 10s`, critical `> 30s` | `messaging_queue_wait_seconds`; Kafka publish 시간 포함 |
 | Consumer lag | `message-worker` lag이 낮은 값으로 회복되어야 함 | `kafka_consumergroup_lag` |
 | Read cache hit ratio | 정상 read traffic에서 fresh snapshot cache 응답 비율을 추적 | 현재는 `source=cache` 응답 샘플 / 향후 Prometheus counter 후보 |
 | Snapshot age | cached read의 snapshot age가 stale 기준을 넘지 않아야 함 | `snapshot_age_seconds`, warning `> 30s`, critical `> 120s` |
@@ -127,15 +127,15 @@ Snapshot cache consumer는 consumer group을 사용하지 않으므로 `snapshot
 
 용어 호환 메모:
 
-- 과거 `accepted-to-persisted p95`: 2026-06 row-visible proxy 명칭. 현재 Worker accepted-to-commit-observed 지표와 분리
+- 과거 `accepted-to-persisted p95`: 2026-06 row-visible proxy 명칭. 현재 API queued-at-to-DB-commit 지표와 분리
 - `DLQ oldest age`: 현재 unresolved 상태 지표로 제공하지 않음. `oldest_sample_age_seconds`는 recent log sample의 시간 범위
 
 | 신호 | Warning | Critical |
 | --- | ---: | ---: |
 | API 5xx ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |
 | API p95 latency | 10분 동안 `> 2s` | 5분 동안 `> 4s` |
-| Worker-observed accepted-to-commit p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
-| Kafka topic wait p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
+| API queued-at-to-DB-commit p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
+| API queued-at-to-Worker-start p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
 | Worker failure ratio | 5분 동안 `> 10%` | - |
 | Read cache snapshot age | `snapshot_age_seconds > 30s` | `snapshot_age_seconds > 120s` |
 | Degraded read ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |

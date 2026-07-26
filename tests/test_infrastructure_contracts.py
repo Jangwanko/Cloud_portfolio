@@ -415,7 +415,8 @@ def test_prometheus_discovers_every_worker_replica_and_notification_lag() -> Non
     assert manifest.count("sum(clamp_min(kafka_consumergroup_lag") >= 3
     assert "sum(kafka_consumergroup_lag" not in manifest
     assert "message-worker|notification-worker" in dashboard
-    assert dashboard.count("clamp_min(kafka_consumergroup_lag") >= 2
+    assert dashboard.count("clamp_min(kafka_consumergroup_lag") == 1
+    assert "sum by (consumergroup)" in dashboard
     assert "sum by (consumergroup, topic) (kafka_consumergroup_lag" not in dashboard
     assert "sum by (consumergroup) (kafka_consumergroup_lag" not in dashboard
 

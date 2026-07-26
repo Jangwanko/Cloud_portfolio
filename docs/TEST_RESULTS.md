@@ -444,7 +444,7 @@ GitOps profile에서는 Argo CD 설치와 application bootstrap을 확인한 뒤
 | PowerShell functional POST | valid for functional timing | `Invoke-RestMethod` 기준 약 `10-15ms` 관측 |
 | 2026-06 PowerShell accepted-to-persisted | valid as historical proxy | PostgreSQL row `created_at` / row-visible 시점 기반, commit timestamp 제외 |
 | current PowerShell `accepted_to_status_observed_ms` | source updated, rerun pending | client의 persisted status 관측, polling/network 포함 |
-| Worker accepted-to-commit-observed histogram | source updated, rerun pending | `commit()` 반환 직후 `persisted_at`; post-commit publish 제외 |
+| API queued-at-to-DB-commit histogram | source updated, rerun pending | Kafka append 전 `queued_at`부터 `commit()` 반환 직후 `persisted_at`까지; post-commit publish 제외 |
 | old ordering / failure injection `~210s` duration | invalid | Python `urllib` + `http://localhost` client-side delay |
 | latest ordering / failure injection duration | valid | `http://127.0.0.1` connection + `Host: localhost` |
 

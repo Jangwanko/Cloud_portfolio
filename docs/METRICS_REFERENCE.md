@@ -13,8 +13,8 @@ Kafka 기반 포트폴리오 지표 해석 기준:
 - API request rate / latency / 5xx ratio
 - API hot path stage latency
 - Worker throughput / failure ratio / last success age
-- Worker accepted-to-commit-observed async lag
-- Kafka topic wait time
+- API queued-at-to-DB-commit async lag
+- API queued-at-to-Worker-start wait
 - DB pool pressure / DB failure reason
 - DLQ event / replay result
 - PostgreSQL primary / standby / replication state
@@ -151,7 +151,7 @@ sum(increase(messaging_notification_publish_failures_total{job="worker"}[15m]))
 
 ### `messaging_event_persist_lag_seconds`
 
-Payload `queued_at`부터 Worker의 PostgreSQL `commit()`이 반환된 직후 기록한 `persisted_at`까지의 lag입니다. DB commit 이후 request status/snapshot/notification publish 시간은 제외합니다. API와 Worker clock 차이는 별도 고려가 필요합니다.
+API가 Kafka append 전에 기록한 payload `queued_at`부터 Worker의 PostgreSQL `commit()`이 반환된 직후 기록한 `persisted_at`까지의 lag입니다. queue wait, Worker 처리, DB 작업, inline retry를 포함합니다. DB commit 이후 request status/snapshot/notification publish 시간은 제외합니다. API와 Worker clock 차이는 별도 고려가 필요합니다.
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[1m])) by (le))
@@ -161,12 +161,12 @@ PowerShell performance suite의 2026-06 `accepted-to-persisted`는 PostgreSQL ro
 
 ### `messaging_queue_wait_seconds`
 
-event가 Worker 처리 전까지 대기한 시간 해석 지표.
+API가 Kafka append 전에 기록한 payload `queued_at`부터 Worker handler 시작까지의 시간입니다.
 
-- Kafka-centered 관점: consumer-side wait / backlog signal
+- 해석: Kafka publish 시간을 포함하는 Worker-side queue/backlog 보조 신호
 
 ```promql
-histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))
+histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket{job="worker"}[1m])) by (le))
 ```
 
 ## Read cache operating signals
