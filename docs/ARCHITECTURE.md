@@ -329,7 +329,7 @@ GitOps 순서:
 
 - API throughput 증가만으로 Worker scale-out 효과를 평가하지 않음
 - consumer lag 최고치와 감소 추이 확인
-- Worker accepted-to-commit-observed histogram과 consumer lag 확인
+- API queued-at-to-DB-commit histogram과 consumer lag 확인
 - backlog가 `0`까지 줄어드는 drain time 확인
 
 이 기준을 선택한 이유:
@@ -353,7 +353,7 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
 - API stage latency
 - worker processing count / latency
 - queue wait / Worker 관측 lag
-- Worker `commit()` 반환 직후 accepted-to-commit-observed histogram
+- Kafka append 전 API `queued_at`부터 Worker `commit()` 반환 직후까지의 histogram
 - 현재 PowerShell `accepted_to_status_observed_ms` client 관측 지연
 - 과거 PowerShell row-visible latency proxy
 - worker replica count / KEDA desired replicas

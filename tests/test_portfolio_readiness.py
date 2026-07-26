@@ -30,7 +30,7 @@ class TestOperationalDocumentation:
             "SLO 가드레일",
             "API 5xx ratio",
             "accepted-to-persisted p95",
-            "Kafka topic wait p95",
+            "API queued-at-to-Worker-start p95",
             "DLQ oldest age",
             "oldest_sample_age_seconds",
             "unresolved SLO 제외",
@@ -797,14 +797,16 @@ class TestOperationsDashboard:
         titles = {panel["title"] for panel in dashboard["panels"]}
 
         expected_titles = {
-            "Kafka Intake Health",
+            "Kafka Intake Status",
             "Kafka Broker Count",
             "Kafka Consumer Group Lag",
             "Kafka Topic Partitions",
             "PostgreSQL Primary",
-            "Worker Availability",
+            "Worker Status",
             "API 5xx Ratio",
             "Worker Failure Ratio",
+            "API Queue To DB Commit",
+            "API Queue To Worker Start",
             "Worker Last Success Age",
             "DB Pool In Use",
             "DLQ Events And Replay",
@@ -821,26 +823,57 @@ class TestOperationsDashboard:
 
         panels = {panel["title"]: panel for panel in dashboard["panels"]}
         for title in (
-            "Kafka Intake Health",
+            "Kafka Intake Status",
             "PostgreSQL Primary",
-            "Worker Availability",
+            "Worker Status",
             "PostgreSQL Standbys",
         ):
             target = panels[title]["targets"][0]
             assert target["instant"] is True
             assert target["expr"].startswith("min(")
 
+        expected_value_labels = {
+            "Kafka Intake Status": {"0": "Unavailable", "1": "Healthy"},
+            "PostgreSQL Primary": {"0": "Unavailable", "1": "Active"},
+            "Worker Status": {"0": "Unavailable", "1": "Available"},
+            "PostgreSQL Standbys": {
+                "0": "0 Ready",
+                "1": "1 Ready",
+                "2": "2 Ready",
+            },
+        }
+        for title, labels in expected_value_labels.items():
+            options = panels[title]["fieldConfig"]["defaults"]["mappings"][0]["options"]
+            assert {value: options[value]["text"] for value in labels} == labels
+
         api_5xx_defaults = panels["API 5xx Ratio"]["fieldConfig"]["defaults"]
         assert api_5xx_defaults["unit"] == "percentunit"
         assert api_5xx_defaults["min"] == 0
         assert api_5xx_defaults["max"] == 1
 
+        worker_failure_defaults = panels["Worker Failure Ratio"]["fieldConfig"]["defaults"]
+        assert worker_failure_defaults["unit"] == "percentunit"
+        assert worker_failure_defaults["min"] == 0
+        assert worker_failure_defaults["max"] == 1
+
         assert (
             "kube_deployment_status_replicas_available"
-            in panels["Worker Availability"]["targets"][0]["expr"]
+            in panels["Worker Status"]["targets"][0]["expr"]
         )
+        assert "Kafka Intake Health" not in titles
+        assert "Worker Availability" not in titles
+        assert "Accepted To Persisted Lag" not in titles
+        assert "Kafka Topic Wait Time" not in titles
+        assert "captured before Kafka append" in panels["API Queue To DB Commit"]["description"]
+        assert "PostgreSQL commit return" in panels["API Queue To DB Commit"]["description"]
+        assert "captured before Kafka append" in panels["API Queue To Worker Start"]["description"]
+        assert "Worker handler start" in panels["API Queue To Worker Start"]["description"]
+        for title in ("API Queue To DB Commit", "API Queue To Worker Start"):
+            assert all('{job="worker"}' in target["expr"] for target in panels[title]["targets"])
+
         assert "[5m]" in panels["API Latency"]["targets"][0]["expr"]
         assert "[5m]" in panels["API Stage Latency"]["targets"][0]["expr"]
+        assert dashboard["version"] == 11
 
         for metric in (
             "messaging_db_pool_in_use",
@@ -929,13 +962,13 @@ class TestAlertPolicy:
 
         assert "API 5xx" in reliability
         assert "accepted-to-persisted" in reliability
-        assert "Kafka topic wait" in reliability
+        assert "queued-at-to-Worker-start" in reliability
         assert "MessagingDlqReplayBlocked" in reliability
         assert "oldest_sample_age_seconds" in reliability
 
         assert "API 5xx" in runbook
-        assert "accepted-to-commit" in runbook
-        assert "Kafka topic wait" in runbook
+        assert "queued-at-to-commit" in runbook
+        assert "queued-at-to-Worker-start" in runbook
         assert "MessagingDlqReplayBlocked" in runbook
         assert "oldest_sample_age_seconds" in runbook
 

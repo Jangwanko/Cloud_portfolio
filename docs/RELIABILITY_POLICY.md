@@ -112,8 +112,8 @@ StatefulSet 재시작 뒤 pod `Ready`만으로 HA 복구를 완료 처리하지 
 | --- | ---: | ---: |
 | API 5xx ratio | 5분 동안 `>1%` | 5분 동안 `>5%` |
 | API p95 latency | 10분 동안 `>2s` | 5분 동안 `>4s` |
-| Worker-observed accepted-to-commit p95 | 5분 동안 `>5s` | 5분 동안 `>15s` |
-| Kafka topic wait / Kafka-to-Worker consume wait p95 | 5분 동안 `>10s` | 5분 동안 `>30s` |
+| API queued-at-to-DB-commit p95 | 5분 동안 `>5s` | 5분 동안 `>15s` |
+| API queued-at-to-Worker-start p95 | 5분 동안 `>10s` | 5분 동안 `>30s` |
 | message-worker lag | 5분 동안 `>100` | 운영 escalation 기준 별도 |
 | notification-worker lag | 5분 동안 `>100` | 운영 escalation 기준 별도 |
 | DLQ publish | 5분 increase `>0` | replay guard blocked cumulative `>0` |

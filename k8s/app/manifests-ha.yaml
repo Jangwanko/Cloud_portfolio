@@ -1096,7 +1096,24 @@ data:
                                                                                },
                                                                 "color":  {
                                                                               "mode":  "thresholds"
-                                                                          }
+                                                                          },
+                                                                "mappings":  [
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "0":  {
+                                                                                                               "color":  "red",
+                                                                                                               "index":  0,
+                                                                                                               "text":  "Unavailable"
+                                                                                                           },
+                                                                                                     "1":  {
+                                                                                                               "color":  "green",
+                                                                                                               "index":  1,
+                                                                                                               "text":  "Healthy"
+                                                                                                           }
+                                                                                                 },
+                                                                                     "type":  "value"
+                                                                                 }
+                                                                             ]
                                                             },
                                                "overrides":  [
 
@@ -1131,9 +1148,9 @@ data:
                                                "instant":  true
                                            }
                                        ],
-                           "title":  "Kafka Intake Health",
+                           "title":  "Kafka Intake Status",
                            "type":  "stat",
-                           "description":  "API can reach Kafka bootstrap for event append."
+                           "description":  "Current Kafka append-path status across API replicas. Healthy = 1, Unavailable = 0."
                        },
                        {
                            "datasource":  {
@@ -1157,7 +1174,24 @@ data:
                                                                                },
                                                                 "color":  {
                                                                               "mode":  "thresholds"
-                                                                          }
+                                                                          },
+                                                                "mappings":  [
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "0":  {
+                                                                                                               "color":  "red",
+                                                                                                               "index":  0,
+                                                                                                               "text":  "Unavailable"
+                                                                                                           },
+                                                                                                     "1":  {
+                                                                                                               "color":  "green",
+                                                                                                               "index":  1,
+                                                                                                               "text":  "Active"
+                                                                                                           }
+                                                                                                 },
+                                                                                     "type":  "value"
+                                                                                 }
+                                                                             ]
                                                             },
                                                "overrides":  [
 
@@ -1194,7 +1228,7 @@ data:
                                        ],
                            "title":  "PostgreSQL Primary",
                            "type":  "stat",
-                           "description":  "Writable primary reachability through Pgpool."
+                           "description":  "Writable primary reachability through Pgpool. Active = 1, Unavailable = 0."
                        },
                        {
                            "datasource":  {
@@ -1218,7 +1252,24 @@ data:
                                                                                },
                                                                 "color":  {
                                                                               "mode":  "thresholds"
-                                                                          }
+                                                                          },
+                                                                "mappings":  [
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "0":  {
+                                                                                                               "color":  "red",
+                                                                                                               "index":  0,
+                                                                                                               "text":  "Unavailable"
+                                                                                                           },
+                                                                                                     "1":  {
+                                                                                                               "color":  "green",
+                                                                                                               "index":  1,
+                                                                                                               "text":  "Available"
+                                                                                                           }
+                                                                                                 },
+                                                                                     "type":  "value"
+                                                                                 }
+                                                                             ]
                                                             },
                                                "overrides":  [
 
@@ -1253,9 +1304,9 @@ data:
                                                "instant":  true
                                            }
                                        ],
-                           "title":  "Worker Availability",
+                           "title":  "Worker Status",
                            "type":  "stat",
-                           "description":  "Available replicas divided by desired replicas for the Kubernetes Worker Deployment."
+                           "description":  "Kubernetes Worker available/desired ratio. Available = 1, Unavailable = 0; partial ratios remain numeric. Replica counts are shown in Worker Replicas."
                        },
                        {
                            "datasource":  {
@@ -1283,7 +1334,29 @@ data:
                                                                                },
                                                                 "color":  {
                                                                               "mode":  "thresholds"
-                                                                          }
+                                                                          },
+                                                                "mappings":  [
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "0":  {
+                                                                                                               "color":  "red",
+                                                                                                               "index":  0,
+                                                                                                               "text":  "0 Ready"
+                                                                                                           },
+                                                                                                     "1":  {
+                                                                                                               "color":  "yellow",
+                                                                                                               "index":  1,
+                                                                                                               "text":  "1 Ready"
+                                                                                                           },
+                                                                                                     "2":  {
+                                                                                                               "color":  "green",
+                                                                                                               "index":  2,
+                                                                                                               "text":  "2 Ready"
+                                                                                                           }
+                                                                                                 },
+                                                                                     "type":  "value"
+                                                                                 }
+                                                                             ]
                                                             },
                                                "overrides":  [
 
@@ -1320,7 +1393,7 @@ data:
                                        ],
                            "title":  "PostgreSQL Standbys",
                            "type":  "stat",
-                           "description":  "Local HA target is two standbys."
+                           "description":  "Current ready PostgreSQL standby count after deduplicating API replica observations. Local HA target = 2."
                        },
                        {
                            "datasource":  {
@@ -1504,10 +1577,12 @@ data:
                                           },
                            "fieldConfig":  {
                                                "defaults":  {
-                                                                "unit":  "percentunit",
-                                                                "color":  {
-                                                                              "mode":  "palette-classic"
-                                                                          }
+                                                                 "unit":  "percentunit",
+                                                                 "min":  0,
+                                                                 "max":  1,
+                                                                 "color":  {
+                                                                               "mode":  "palette-classic"
+                                                                           }
                                                             },
                                                "overrides":  [
 
@@ -1521,11 +1596,11 @@ data:
                                        },
                            "id":  10,
                            "targets":  [
-                                           {
-                                               "legendFormat":  "failure_ratio",
-                                               "expr":  "((sum(rate(messaging_worker_processed_total{result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total[5m])) or vector(0)), 0.001))",
-                                               "refId":  "A"
-                                           }
+                                 {
+                                     "legendFormat":  "failure_ratio",
+                                     "expr":  "((sum(rate(messaging_worker_processed_total{job=\"worker\",result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total{job=\"worker\"}[5m])) or vector(0)), 0.001))",
+                                     "refId":  "A"
+                                 }
                                        ],
                            "title":  "Worker Failure Ratio",
                            "type":  "timeseries",
@@ -1557,18 +1632,18 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job=\"worker\"}[1m])) by (le))",
                                                "refId":  "A"
                                            },
                                            {
                                                "legendFormat":  "p99",
-                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_event_persist_lag_seconds_bucket{job=\"worker\"}[1m])) by (le))",
                                                "refId":  "B"
                                            }
                                        ],
-                           "title":  "Accepted To Persisted Lag",
+                           "title":  "API Queue To DB Commit",
                            "type":  "timeseries",
-                           "description":  "End-to-end async lag from API accepted to PostgreSQL persisted."
+                           "description":  "End-to-end persistence lag from the API queued_at timestamp, captured before Kafka append, to PostgreSQL commit return. Includes queue wait, Worker processing, DB work, and inline retry."
                        },
                        {
                            "datasource":  {
@@ -1596,18 +1671,18 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket{job=\"worker\"}[1m])) by (le))",
                                                "refId":  "A"
                                            },
                                            {
                                                "legendFormat":  "p99",
-                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket[1m])) by (le))",
+                                               "expr":  "histogram_quantile(0.99, sum(rate(messaging_queue_wait_seconds_bucket{job=\"worker\"}[1m])) by (le))",
                                                "refId":  "B"
                                            }
                                        ],
-                           "title":  "Kafka Topic Wait Time",
+                           "title":  "API Queue To Worker Start",
                            "type":  "timeseries",
-                           "description":  "Application-side proxy for Kafka backlog before worker processing."
+                           "description":  "Pre-processing wait from the API queued_at timestamp, captured before Kafka append, to Worker handler start. This is a queue/backlog proxy and includes Kafka publish time."
                        },
                        {
                            "datasource":  {
@@ -2228,7 +2303,7 @@ data:
         "timezone":  "browser",
         "title":  "Reliable Event Processing Operations Overview",
         "uid":  "messaging-portfolio-overview",
-        "version":  10
+        "version":  11
     }
 ---
 apiVersion: apps/v1
@@ -2246,7 +2321,7 @@ spec:
       labels:
         app: grafana
       annotations:
-        portfolio.jangwanko.dev/config-hash: "214fb00bfc9b687c"
+        portfolio.jangwanko.dev/config-hash: "c19e89f91b71c243"
     spec:
       automountServiceAccountToken: false
       securityContext:

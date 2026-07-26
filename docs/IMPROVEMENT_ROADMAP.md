@@ -113,7 +113,7 @@ Public 동기화는 branch promotion과 실제 배포를 포함하므로 uncommi
 - 이유: API intake 성능과 Worker persistence capacity 분리
 - 완료 기준:
   - workload, partition, DB pool, image, 초기 backlog 동일
-  - peak consumer lag, accepted-to-commit p95, drain time, DB throughput 기록
+  - peak consumer lag, API queued-at-to-commit p95, drain time, DB throughput 기록
   - 최소 3회 반복과 편차 공개
   - API request count를 Worker scaling 효과의 단독 근거로 사용하지 않음
 

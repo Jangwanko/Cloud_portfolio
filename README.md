@@ -138,7 +138,7 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 | --- | --- | --- |
 | Ingress·API pod | request rate, API p95/p99, stage latency, HPA desired·available replica | 수락 경로 지연, Kafka publish stage, CPU scale 상태 |
 | Kafka buffer | broker count, topic offset, `message-worker` consumer lag | ingress rate와 처리 capacity 차이 |
-| Worker pod | throughput by result, last success age, queue wait, accepted-to-commit lag, DB stage latency | consume 정지, DB write·lock·pool 병목 |
+| Worker pod | throughput by result, last success age, API queue→Worker 시작, API queue→DB commit, DB stage latency | consume 정지, DB write·lock·pool 병목 |
 | KEDA·Deployment | desired replica, available replica, scale transition, drain time | scale trigger 실행과 backlog 회복 시간 |
 | Notification worker | notification consumer lag, attempt throughput | core Worker 가속 뒤 downstream backlog 이동 |
 | PostgreSQL·Pgpool | primary reachability, standby·sync standby count, replication delay, DB pool in use | writable path와 HA guardrail, connection pressure |
@@ -150,7 +150,7 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 판정 규칙:
 
 - API `202`와 API p95: Kafka append 수락 경로
-- consumer lag·queue wait·accepted-to-commit lag: 비동기 persistence capacity
+- consumer lag·API queue→Worker 시작·API queue→DB commit: 비동기 persistence capacity
 - Worker replica·lag·drain time: KEDA scale-out 결과
 - Argo `Synced / Healthy`: desired state reconciliation 상태
 - source commit·image digest·overlay tag·runtime image: 실제 배포 revision
