@@ -114,7 +114,7 @@ event_persist_lag_seconds = Histogram(
 
 queue_wait_seconds = Histogram(
     "messaging_queue_wait_seconds",
-    "Time from Kafka append to worker consume in seconds",
+    "Time from API queued_at before Kafka append to Worker handler start in seconds",
     registry=registry,
     buckets=(0.001, 0.003, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30),
 )

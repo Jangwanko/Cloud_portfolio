@@ -10,7 +10,12 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - API 5xx·Worker failure 비율 축을 `0~100%`로 고정해 무오류 구간의 `10000%` 자동축 제거
 - API·stage latency quantile 창을 `1m`에서 `5m`으로 변경해 희소 트래픽 변동 완화
 - `API Queue To Worker Start`와 `API Queue To DB Commit`으로 측정 시작·종료 경계 명시
-- dashboard version `11`, Grafana config hash 갱신
+- 첫 화면에 `Worker Scaling`과 consumer group별 total lag를 나란히 배치
+- HTTP status 색상을 `2xx` 초록·`4xx` 노랑·`5xx` 빨강으로 고정하고 상태 metric 부재를 빨간 `No data`로 표시
+- DB pool을 workload별 replica 합계로 집계하고 PostgreSQL gauge의 API replica 중복 제거
+- 중복된 PostgreSQL Replication Capacity 패널과 Kafka topic·group total 중복 선 제거
+- `messaging_queue_wait_seconds` HELP를 실제 `queued_at`→Worker handler 측정 경계와 일치
+- dashboard version `12`, Grafana config hash 갱신
 
 ## 2026-07-21 README Kubernetes 중심 재구성
 

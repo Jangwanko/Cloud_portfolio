@@ -1112,8 +1112,20 @@ data:
                                                                                                            }
                                                                                                  },
                                                                                      "type":  "value"
+                                                                                 },
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "match":  "null",
+                                                                                                     "result":  {
+                                                                                                                    "color":  "red",
+                                                                                                                    "index":  99,
+                                                                                                                    "text":  "No data"
+                                                                                                                }
+                                                                                                 },
+                                                                                     "type":  "special"
                                                                                  }
-                                                                             ]
+                                                                             ],
+                                                                "noValue":  "No data"
                                                             },
                                                "overrides":  [
 
@@ -1190,8 +1202,20 @@ data:
                                                                                                            }
                                                                                                  },
                                                                                      "type":  "value"
+                                                                                 },
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "match":  "null",
+                                                                                                     "result":  {
+                                                                                                                    "color":  "red",
+                                                                                                                    "index":  99,
+                                                                                                                    "text":  "No data"
+                                                                                                                }
+                                                                                                 },
+                                                                                     "type":  "special"
                                                                                  }
-                                                                             ]
+                                                                             ],
+                                                                "noValue":  "No data"
                                                             },
                                                "overrides":  [
 
@@ -1268,8 +1292,20 @@ data:
                                                                                                            }
                                                                                                  },
                                                                                      "type":  "value"
+                                                                                 },
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "match":  "null",
+                                                                                                     "result":  {
+                                                                                                                    "color":  "red",
+                                                                                                                    "index":  99,
+                                                                                                                    "text":  "No data"
+                                                                                                                }
+                                                                                                 },
+                                                                                     "type":  "special"
                                                                                  }
-                                                                             ]
+                                                                             ],
+                                                                "noValue":  "No data"
                                                             },
                                                "overrides":  [
 
@@ -1355,8 +1391,20 @@ data:
                                                                                                            }
                                                                                                  },
                                                                                      "type":  "value"
+                                                                                 },
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "match":  "null",
+                                                                                                     "result":  {
+                                                                                                                    "color":  "red",
+                                                                                                                    "index":  99,
+                                                                                                                    "text":  "No data"
+                                                                                                                }
+                                                                                                 },
+                                                                                     "type":  "special"
                                                                                  }
-                                                                             ]
+                                                                             ],
+                                                                "noValue":  "No data"
                                                             },
                                                "overrides":  [
 
@@ -1404,14 +1452,60 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "reqps",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
-
+                                                                 {
+                                                                     "matcher":  {
+                                                                                     "id":  "byRegexp",
+                                                                                     "options":  "^2..$"
+                                                                                 },
+                                                                     "properties":  [
+                                                                                        {
+                                                                                            "id":  "color",
+                                                                                            "value":  {
+                                                                                                          "fixedColor":  "green",
+                                                                                                          "mode":  "fixed"
+                                                                                                      }
+                                                                                        }
+                                                                                    ]
+                                                                 },
+                                                                 {
+                                                                     "matcher":  {
+                                                                                     "id":  "byRegexp",
+                                                                                     "options":  "^4..$"
+                                                                                 },
+                                                                     "properties":  [
+                                                                                        {
+                                                                                            "id":  "color",
+                                                                                            "value":  {
+                                                                                                          "fixedColor":  "yellow",
+                                                                                                          "mode":  "fixed"
+                                                                                                      }
+                                                                                        }
+                                                                                    ]
+                                                                 },
+                                                                 {
+                                                                     "matcher":  {
+                                                                                     "id":  "byRegexp",
+                                                                                     "options":  "^5..$"
+                                                                                 },
+                                                                     "properties":  [
+                                                                                        {
+                                                                                            "id":  "color",
+                                                                                            "value":  {
+                                                                                                          "fixedColor":  "red",
+                                                                                                          "mode":  "fixed"
+                                                                                                      }
+                                                                                        }
+                                                                                    ]
+                                                                 }
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  6,
+                                           "y":  14,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -1426,7 +1520,7 @@ data:
                                        ],
                            "title":  "API Request Rate",
                            "type":  "timeseries",
-                           "description":  "API request rate by HTTP status."
+                           "description":  "API request rate by HTTP status. 2xx = green, 4xx = yellow, 5xx = red."
                        },
                        {
                            "datasource":  {
@@ -1439,17 +1533,34 @@ data:
                                                                 "min":  0,
                                                                 "max":  1,
                                                                 "color":  {
-                                                                              "mode":  "palette-classic"
-                                                                          }
+                                                                              "mode":  "thresholds"
+                                                                          },
+                                                                "thresholds":  {
+                                                                                   "mode":  "absolute",
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "color":  "green",
+                                                                                                     "value":  null
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "yellow",
+                                                                                                     "value":  0.01
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "red",
+                                                                                                     "value":  0.05
+                                                                                                 }
+                                                                                             ]
+                                                                               }
                                                             },
                                                "overrides":  [
 
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  6,
+                                           "y":  22,
                                            "w":  12,
-                                           "x":  12,
+                                           "x":  0,
                                            "h":  8
                                        },
                            "id":  6,
@@ -1462,7 +1573,7 @@ data:
                                        ],
                            "title":  "API 5xx Ratio",
                            "type":  "timeseries",
-                           "description":  "User-visible server error ratio."
+                           "description":  "User-visible server error ratio. Yellow >= 1%, red >= 5%."
                        },
                        {
                            "datasource":  {
@@ -1483,7 +1594,7 @@ data:
                            "gridPos":  {
                                            "y":  14,
                                            "w":  12,
-                                           "x":  0,
+                                           "x":  12,
                                            "h":  8
                                        },
                            "id":  7,
@@ -1520,7 +1631,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  14,
+                                           "y":  22,
                                            "w":  12,
                                            "x":  12,
                                            "h":  8
@@ -1546,14 +1657,16 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "ops",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  22,
+                                           "y":  30,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -1562,7 +1675,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "{{result}}",
-                                               "expr":  "sum(rate(messaging_worker_processed_total[1m])) by (result)",
+                                               "expr":  "sum(rate(messaging_worker_processed_total{job=\"worker\"}[1m])) by (result)",
                                                "refId":  "A"
                                            }
                                        ],
@@ -1577,34 +1690,51 @@ data:
                                           },
                            "fieldConfig":  {
                                                "defaults":  {
-                                                                 "unit":  "percentunit",
-                                                                 "min":  0,
-                                                                 "max":  1,
-                                                                 "color":  {
-                                                                               "mode":  "palette-classic"
-                                                                           }
+                                                                "unit":  "percentunit",
+                                                                "min":  0,
+                                                                "max":  1,
+                                                                "color":  {
+                                                                              "mode":  "thresholds"
+                                                                          },
+                                                                "thresholds":  {
+                                                                                   "mode":  "absolute",
+                                                                                   "steps":  [
+                                                                                                 {
+                                                                                                     "color":  "green",
+                                                                                                     "value":  null
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "yellow",
+                                                                                                     "value":  0.01
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "color":  "red",
+                                                                                                     "value":  0.05
+                                                                                                 }
+                                                                                             ]
+                                                                               }
                                                             },
                                                "overrides":  [
 
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  22,
+                                           "y":  30,
                                            "w":  12,
                                            "x":  12,
                                            "h":  8
                                        },
                            "id":  10,
                            "targets":  [
-                                 {
-                                     "legendFormat":  "failure_ratio",
-                                     "expr":  "((sum(rate(messaging_worker_processed_total{job=\"worker\",result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total{job=\"worker\"}[5m])) or vector(0)), 0.001))",
-                                     "refId":  "A"
-                                 }
+                                           {
+                                               "legendFormat":  "failure_ratio",
+                                               "expr":  "((sum(rate(messaging_worker_processed_total{job=\"worker\",result=\"failure\"}[5m])) or vector(0)) / clamp_min((sum(rate(messaging_worker_processed_total{job=\"worker\"}[5m])) or vector(0)), 0.001))",
+                                               "refId":  "A"
+                                           }
                                        ],
                            "title":  "Worker Failure Ratio",
                            "type":  "timeseries",
-                           "description":  "Worker processing failure ratio."
+                           "description":  "Core Worker processing failure ratio. Yellow >= 1%, red >= 5%."
                        },
                        {
                            "datasource":  {
@@ -1623,9 +1753,9 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  30,
+                                           "y":  38,
                                            "w":  12,
-                                           "x":  0,
+                                           "x":  12,
                                            "h":  8
                                        },
                            "id":  11,
@@ -1662,9 +1792,9 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  30,
+                                           "y":  38,
                                            "w":  12,
-                                           "x":  12,
+                                           "x":  0,
                                            "h":  8
                                        },
                            "id":  12,
@@ -1701,7 +1831,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  38,
+                                           "y":  46,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -1710,7 +1840,7 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "{{stage}} p95",
-                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))",
+                                               "expr":  "histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket{job=\"worker\"}[1m])) by (le, stage))",
                                                "refId":  "A"
                                            }
                                        ],
@@ -1735,7 +1865,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  38,
+                                           "y":  46,
                                            "w":  12,
                                            "x":  12,
                                            "h":  8
@@ -1761,14 +1891,16 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  46,
+                                           "y":  54,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -1776,24 +1908,14 @@ data:
                            "id":  15,
                            "targets":  [
                                            {
-                                               "legendFormat":  "api",
-                                               "expr":  "messaging_db_pool_in_use{job=\"api\"}",
+                                               "legendFormat":  "{{job}}",
+                                               "expr":  "sum by (job) (messaging_db_pool_in_use{job=~\"api|worker|notification-worker|dlq-replayer\"})",
                                                "refId":  "A"
-                                           },
-                                           {
-                                               "legendFormat":  "worker",
-                                               "expr":  "messaging_db_pool_in_use{job=\"worker\"}",
-                                               "refId":  "B"
-                                           },
-                                           {
-                                               "legendFormat":  "dlq-replayer",
-                                               "expr":  "messaging_db_pool_in_use{job=\"dlq-replayer\"}",
-                                               "refId":  "C"
                                            }
                                        ],
                            "title":  "DB Pool In Use",
                            "type":  "timeseries",
-                           "description":  "Checked-out DB connections by process."
+                           "description":  "Total checked-out DB connections across replicas, grouped by workload."
                        },
                        {
                            "datasource":  {
@@ -1811,7 +1933,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  46,
+                                           "y":  54,
                                            "w":  12,
                                            "x":  12,
                                            "h":  8
@@ -1844,7 +1966,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  54,
+                                           "y":  62,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -1883,7 +2005,7 @@ data:
                                                              ]
                                            },
                            "gridPos":  {
-                                           "y":  54,
+                                           "y":  62,
                                            "w":  12,
                                            "x":  12,
                                            "h":  8
@@ -1892,94 +2014,13 @@ data:
                            "targets":  [
                                            {
                                                "legendFormat":  "delay_bytes_max",
-                                               "expr":  "messaging_postgres_replication_delay_bytes_max{job=\"api\"}",
+                                               "expr":  "max(messaging_postgres_replication_delay_bytes_max{job=\"api\"})",
                                                "refId":  "A"
                                            }
                                        ],
                            "title":  "PostgreSQL Replication Delay",
                            "type":  "timeseries",
-                           "description":  "Maximum standby replication delay in bytes."
-                       },
-                       {
-                           "datasource":  {
-                                              "type":  "prometheus",
-                                              "uid":  "prometheus"
-                                          },
-                           "fieldConfig":  {
-                                               "defaults":  {
-                                                                "color":  {
-                                                                              "mode":  "palette-classic"
-                                                                          }
-                                                            },
-                                               "overrides":  [
-
-                                                             ]
-                                           },
-                           "gridPos":  {
-                                           "y":  62,
-                                           "w":  12,
-                                           "x":  0,
-                                           "h":  8
-                                       },
-                           "id":  19,
-                           "targets":  [
-                                           {
-                                               "legendFormat":  "standby_count",
-                                               "expr":  "messaging_postgres_standby_count{job=\"api\"}",
-                                               "refId":  "A"
-                                           },
-                                           {
-                                               "legendFormat":  "sync_standby_count",
-                                               "expr":  "messaging_postgres_sync_standby_count{job=\"api\"}",
-                                               "refId":  "B"
-                                           },
-                                           {
-                                               "legendFormat":  "primary_reachable",
-                                               "expr":  "messaging_postgres_is_primary{job=\"api\"}",
-                                               "refId":  "C"
-                                           }
-                                       ],
-                           "title":  "PostgreSQL Replication Capacity",
-                           "type":  "timeseries",
-                           "description":  "Primary reachability and standby capacity."
-                       },
-                       {
-                           "datasource":  {
-                                              "type":  "prometheus",
-                                              "uid":  "prometheus"
-                                          },
-                           "fieldConfig":  {
-                                               "defaults":  {
-                                                                "color":  {
-                                                                              "mode":  "palette-classic"
-                                                                          }
-                                                            },
-                                               "overrides":  [
-
-                                                             ]
-                                           },
-                           "gridPos":  {
-                                           "y":  62,
-                                           "w":  12,
-                                           "x":  12,
-                                           "h":  8
-                                       },
-                           "id":  20,
-                           "targets":  [
-                                           {
-                                               "legendFormat":  "{{state}}",
-                                               "expr":  "messaging_postgres_replication_state_count{job=\"api\"}",
-                                               "refId":  "A"
-                                           },
-                                           {
-                                               "legendFormat":  "{{sync_state}}",
-                                               "expr":  "messaging_postgres_replication_sync_state_count{job=\"api\"}",
-                                               "refId":  "B"
-                                           }
-                                       ],
-                           "title":  "PostgreSQL Replication States",
-                           "type":  "timeseries",
-                           "description":  "Replication state and sync state distribution."
+                           "description":  "Maximum standby replication delay after deduplicating API replica observations."
                        },
                        {
                            "datasource":  {
@@ -1998,6 +2039,46 @@ data:
                                            },
                            "gridPos":  {
                                            "y":  70,
+                                           "w":  12,
+                                           "x":  0,
+                                           "h":  8
+                                       },
+                           "id":  20,
+                           "targets":  [
+                                           {
+                                               "legendFormat":  "{{state}}",
+                                               "expr":  "min by (state) (messaging_postgres_replication_state_count{job=\"api\"})",
+                                               "refId":  "A"
+                                           },
+                                           {
+                                               "legendFormat":  "{{sync_state}}",
+                                               "expr":  "min by (sync_state) (messaging_postgres_replication_sync_state_count{job=\"api\"})",
+                                               "refId":  "B"
+                                           }
+                                       ],
+                           "title":  "PostgreSQL Replication States",
+                           "type":  "timeseries",
+                           "description":  "Conservative replication state counts after deduplicating API replica observations."
+                       },
+                       {
+                           "datasource":  {
+                                              "type":  "prometheus",
+                                              "uid":  "prometheus"
+                                          },
+                           "fieldConfig":  {
+                                               "defaults":  {
+                                                                "color":  {
+                                                                              "mode":  "palette-classic"
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
+                                                            },
+                                               "overrides":  [
+
+                                                             ]
+                                           },
+                           "gridPos":  {
+                                           "y":  6,
                                            "w":  12,
                                            "x":  0,
                                            "h":  8
@@ -2033,7 +2114,9 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2076,7 +2159,9 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2109,7 +2194,9 @@ data:
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2139,7 +2226,7 @@ data:
                            "type":  "text",
                            "gridPos":  {
                                            "x":  0,
-                                           "y":  86,
+                                           "y":  94,
                                            "w":  24,
                                            "h":  4
                                        },
@@ -2159,9 +2246,9 @@ data:
                                           },
                            "gridPos":  {
                                            "x":  0,
-                                           "y":  90,
+                                           "y":  86,
                                            "w":  8,
-                                           "h":  5
+                                           "h":  8
                                        },
                            "fieldConfig":  {
                                                "defaults":  {
@@ -2184,7 +2271,23 @@ data:
                                                                                                      "value":  3
                                                                                                  }
                                                                                              ]
-                                                                               }
+                                                                               },
+                                                                "noValue":  "No data",
+                                                                "mappings":  [
+                                                                                 {
+                                                                                     "options":  {
+                                                                                                     "match":  "null",
+                                                                                                     "result":  {
+                                                                                                                    "color":  "red",
+                                                                                                                    "index":  99,
+                                                                                                                    "text":  "No data"
+                                                                                                                }
+                                                                                                 },
+                                                                                     "type":  "special"
+                                                                                 }
+                                                                             ],
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2216,22 +2319,24 @@ data:
                            "id":  27,
                            "title":  "Kafka Consumer Group Lag",
                            "type":  "timeseries",
-                           "description":  "Direct kafka-exporter lag for the persistence and notification consumer groups.",
+                           "description":  "Total direct kafka-exporter lag for each persistence or notification consumer group.",
                            "datasource":  {
                                               "type":  "prometheus",
                                               "uid":  "prometheus"
                                           },
                            "gridPos":  {
-                                           "x":  8,
-                                           "y":  90,
-                                           "w":  16,
+                                           "x":  12,
+                                           "y":  6,
+                                           "w":  12,
                                            "h":  8
                                        },
                            "fieldConfig":  {
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2239,14 +2344,9 @@ data:
                                            },
                            "targets":  [
                                            {
-                                               "expr":  "sum by (consumergroup, topic) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
-                                               "legendFormat":  "{{consumergroup}} / {{topic}} lag",
-                                               "refId":  "A"
-                                           },
-                                           {
                                                "expr":  "sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~\"message-worker|notification-worker\"}, 0))",
                                                "legendFormat":  "{{consumergroup}} total",
-                                               "refId":  "B"
+                                               "refId":  "A"
                                            }
                                        ]
                        },
@@ -2260,16 +2360,18 @@ data:
                                               "uid":  "prometheus"
                                           },
                            "gridPos":  {
-                                           "x":  0,
-                                           "y":  95,
-                                           "w":  8,
+                                           "x":  8,
+                                           "y":  86,
+                                           "w":  16,
                                            "h":  8
                                        },
                            "fieldConfig":  {
                                                "defaults":  {
                                                                 "color":  {
                                                                               "mode":  "palette-classic"
-                                                                          }
+                                                                          },
+                                                                "unit":  "short",
+                                                                "min":  0
                                                             },
                                                "overrides":  [
 
@@ -2303,7 +2405,7 @@ data:
         "timezone":  "browser",
         "title":  "Reliable Event Processing Operations Overview",
         "uid":  "messaging-portfolio-overview",
-        "version":  11
+        "version":  12
     }
 ---
 apiVersion: apps/v1
@@ -2321,7 +2423,7 @@ spec:
       labels:
         app: grafana
       annotations:
-        portfolio.jangwanko.dev/config-hash: "c19e89f91b71c243"
+        portfolio.jangwanko.dev/config-hash: "53b593e0ff2282e9"
     spec:
       automountServiceAccountToken: false
       securityContext:

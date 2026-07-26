@@ -37,12 +37,12 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 | `Worker Throughput By Result` | `sum(rate(messaging_worker_processed_total{job="worker"}[1m])) by (result)` | core Worker의 `success` / `rejected` / `dlq` / failure 처리량 |
 | `Worker Failure Ratio` | `messaging_worker_processed_total{job="worker",result="failure"}` 비율, 표시 범위 `0~100%` | core Worker unexpected failure와 seek-back 확인 |
 | `Worker Last Success Age` | `time() - max(messaging_worker_last_success_timestamp{job="worker"})` | Worker pod는 살아 있지만 실제 처리가 멈춘 상태 감지 |
-| `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket` | Worker DB persist / status update, notification-worker insert 구간 |
+| `Worker Stage Latency` | `messaging_worker_stage_latency_seconds_bucket{job="worker"}` | core Worker DB persist / status update 구간 |
 | `API Queue To DB Commit` | `messaging_event_persist_lag_seconds_bucket{job="worker"}` | Kafka append 전에 기록한 API `queued_at`부터 Worker PostgreSQL `commit()` 반환 직후까지. queue wait·Worker 처리·DB 작업·inline retry 포함 |
 | `API Queue To Worker Start` | `messaging_queue_wait_seconds_bucket{job="worker"}` | Kafka append 전에 기록한 API `queued_at`부터 Worker handler 시작까지. Kafka publish 시간을 포함하는 backlog 보조 지표 |
-| `DB Pool In Use` | `messaging_db_pool_in_use` | API / Worker / notification-worker / DLQ Replayer의 DB connection checkout 압력 |
+| `DB Pool In Use` | `sum by (job) (messaging_db_pool_in_use{job=~"api|worker|notification-worker|dlq-replayer"})` | replica 전체의 DB connection checkout을 workload별 합계로 표시 |
 | `DLQ Events And Replay` | `messaging_dlq_events_total`, `messaging_dlq_replay_total` | DLQ 유입, replay, replay guard skip 흐름 |
-| `Worker Replicas` | `kube_deployment_spec_replicas`, `kube_deployment_status_replicas_available`, `kube_horizontalpodautoscaler_status_desired_replicas` | Worker desired / available / KEDA HPA desired replica 비교 |
+| `Worker Scaling` | `kube_deployment_spec_replicas`, `kube_deployment_status_replicas_available`, `kube_horizontalpodautoscaler_status_desired_replicas` | Worker desired / available / KEDA HPA desired replica 비교 |
 | `API Scaling` | API deployment / HPA replica 지표 | API HPA와 실제 available replica 비교 |
 | `Pod Restarts` | `kube_pod_container_status_restarts_total` | CrashLoopBackOff, OOMKilled, 낮은 사양 신호 |
 | `Unavailable Replicas` | `kube_deployment_status_replicas_unavailable` | rollout, scheduling, readiness 문제 |
@@ -55,6 +55,9 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 - kafka-exporter 직접 지표: `kafka_consumergroup_lag`, `kafka_brokers`, `kafka_topic_partition_current_offset`
 - application-side 보조 신호: `API Queue To Worker Start`, Worker throughput, KEDA desired replica
 - 해석 방식: broker / lag / Worker 처리량 동시 확인
+- 첫 화면 순서: 현재 상태 → `Worker Scaling`·`Kafka Consumer Group Lag` → API request rate·latency
+- 상태 색상: HTTP `2xx` 초록, `4xx` 노랑, `5xx` 빨강; 5xx·Worker failure ratio `1%` 노랑, `5%` 빨강
+- 상태 metric 부재: 빨간 `No data` 표시
 
 Prometheus scrape topology:
 
@@ -160,7 +163,7 @@ Prometheus scrape topology:
 - `messaging_worker_failures_total`: Worker loop failure 누적 건수
 - `messaging_worker_stage_latency_seconds`: Worker 내부 병목을 stage별로 봅니다.
 - `messaging_event_persist_lag_seconds`: payload `queued_at`부터 Worker의 PostgreSQL `commit()` 반환 직후 `persisted_at`까지의 lag. post-commit publish 시간 제외
-- `messaging_queue_wait_seconds`: event가 Worker 처리 전까지 대기한 시간 해석 지표
+- `messaging_queue_wait_seconds`: Kafka append 전 API `queued_at`부터 Worker handler 시작까지. Kafka publish 시간 포함
 - `messaging_dlq_events_total`: Worker가 Kafka DLQ로 보낸 event 수
 - `messaging_dlq_replay_total`: DLQ Replayer replay / max replay skip 결과
 - `messaging_notification_publish_failures_total`: core DB commit 이후 notification job publish 실패 수. persistence rollback을 뜻하지 않으며 notification 누락 조사 신호
@@ -218,10 +221,10 @@ Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.
 | Panel | Metric | Interpretation |
 | --- | --- | --- |
 | `Kafka Broker Count` | `kafka_brokers` | exporter가 보는 broker 수. 로컬 HA 기준은 `3`입니다. |
-| `Kafka Consumer Group Lag` | `sum by (topic) (clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))` | Worker consumer group이 topic별로 따라잡지 못한 message 수입니다. |
+| `Kafka Consumer Group Lag` | `sum by (consumergroup) (clamp_min(kafka_consumergroup_lag{consumergroup=~"message-worker|notification-worker"}, 0))` | persistence·notification consumer group별 전체 lag입니다. topic별 선과 total 선을 겹치지 않습니다. |
 | `Kafka Topic Partitions` | `kafka_topic_partition_current_offset` | topic별 partition 구성을 확인합니다. |
 
-`Kafka Consumer Group Lag`가 증가하면서 core `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다. `notification-worker` job은 별도 query로 분리합니다.
+`Kafka Consumer Group Lag`가 증가하면서 core `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다. persistence와 notification consumer group은 legend로 분리합니다.
 
 ### Materialized cache replay 관측 경계
 

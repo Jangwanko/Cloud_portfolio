@@ -864,6 +864,7 @@ class TestOperationsDashboard:
         assert "Worker Availability" not in titles
         assert "Accepted To Persisted Lag" not in titles
         assert "Kafka Topic Wait Time" not in titles
+        assert "PostgreSQL Replication Capacity" not in titles
         assert "captured before Kafka append" in panels["API Queue To DB Commit"]["description"]
         assert "PostgreSQL commit return" in panels["API Queue To DB Commit"]["description"]
         assert "captured before Kafka append" in panels["API Queue To Worker Start"]["description"]
@@ -873,7 +874,68 @@ class TestOperationsDashboard:
 
         assert "[5m]" in panels["API Latency"]["targets"][0]["expr"]
         assert "[5m]" in panels["API Stage Latency"]["targets"][0]["expr"]
-        assert dashboard["version"] == 11
+        assert dashboard["version"] == 12
+
+        assert panels["Worker Scaling"]["gridPos"]["y"] == 6
+        assert panels["Kafka Consumer Group Lag"]["gridPos"]["y"] == 6
+        assert panels["API Request Rate"]["gridPos"]["y"] == 14
+        assert panels["API Latency"]["gridPos"]["y"] == 14
+
+        for title in (
+            "Kafka Intake Status",
+            "PostgreSQL Primary",
+            "Worker Status",
+            "PostgreSQL Standbys",
+            "Kafka Broker Count",
+        ):
+            defaults = panels[title]["fieldConfig"]["defaults"]
+            assert defaults["noValue"] == "No data"
+            assert any(
+                mapping["type"] == "special"
+                and mapping["options"]["match"] == "null"
+                and mapping["options"]["result"]["color"] == "red"
+                for mapping in defaults["mappings"]
+            )
+
+        api_rate = panels["API Request Rate"]
+        assert api_rate["fieldConfig"]["defaults"]["unit"] == "reqps"
+        status_colors = {
+            override["matcher"]["options"]: override["properties"][0]["value"][
+                "fixedColor"
+            ]
+            for override in api_rate["fieldConfig"]["overrides"]
+        }
+        assert status_colors == {"^2..$": "green", "^4..$": "yellow", "^5..$": "red"}
+
+        for title in ("API 5xx Ratio", "Worker Failure Ratio"):
+            defaults = panels[title]["fieldConfig"]["defaults"]
+            assert defaults["color"]["mode"] == "thresholds"
+            assert [
+                (step["value"], step["color"])
+                for step in defaults["thresholds"]["steps"]
+            ] == [(None, "green"), (0.01, "yellow"), (0.05, "red")]
+
+        consumer_lag = panels["Kafka Consumer Group Lag"]
+        assert len(consumer_lag["targets"]) == 1
+        assert "sum by (consumergroup)" in consumer_lag["targets"][0]["expr"]
+        assert "sum by (consumergroup, topic)" not in serialized
+
+        db_pool = panels["DB Pool In Use"]
+        assert len(db_pool["targets"]) == 1
+        assert "sum by (job)" in db_pool["targets"][0]["expr"]
+        assert "notification-worker" in db_pool["targets"][0]["expr"]
+
+        assert panels["PostgreSQL Replication Delay"]["targets"][0]["expr"].startswith(
+            "max("
+        )
+        assert all(
+            target["expr"].startswith("min by")
+            for target in panels["PostgreSQL Replication States"]["targets"]
+        )
+        assert '{job="worker"}' in panels["Worker Throughput By Result"]["targets"][0][
+            "expr"
+        ]
+        assert '{job="worker"}' in panels["Worker Stage Latency"]["targets"][0]["expr"]
 
         for metric in (
             "messaging_db_pool_in_use",

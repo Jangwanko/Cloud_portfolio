@@ -164,7 +164,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 | 화면 | 먼저 볼 항목 |
 | --- | --- |
 | Argo CD | `messaging-portfolio-local-ha` `Synced / Healthy` |
-| Grafana | Kafka Broker Count, Kafka Consumer Group Lag, `API Queue To DB Commit`(Worker commit-observed lag), DLQ Events And Replay |
+| Grafana | 상단 현재 상태, Worker Scaling·Kafka Consumer Group Lag, API request rate·latency, `API Queue To DB Commit`, DLQ Events And Replay |
 | Prometheus | `up`, alert rules, `kafka_brokers`, `kafka_consumergroup_lag` |
 | Kubernetes | Deployment ready, StatefulSet ready, HPA desired/current, ScaledObject Ready |
 | API | `/health/ready`, `/docs`, `/openapi.json`, `/v1/event-requests/{request_id}` |

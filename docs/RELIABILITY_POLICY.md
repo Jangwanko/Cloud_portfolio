@@ -126,7 +126,7 @@ Metric 의미:
 - `messaging_event_persist_lag_seconds`: API `queued_at`부터 Worker의 PostgreSQL `commit()` 반환 직후까지. post-commit publish 시간 제외, API/Worker clock 차이 고려
 - PowerShell suite의 2026-06 `accepted-to-persisted`: PostgreSQL row `created_at` / row-visible proxy
 - 현재 PowerShell `accepted_to_status_observed_ms`: client가 `persisted` status를 관측할 때까지이며 polling/network 포함. 위 Prometheus histogram과 별도 측정
-- `messaging_queue_wait_seconds`: queued timestamp부터 Worker consume 시작까지의 근사치
+- `messaging_queue_wait_seconds`: Kafka append 전 API `queued_at`부터 Worker handler 시작까지. Kafka publish 시간 포함
 
 ## DLQ Signal Policy
 
