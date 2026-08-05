@@ -24,6 +24,13 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "128Mi"
+            limits:
+              cpu: "2000m"
+              memory: "512Mi"
           env:
             - name: BASE_URL
               value: http://api.messaging-app.svc.cluster.local:8000

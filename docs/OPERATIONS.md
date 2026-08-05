@@ -117,7 +117,9 @@ Response의 `app_version`은 실행 중인 API build version입니다. 2026-07-2
 
 Dev-kafka source Demo UI: `2.3.0`
 
-Public demo-lite Demo UI: last verified `2.1.0`, `2.2.0` release runtime 확인 대기
+Demo-lite candidate Demo UI: `2.3.0` (`demo-dev`, not deployed)
+
+Public demo-lite Demo UI: `2.1.0` (2026-07-27 live)
 
 Local surfaces:
 
@@ -133,7 +135,7 @@ Demo counter semantics:
 - `Kafka 적재`: API가 ingress topic append를 완료한 수
 - `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
 - `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
-- Worker: 운영 상태 refresh 시점의 현재 replica / 최대 replica
+- Worker: 현재 replica / 최대 replica; full profile `2/8`, demo-lite `1/2`
 
 UI operating behavior:
 
@@ -375,7 +377,7 @@ Generic v2 manual local rollout:
 
 ### Generic v2 Downgrade Safety
 
-Alembic `0008` downgrade는 v2 row뿐 아니라 기존 컬럼만으로 복원할 수 없는 schema v1 `payload`/`metadata`가 하나라도 있으면 lossy downgrade를 거부합니다. Order reference adapter의 추가 metadata도 여기에 포함됩니다. 아래 조건을 순서대로 모두 확인한 뒤에만 `0007_drop_legacy_room_sequence_allocations`로 내립니다.
+Alembic `0008` downgrade는 모든 v2 row와 기존 컬럼만으로 복원할 수 없는 schema v1 `payload`/`metadata`를 검사합니다. 하나라도 있으면 lossy downgrade를 거부합니다. Order reference adapter의 추가 metadata도 검사 대상입니다. 아래 조건을 순서대로 모두 확인한 뒤에만 `0007_drop_legacy_room_sequence_allocations`로 내립니다.
 
 1. 모든 desired state에서 `GENERIC_EVENTS_V2_ENABLED=false` 적용
 2. API rollout 완료와 모든 API pod의 gate `false` 확인; v2 POST가 `503`인지 확인

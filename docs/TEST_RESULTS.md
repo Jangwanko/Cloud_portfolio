@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 포트폴리오의 현재 검증 상태와 역사적 측정 원본을 분리합니다. 문서 정합성 감사 기준은 `2026-07-14`, 최신 local cluster generic v2 성능 실행은 `2026-07-21`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·public runtime 확인은 `2026-07-27`, 최신 local cluster generic v2 성능 실행은 `2026-07-21`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
@@ -16,17 +16,19 @@
 | Same-stream ordering | `stream_seq 1..100` | performance suite와 failure injection에서 통과 |
 | Ordering / DB outage | 네 시나리오 accepted = persisted | 2026-06-08 원본 추적 |
 | Materialized cache fallback | fresh cache와 DB-down stale cache | 2026-07-21 tracked rerun: fresh age `0.112s`, DB-down degraded age `11.462s`, recovery exit `0` |
-| Worker scaling | Kafka consumer lag 기반 KEDA | lag / persistence proxy / drain 관찰 |
+| Worker scaling | Kafka consumer lag 기반 KEDA | public demo 2026-07-27: `message-worker` lag peak `828`, HPA desired·actual replica `1→2`; demo-lite max `2` 도달 |
 | Fixed Worker 대 KEDA | 64-stream 동일 조건 1회 A/B: fixed all drain `301.42s`, KEDA `261.17s`, KEDA final `8` | drain `13.35%` 감소; KEDA intake event `7.35%` 감소·p95 `25.62%` 증가, 반복 전 candidate |
 | Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
 | Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | CI run `#55` validate/publish success; image `8f5d78c6963a`, bot commit `717e0ca`; master-targeted runtime rollout은 미검증 |
-| Dev GitOps validation gate | `publish-dev-kafka-image` requires `validate`, exact SHA candidate digest verify, branch advance guard | local source와 contract test 반영; commit/push 및 remote Actions 실행 전이므로 배포 증거 제외 |
+| Dev GitOps validation gate | `publish-dev-kafka-image` requires `validate`, exact SHA candidate digest verify, branch advance guard | source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`; local runtime rollout 별도 확인 대기 |
+| Local container candidate | BuildKit cache, non-root UID/GID `10001`, `SIGTERM`, core import | `messaging-portfolio:doc-opt` build 성공, cached rebuild 성공, size `59,783,039` bytes; registry publication·cluster rollout 제외 |
 | Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
 | PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
 | PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
 | Dev-kafka source Demo UI `2.3.0` | generic v2 intake, Kafka append·DB persistence 동시 진행 표시, 중복 Worker 카드 제거, DB 저장 컬럼 pipeline 배치, 처리 중 Advisor 분리 | source / contract 검증; local live rollout 전 |
-| Public demo-lite UI | last verified `2.1.0`; `2.2.0` release image `626e8296b79d` | generic v2·API `2.0.0`·event `202`; `2.2.0` runtime 확인 대기 |
-| Unit / contract / infrastructure suite | `364 passed` (2026-07-27) | UI `2.3.0` 정보 구조·Advisor 상태 contract 포함; cluster rollout과 별도 판정 |
+| Demo-lite candidate UI `2.3.0` | 병렬 Kafka·DB 진행 표시, Worker 표시 단일화, Advisor 진행 상태 | `demo-dev` tests `368 passed`; public deployment 미확인 |
+| Public demo-lite UI `2.1.0` | branch/deployment-specific | 2026-07-27 live: title `Reliable Event Processing Console`, API `2.0.0`, generic v2와 event `202` |
+| Unit / contract / infrastructure suite | `365 passed` (2026-07-27) | 병합 전 최신 master suite; 현재 변경은 재실행 필요 |
 | Local live cluster | 2026-07-27 Argo revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2` | readiness `ready`, API `2.0.0`, UI `2.2.0`, Worker `2/8`; functional browser run은 별도 확인 |
 
 원본 위치:

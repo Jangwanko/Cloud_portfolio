@@ -15,6 +15,15 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 | 관측·복구 | Prometheus·Grafana, lag·replica·persistence·restore 지표, DB outage·ordering·backup/restore 검증 |
 | Cloud boundary | EKS·MSK·RDS·ECR 중심 Terraform migration blueprint; AWS `plan/apply`와 실제 배포 증거 없음 |
 
+현재 상태 — 2026-07-27:
+
+| 대상 | 확인된 버전·상태 | 증거 경계 |
+| --- | --- | --- |
+| `master` source | UI `2.0.0`, API `2.0.0`, tests `365 passed` | generic v2·`202` source와 local test |
+| local `dev-kafka` runtime | API `2.0.0`, image `9349ba9` | 2026-07-21 cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
+| public demo-lite runtime | UI `2.1.0`, API `2.0.0` | 2026-07-27 live generic v2·`202`; Worker `1→2`, peak lag `828` |
+| `demo-dev` candidate | UI `2.3.0`, API `2.0.0`, tests `368 passed` | 저사양 source·test 완료, public deployment 미확인 |
+
 ## Kubernetes 설계 / Kubernetes Architecture
 
 ```mermaid
@@ -138,7 +147,7 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 | --- | --- | --- |
 | Ingress·API pod | request rate, API p95/p99, stage latency, HPA desired·available replica | 수락 경로 지연, Kafka publish stage, CPU scale 상태 |
 | Kafka buffer | broker count, topic offset, `message-worker` consumer lag | ingress rate와 처리 capacity 차이 |
-| Worker pod | throughput by result, last success age, API queue→Worker 시작, API queue→DB commit, DB stage latency | consume 정지, DB write·lock·pool 병목 |
+| Worker pod | throughput by result, last success age, queue wait, accepted-to-commit lag, DB stage latency | consume 정지, DB write·lock·pool 병목 |
 | KEDA·Deployment | desired replica, available replica, scale transition, drain time | scale trigger 실행과 backlog 회복 시간 |
 | Notification worker | notification consumer lag, attempt throughput | core Worker 가속 뒤 downstream backlog 이동 |
 | PostgreSQL·Pgpool | primary reachability, standby·sync standby count, replication delay, DB pool in use | writable path와 HA guardrail, connection pressure |
@@ -150,7 +159,7 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 판정 규칙:
 
 - API `202`와 API p95: Kafka append 수락 경로
-- consumer lag·API queue→Worker 시작·API queue→DB commit: 비동기 persistence capacity
+- consumer lag·queue wait·accepted-to-commit lag: 비동기 persistence capacity
 - Worker replica·lag·drain time: KEDA scale-out 결과
 - Argo `Synced / Healthy`: desired state reconciliation 상태
 - source commit·image digest·overlay tag·runtime image: 실제 배포 revision
@@ -219,7 +228,7 @@ Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소
 ### Local Quick Start
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File k8s/scripts/quick_start_all.ps1
+powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
 Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick start는 `scripts/bootstrap_tools.ps1`을 호출해 pinned kind·kubectl·Helm을 `tools/`에 준비합니다.
@@ -230,11 +239,11 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 
 ### Public demo-lite
 
-2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 마지막 live 확인은 UI `2.1.0` / API `2.0.0` generic v2입니다. UI `2.2.0` release는 공개 runtime badge와 동작 확인 뒤 배포 증거로 승격합니다.
+2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 2026-07-27 기준 UI `2.1.0` / API `2.0.0`, generic v2, event `202` 확인. `demo-dev` UI `2.3.0`은 public deployment 확인 전입니다.
 
 ## Validation Summary
 
-- tests `364 passed` (2026-07-27); same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
+- 최신 병합 전 suite `365 passed`; same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
 - DB 장애 중 Kafka append `202`; 복구 뒤 persistence·consumer lag `0`
 - DB membership/watermark 검증 뒤 fresh cache; DB 장애 중 hydrated degraded cache
 - PostgreSQL restart `3/3 ready`, sync/quorum standby `2`; host dump restore의 schema·table·row·sequence 일치

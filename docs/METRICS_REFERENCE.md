@@ -223,7 +223,7 @@ sum by (result) (increase(messaging_dlq_replay_total[15m]))
 
 ### DLQ summary `oldest_sample_age_seconds`
 
-이 값은 Prometheus metric이 아니라 운영 API가 조회한 append-only log sample의 시간 범위입니다.
+이 값은 운영 API가 조회한 append-only log sample의 시간 범위입니다. Prometheus metric으로 수집하지 않습니다.
 
 ```powershell
 Invoke-RestMethod -Headers @{ Authorization = "Bearer <token>" } http://localhost/v1/dlq/ingress/summary?limit=200&sample_limit=5
