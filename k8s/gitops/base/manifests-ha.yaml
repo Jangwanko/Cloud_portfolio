@@ -18,9 +18,6 @@ stringData:
   KAFKA_BOOTSTRAP_SERVERS: "kafka.messaging-app.svc.cluster.local:9092"
   KAFKA_INGRESS_TOPIC: "message-ingress"
   KAFKA_DLQ_TOPIC: "message-ingress-dlq"
-  KAFKA_REQUEST_STATUS_TOPIC: "message-request-status"
-  KAFKA_MESSAGE_SNAPSHOT_TOPIC: "message-snapshots"
-  KAFKA_STREAM_SNAPSHOT_TOPIC: "stream-snapshots"
   KAFKA_NOTIFICATION_TOPIC: "message-notifications"
   KAFKA_NOTIFICATION_CONSUMER_GROUP: "notification-worker"
   KAFKA_CONSUMER_GROUP: "message-worker"
@@ -2405,7 +2402,7 @@ spec:
   pollingInterval: 5
   cooldownPeriod: 120
   minReplicaCount: 2
-  maxReplicaCount: 8
+  maxReplicaCount: 4
   advanced:
     horizontalPodAutoscalerConfig:
       name: worker-keda-hpa
@@ -2428,5 +2425,42 @@ spec:
         bootstrapServers: kafka.messaging-app.svc.cluster.local:9092
         consumerGroup: message-worker
         topic: message-ingress
+        lagThreshold: "100"
+        offsetResetPolicy: earliest
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-worker-keda
+  namespace: messaging-app
+spec:
+  scaleTargetRef:
+    name: notification-worker
+  pollingInterval: 5
+  cooldownPeriod: 120
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  advanced:
+    horizontalPodAutoscalerConfig:
+      name: notification-worker-keda-hpa
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Pods
+              value: 2
+              periodSeconds: 30
+        scaleDown:
+          stabilizationWindowSeconds: 120
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 60
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka.messaging-app.svc.cluster.local:9092
+        consumerGroup: notification-worker
+        topic: message-notifications
         lagThreshold: "100"
         offsetResetPolicy: earliest

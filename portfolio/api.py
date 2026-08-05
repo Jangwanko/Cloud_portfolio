@@ -17,20 +17,8 @@ from portfolio.event_envelope import MAX_JSON_WIRE_NESTING_DEPTH, validate_json_
 from portfolio.kafka_client import (
     list_recent_topic_messages,
     publish_ingress_job,
-    publish_message_snapshot_tombstone,
-    publish_request_status_tombstone,
-    publish_stream_snapshot,
-    publish_stream_snapshot_tombstone,
     reset_topic,
     is_invalid_kafka_payload,
-)
-from portfolio.materialized_cache import (
-    cache_stream_snapshot,
-    clear_materialized_cache,
-    get_cached_request_status,
-    get_materialized_cache_status,
-    is_cached_stream_member,
-    list_cached_events,
 )
 from portfolio.metrics import observe_api_stage
 from portfolio.order_events import classify_order_event
@@ -89,9 +77,7 @@ def _ensure_demo_reset_allowed() -> None:
 
 
 def _reset_demo_event_data(cur) -> dict:
-    # Freeze producers before collecting compacted-topic keys. Without this
-    # lock a Worker can commit a row after the SELECTs but before TRUNCATE,
-    # leaving a cache snapshot for a row that the reset removed.
+    # Freeze writers while the demo-only reset counts and removes event state.
     cur.execute(
         """
         LOCK TABLE idempotency_keys, messages, rooms, request_statuses,
@@ -99,12 +85,16 @@ def _reset_demo_event_data(cur) -> dict:
         IN ACCESS EXCLUSIVE MODE
         """
     )
-    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM messages")
-    message_ids = [int(row["id"]) for row in cur.fetchall()]
-    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms")
-    stream_ids = [int(row["id"]) for row in cur.fetchall()]
-    cur.execute("/*NO LOAD BALANCE*/ SELECT request_id FROM request_statuses")
-    request_ids = [str(row["request_id"]) for row in cur.fetchall()]
+    cur.execute(
+        """
+        /*NO LOAD BALANCE*/
+        SELECT
+            (SELECT COUNT(*) FROM messages) AS deleted_messages,
+            (SELECT COUNT(*) FROM rooms) AS reset_streams,
+            (SELECT COUNT(*) FROM request_statuses) AS reset_request_statuses
+        """
+    )
+    counts = cur.fetchone()
 
     cur.execute("TRUNCATE TABLE notification_attempts RESTART IDENTITY")
     cur.execute("TRUNCATE TABLE idempotency_keys")
@@ -116,37 +106,10 @@ def _reset_demo_event_data(cur) -> dict:
     cur.execute("TRUNCATE TABLE rooms CASCADE")
 
     return {
-        "deleted_messages": len(message_ids),
-        "reset_streams": len(stream_ids),
-        "reset_request_statuses": len(request_ids),
-        "message_ids": message_ids,
-        "stream_ids": stream_ids,
-        "request_ids": request_ids,
+        "deleted_messages": int(counts["deleted_messages"]),
+        "reset_streams": int(counts["reset_streams"]),
+        "reset_request_statuses": int(counts["reset_request_statuses"]),
     }
-
-
-def _publish_demo_reset_tombstones(result: dict) -> int:
-    failures = 0
-    for request_id in result["request_ids"]:
-        try:
-            publish_request_status_tombstone(request_id)
-        except Exception as exc:  # noqa: BLE001
-            failures += 1
-            logging.warning("Request status tombstone failed request_id=%s error=%s", request_id, exc)
-    for message_id in result["message_ids"]:
-        try:
-            publish_message_snapshot_tombstone(message_id)
-        except Exception as exc:  # noqa: BLE001
-            failures += 1
-            logging.warning("Message snapshot tombstone failed message_id=%s error=%s", message_id, exc)
-    for stream_id in result["stream_ids"]:
-        try:
-            publish_stream_snapshot_tombstone(stream_id)
-        except Exception as exc:  # noqa: BLE001
-            failures += 1
-            logging.warning("Stream snapshot tombstone failed stream_id=%s error=%s", stream_id, exc)
-    clear_materialized_cache()
-    return failures
 
 
 def _reset_demo_kafka_dlq() -> str:
@@ -569,23 +532,21 @@ def reset_demo_events(payload: DemoResetRequest, current_user: dict = Depends(ge
                     raise
     except (OperationalError, InterfaceError, PoolError) as exc:
         raise HTTPException(status_code=503, detail="Demo event store unavailable") from exc
-    cache_invalidation_failures = _publish_demo_reset_tombstones(result)
     try:
         reset_dlq_topic = _reset_demo_kafka_dlq()
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail="Demo DB reset completed, but Kafka DLQ reset failed") from exc
 
     return {
-        "status": "reset" if cache_invalidation_failures == 0 else "reset_with_warnings",
+        "status": "reset",
         "deleted_events": result["deleted_messages"],
         "deleted_messages": result["deleted_messages"],
         "reset_streams": result["reset_streams"],
         "reset_request_statuses": result["reset_request_statuses"],
         "reset_dlq_topic": reset_dlq_topic,
-        "cache_invalidation_failures": cache_invalidation_failures,
         "note": (
             f"Demo event data and DLQ topic reset by user_id={current_user['id']}. "
-            "Users were kept; compacted state tombstones were published."
+            "Users were kept."
         ),
     }
 
@@ -629,16 +590,6 @@ def create_stream(payload: StreamCreate, current_user: dict = Depends(get_curren
     except (OperationalError, InterfaceError, PoolError) as exc:
         raise HTTPException(status_code=503, detail="Stream store unavailable") from exc
 
-    stream_snapshot = {
-        "stream_id": int(room["id"]),
-        "name": room["name"],
-        "member_ids": valid_member_ids,
-    }
-    cache_stream_snapshot(stream_snapshot)
-    try:
-        publish_stream_snapshot(int(room["id"]), stream_snapshot)
-    except Exception as exc:  # noqa: BLE001
-        logging.warning("Stream snapshot publish failed stream_id=%s error=%s", room["id"], exc)
     return {
         "id": room["id"],
         "name": room["name"],
@@ -839,11 +790,7 @@ def get_event_request_status(
     try:
         status = _load_request_status(request_id)
     except (OperationalError, InterfaceError, PoolError) as exc:
-        if get_materialized_cache_status().get("hydrated") is not True:
-            raise HTTPException(status_code=503, detail="Request status unavailable") from exc
-        status = get_cached_request_status(request_id)
-        if status is None:
-            raise HTTPException(status_code=503, detail="Request status unavailable") from exc
+        raise HTTPException(status_code=503, detail="Request status unavailable") from exc
 
     if status is None:
         # PostgreSQL owns durable request state. A healthy DB miss must not be
@@ -1027,30 +974,13 @@ def _event_row_to_response(row: dict) -> dict:
     }
 
 
-def _event_list_response(source: str, degraded: bool, items: list[dict], snapshot_age: float | None) -> dict:
+def _event_list_response(items: list[dict]) -> dict:
     return {
-        "source": source,
-        "degraded": degraded,
-        "snapshot_age_seconds": None if snapshot_age is None else round(snapshot_age, 3),
+        "source": "database",
+        "degraded": False,
+        "snapshot_age_seconds": None,
         "items": items,
     }
-
-
-def _cached_page_matches_stream_watermark(
-    items: list[dict],
-    *,
-    last_stream_seq: int,
-    limit: int,
-) -> bool:
-    expected_count = min(limit, last_stream_seq)
-    if len(items) != expected_count:
-        return False
-    sequences = [item.get("stream_seq") for item in items]
-    if any(type(sequence) is not int for sequence in sequences):
-        return False
-    return sequences == list(
-        range(last_stream_seq, last_stream_seq - expected_count, -1)
-    )
 
 
 @generic_router.get("/streams/{stream_id}/events", response_model=GenericEventListResponse)
@@ -1062,55 +992,6 @@ def list_events(
     current_user: dict = Depends(get_current_user),
 ):
     user_id = int(current_user["id"])
-    cache_status = get_materialized_cache_status()
-    cache_hydrated = cache_status.get("hydrated") is True
-    if cache_hydrated:
-        cached_items, snapshot_age = list_cached_events(stream_id, limit, before_id)
-    else:
-        cached_items, snapshot_age = [], None
-    normalized_cached_items = [_event_row_to_response(item) for item in cached_items]
-    try:
-        with get_conn() as conn:
-            with get_cursor(conn) as cur:
-                _ensure_room_member(cur, stream_id, user_id)
-                cur.execute(
-                    "/*NO LOAD BALANCE*/ SELECT last_seq FROM room_sequences WHERE room_id=%s",
-                    (stream_id,),
-                )
-                sequence_row = cur.fetchone()
-                stream_last_seq = 0 if sequence_row is None else sequence_row["last_seq"]
-                if (
-                    type(stream_last_seq) is not int
-                    or stream_last_seq < 0
-                    or stream_last_seq > _MAX_POSTGRES_BIGINT
-                ):
-                    raise ValueError("Invalid stream sequence watermark")
-    except HTTPException:
-        raise
-    except (OperationalError, InterfaceError, PoolError) as exc:
-        if not is_cached_stream_member(stream_id, user_id):
-            raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
-        if cached_items:
-            return _event_list_response("cache", True, normalized_cached_items, snapshot_age)
-        raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
-
-    # A compacted Kafka snapshot is a read optimization, not the authorization
-    # source while PostgreSQL is reachable. This prevents a forged cache record
-    # from granting fresh-path access on local PLAINTEXT Kafka deployments.
-    if (
-        before_id is None
-        and cached_items
-        and cache_status.get("ready") is True
-        and snapshot_age is not None
-        and snapshot_age <= settings.snapshot_cache_fresh_seconds
-        and _cached_page_matches_stream_watermark(
-            cached_items,
-            last_stream_seq=stream_last_seq,
-            limit=limit,
-        )
-    ):
-        return _event_list_response("cache", False, normalized_cached_items, snapshot_age)
-
     sql = """
         /*NO LOAD BALANCE*/
         SELECT id, request_id, room_id, room_seq, user_id,
@@ -1131,15 +1012,16 @@ def list_events(
     try:
         with get_conn() as conn:
             with get_cursor(conn) as cur:
+                _ensure_room_member(cur, stream_id, user_id)
                 cur.execute(sql, tuple(params))
                 rows = cur.fetchall()
+    except HTTPException:
+        raise
     except (OperationalError, InterfaceError, PoolError) as exc:
-        if cached_items:
-            return _event_list_response("cache", True, normalized_cached_items, snapshot_age)
         raise HTTPException(status_code=503, detail="Stream read unavailable") from exc
 
     result = [_event_row_to_response(row) for row in rows]
-    return _event_list_response("db", False, result, None)
+    return _event_list_response(result)
 
 
 @router.post("/events/{event_id}/read", response_model=ReadReceiptResponse)

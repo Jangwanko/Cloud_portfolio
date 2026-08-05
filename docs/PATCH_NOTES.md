@@ -2,48 +2,92 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
-## 2026-07-27 Demo-lite UI 정보 구조와 진행 상태 판정 정리
+## 2026-08-05 demo-lite 저사양 v2 본체 동기화
+
+- `master`의 API `2.1.0`·Demo UI `2.3.1`·PostgreSQL read model을 `demo-dev`에 이식
+- API pod별 materialized cache, request-status/message/stream snapshot topic과 cache validation 제거
+- Kafka `1` broker, partition `3`, replication factor `1`, PostgreSQL single instance 유지
+- API HPA `1→2`, core Worker KEDA `1→2`, notification Worker fixed `1`
+- full profile의 notification KEDA는 demo-lite overlay에서 제거하고 bounded resource의 단일 consumer 유지
+- active Kafka topic을 ingress·DLQ·notification `3`개로 축소
+- demo-lite와 demo-lite-k3s Kustomize render 및 local suite `348 passed`
+- public runtime 반영은 `demo-dev` CI validation과 `demo-lite` release commit 뒤 확인
+
+## 2026-08-05 단순화 source 재검증과 Worker scaling 경계 조정
+
+- API·core Worker·notification Worker를 동일 local image `messaging-portfolio:v2-core-cleanup`으로 임시 rollout
+- generic v2 API contract, same-stream ordering, DB outage recovery, Kafka performance suite 재실행
+- ordering/failure injection 4개 scenario 모두 accepted=persisted, missing·duplicate·mixed payload·DLQ `0`
+- hot single-stream 3회 평균 event `33,201`, error `0.00%`, p95 `76.57ms`, main drain `364.62s`
+- 제거 전 v2 recovery 후보 대비 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소; dirty local image라 stable baseline 제외
+- notification Worker에 `message-notifications` lag KEDA 추가, core Worker 상한 `8→4`, notification Worker 범위 `1→2`
+- benchmark preflight에서 API·core Worker·notification Worker image 일치와 두 consumer group lag `0` 확인
+- current 64-stream KEDA 3회 drain `295.90~321.29s`, fixed core `2` 1회 `295.99s`; 실행 편차로 성능 우위 미확정
+- poll-batch offset commit 실험은 paired KEDA drain 악화로 폐기, record 단위 explicit commit 유지
+- 최신 tracked performance: event `28,605`, p95 `107.41ms`, peak message/notification lag `25,905`/`1,141`, final `0/0`, ordering `100/100`
+
+## 2026-08-05 v2 운영 본체 정리
+
+- Kubernetes·GitOps·Kafka ingress·KEDA Worker·PostgreSQL HA·Prometheus/Grafana 본체 유지
+- API pod별 materialized cache와 compacted snapshot topic 3개 제거
+- request status와 event list의 read model을 PostgreSQL로 단일화; DB read 장애 응답 `503`
+- Worker의 DB commit 이후 Kafka publish를 notification job으로 한정
+- readiness에서 Prometheus·Worker 조회 제거; Worker replica는 15초 cache를 둔 `/ops/summary`로 분리
+- Demo UI `2.3.1`, API `2.1.0` source candidate
+- 삭제 대상에 cache 구현 760줄, cache 전용 validation script, 관련 contract 포함
+- local unit / contract / infrastructure suite: `345 passed`
+- local image `messaging-portfolio:v2-core-cleanup` build 성공, `59,776,838` bytes, user `10001:10001`
+- DB 없는 standalone container에서 `/health/live`, `/`, `/openapi.json` smoke 통과
+
+## 2026-07-27 문서 정합성과 container build 최적화
+
+- README에 master source, local runtime, public demo-lite, `demo-dev` candidate 상태를 최신순으로 분리
+- Public demo-lite를 UI `2.1.0`, API `2.0.0`, generic v2, event `202` 기준으로 갱신
+- `demo-dev` UI `2.3.0` candidate와 public deployment 경계 명시
+- Kafka 실험 문서를 generic v2 recovery → multi-stream A/B → first candidate → historical legacy 순으로 재구성
+- Roadmap의 완료된 public v2 동기화를 완료 항목으로 이동하고 다음 투자 순서 갱신
+- 부정·대조형 상투 문장 제거, current evidence와 historical evidence 분리
+- Docker BuildKit pip cache, bytecode 제외, runtime `HOME`, `SIGTERM`, build context 제외 규칙 적용
+- k6 Job과 PostgreSQL backup CronJob에 resource requests/limits 적용
+- PostgreSQL backup container read-only root filesystem과 `/tmp` `emptyDir` 적용
+- candidate image build·핵심 import 성공, UID/GID `10001`, size `59,783,039` bytes 확인
+- local unit / contract / infrastructure suite: `365 passed`
+
+## 2026-07-27 Demo UI 정보 구조와 진행 상태 판정 정리
 
 - Demo UI `2.3.0`
 - 처리 현황의 중복 Worker 카드와 run 전용 readiness polling 제거
 - Worker 현재/최대 replica 표시는 기존 운영 상태 패널로 단일화
-- 저사양 레이아웃의 compact 저장 컬럼 증거를 Pipeline Evidence의 DB 단계 뒤로 이동
+- 화면 아래에 분리됐던 `DB 저장 컬럼`을 Pipeline Evidence의 DB 단계 뒤로 이동
 - Kafka append·DB persistence 진행 중 Operations Advisor를 `처리 중`으로 표시
 - run 종료 뒤에만 예약·Kafka·DB 수치 불일치 경고
-- local unit / contract / infrastructure suite: `368 passed`
-- public rollout 대기
+- local unit / contract / infrastructure suite: `364 passed`
+- local rollout 대기
 
-## 2026-07-27 Demo UI Kafka·DB 진행률 병렬 관측
+## 2026-07-27 Local Demo Kafka·DB 진행률 병렬 관측
 
 - Demo UI `2.2.0`
 - event sender 완료 뒤 시작하던 persistence summary polling을 전송 시작 시점으로 이동
-- Kafka append 진행 중에도 1초 간격 `persisted_count`를 `DB 저장` 카운터에 반영
-- producer 완료 뒤 send failure를 제외한 실제 accepted event 수로 최종 persistence 목표 확정
-- 실행 중 `/health/ready`를 5초 간격으로 확인하고 Worker 시작 replica와 peak replica를 `1→2 / max 2` 형식으로 유지
-- 2026-07-27 public demo Prometheus 확인: `message-worker` lag peak `828`, HPA desired와 실제 Worker replica `1→2`
-- polling과 sender가 함께 종료된 뒤 envelope 검증과 결과 상태 확정
-- local unit / contract / infrastructure suite: `368 passed`
+- Kafka append 진행 중 1초 간격 `persisted_count`를 `DB 저장` 카운터에 반영
+- 실행 중 `/health/ready`를 5초 간격 확인하고 Worker 시작·peak replica 유지
+- producer 완료 뒤 실제 accepted event 수로 최종 persistence 목표 확정
+- local unit / contract / infrastructure suite: `364 passed`
+- local rollout: image `1cd84d4df742`, Argo revision `ddb888a`, `Synced / Healthy`, API `6/6`, Worker `2/2`, UI `2.2.0`
 
-## 2026-07-27 demo-lite generic v2 동기화 candidate
+## 2026-07-27 Grafana 제출 화면 정정
 
-- 2코어급 자원 경계 유지: Kafka `1`, PostgreSQL/Pgpool `1`, API/Worker `1..2`
-- generic v2 API·Worker·migration·materialized cache·DLQ 기능을 저사양 overlay에 동기화
-- local kind image와 public k3s registry image 경계 분리
-- schema migration → Worker → API gate 순서 적용
-- `demo-dev` validation·image 검증 뒤 tested tree와 image tag를 `demo-lite` 단일 release commit으로 게시
-- Grafana 상단 standby 패널을 Kafka broker availability로 변경해 저사양 정상값 `1` 표시
-- Demo UI `2.1.0`: 범용 envelope 증거를 Pipeline Evidence 안으로 이동해 하단 단독 카드 제거
-- chart-managed PostgreSQL credential과 생성형 runtime secret 적용
-- public deployment는 아직 UI `1.4.1`, API `1.0.0`; candidate 검증과 배포 완료 뒤 상태 갱신
-
-## 2026-07-27 Grafana 현재 상태 패널 정정
-
-- Kafka intake·PostgreSQL primary·standby 신호를 현재 시점 `min` 집계의 단일값으로 변경
-- Worker 상단 신호를 Kubernetes Deployment `available/spec replicas` 가용률로 변경
+- Kafka intake·PostgreSQL primary·Worker 신호에 `Healthy`·`Active`·`Available` 상태 매핑 추가
+- PostgreSQL standby 수를 `N Ready`로 표시하고 실제 Worker 수는 `Worker Replicas` 패널로 분리
 - 종료된 Pod의 과거 시계열과 replica별 중복 숫자가 Stat 패널에 남는 문제 제거
-- API 5xx 비율 축을 `0~100%`로 고정해 무오류 구간의 `10000%` 자동축 제거
+- API 5xx·Worker failure 비율 축을 `0~100%`로 고정해 무오류 구간의 `10000%` 자동축 제거
 - API·stage latency quantile 창을 `1m`에서 `5m`으로 변경해 희소 트래픽 변동 완화
-- dashboard version `10`, Grafana config hash 갱신
+- `API Queue To Worker Start`와 `API Queue To DB Commit`으로 측정 시작·종료 경계 명시
+- 첫 화면에 `Worker Scaling`과 consumer group별 total lag를 나란히 배치
+- HTTP status 색상을 `2xx` 초록·`4xx` 노랑·`5xx` 빨강으로 고정하고 상태 metric 부재를 빨간 `No data`로 표시
+- DB pool을 workload별 replica 합계로 집계하고 PostgreSQL gauge의 API replica 중복 제거
+- 중복된 PostgreSQL Replication Capacity 패널과 Kafka topic·group total 중복 선 제거
+- `messaging_queue_wait_seconds` HELP를 실제 `queued_at`→Worker handler 측정 경계와 일치
+- dashboard version `12`, Grafana config hash 갱신
 
 ## 2026-07-21 README Kubernetes 중심 재구성
 
@@ -297,7 +341,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - `docs/AWS_IAC_PLAN.md`: AWS managed service mapping과 Terraform 구조 중심 정리
 - `docs/SERVICE_REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/RELIABILITY_POLICY.md`: 서비스 기준, 구조 경계, readiness 판단 기준 불렛형 정리
 - `docs/OBSERVABILITY.md`, `docs/RUNBOOK.md`, `docs/OPERATIONS.md`, `docs/METRICS_REFERENCE.md`: 운영 신호, 장애 절차, 지표 해석 문장 축약
-- `docs/KAFKA_EXPERIMENT.md`: `단순히` 표현 제거, Kafka append path 분리 기준 직접 표현
+- `docs/KAFKA_EXPERIMENT.md`: Kafka append path 분리 기준을 직접적인 문장으로 정리
 
 ## 2026-06-24 업데이트: README 소개 문구 톤 조정
 
@@ -399,7 +443,7 @@ demo-lite 기준:
 
 해석:
 
-- demo-lite는 HA 성능 증명이 아니라 저사양 서버용 시연 profile입니다.
+- demo-lite의 목적은 저사양 서버 시연입니다. HA 성능 증거에서 제외합니다.
 - 장애 허용성, Kafka 3 broker, PostgreSQL HA, KEDA scale-out baseline은 full-ha profile에서 설명합니다.
 - demo-lite 성능 수치는 `docs/TEST_RESULTS.md`의 Kafka baseline과 섞지 않습니다.
 
@@ -477,7 +521,7 @@ demo-lite 기준:
 해석:
 
 - 이 업데이트는 Kafka 처리 성능 개선보다 포트폴리오 시연성과 운영 의미 전달을 강화한 변경입니다.
-- 화면 카운터는 사용자 주문 완료 응답이 아니라 운영자 관점의 내부 처리 흐름을 보여줍니다.
+- 화면 카운터는 운영자 관점의 내부 처리 흐름을 표시합니다. 사용자 주문 완료 응답으로 해석하지 않습니다.
 - `예약 건수`는 아직 DB 저장 완료 전인 데모 예약 / 진행 중 작업의 남은 수를 의미합니다.
 - `Kafka 적재`와 `DB 저장`을 분리해 API append 성공과 Worker persistence 완료의 단계 차이를 보여줍니다.
 - `전송 전 예약 비우기`는 시작 전 예약 취소입니다. 이미 시작한 Kafka / Worker 작업을 취소하는 기능은 아닙니다.

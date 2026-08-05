@@ -193,18 +193,12 @@ spec:
               done
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress --partitions 8 --replication-factor 3 --config min.insync.replicas=2
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress-dlq --partitions 8 --replication-factor 3 --config min.insync.replicas=2
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-request-status --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic stream-snapshots --partitions 8 --replication-factor 3 --config min.insync.replicas=2 --config cleanup.policy=compact
               /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-notifications --partitions 8 --replication-factor 3 --config min.insync.replicas=2
-              for topic in message-ingress message-ingress-dlq message-request-status message-snapshots stream-snapshots message-notifications; do
+              for topic in message-ingress message-ingress-dlq message-notifications; do
                 /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$bootstrap" --alter --entity-type topics --entity-name "$topic" --add-config min.insync.replicas=2
                 description="$(/opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --describe --topic "$topic" | head -n 1)"
                 echo "$description" | grep -q 'PartitionCount: 8' || { echo "Unexpected partition count for $topic: $description" >&2; exit 1; }
                 echo "$description" | grep -q 'ReplicationFactor: 3' || { echo "Unexpected replication factor for $topic: $description" >&2; exit 1; }
-              done
-              for topic in message-request-status message-snapshots stream-snapshots; do
-                /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$bootstrap" --alter --entity-type topics --entity-name "$topic" --add-config cleanup.policy=compact,min.insync.replicas=2
               done
       volumes:
         - name: tmp

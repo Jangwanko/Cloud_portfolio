@@ -76,20 +76,20 @@ function Assert-DeploymentReady([string]$Name) {
   return $deployment
 }
 
-function Wait-WorkerReplicaCount([int]$Expected) {
+function Wait-DeploymentReplicaCount([string]$Name, [int]$Expected) {
   $deadline = (Get-Date).AddSeconds($SteadyStateTimeoutSec)
   while ((Get-Date) -lt $deadline) {
-    $worker = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "worker")
+    $deployment = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", $Name)
     if (
-      [int]$worker.spec.replicas -eq $Expected -and
-      [int]$worker.status.readyReplicas -eq $Expected -and
-      [int]$worker.status.updatedReplicas -eq $Expected
+      [int]$deployment.spec.replicas -eq $Expected -and
+      [int]$deployment.status.readyReplicas -eq $Expected -and
+      [int]$deployment.status.updatedReplicas -eq $Expected
     ) {
       return
     }
     Start-Sleep -Seconds 2
   }
-  throw "Worker did not reach $Expected ready replicas within $SteadyStateTimeoutSec seconds"
+  throw "$Name did not reach $Expected ready replicas within $SteadyStateTimeoutSec seconds"
 }
 
 function Set-WorkerScalingExperimentMode() {
@@ -100,7 +100,14 @@ function Set-WorkerScalingExperimentMode() {
     if ($LASTEXITCODE -ne 0) {
       throw "Failed to pin Worker replicas for fixed-mode experiment"
     }
-    Wait-WorkerReplicaCount -Expected $FixedWorkerReplicas
+    kubectl -n $Namespace annotate scaledobject notification-worker-keda `
+      "autoscaling.keda.sh/paused-replicas=1" `
+      --overwrite | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to pin notification Worker replicas for fixed-mode experiment"
+    }
+    Wait-DeploymentReplicaCount -Name "worker" -Expected $FixedWorkerReplicas
+    Wait-DeploymentReplicaCount -Name "notification-worker" -Expected 1
     return
   }
 
@@ -109,7 +116,13 @@ function Set-WorkerScalingExperimentMode() {
   if ($LASTEXITCODE -ne 0) {
     throw "Failed to enable Worker KEDA for scaling experiment"
   }
-  Wait-WorkerReplicaCount -Expected 2
+  kubectl -n $Namespace annotate scaledobject notification-worker-keda `
+    autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to enable notification Worker KEDA for scaling experiment"
+  }
+  Wait-DeploymentReplicaCount -Name "worker" -Expected 2
+  Wait-DeploymentReplicaCount -Name "notification-worker" -Expected 1
 }
 
 function Restore-WorkerScaling() {
@@ -121,18 +134,29 @@ function Restore-WorkerScaling() {
   if ($LASTEXITCODE -ne 0) {
     throw "Failed to restore Worker KEDA after fixed-mode experiment"
   }
+  kubectl -n $Namespace annotate scaledobject notification-worker-keda `
+    autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to restore notification Worker KEDA after fixed-mode experiment"
+  }
   kubectl -n $Namespace scale deployment/worker --replicas=2 | Out-Null
   if ($LASTEXITCODE -ne 0) {
     throw "Failed to restore Worker replicas after fixed-mode experiment"
   }
-  Wait-WorkerReplicaCount -Expected 2
+  kubectl -n $Namespace scale deployment/notification-worker --replicas=1 | Out-Null
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to restore notification Worker replicas after fixed-mode experiment"
+  }
+  Wait-DeploymentReplicaCount -Name "worker" -Expected 2
+  Wait-DeploymentReplicaCount -Name "notification-worker" -Expected 1
 }
 
 function Assert-KubernetesReady() {
   $null = Get-KubernetesJson @("get", "namespace", $Namespace)
   $api = Assert-DeploymentReady -Name "api"
   $worker = Assert-DeploymentReady -Name "worker"
-  foreach ($name in @("notification-worker", "dlq-replayer", "prometheus", "kafka-exporter", "kube-state-metrics")) {
+  $notificationWorker = Assert-DeploymentReady -Name "notification-worker"
+  foreach ($name in @("dlq-replayer", "prometheus", "kafka-exporter", "kube-state-metrics")) {
     $null = Assert-DeploymentReady -Name $name
   }
 
@@ -143,8 +167,9 @@ function Assert-KubernetesReady() {
 
   $apiImage = [string]$api.spec.template.spec.containers[0].image
   $workerImage = [string]$worker.spec.template.spec.containers[0].image
-  if ($apiImage -ne $workerImage) {
-    throw "API and Worker images differ (api=$apiImage worker=$workerImage)"
+  $notificationWorkerImage = [string]$notificationWorker.spec.template.spec.containers[0].image
+  if ($apiImage -ne $workerImage -or $apiImage -ne $notificationWorkerImage) {
+    throw "API, Worker, and notification Worker images differ (api=$apiImage worker=$workerImage notification=$notificationWorkerImage)"
   }
   $gate = $api.spec.template.spec.containers[0].env | Where-Object { $_.name -eq "GENERIC_EVENTS_V2_ENABLED" } | Select-Object -Last 1
   if ($null -eq $gate -or [string]$gate.value -ne "true") {
@@ -156,7 +181,10 @@ function Assert-KubernetesReady() {
     throw "API readiness is not ready: $($health.status)"
   }
   $openapi = Invoke-RestMethod -Method Get -Uri "$($BaseUrl.TrimEnd('/'))/openapi.json" -TimeoutSec 10
-  if ([string]$openapi.info.version -ne "2.0.0" -or $null -eq $openapi.paths.'/v2/streams/{stream_id}/events') {
+  if (
+    [string]$openapi.info.version -ne [string]$health.app_version -or
+    $null -eq $openapi.paths.'/v2/streams/{stream_id}/events'
+  ) {
     throw "Deployed OpenAPI is not the generic v2 contract"
   }
 
@@ -171,6 +199,8 @@ function Assert-KubernetesReady() {
 
   $script:ApiImage = $apiImage
   $script:WorkerImage = $workerImage
+  $script:NotificationWorkerImage = $notificationWorkerImage
+  $script:ApiVersion = [string]$openapi.info.version
   $script:InitialWorkerLag = $workerLagSample.Lag
   $script:InitialNotificationLag = $notificationLagSample.Lag
 }
@@ -255,29 +285,6 @@ function Get-ConsumerLagSample([string]$ConsumerGroup) {
   throw "Kafka lag metric changed while sampling consumer group $ConsumerGroup after 3 attempts"
 }
 
-function Test-AllApiCachesHydrated([object]$ApiDeployment) {
-  $pods = Get-KubernetesJson @(
-    "-n", $Namespace, "get", "pods", "-l", "app=api"
-  )
-  $activePods = @(
-    $pods.items | Where-Object {
-      $null -eq $_.metadata.deletionTimestamp -and $_.status.phase -eq "Running"
-    }
-  )
-  if ($activePods.Count -ne [int]$ApiDeployment.spec.replicas) {
-    return $false
-  }
-  foreach ($pod in $activePods) {
-    $hydrated = & kubectl -n $Namespace exec $pod.metadata.name -- python -c `
-      "import json,urllib.request; print(str(json.load(urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=5))['materialized_cache']['hydrated']).lower())" `
-      2>$null
-    if ($LASTEXITCODE -ne 0 -or ($hydrated | Out-String).Trim() -ne "true") {
-      return $false
-    }
-  }
-  return $true
-}
-
 function Wait-PerformanceSteadyState() {
   $deadline = (Get-Date).AddSeconds($SteadyStateTimeoutSec)
   $requiredConsecutiveSamples = 3
@@ -289,8 +296,14 @@ function Wait-PerformanceSteadyState() {
     } else {
       $null
     }
+    $notificationWorkerHpa = if ($WorkerScalingMode -eq "keda") {
+      Get-KubernetesJson @("-n", $Namespace, "get", "hpa", "notification-worker-keda-hpa")
+    } else {
+      $null
+    }
     $api = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "api")
     $worker = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "worker")
+    $notificationWorker = Get-KubernetesJson @("-n", $Namespace, "get", "deployment", "notification-worker")
     $workerLag = Get-ConsumerLagSample -ConsumerGroup "message-worker"
     $notificationLag = Get-ConsumerLagSample -ConsumerGroup "notification-worker"
     $health = Invoke-RestMethod -Method Get -Uri "$($BaseUrl.TrimEnd('/'))/health/ready" -TimeoutSec 10
@@ -301,43 +314,46 @@ function Wait-PerformanceSteadyState() {
     } else {
       [int]$workerHpa.spec.minReplicas
     }
+    $expectedNotificationWorkerReplicas = if ($WorkerScalingMode -eq "fixed") {
+      1
+    } else {
+      [int]$notificationWorkerHpa.spec.minReplicas
+    }
     $apiCpuTarget = [int]$apiHpa.spec.metrics[0].resource.target.averageUtilization
     $apiCpuCurrent = if ($null -eq $apiHpa.status.currentMetrics) {
       $null
     } else {
       [int]$apiHpa.status.currentMetrics[0].resource.current.averageUtilization
     }
-    $allApiCachesHydrated = Test-AllApiCachesHydrated -ApiDeployment $api
     $steady = (
       [int]$api.spec.replicas -eq $apiMin -and
       [int]$api.status.readyReplicas -eq $apiMin -and
       [int]$api.status.updatedReplicas -eq $apiMin -and
       $null -ne $apiCpuCurrent -and
       $apiCpuCurrent -le $apiCpuTarget -and
-      $allApiCachesHydrated -and
       [int]$worker.spec.replicas -eq $expectedWorkerReplicas -and
       [int]$worker.status.readyReplicas -eq $expectedWorkerReplicas -and
       [int]$worker.status.updatedReplicas -eq $expectedWorkerReplicas -and
+      [int]$notificationWorker.spec.replicas -eq $expectedNotificationWorkerReplicas -and
+      [int]$notificationWorker.status.readyReplicas -eq $expectedNotificationWorkerReplicas -and
+      [int]$notificationWorker.status.updatedReplicas -eq $expectedNotificationWorkerReplicas -and
       $workerLag.Fresh -and $workerLag.Lag -eq 0 -and
       $notificationLag.Fresh -and $notificationLag.Lag -eq 0 -and
-      [string]$health.status -eq "ready" -and
-      $health.materialized_cache.ready -eq $true -and
-      $health.materialized_cache.hydrated -eq $true
+      [string]$health.status -eq "ready"
     )
 
     Add-Line (
-      "steady-state: api={0}/{1} api_cpu={2}/{3}% worker={4}/{5} lag={6}/{7} routed_cache={8}/{9} all_api_caches={10} consecutive={11}/{12}" -f
+      "steady-state: api={0}/{1} api_cpu={2}/{3}% worker={4}/{5} notification_worker={6}/{7} lag={8}/{9} consecutive={10}/{11}" -f
       [int]$api.status.readyReplicas,
       $apiMin,
       $apiCpuCurrent,
       $apiCpuTarget,
       [int]$worker.status.readyReplicas,
       $expectedWorkerReplicas,
+      [int]$notificationWorker.status.readyReplicas,
+      $expectedNotificationWorkerReplicas,
       $workerLag.Lag,
       $notificationLag.Lag,
-      $health.materialized_cache.ready,
-      $health.materialized_cache.hydrated,
-      $allApiCachesHydrated,
       $consecutiveSamples,
       $requiredConsecutiveSamples
     )
@@ -487,6 +503,8 @@ try {
     Assert-KubernetesReady
     Add-Line ("api_image: {0}" -f $script:ApiImage)
     Add-Line ("worker_image: {0}" -f $script:WorkerImage)
+    Add-Line ("notification_worker_image: {0}" -f $script:NotificationWorkerImage)
+    Add-Line ("api_version: {0}" -f $script:ApiVersion)
     Add-Line ("initial_message_worker_lag: {0}" -f $script:InitialWorkerLag)
     Add-Line ("initial_notification_worker_lag: {0}" -f $script:InitialNotificationLag)
     kubectl -n $Namespace get pods | Out-String | ForEach-Object { Add-Line $_.TrimEnd() }

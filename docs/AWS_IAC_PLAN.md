@@ -64,11 +64,11 @@ This is a migration blueprint. It documents service mapping, ownership boundarie
 - Worker: consumer group 기반 PostgreSQL persistence
 - Ordering: domain-neutral `stream_id` key의 Kafka partition boundary; order reference adapter는 `order_id`를 stream key로 매핑
 - Failure: inline retry, DLQ, replay guard
-- Read model: DB commit 이후 compacted snapshot
+- Read model: PostgreSQL request status와 event row
 - Notification: 별도 topic/consumer boundary
 - Scaling signal: Worker consumer lag, persistence latency, backlog drain
 
-PostgreSQL commit 뒤 status/snapshot/notification publish의 신뢰성 gap도 AWS 이전만으로 해결되지 않습니다. transactional outbox 또는 동등한 recovery mechanism이 별도로 필요합니다.
+PostgreSQL commit 뒤 notification publish의 신뢰성 gap도 AWS 이전만으로 해결되지 않습니다. transactional outbox 또는 동등한 recovery mechanism이 별도로 필요합니다.
 
 ## Current Dev Security Defaults
 

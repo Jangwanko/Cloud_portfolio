@@ -43,7 +43,7 @@
 | 사용자 | 관심사 | 시스템 기준 |
 | --- | --- | --- |
 | generic event producer | typed JSON event 전달 | API `202 Accepted`, request/stream id, persistence 상태 분리 |
-| 서비스 운영자 | event 처리 상태와 metadata 확인 | request status, generic envelope, DB snapshot materialized cache |
+| 서비스 운영자 | event 처리 상태와 metadata 확인 | PostgreSQL request status와 generic event row |
 | reference scenario viewer | 결제 / 배송 / 환불 / 문의 sample 확인 | `reference.*` event type과 metadata classification 예시 |
 | 장애 운영자 | 장애 위치와 영향 범위를 빠르게 구분 | readiness, Prometheus alert, Grafana dashboard, runbook |
 | 복구 담당자 | 실패 event를 안전하게 재처리 | Kafka DLQ topic, DLQ summary API, replay count guard |
@@ -62,10 +62,8 @@
 - generic metadata: domain-specific classification과 external reference를 선택적으로 전달
 - order reference adapter input: `event_type`, `body`, optional `payment_id`; metadata envelope로 변환
 - legacy compatibility: body-only stream request와 기존 `category` / `payment_id` / `body` alias 유지
-- read fallback: Kafka ingress event 제외, DB commit 이후 snapshot 기반 local materialized cache 사용
-- cache hydration: 각 API pod가 snapshot 세 topic의 모든 partition을 beginning부터 replay하고 captured initial end offset에 도달한 뒤에만 `hydrated=true`
-- message read: initial hydration 전 cache 사용 제외; PostgreSQL 정상 시 DB membership authorization 뒤 cached page가 latest stream sequence watermark와 연속으로 일치할 때만 fresh snapshot 사용
-- degraded message read: PostgreSQL 장애 시 hydrated membership cache와 message snapshot이 함께 있을 때만 `source=cache`, `degraded=true`; 불충분하면 `503`
+- message/status read: PostgreSQL source of truth 사용, membership authorization과 event 조회를 같은 connection 경계에서 처리
+- read failure: PostgreSQL read 장애 시 `503`; Kafka ingress log를 query fallback으로 사용하지 않음
 - 같은 업무 stream event: 같은 Kafka partition boundary 안에 유지
 - Worker: Kafka consumer group event 처리, PostgreSQL 최종 영속화
 - transient DB failure: 같은 offset에서 inline retry, 뒤 event 추월 방지
@@ -74,7 +72,7 @@
 - DLQ summary API: reason, replayable, blocked, stream 분포 확인
 - 운영 확인: Prometheus / Grafana / status check script 기반 intake, persistence, lag, DLQ, replica 상태 확인
 - readiness: schema startup, Kafka, PostgreSQL primary/HA guardrail, non-local auth secret 상태 구분
-- post-commit publish: 현재 best-effort, transactional outbox 후속 과제
+- post-commit notification publish: 현재 best-effort, transactional outbox 후속 과제
 - v2 deployment gate: GitOps base Secret gate `false`/wave `-3` → 일반 Sync migration `-2` → dual-read/dual-write Worker `-1` → overlay API gate `true`/wave `0`; 수동 local gate `false` → Worker ready → API env `true`
 - 비대칭 호환: 구 Worker가 남아 있는 동안 v2 traffic 차단; legacy preview만 저장되어 `payload`/`metadata`가 유실되는 조합 제외
 
@@ -87,7 +85,7 @@
 - per-stream partition ordering과 inline retry
 - record 단위 explicit offset commit
 - PostgreSQL transaction/idempotency state 기반 중복 persistence 방어
-- DLQ 격리, bounded replay, status/snapshot 관측
+- DLQ 격리, bounded replay, request status 관측
 
 요구·증명 범위 제외:
 
@@ -104,18 +102,12 @@
 | Persistence lag | Worker-observed accepted-to-commit p95 warning `> 5s`, critical `> 15s` | `messaging_event_persist_lag_seconds`; PowerShell status-observed와 역사적 row-visible proxy에서 분리 |
 | Kafka backlog | topic wait p95 warning `> 10s`, critical `> 30s` | `messaging_queue_wait_seconds` |
 | Consumer lag | `message-worker` lag이 낮은 값으로 회복되어야 함 | `kafka_consumergroup_lag` |
-| Read cache hit ratio | 정상 read traffic에서 fresh snapshot cache 응답 비율을 추적 | 현재는 `source=cache` 응답 샘플 / 향후 Prometheus counter 후보 |
-| Snapshot age | cached read의 snapshot age가 stale 기준을 넘지 않아야 함 | `snapshot_age_seconds`, warning `> 30s`, critical `> 120s` |
-| Cache rebuild time | API pod 재시작 후 snapshot topic replay로 read cache가 복구되는 시간 | pod restart 후 첫 `source=cache` 응답까지의 시간 |
-| Stale response count | DB failure 중 stale snapshot fallback이 얼마나 발생하는지 추적 | `degraded=true`, `source=cache` 응답 count |
-| Degraded read count | read path가 DB fallback 실패 또는 stale cache fallback에 의존하는 빈도 | `degraded=true` 응답 count |
-| Per-pod snapshot replay progress | initial end offset까지 남은 record와 hydration 시간을 추적해야 함 | 현재 미구현 custom metric; readiness `ready` / `hydrated` / `last_error`로 제한 확인 |
+| Read availability | PostgreSQL status·event read 성공과 `503` 비율 추적 | API route별 status·latency |
+| Worker operations view | desired·available·HPA desired·max replica 제공 | `/ops/summary`, Grafana replica 시계열 |
 | DLQ sample age | 조회 표본의 시간 범위 확인 | `GET /v1/dlq/ingress/summary`의 `oldest_sample_age_seconds`; unresolved SLO 제외 |
 | Availability topology | 로컬 Kafka 3 broker, PostgreSQL 3 replica, Pgpool 2 replica | `scripts/check_portfolio_status.ps1` |
 | Recovery | poison event가 DLQ에 도달하고 replay guard가 동작 | `scripts/test_dlq_flow.ps1`, `scripts/test_dlq_replay_guard.ps1` |
 | Deployment consistency | GitOps desired state와 live state 일치 | Argo CD `Synced / Healthy` |
-
-Snapshot cache consumer는 consumer group을 사용하지 않으므로 `snapshot consumer group lag`는 현재 요구 충족 여부를 판정하는 지표가 아닙니다. Pod별 replay progress metric을 구현하기 전에는 startup 후 first hydrated time과 readiness payload를 수동 증거로 남깁니다.
 
 ## SLO 가드레일
 
@@ -137,9 +129,6 @@ Snapshot cache consumer는 consumer group을 사용하지 않으므로 `snapshot
 | Worker-observed accepted-to-commit p95 | 5분 동안 `> 5s` | 5분 동안 `> 15s` |
 | Kafka topic wait p95 | 5분 동안 `> 10s` | 5분 동안 `> 30s` |
 | Worker failure ratio | 5분 동안 `> 10%` | - |
-| Read cache snapshot age | `snapshot_age_seconds > 30s` | `snapshot_age_seconds > 120s` |
-| Degraded read ratio | 5분 동안 `> 1%` | 5분 동안 `> 5%` |
-| Per-pod snapshot replay remaining | custom metric 구현 뒤 기준 설정 | hydration 목표 시간 초과와 함께 critical 기준 설정 |
 | DLQ event 증가 | 5분 안에 1건 이상 증가 | `skipped_max_replay > 0` |
 | DLQ sample age | context only | unresolved state model 구현 뒤 SLO 정의 |
 | PostgreSQL replication | standby 부족, non-streaming, 1MiB 초과 lag | primary down |
@@ -150,8 +139,7 @@ Snapshot cache consumer는 consumer group을 사용하지 않으므로 `snapshot
 - Kafka unavailable: request intake path 중단, 즉시 critical
 - PostgreSQL primary 불안정 + Kafka append 가능: API intake degraded
 - Worker lag 증가: Worker replica, KEDA desired replica, PostgreSQL write latency 동시 확인
-- read cache hit ratio 급락 또는 `snapshot_age_seconds` 증가: API pod `ready` / `hydrated`, restart 시각, compacted topic consume 상태 확인
-- `degraded=true`, `source=cache` 증가: DB primary / Pgpool / membership snapshot 상태 확인
+- status·event read `503` 증가: DB primary, Pgpool, pool checkout, route latency 확인
 - 같은 업무 stream 순서 이상: Kafka key, Worker retry, offset commit 경계 확인
 - DLQ 증가: reason 분포 기준 poison data, schema mismatch, DB transient failure 분리
 - `oldest_sample_age_seconds` 증가: 조회 sample의 역사 범위 확인. unresolved backlog 증가로 단정 제외

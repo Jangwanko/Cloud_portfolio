@@ -311,7 +311,6 @@ def test_request_body_limit_rejects_declared_and_streamed_oversize_bodies():
         {"dlq_replay_max_count": 0},
         {"dlq_replay_max_count": 9_223_372_036_854_775_808},
         {"kafka_topic_replication_factor": 1, "kafka_min_insync_replicas": 2},
-        {"materialized_cache_max_messages": 0},
     ],
 )
 def test_runtime_settings_reject_unsafe_numeric_bounds(overrides):
@@ -428,22 +427,62 @@ def test_readiness_rejects_traffic_until_schema_startup_completes(monkeypatch):
             "max_replication_delay_bytes": 0,
         },
     )
-    monkeypatch.setattr(main, "_worker_runtime_status", lambda: {})
-    monkeypatch.setattr(
-        main,
-        "get_materialized_cache_status",
-        lambda: {"ready": True, "hydrated": True, "last_error": None},
-    )
-
     status_code, payload = main._build_readiness_payload()
     assert status_code == 503
     assert payload["status"] == "not_ready"
     assert "schema_not_ready" in payload["reason"]
-    assert payload["materialized_cache"] == {
-        "ready": True,
-        "hydrated": True,
-        "last_error": None,
-    }
+
+
+def test_worker_operations_summary_caches_prometheus_result(monkeypatch):
+    from portfolio import main
+
+    calls = []
+    clock = {"now": 100.0}
+
+    def fetch():
+        calls.append(clock["now"])
+        return {
+            "deployment": "worker",
+            "desired_replicas": 2,
+            "available_replicas": 2,
+            "hpa_desired_replicas": 2,
+            "max_replicas": 8,
+            "source": "prometheus",
+            "error": None,
+        }
+
+    monkeypatch.setattr(main, "_worker_status_cached", None)
+    monkeypatch.setattr(main, "_worker_status_cached_until", 0.0)
+    monkeypatch.setattr(main, "_fetch_worker_runtime_status", fetch)
+    monkeypatch.setattr(main.time, "monotonic", lambda: clock["now"])
+
+    first = main._worker_runtime_status()
+    first["desired_replicas"] = 99
+    second = main._worker_runtime_status()
+    assert second["desired_replicas"] == 2
+    assert calls == [100.0]
+
+    clock["now"] = 116.0
+    main._worker_runtime_status()
+    assert calls == [100.0, 116.0]
+
+
+def test_worker_operations_summary_reports_prometheus_failure(monkeypatch):
+    from portfolio import main
+
+    monkeypatch.setattr(main, "_worker_status_cached", None)
+    monkeypatch.setattr(main, "_worker_status_cached_until", 0.0)
+    monkeypatch.setattr(
+        main,
+        "_fetch_worker_runtime_status",
+        lambda: (_ for _ in ()).throw(RuntimeError("unavailable")),
+    )
+
+    status = main._worker_runtime_status()
+
+    assert status["source"] == "unavailable"
+    assert status["error"] == "RuntimeError"
+    assert status["desired_replicas"] is None
 
 
 def test_application_maps_uncaught_database_dependency_errors_to_503():
@@ -471,434 +510,26 @@ def test_create_user_maps_pool_checkout_failure_to_503(monkeypatch):
     assert exc_info.value.status_code == 503
 
 
-def test_materialized_cache_applies_compacted_topic_tombstones():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        cache_message_snapshot,
-        cache_request_status,
-        cache_stream_snapshot,
-        get_cached_request_status,
-        is_cached_stream_member,
-        list_cached_events,
-    )
-
-    cache_request_status(
-        "req-tombstone",
-        {
-            "request_id": "req-tombstone",
-            "status": "persisted",
-            "user_id": 7,
-        },
-    )
-    cache_message_snapshot(
-        {
-            "id": 811,
-            "request_id": "req-tombstone",
-            "stream_id": 91,
-            "stream_seq": 1,
-            "user_id": 7,
-            "body": "old",
-            "created_at": "2026-04-30T00:00:00+00:00",
-        }
-    )
-    cache_stream_snapshot(
-        {"stream_id": 91, "name": "Tombstone stream", "member_ids": [7]}
-    )
-
-    _apply_materialized_record(settings.kafka_request_status_topic, "req-tombstone", None)
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "811", None)
-    _apply_materialized_record(settings.kafka_stream_snapshot_topic, "91", None)
-
-    assert get_cached_request_status("req-tombstone") is None
-    assert list_cached_events(91, 10)[0] == []
-    assert not is_cached_stream_member(91, 7)
 
 
-def test_materialized_cache_accepts_valid_legacy_and_current_records_then_tombstones():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        get_cached_request_status,
-        is_cached_stream_member,
-        list_cached_events,
-    )
-
-    clear_materialized_cache()
-    status = {
-        "request_id": "req-cache-current",
-        "status": "persisted",
-        "actor_id": 7,
-    }
-    current_message = {
-        "id": 901,
-        "request_id": "req-cache-current",
-        "stream_id": 91,
-        "stream_seq": 2,
-        "user_id": 7,
-        "actor_id": 7,
-        "body": "current",
-        "event_type": "example.created",
-        "schema_version": 2,
-        "payload": {"message": "current"},
-        "metadata": {"emoji": "😀"},
-        "created_at": "2026-04-30T00:00:01+00:00",
-        "persisted_at": "2026-04-30T00:00:02+00:00",
-    }
-    legacy_message = {
-        "id": 900,
-        "request_id": "req-cache-legacy",
-        "stream_id": 91,
-        "stream_seq": 1,
-        "user_id": 7,
-        "body": "legacy",
-        "schema_version": 1,
-        "payload": {"text": "legacy"},
-        "metadata": {},
-        "created_at": "2026-04-30T00:00:00+00:00",
-        "persisted_at": "2026-04-30T00:00:01+00:00",
-    }
-    stream = {"stream_id": 91, "name": "Cache stream", "member_ids": [7, 8]}
-
-    _apply_materialized_record(
-        settings.kafka_request_status_topic,
-        "req-cache-current",
-        status,
-    )
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "900", legacy_message)
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "901", current_message)
-    _apply_materialized_record(settings.kafka_stream_snapshot_topic, "91", stream)
-
-    cached_status = get_cached_request_status("req-cache-current")
-    assert cached_status["actor_id"] == 7
-    assert cached_status["user_id"] == 7
-    assert [row["id"] for row in list_cached_events(91, 10)[0]] == [901, 900]
-    assert is_cached_stream_member(91, 7)
-    assert is_cached_stream_member(91, 8)
-
-    _apply_materialized_record(settings.kafka_request_status_topic, "req-cache-current", None)
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "900", None)
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "901", None)
-    _apply_materialized_record(settings.kafka_stream_snapshot_topic, "91", None)
-
-    assert get_cached_request_status("req-cache-current") is None
-    assert list_cached_events(91, 10)[0] == []
-    assert not is_cached_stream_member(91, 7)
-    clear_materialized_cache()
 
 
-def test_queued_request_status_accepts_null_room_sequence_and_omits_it():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        get_cached_request_status,
-    )
-
-    clear_materialized_cache()
-    try:
-        _apply_materialized_record(
-            settings.kafka_request_status_topic,
-            "req-null-sequence",
-            {
-                "request_id": "req-null-sequence",
-                "status": "queued",
-                "room_id": 91,
-                "room_seq": None,
-                "user_id": 7,
-            },
-        )
-
-        cached = get_cached_request_status("req-null-sequence")
-        assert cached is not None
-        assert cached["stream_id"] == 91
-        assert "stream_seq" not in cached
-        assert "room_seq" not in cached
-    finally:
-        clear_materialized_cache()
 
 
-def test_invalid_request_status_records_evict_the_previous_value_fail_closed():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        get_cached_request_status,
-    )
-
-    clear_materialized_cache()
-    valid = {
-        "request_id": "req-cache-strict",
-        "status": "queued",
-        "user_id": 7,
-    }
-    _apply_materialized_record(
-        settings.kafka_request_status_topic,
-        "req-cache-strict",
-        valid,
-    )
-    invalid_values = [
-        dict(valid, request_id="other-request"),
-        dict(valid, user_id=True),
-        dict(valid, user_id="7"),
-        dict(valid, user_id=7.0),
-        dict(valid, user_id=9_223_372_036_854_775_808),
-        dict(valid, actor_id=8),
-        dict(valid, status=""),
-        dict(valid, status="bad\x00status"),
-        dict(valid, lag=float("inf")),
-    ]
-
-    for invalid in invalid_values:
-        _apply_materialized_record(
-            settings.kafka_request_status_topic,
-            "req-cache-strict",
-            valid,
-        )
-        _apply_materialized_record(
-            settings.kafka_request_status_topic,
-            "req-cache-strict",
-            invalid,
-        )
-        assert get_cached_request_status("req-cache-strict") is None
-
-    _apply_materialized_record(
-        settings.kafka_request_status_topic,
-        "req-cache-strict",
-        valid,
-    )
-    baseline = get_cached_request_status("req-cache-strict")
-    for invalid_key in (123, "", "x" * 81, "bad\x00key"):
-        _apply_materialized_record(
-            settings.kafka_request_status_topic,
-            invalid_key,
-            None,
-        )
-        assert get_cached_request_status("req-cache-strict") == baseline
-    clear_materialized_cache()
 
 
-def test_invalid_message_snapshot_records_evict_the_previous_value_fail_closed():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        list_cached_events,
-    )
-
-    def nested(depth, leaf):
-        value = leaf
-        for _ in range(depth):
-            value = {"nested": value}
-        return value
-
-    clear_materialized_cache()
-    valid = {
-        "id": 902,
-        "request_id": "req-cache-message",
-        "stream_id": 92,
-        "stream_seq": 1,
-        "user_id": 7,
-        "actor_id": 7,
-        "body": "baseline",
-        "event_type": "example.created",
-        "schema_version": 2,
-        "payload": {"message": "baseline"},
-        "metadata": {},
-        "created_at": "2026-04-30T00:00:00+00:00",
-        "persisted_at": "2026-04-30T00:00:01+00:00",
-    }
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "902", valid)
-    invalid_values = [
-        dict(valid, id=903),
-        dict(valid, stream_id="92"),
-        dict(valid, stream_seq=1.0),
-        dict(valid, user_id=True),
-        dict(valid, actor_id=8),
-        dict(valid, user_id=9_223_372_036_854_775_808),
-        dict(valid, request_id=""),
-        dict(valid, body="bad\x00body"),
-        dict(valid, schema_version=True),
-        dict(valid, payload="not-an-object"),
-        dict(valid, metadata=nested(66, "leaf")),
-        dict(valid, metadata={"value": float("inf")}),
-        dict(valid, metadata={"value": "가" * 5_500}),
-        dict(valid, payload={"value": "가" * 22_000}),
-        dict(valid, payload={1: "non-string-key"}),
-        dict(valid, event_type=""),
-    ]
-
-    for invalid in invalid_values:
-        _apply_materialized_record(settings.kafka_message_snapshot_topic, "902", valid)
-        _apply_materialized_record(
-            settings.kafka_message_snapshot_topic,
-            "902",
-            invalid,
-        )
-        assert list_cached_events(92, 10)[0] == []
-
-    _apply_materialized_record(settings.kafka_message_snapshot_topic, "902", valid)
-    baseline = list_cached_events(92, 10)[0]
-    for invalid_key in (True, "0902", "9" * 100, "not-numeric"):
-        _apply_materialized_record(
-            settings.kafka_message_snapshot_topic,
-            invalid_key,
-            None,
-        )
-        assert list_cached_events(92, 10)[0] == baseline
-    clear_materialized_cache()
 
 
-def test_message_snapshot_rejects_future_and_regressed_persisted_timestamps():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        list_cached_events,
-    )
-
-    now = datetime.now(timezone.utc)
-    valid = {
-        "id": 903,
-        "request_id": "req-cache-time",
-        "stream_id": 92,
-        "stream_seq": 1,
-        "user_id": 7,
-        "body": "timestamp boundary",
-        "created_at": (now - timedelta(minutes=2)).isoformat(),
-        "persisted_at": (now - timedelta(minutes=1)).isoformat(),
-    }
-
-    clear_materialized_cache()
-    try:
-        _apply_materialized_record(settings.kafka_message_snapshot_topic, "903", valid)
-        assert [item["id"] for item in list_cached_events(92, 10)[0]] == [903]
-
-        future = dict(
-            valid,
-            created_at=(now + timedelta(minutes=6)).isoformat(),
-            persisted_at=(now + timedelta(minutes=7)).isoformat(),
-        )
-        _apply_materialized_record(settings.kafka_message_snapshot_topic, "903", future)
-        assert list_cached_events(92, 10)[0] == []
-
-        _apply_materialized_record(settings.kafka_message_snapshot_topic, "903", valid)
-        regressed = dict(valid, persisted_at=(now - timedelta(seconds=90)).isoformat())
-        _apply_materialized_record(settings.kafka_message_snapshot_topic, "903", regressed)
-        assert list_cached_events(92, 10)[0] == []
-    finally:
-        clear_materialized_cache()
 
 
-def test_materialized_cache_accepts_postgres_bigint_upper_bound():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        get_cached_request_status,
-        is_cached_stream_member,
-        list_cached_events,
-    )
-
-    maximum = 9_223_372_036_854_775_807
-    created_at = datetime.now(timezone.utc).isoformat()
-    clear_materialized_cache()
-    try:
-        _apply_materialized_record(
-            settings.kafka_request_status_topic,
-            "req-bigint-max",
-            {
-                "request_id": "req-bigint-max",
-                "status": "persisted",
-                "stream_id": maximum,
-                "stream_seq": maximum,
-                "event_id": maximum,
-                "actor_id": maximum,
-            },
-        )
-        _apply_materialized_record(
-            settings.kafka_message_snapshot_topic,
-            str(maximum),
-            {
-                "id": maximum,
-                "request_id": "req-bigint-max",
-                "stream_id": maximum,
-                "stream_seq": maximum,
-                "actor_id": maximum,
-                "body": "maximum bigint",
-                "created_at": created_at,
-            },
-        )
-        _apply_materialized_record(
-            settings.kafka_stream_snapshot_topic,
-            str(maximum),
-            {
-                "stream_id": maximum,
-                "name": "Maximum bigint stream",
-                "member_ids": [maximum],
-            },
-        )
-
-        status = get_cached_request_status("req-bigint-max")
-        assert status["stream_id"] == maximum
-        assert status["stream_seq"] == maximum
-        assert status["event_id"] == maximum
-        assert list_cached_events(maximum, 1)[0][0]["id"] == maximum
-        assert is_cached_stream_member(maximum, maximum)
-    finally:
-        clear_materialized_cache()
 
 
-def test_message_snapshot_heap_stays_bounded_after_repeated_insert_tombstone():
-    from portfolio import materialized_cache
-    from portfolio.config import settings
-
-    snapshot = {
-        "id": 904,
-        "request_id": "req-heap-bound",
-        "stream_id": 94,
-        "stream_seq": 1,
-        "user_id": 7,
-        "body": "heap bound",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    materialized_cache.clear_materialized_cache()
-    try:
-        for _ in range(2_500):
-            materialized_cache._apply_materialized_record(
-                settings.kafka_message_snapshot_topic,
-                "904",
-                snapshot,
-            )
-            materialized_cache._apply_materialized_record(
-                settings.kafka_message_snapshot_topic,
-                "904",
-                None,
-            )
-
-        assert materialized_cache.get_materialized_cache_status()["messages"] == 0
-        assert len(materialized_cache._message_snapshot_id_heap) <= 1024
-        assert materialized_cache._message_snapshot_epochs == {}
-        assert materialized_cache._stream_message_counts == {}
-    finally:
-        materialized_cache.clear_materialized_cache()
 
 
-def test_request_status_healthy_db_miss_does_not_resurrect_cache(monkeypatch):
+def test_request_status_healthy_db_miss_returns_404(monkeypatch):
     from portfolio import api
 
     monkeypatch.setattr(api, "_load_request_status", lambda _request_id: None)
-    monkeypatch.setattr(
-        api,
-        "get_materialized_cache_status",
-        lambda: {"ready": True, "hydrated": True},
-    )
-    monkeypatch.setattr(
-        api,
-        "get_cached_request_status",
-        lambda _request_id: pytest.fail("healthy DB miss must not consult cache"),
-    )
 
     with pytest.raises(HTTPException) as exc_info:
         api.get_event_request_status("req-deleted", current_user={"id": 7})
@@ -906,163 +537,25 @@ def test_request_status_healthy_db_miss_does_not_resurrect_cache(monkeypatch):
     assert exc_info.value.detail == "Request not found"
 
 
-def test_request_status_db_exception_uses_cache_only_after_hydration(monkeypatch):
+def test_request_status_db_exception_returns_503(monkeypatch):
     from portfolio import api
-
-    state = {"hydrated": False}
-    cache_calls = []
 
     def db_failure(_request_id):
         raise OperationalError("database unavailable")
 
-    def cached_status(request_id):
-        cache_calls.append(request_id)
-        return {"request_id": request_id, "status": "persisted", "actor_id": 7}
-
     monkeypatch.setattr(api, "_load_request_status", db_failure)
-    monkeypatch.setattr(
-        api,
-        "get_materialized_cache_status",
-        lambda: {"ready": state["hydrated"], "hydrated": state["hydrated"]},
-    )
-    monkeypatch.setattr(api, "get_cached_request_status", cached_status)
 
     with pytest.raises(HTTPException) as exc_info:
         api.get_event_request_status("req-fallback", current_user={"id": 7})
     assert exc_info.value.status_code == 503
-    assert cache_calls == []
-
-    state["hydrated"] = True
-    result = api.get_event_request_status("req-fallback", current_user={"id": 7})
-    assert result["request_id"] == "req-fallback"
-    assert result["actor_id"] == 7
-    assert cache_calls == ["req-fallback"]
 
 
-@pytest.mark.parametrize(
-    ("sequences", "last_stream_seq", "limit", "expected"),
-    [
-        ([5, 4, 3], 5, 3, True),
-        ([5, 3, 2], 5, 3, False),
-        ([4, 3, 2], 5, 3, False),
-        ([9_223_372_036_854_775_807, 9_223_372_036_854_775_806], 9_223_372_036_854_775_807, 2, True),
-    ],
-    ids=("latest_contiguous", "internal_gap", "latest_missing", "bigint_upper_bound"),
-)
-def test_cached_event_page_must_match_db_sequence_watermark(
-    sequences,
-    last_stream_seq,
-    limit,
-    expected,
-):
-    from portfolio.api import _cached_page_matches_stream_watermark
-
-    items = [{"stream_seq": sequence} for sequence in sequences]
-    assert (
-        _cached_page_matches_stream_watermark(
-            items,
-            last_stream_seq=last_stream_seq,
-            limit=limit,
-        )
-        is expected
-    )
 
 
-def test_invalid_stream_snapshot_records_evict_membership_fail_closed():
-    from portfolio.config import settings
-    from portfolio.materialized_cache import (
-        _apply_materialized_record,
-        clear_materialized_cache,
-        is_cached_stream_member,
-    )
-
-    clear_materialized_cache()
-    valid = {"stream_id": 93, "name": "Strict stream", "member_ids": [7, 8]}
-    _apply_materialized_record(settings.kafka_stream_snapshot_topic, "93", valid)
-    invalid_values = [
-        dict(valid, stream_id=94),
-        dict(valid, stream_id="93"),
-        dict(valid, name="x"),
-        dict(valid, name="bad\x00name"),
-        dict(valid, member_ids="123"),
-        dict(valid, member_ids=[7, 7]),
-        dict(valid, member_ids=[True]),
-        dict(valid, member_ids=["7"]),
-        dict(valid, member_ids=[7.0]),
-        dict(valid, member_ids=[9_223_372_036_854_775_808]),
-        dict(valid, member_ids=list(range(1, 102))),
-    ]
-
-    for invalid in invalid_values:
-        _apply_materialized_record(settings.kafka_stream_snapshot_topic, "93", valid)
-        _apply_materialized_record(
-            settings.kafka_stream_snapshot_topic,
-            "93",
-            invalid,
-        )
-        assert not is_cached_stream_member(93, 7)
-        assert not is_cached_stream_member(93, 8)
-
-    _apply_materialized_record(settings.kafka_stream_snapshot_topic, "93", valid)
-    for invalid_key in (False, "093", "9" * 100, "not-numeric"):
-        _apply_materialized_record(
-            settings.kafka_stream_snapshot_topic,
-            invalid_key,
-            None,
-        )
-        assert is_cached_stream_member(93, 7)
-    clear_materialized_cache()
 
 
-def test_materialized_cache_ignores_decode_error_sentinel():
-    from portfolio.config import settings
-    from portfolio.kafka_client import _deserialize_json
-    from portfolio.materialized_cache import _apply_materialized_record
-
-    invalid_payload = _deserialize_json(b"{not-json")
-    _apply_materialized_record(
-        settings.kafka_message_snapshot_topic,
-        "99",
-        invalid_payload,
-    )
 
 
-def test_materialized_cache_is_not_ready_when_any_required_topic_is_missing(monkeypatch):
-    from portfolio import materialized_cache
-    from portfolio.config import settings
-
-    class PartialTopicConsumer:
-        def __init__(self):
-            self.closed = False
-
-        def partitions_for_topic(self, topic):
-            if topic == settings.kafka_stream_snapshot_topic:
-                return None
-            return {0}
-
-        def close(self):
-            self.closed = True
-
-    consumer = PartialTopicConsumer()
-    materialized_cache._stop_event.clear()
-    monkeypatch.setattr(
-        materialized_cache,
-        "build_materialized_cache_consumer",
-        lambda: consumer,
-    )
-    monkeypatch.setattr(
-        materialized_cache.time,
-        "sleep",
-        lambda _seconds: materialized_cache._stop_event.set(),
-    )
-
-    materialized_cache._consume_materialized_topics()
-
-    status = materialized_cache.get_materialized_cache_status()
-    assert status["ready"] is False
-    assert status["last_error"] == "materialized_topics_unavailable"
-    assert consumer.closed is True
-    materialized_cache._stop_event.clear()
 
 
 def test_dlq_api_safely_represents_malformed_numeric_fields(monkeypatch):
@@ -1190,77 +683,17 @@ def test_dlq_replay_claim_identity_rejects_invalid_unicode_and_numbers():
             _dlq_replay_claim_value("req-1", invalid_owner)
 
 
-def test_request_status_programming_error_does_not_fall_back_to_cache(monkeypatch):
+def test_request_status_programming_error_is_not_hidden(monkeypatch):
     from portfolio import api
 
     def corrupt_status(_request_id):
         raise ValueError("corrupt status JSON")
 
     monkeypatch.setattr(api, "_load_request_status", corrupt_status)
-    monkeypatch.setattr(
-        api,
-        "get_cached_request_status",
-        lambda _request_id: pytest.fail("programming/data errors must not use stale cache"),
-    )
-
     with pytest.raises(ValueError, match="corrupt status JSON"):
         api.get_event_request_status("req-corrupt", current_user={"id": 7})
 
 
-def test_stream_watermark_corruption_does_not_bypass_to_cache(monkeypatch):
-    from contextlib import contextmanager
-
-    from portfolio import api
-
-    class CorruptWatermarkCursor:
-        def execute(self, _sql, _params=None):
-            return None
-
-        def fetchone(self):
-            return {"last_seq": "corrupt"}
-
-    @contextmanager
-    def connection():
-        yield object()
-
-    @contextmanager
-    def cursor(_connection):
-        yield CorruptWatermarkCursor()
-
-    monkeypatch.setattr(api, "get_conn", connection)
-    monkeypatch.setattr(api, "get_cursor", cursor)
-    monkeypatch.setattr(api, "_ensure_room_member", lambda *_args: None)
-    monkeypatch.setattr(
-        api,
-        "get_materialized_cache_status",
-        lambda: {"ready": True, "hydrated": True},
-    )
-    monkeypatch.setattr(
-        api,
-        "list_cached_events",
-        lambda *_args: (
-            [
-                {
-                    "id": 1,
-                    "request_id": "req-1",
-                    "stream_id": 7,
-                    "stream_seq": 1,
-                    "user_id": 3,
-                    "body": "cached",
-                    "created_at": "2026-07-14T00:00:00+00:00",
-                }
-            ],
-            0.1,
-        ),
-    )
-    monkeypatch.setattr(
-        api,
-        "is_cached_stream_member",
-        lambda *_args: pytest.fail("corrupt DB watermark must not authorize cache fallback"),
-    )
-
-    with pytest.raises(ValueError, match="Invalid stream sequence watermark"):
-        api.list_events(7, current_user={"id": 3})
 
 
 def test_uninitialized_pool_checkout_uses_database_availability_exception(monkeypatch):
@@ -1357,17 +790,16 @@ def test_demo_reset_locks_writers_and_does_not_reuse_stream_ids():
     class FakeCursor:
         def __init__(self):
             self.executed = []
-            self.results = [
-                [{"id": 11}],
-                [{"id": 7}],
-                [{"request_id": "req-1"}],
-            ]
 
         def execute(self, sql, _params=None):
             self.executed.append(" ".join(sql.split()))
 
-        def fetchall(self):
-            return self.results.pop(0)
+        def fetchone(self):
+            return {
+                "deleted_messages": 1,
+                "reset_streams": 1,
+                "reset_request_statuses": 1,
+            }
 
     cursor = FakeCursor()
     result = _reset_demo_event_data(cursor)
@@ -1376,9 +808,11 @@ def test_demo_reset_locks_writers_and_does_not_reuse_stream_ids():
     assert cursor.executed[0].startswith("LOCK TABLE idempotency_keys, messages, rooms")
     assert "TRUNCATE TABLE rooms CASCADE" in sql
     assert "TRUNCATE TABLE rooms RESTART IDENTITY" not in sql
-    assert result["message_ids"] == [11]
-    assert result["stream_ids"] == [7]
-    assert result["request_ids"] == ["req-1"]
+    assert result == {
+        "deleted_messages": 1,
+        "reset_streams": 1,
+        "reset_request_statuses": 1,
+    }
 
 
 def test_event_intake_openapi_contract_is_202():

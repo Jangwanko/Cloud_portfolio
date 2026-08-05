@@ -1,34 +1,27 @@
 # Validation Results
 
-이 문서는 포트폴리오의 현재 검증 상태와 역사적 측정 원본을 분리합니다. 문서 정합성 감사 기준은 `2026-07-14`, 최신 local cluster generic v2 성능 실행은 `2026-07-21`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-05`, 최신 public runtime 확인은 `2026-07-27`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Generic event contract | `/v2/streams/{stream_id}/events`, versioned JSON envelope | tracked local image `9349ba9`에서 OpenAPI `2.0.0`, `202`, persistence/API contract 재검증; 성능 원본은 첫 후보 `d31ac14`와 recovery local image `perf-v16` 분리 |
-| Generic rollout order | GitOps gate-false Secret `-3` → migration `-2` → Worker `-1` → overlay API-true `0`; manual false → Worker ready → API true | local staged rollout 완료; 대칭 호환 아님 |
-| HTTP intake contract | Kafka append 성공 시 `202 Accepted` | 최신 2026-07-21 recovery suite에서 event `202` 응답 `29,608`, 다른 event status `0` |
-| Generic v2 recovery candidate | 100 VU / 30s, 클린 조건 3회 평균 event `29,168`, error `0.00%`, p95 `101.27ms` | 첫 v2 후보보다 전 지표 개선; dirty local image/API min 6 조건, 안정 기준선 미채택 |
-| First generic v2 candidate | 100 VU / 30s, event `25,378`, error `0.00%`, p95 `123.96ms` | 성능 저하 원인 분석의 비교 기준 |
-| Kafka intake baseline | 100 VU / 30s, `31,676`, error `0.00%`, p95 `80.65ms` | 안정 기준선 유지 |
-| Last legacy raw performance suite | 2026-06-18, `27,795`, p95 `119.28ms` | notification 경계 검증, 기준선 미채택 |
-| Same-stream ordering | `stream_seq 1..100` | performance suite와 failure injection에서 통과 |
-| Ordering / DB outage | 네 시나리오 accepted = persisted | 2026-06-08 원본 추적 |
-| Materialized cache fallback | fresh cache와 DB-down stale cache | 2026-07-21 tracked rerun: fresh age `0.112s`, DB-down degraded age `11.462s`, recovery exit `0` |
-| Worker scaling | Kafka consumer lag 기반 KEDA | public demo 2026-07-27: `message-worker` lag peak `828`, HPA desired·실제 replica `1→2`; demo-lite max `2` 도달 |
-| Fixed Worker 대 KEDA | 64-stream 동일 조건 1회 A/B: fixed all drain `301.42s`, KEDA `261.17s`, KEDA final `8` | drain `13.35%` 감소; KEDA intake event `7.35%` 감소·p95 `25.62%` 증가, 반복 전 candidate |
-| Worker offset / replay safety | explicit per-record commit, failed partition seek-back, DLQ batch DB recheck | local source/tests 구현; deployed crash/rebalance injection 대기 |
-| Master GitOps supply chain | test gate → GHCR 12-char SHA → overlay bot commit | CI run `#55` validate/publish success; image `8f5d78c6963a`, bot commit `717e0ca`; master-targeted runtime rollout은 미검증 |
-| Dev GitOps validation gate | `publish-dev-kafka-image` requires `validate`, exact SHA candidate digest verify, branch advance guard | local source와 contract test 반영; commit/push 및 remote Actions 실행 전이므로 배포 증거 제외 |
-| Terraform blueprint | private EKS default, immutable ECR, RDS secret consistency | Terraform `1.15.8` SHA256 검증; fmt/init/validate 통과, plan/apply/AWS 배포 미실행 |
-| PostgreSQL backup / restore | in-cluster Job `Completed`, PVC `Bound`; host dump `39,433,414` bytes를 disposable DB에 복원 | 10개 table count, Alembic `0008`, generic v2 row `33,840`, max id/sequence 일치; object storage/cluster-loss 복구는 미검증 |
-| PostgreSQL restart sync recovery | StatefulSet `3→0→3`, 모든 pod persisted `ANY 1`, current primary sync/quorum `2` | tracked rerun: cache fallback `45.390s`, DB outage `43.008s`, recovery exit `0`; primary promotion은 별도 미검증 |
-| Master source Demo UI `2.0.0` | generic v2 intake, order reference scenario, envelope evidence | source contract; local `dev-kafka` API 배포와 구분, UI render/flow 별도 확인 |
-| Demo-lite candidate UI `2.3.0` | generic v2, Kafka append·DB persistence 동시 진행 표시, 중복 Worker 카드 제거, compact DB 저장 증거, 처리 중 Advisor 분리 | `demo-dev` source contract; public deployment 미실행 |
-| Public demo-lite UI `2.1.0` | branch/deployment-specific | 2026-07-27 live GET: title `Reliable Event Processing Console`, API `2.0.0`, generic v2와 event `202`; candidate `2.3.0` 미배포 |
-| Unit / contract / infrastructure suite | `368 passed` (2026-07-27) | UI `2.3.0` 정보 구조·Advisor 상태와 demo-lite overlay·rollout·CI gate contract 포함 |
-| Local live cluster | Argo `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 enabled | core ready, cache `ready=true` / `hydrated=true`, API contract pass, normalized message/notification lag `0`; 이후 docs-only revision은 workload 변경 없음 |
+| Master source | API `2.1.0`, Demo UI `2.3.1` | merge `cab7647`; local suite `345 passed`; image build·non-root 실행·live/root/OpenAPI smoke 통과 |
+| Demo-lite source candidate | API `2.1.0`, Demo UI `2.3.1` | `demo-dev` suite `348 passed`; demo-lite·demo-lite-k3s render 통과; public deployment 확인 전 |
+| Candidate runtime | API·core Worker·notification Worker image `messaging-portfolio:v2-core-cleanup` | local cluster 임시 rollout, 세 workload image 일치, generic v2·ordering·DB outage·performance suite 통과; registry publication 전 |
+| Restored local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo revision `803ab339`, `Synced / Healthy`, self-heal `true`, API `6/6`, core Worker `2/2`, notification Worker `1/1` |
+| Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
+| Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
+| Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
+| Operations summary | Worker desired·available·HPA desired·max | Prometheus 단일 query, 15초 결과 캐시; local candidate runtime 확인 |
+| Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
+| Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | current 64-stream run: peak lag `25,905`/`1,141`, final `0/0`; 실행 편차로 성능 개선 확정 제외 |
+| Fixed/KEDA A/B | fixed `2` 1회와 KEDA `2→4` 3회 | 같은 source·record commit 후보; drain 범위가 겹쳐 stable 비교 미채택 |
+| Generic v2 performance | hot-stream 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | current simplified source의 dirty local image candidate; stable baseline 미채택 |
+| Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
+| PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev-kafka CI `#76` image `66e9cc995dca`; master CI `#77` image `cab76474db1c`, tag commit `6c91f71`; demo publication은 별도 branch workflow |
+| Public demo-lite | UI `2.1.0`, API `2.0.0`, event `202` | 2026-07-27 live evidence; current candidate와 분리 |
 
 원본 위치:
 
@@ -63,6 +56,7 @@
 - Kafka append 실패 시 `503`
 - 최신 2026-07-21 performance 원본의 event status `202`: `29,608`, 다른 event status `0`
 - 첫 v2 비교 원본의 event status `202`: `25,378`, 다른 event status `0`
+- 최신 2026-08-05 current source 원본의 event status `202`: `28,605`, 다른 event status `0`
 
 ### Row-visible latency proxy
 
@@ -92,6 +86,44 @@
 - unresolved depth / current incident backlog: 제공하지 않음
 - oldest unresolved SLO: 제공하지 않음
 
+## Current Simplified v2 Candidate — 2026-08-05
+
+검증 image `messaging-portfolio:v2-core-cleanup`은 API, core Worker, notification Worker에 동일하게 배치했습니다. API pod별 materialized cache, request-status/message/stream snapshot topic과 Worker post-commit snapshot 발행을 제거한 source입니다. DB·topic clean reset, 시작 consumer lag `0`, API `6/6`, core Worker `2/2`, notification Worker `1/1`을 확인한 뒤 실행했습니다.
+
+### Hot single-stream 3회
+
+100 VU / 30초 hot single-stream 3회 평균:
+
+| Event `202` | Error | Avg | p95 | p99 | Peak message lag | Main drain |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `33,201` | `0.00%` | `39.61ms` | `76.57ms` | `111.49ms` | `31,422` | `364.62s` |
+
+제거 전 generic v2 recovery 후보 평균과 비교:
+
+- event `29,168→33,201`, `13.83%` 증가
+- avg `51.81→39.61ms`, `23.55%` 감소
+- p95 `101.27→76.57ms`, `24.39%` 감소
+- p99 `140.59→111.49ms`, `20.70%` 감소
+- main drain `508.58→364.62s`, `28.31%` 감소
+- historical legacy stable p99 `103.57ms`보다 `7.65%` 높음
+
+source worktree와 image가 registry publication 전 상태이며 legacy baseline과 request contract·cluster state가 다릅니다. 단순화 전후 회복 신호로 사용하며 stable baseline으로 승격하지 않습니다.
+
+### 64-stream fixed/KEDA candidate
+
+현재 source의 record 단위 explicit offset commit을 유지한 결과입니다. 모든 arm은 64 streams, 100 VU / 30초, clean reset과 세 workload image 일치를 확인했습니다.
+
+| Mode | 반복 | Event `202` | p95 | Peak message/notification lag | All-pipeline drain |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| fixed core `2` | 1회 | `30,566` | `93.55ms` | `28,386` / `73` | `295.99s` |
+| KEDA core `2→4`, notification `1→2` | 3회 | `31,644` / `31,853` / `28,605` | `88.06` / `87.64` / `107.41ms` | latest `25,905` / `1,141` | `295.90` / `305.97` / `321.29s` |
+
+최신 tracked 원본은 event `28,605`, error `0.00%`, avg `53.67ms`, p95 `107.41ms`, p99 `157.78ms`, all-pipeline drain `321.29s`, post-HPA drain `140.52s`, final lag `0/0`, same-stream ordering `100/100`입니다. 앞선 두 KEDA 실행과 node restart 뒤 최신 실행의 편차가 큽니다. fixed 1회와의 우열, KEDA의 성능 향상, 안정 drain 시간은 확정하지 않습니다.
+
+core `2→8` 실험에서 notification backlog 이동과 single-node DB 경합을 확인해 current 상한을 core `4`, notification `2`로 조정했습니다. 실험 중 적용한 poll-batch offset commit은 paired KEDA arm의 drain이 fixed보다 `9.24%` 길어 채택하지 않았습니다. record 단위 commit 경계를 유지합니다.
+
+원본: [latest candidate](../results/kafka-performance/latest.txt), [latest ordering/failure injection](../results/ordering-failure/latest.json). 고정/KEDA 반복 중간 산출물은 local 분석용이며 stable evidence로 추적하지 않습니다.
+
 ## Multi-stream Fixed Worker / KEDA A/B Candidate — 2026-07-21
 
 동일한 dirty `dev-kafka` source image `perf-v17`, API `6`, clean DB/topic, fresh lag `0`, 100 VU / 30s, 64 streams 조건으로 Worker fixed `2`와 KEDA `2→8`을 각각 1회 실행했습니다. 각 arm은 DB event state와 6개 Kafka topic을 재생성하고 Kafka deletion quiet period `75s` 뒤 시작했습니다.
@@ -111,6 +143,8 @@
 - 원본: [fixed Worker](../results/kafka-performance/worker-ab-fixed.txt), [KEDA](../results/kafka-performance/worker-ab-keda.txt)
 
 ## Generic v2 Performance Recovery Candidate — 2026-07-21
+
+이 결과는 2026-08-05에 제거한 materialized cache와 snapshot publish 경로를 포함한 historical candidate입니다.
 
 첫 v2 후보의 저하를 조사한 뒤 dirty local worktree image `perf-v16`으로 같은 클린 DB/topic 조건을 3회 반복했습니다. 각 실행은 API/Worker image 일치, API 6/6, Worker 2/2, 모든 API cache hydration 완료, 시작 consumer lag `0`, Kafka 지연 삭제 I/O 대기 75초를 확인한 뒤 부하를 시작했습니다.
 
@@ -275,7 +309,7 @@ Worker success path에서 message persistence와 request status update를 하나
 
 직전 rerun과 workload 상태가 완전히 같은 A/B 실험은 아닙니다. 결과는 개선 신호이며 fixed-vs-KEDA 또는 인과관계 증명으로 사용하지 않습니다.
 
-## Ordering / Failure Injection 검증 — 2026-06-08
+## Ordering / Failure Injection 검증 — 2026-08-05
 
 검증은 Kafka accept 수만 보지 않고 API pod 내부에서 PostgreSQL `messages` row를 조회해 최종 persistence를 판정했습니다.
 
@@ -283,12 +317,14 @@ PostgreSQL row evidence를 pass/fail 기준으로 사용했습니다.
 
 | Scenario | Expected | Accepted | Persisted | Missing | Duplicate | Mixed payload | DLQ | Ordering | Total | DB outage | Recovery to completion |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
-| `single_no_failure` | 100 | 100 | 100 | 0 | 0 | 0 | 0 | PASS | `6.125s` | — | — |
-| `multi_no_failure` | 300 | 300 | 300 | 0 | 0 | 0 | 0 | PASS | `8.438s` | — | — |
-| `single_db_failure` | 100 | 100 | 100 | 0 | 0 | 0 | 0 | PASS | `22.969s` | `20.828s` | `1.375s` |
-| `multi_db_failure` | 300 | 300 | 300 | 0 | 0 | 0 | 0 | PASS | `23.703s` | `21.610s` | `1.218s` |
+| `single_no_failure` | 100 | 100 | 100 | 0 | 0 | 0 | 0 | PASS | `6.812s` | — | — |
+| `multi_no_failure` | 300 | 300 | 300 | 0 | 0 | 0 | 0 | PASS | `6.156s` | — | — |
+| `single_db_failure` | 100 | 100 | 100 | 0 | 0 | 0 | 0 | PASS | `22.547s` | `20.406s` | `1.297s` |
+| `multi_db_failure` | 300 | 300 | 300 | 0 | 0 | 0 | 0 | PASS | `23.453s` | `21.313s` | `1.344s` |
 
 최종 판정: missing `0`, duplicate `0`, mixed payload `0`, DLQ `0`. 각 scenario의 accepted 수와 PostgreSQL persisted row 수가 일치했습니다.
+
+이전 2026-06-08 tracked 실행의 total duration은 `6.125s`, `8.438s`, `22.969s`, `23.703s`였습니다. 2026-08-05 표는 current source 재실행 결과이며 이전 수치는 historical timing으로만 유지합니다.
 
 Payload 규칙:
 
@@ -312,47 +348,30 @@ Windows client skew 수정:
 - Worker process가 poll batch 중간에 종료되는 crash/offset boundary 실험 미포함
 - long outage 뒤 DLQ/replay terminal path 별도 검증 필요
 
-## Cache Read Fallback
+## Historical Cache Experiment
 
-Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Worker가 PostgreSQL commit 뒤 발행한 DB snapshot을 사용합니다.
+2026-07-21에는 API pod별 compacted topic replay와 DB 장애 중 snapshot fallback을 검증했습니다. Fresh read와 degraded read 원본은 당시 구현의 증거로 보존합니다.
 
-| Scenario | Expected result |
-| --- | --- |
-| DB available, initial hydration complete, fresh snapshot | DB membership authorization과 latest sequence watermark 연속성 확인 뒤 `source=cache`, `degraded=false` |
-| DB unavailable, hydrated membership/message snapshot available | `source=cache`, `degraded=true`, `snapshot_age_seconds` 포함 |
-| DB unavailable, cache miss | service unavailable response |
+2026-08-05 source 감사에서 다음 위험을 확인했습니다.
 
-검증 흐름:
+- API replica마다 세 topic 전체 replay
+- unique request/message key 증가에 따른 cold-start 상한 부재
+- 최대 payload 기준 API memory limit 초과 가능성
+- DB membership·watermark 조회와 cache scan의 중복 비용
 
-1. event를 Kafka에 append
-2. Worker PostgreSQL commit 확인
-3. Worker snapshot publish
-4. 각 API pod가 세 compacted topic의 모든 partition을 beginning부터 독립 replay
-5. startup 시점에 잡은 initial end offset까지 도달한 뒤 fresh cache read 성공으로 hydration gate 동작을 간접 확인
-6. DB 정상 시 membership authorization과 latest sequence watermark 연속성 확인 뒤 fresh cache read 확인
-7. DB 장애 시 hydrated membership/message snapshot fallback과 cache miss 비교
-
-이 consumer에는 consumer group이 없습니다. 따라서 이 검증을 `snapshot consumer group lag` 증거로 해석하지 않습니다. pod별 current position, captured end offset, remaining records, hydration duration은 아직 미구현 custom metric입니다.
+Current API `2.1.0` candidate에서 cache와 snapshot topic을 제거했습니다. status·event read는 PostgreSQL을 사용하며 DB read 장애는 `503`입니다. 과거 cache 결과는 current 기능이나 성능 증거로 사용하지 않습니다.
 
 ## Readiness Contract
 
-`GET /health/ready`가 직접 결정하는 상태:
+`GET /health/ready`의 current 판정:
 
-| Condition | HTTP / state |
+| 조건 | 결과 |
 | --- | --- |
-| schema migration 완료, Kafka reachable, PostgreSQL primary/HA guardrail 충족, non-local secret 안전 | `200 ready` |
-| Kafka reachable, schema/secret hard failure 없음, PostgreSQL primary 또는 standby/replication guardrail 이탈 | `200 degraded` |
-| schema 미준비, Kafka unreachable, non-local unsafe auth secret | `503 not_ready` |
+| schema 완료, Kafka reachable, PostgreSQL HA guardrail 충족, auth secret 안전 | `200 ready` |
+| PostgreSQL primary 쓰기 가능, standby·sync·replication guardrail 이탈 | `200 degraded` |
+| schema 미완료, Kafka unreachable, non-local unsafe auth secret | `503 not_ready` |
 
-응답의 Worker와 materialized cache 정보는 운영 문맥이며 readiness state 결정 조건이 아닙니다. 아래 신호는 Prometheus, alerts, `check_portfolio_status.ps1`에서 별도로 확인합니다.
-
-응답에는 실행 중인 API build를 식별하는 `app_version`이 포함됩니다. API source 기준 값은 `2.0.0`입니다. Demo UI badge는 `master`의 `2.0.0`, `demo-dev` candidate의 `2.3.0`, public demo-lite의 `2.1.0`을 각각 구분합니다.
-
-- Kafka broker count
-- PostgreSQL standby count와 replication delay는 API readiness의 degraded reason에도 반영
-- Pgpool replica readiness
-- Worker / notification-worker replica와 consumer lag
-- backup job / PVC 상태
+Worker replica는 readiness에서 제거했습니다. `GET /ops/summary`가 Prometheus 단일 query로 desired·available·HPA desired·max replica를 읽고 결과를 15초 재사용합니다.
 
 ## Kafka and Local HA Topology Evidence
 
@@ -362,11 +381,12 @@ Materialized cache 검증의 원본은 Kafka ingress event가 아닙니다. Work
 - Kafka topic partitions: `8`
 - replication factor: `3`
 - `min.insync.replicas`: `2`
-- compacted topics: `message-request-status`, `message-snapshots`, `stream-snapshots`
+- current source topics: `message-ingress`, `message-ingress-dlq`, `message-notifications`
 - PostgreSQL pods: `3`
 - Pgpool replicas: `2`, PDB `minAvailable=1`
 - API HPA: min `6`, max `8`, CPU target `65%`, scale-up stabilization `60s`, scale-down stabilization `120s`
-- Worker KEDA: min `2`, max `8`, lag threshold `100`
+- Core Worker KEDA: min `2`, max `4`, lag threshold `100`
+- Notification Worker KEDA: min `1`, max `2`, lag threshold `100`
 - DLQ replayer: `1`
 - notification-worker: separate consumer group
 
@@ -424,7 +444,6 @@ Ordering / failure injection:
 Cache fallback:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\test_cache_read_fallback.ps1 -SkipReset
 ```
 
 Local portfolio status without Argo CD bootstrap:
@@ -445,7 +464,7 @@ GitOps profile에서는 Argo CD 설치와 application bootstrap을 확인한 뒤
 | PowerShell functional POST | valid for functional timing | `Invoke-RestMethod` 기준 약 `10-15ms` 관측 |
 | 2026-06 PowerShell accepted-to-persisted | valid as historical proxy | PostgreSQL row `created_at` / row-visible 시점 기반, commit timestamp 제외 |
 | current PowerShell `accepted_to_status_observed_ms` | source updated, rerun pending | client의 persisted status 관측, polling/network 포함 |
-| Worker accepted-to-commit-observed histogram | source updated, rerun pending | `commit()` 반환 직후 `persisted_at`; post-commit publish 제외 |
+| API queued-at-to-DB-commit histogram | source updated, rerun pending | Kafka append 전 `queued_at`부터 `commit()` 반환 직후 `persisted_at`까지; post-commit publish 제외 |
 | old ordering / failure injection `~210s` duration | invalid | Python `urllib` + `http://localhost` client-side delay |
 | latest ordering / failure injection duration | valid | `http://127.0.0.1` connection + `Host: localhost` |
 
@@ -573,7 +592,7 @@ PostgreSQL 장애 주입이 없는 capacity/정합성 rerun입니다. Worker per
 ### Worker success path transaction 통합
 
 - `persist_ingress_job()`에서 message persistence와 request status update를 한 DB transaction으로 처리
-- commit 뒤 request status와 snapshot publish
+- 당시 구조는 commit 뒤 request status와 snapshot publish 수행; 2026-08-05 source에서 해당 Kafka publish 제거
 - notification job은 별도 topic/worker로 전달
 - current limitation: post-commit publish transactional outbox 없음
 
@@ -607,42 +626,17 @@ Persistence path improvement signal입니다. 전체 intake 기준선 대체 수
 
 장애 범위 분리 결과이며 성능 개선 수치에서 제외합니다.
 
-## DB Snapshot Cache / Degraded Read 검증 절차
+## Historical DB Snapshot Cache Validation
 
-Cache 원본은 Kafka ingress event가 아닙니다. Worker가 PostgreSQL commit 뒤 발행한 snapshot만 사용합니다.
+2026-07-21 tracked run은 fresh cache와 DB-down degraded cache를 확인했습니다. 해당 기능은 2026-08-05 current source에서 제거했습니다.
 
-검증 script: `scripts/test_cache_read_fallback.ps1`
+보존 목적:
 
-1. stream을 생성
-2. event request 전송
-3. API Kafka append와 `202 Accepted` 확인
-4. Worker가 PostgreSQL commit
-5. Worker가 `message-snapshots` publish
-6. stream 생성 commit 뒤 `stream-snapshots` membership snapshot publish
-7. 각 API pod가 `message-request-status`, `message-snapshots`, `stream-snapshots`의 모든 partition을 beginning부터 독립 replay
-8. startup 시점에 잡은 initial end offset까지 도달한 뒤 fresh cache read 성공으로 hydration gate 동작을 간접 확인
-9. PostgreSQL 정상 상태에서 DB membership authorization과 latest sequence watermark 연속성 확인 뒤 fresh `GET /streams/{stream_id}/events`: `source=cache`, `degraded=false`, `snapshot_age_seconds`
-10. PostgreSQL read path 중단
-11. hydrated membership/message snapshot이 있으면 stale read: `source=cache`, `degraded=true`; hydration 미완료 또는 cache/membership miss: `503`
+- 당시 장애 실험과 설계 판단의 근거
+- HPA scale-out과 pod별 cache replay 경합을 해석한 STAR 사례
+- 기능 추가 뒤 운영 비용을 재평가하고 구조를 축소한 결정 기록
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\test_cache_read_fallback.ps1 -SkipReset
-```
-
-| Check | Expected / historical result |
-| --- | --- |
-| Cache source | DB commit 이후 `message-snapshots` / `stream-snapshots` |
-| Initial hydration gate | captured initial end offsets 도달 전 cache read 제외 |
-| Fresh read | DB membership authorization과 latest sequence watermark 연속성 확인 뒤 `source=cache`, `degraded=false` |
-| DB failure + stale snapshot | hydrated membership/message snapshot이 모두 있을 때 `source=cache`, `degraded=true`, `snapshot_age_seconds` |
-| DB failure + cache miss | `503 Stream read unavailable` |
-| Membership guard | membership snapshot 없으면 cached message만으로 read 허용 제외 |
-| 2026-04-30 fresh sample | `snapshot_age_seconds=0.507` |
-| 2026-04-30 stale sample | `snapshot_age_seconds=11.798` |
-
-이 실행은 cache read/fallback 기능 검증입니다. consumer group lag 또는 pod별 replay 진행률을 측정한 결과가 아닙니다.
-
-2026-07-21 tracked rerun은 `45.390s`, exit `0`으로 완료했습니다. Fresh read는 `source=cache`, `degraded=false`, age `0.112s`, DB-down read는 `source=cache`, `degraded=true`, age `11.462s`였고 scale `3→0→3` 뒤 PostgreSQL `3/3`, sync/quorum standby `2`, readiness `ready`로 복귀했습니다. 별도 DB outage suite도 `43.008s`, exit `0`으로 accepted-during-outage와 recovery persistence를 재확인했습니다. 이후 image `9349ba9` 배포에서 readiness materialized cache `ready=true`, `hydrated=true`와 API contract pass를 직접 확인했습니다. 실행 시각·source/script hash·관측값을 담은 tracked structured summary는 [results/postgres-recovery/latest.json](../results/postgres-recovery/latest.json)에 보관합니다. 전체 raw terminal transcript는 보관하지 않았습니다.
+Current acceptance criteria는 PostgreSQL read 성공, DB read 장애 `503`, Kafka intake 지속, 복구 뒤 persistence·lag drain입니다.
 
 ## 운영 메트릭 변화 확인 — 2026-04-29
 
@@ -701,13 +695,15 @@ powershell -ExecutionPolicy Bypass -File scripts\test_api_contracts.ps1 -SkipRes
 - event intake HTTP `202`
 - request status response
 - stream/message response model
-- readiness materialized cache `ready` / `hydrated` 실제 값
+- readiness core dependency fields
+- `/ops/summary` Worker replica fields
 - DLQ list/summary fields
 - `/openapi.json` response schema
 
 Response models:
 
 - `ReadinessResponse`
+- `OpsSummaryResponse`
 - `EventRequestStatusResponse`
 - `DlqListResponse`
 - `DlqSummaryResponse`
