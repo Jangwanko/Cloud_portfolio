@@ -328,7 +328,6 @@ class DemoResetResponse(BaseModel):
     reset_streams: int
     reset_request_statuses: int
     reset_dlq_topic: str
-    cache_invalidation_failures: int
     note: str
 
 
@@ -342,12 +341,6 @@ class PostgresHealthResponse(BaseModel):
     standby_count: int
     sync_standby_count: int
     max_replication_delay_bytes: int
-
-
-class MaterializedCacheHealthResponse(BaseModel):
-    ready: bool
-    hydrated: bool = False
-    last_error: str | None = None
 
 
 class WorkerHealthResponse(BaseModel):
@@ -368,7 +361,10 @@ class ReadinessResponse(BaseModel):
     queue_backend: str
     kafka: KafkaHealthResponse
     postgres: PostgresHealthResponse
-    materialized_cache: MaterializedCacheHealthResponse
+
+
+class OpsSummaryResponse(BaseModel):
+    app_version: str
     worker: WorkerHealthResponse
 
 
@@ -380,4 +376,5 @@ class RootResponse(BaseModel):
     project: str
     docs: str
     health: str
+    operations: str
     metrics: str

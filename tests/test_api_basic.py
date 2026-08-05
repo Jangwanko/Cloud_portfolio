@@ -46,39 +46,6 @@ class TestExternalizeRequestStatus:
         assert result["request_id"] == "req-1"
 
 
-class TestMaterializedCache:
-    def test_message_snapshot_cache_returns_db_snapshot_shape(self):
-        from portfolio.materialized_cache import cache_message_snapshot, list_cached_events
-
-        cache_message_snapshot(
-            {
-                "id": 9001,
-                "request_id": "req-cache",
-                "stream_id": 77,
-                "stream_seq": 1,
-                "user_id": 3,
-                "body": "persisted snapshot",
-                "created_at": "2026-04-30T00:00:00+00:00",
-            }
-        )
-
-        cached, snapshot_age = list_cached_events(77, limit=10)
-
-        assert cached[0]["id"] == 9001
-        assert cached[0]["body"] == "persisted snapshot"
-        assert snapshot_age is not None
-
-    def test_stream_snapshot_cache_checks_membership(self):
-        from portfolio.materialized_cache import cache_stream_snapshot, is_cached_stream_member
-
-        cache_stream_snapshot(
-            {"stream_id": 88, "name": "Membership stream", "member_ids": [1, 2, 3]}
-        )
-
-        assert is_cached_stream_member(88, 2) is True
-        assert is_cached_stream_member(88, 9) is False
-
-
 class TestWorkerUtils:
     """Small worker helper checks."""
 
@@ -310,17 +277,18 @@ class TestKafkaIntakeBoundary:
         assert '"membership_missing"' in worker
         assert '"Event authorization rejected"' in worker
 
-    def test_request_status_updates_publish_to_compacted_topic(self):
+    def test_request_status_updates_use_postgres_state_store(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
 
-        assert "publish_request_status(request_id, payload)" in worker
+        assert "store_request_status(request_id, payload)" in worker
+        assert "publish_request_status" not in worker
         assert '"user_id": job_payload.get("user_id")' in worker
 
-    def test_worker_publishes_message_snapshot_after_persistence(self):
+    def test_worker_does_not_publish_duplicate_state_snapshots(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
 
-        assert "publish_persisted_message_snapshot(response)" in worker
-        assert "publish_message_snapshot(response[\"id\"], snapshot)" in worker
+        assert "publish_persisted_message_snapshot" not in worker
+        assert "publish_message_snapshot" not in worker
 
     def test_worker_success_path_uses_single_db_transaction_helper(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
@@ -386,8 +354,6 @@ class TestKafkaIntakeBoundary:
         monkeypatch.setattr(worker_main, "get_cursor", fake_get_cursor)
         published_notifications = []
 
-        monkeypatch.setattr(worker_main, "publish_persisted_status", lambda *_args: None)
-        monkeypatch.setattr(worker_main, "publish_persisted_message_snapshot", lambda *_args: None)
         monkeypatch.setattr(
             worker_main,
             "publish_notification_job",
@@ -424,15 +390,17 @@ class TestKafkaIntakeBoundary:
             "body_preview": "hello",
         }
 
-    def test_event_list_response_exposes_cache_metadata(self):
+    def test_event_list_response_preserves_compatibility_metadata(self):
         from portfolio.api import _event_list_response
 
-        response = _event_list_response("cache", True, [{"id": 1}], 1.2345)
+        response = _event_list_response([{"id": 1}])
 
-        assert response["source"] == "cache"
-        assert response["degraded"] is True
-        assert response["snapshot_age_seconds"] == 1.234
-        assert response["items"] == [{"id": 1}]
+        assert response == {
+            "source": "database",
+            "degraded": False,
+            "snapshot_age_seconds": None,
+            "items": [{"id": 1}],
+        }
 
 
 class TestOpenApiContract:
@@ -447,6 +415,7 @@ class TestOpenApiContract:
 
         for model in (
             "ReadinessResponse",
+            "OpsSummaryResponse",
             "EventRequestStatusResponse",
             "DlqListResponse",
             "DlqSummaryResponse",
@@ -457,6 +426,7 @@ class TestOpenApiContract:
 
         expected_refs = {
             "/health/ready": "ReadinessResponse",
+            "/ops/summary": "OpsSummaryResponse",
             "/v1/event-requests/{request_id}": "EventRequestStatusResponse",
             "/v1/dlq/ingress": "DlqListResponse",
             "/v1/dlq/ingress/summary": "DlqSummaryResponse",

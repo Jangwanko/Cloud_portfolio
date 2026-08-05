@@ -53,15 +53,6 @@ class Settings:
     kafka_min_insync_replicas: int = int(os.getenv("KAFKA_MIN_INSYNC_REPLICAS", "2"))
     kafka_ingress_topic: str = os.getenv("KAFKA_INGRESS_TOPIC", "message-ingress")
     kafka_dlq_topic: str = os.getenv("KAFKA_DLQ_TOPIC", "message-ingress-dlq")
-    kafka_request_status_topic: str = os.getenv(
-        "KAFKA_REQUEST_STATUS_TOPIC", "message-request-status"
-    )
-    kafka_message_snapshot_topic: str = os.getenv(
-        "KAFKA_MESSAGE_SNAPSHOT_TOPIC", "message-snapshots"
-    )
-    kafka_stream_snapshot_topic: str = os.getenv(
-        "KAFKA_STREAM_SNAPSHOT_TOPIC", "stream-snapshots"
-    )
     kafka_notification_topic: str = os.getenv(
         "KAFKA_NOTIFICATION_TOPIC", "message-notifications"
     )
@@ -74,16 +65,6 @@ class Settings:
     worker_deployment_name: str = os.getenv("WORKER_DEPLOYMENT_NAME", "worker")
     worker_hpa_name: str = os.getenv("WORKER_HPA_NAME", "worker-keda-hpa")
     worker_mode: str = os.getenv("WORKER_MODE", "ingress")
-    snapshot_cache_fresh_seconds: float = float(os.getenv("SNAPSHOT_CACHE_FRESH_SECONDS", "5"))
-    materialized_cache_max_request_statuses: int = int(
-        os.getenv("MATERIALIZED_CACHE_MAX_REQUEST_STATUSES", "20000")
-    )
-    materialized_cache_max_messages: int = int(
-        os.getenv("MATERIALIZED_CACHE_MAX_MESSAGES", "20000")
-    )
-    materialized_cache_max_streams: int = int(
-        os.getenv("MATERIALIZED_CACHE_MAX_STREAMS", "5000")
-    )
 
     def __post_init__(self) -> None:
         if not 1 <= self.app_port <= 65_535:
@@ -120,14 +101,6 @@ class Settings:
             raise ValueError("Kafka partition and replication settings must be positive")
         if not 1 <= self.kafka_min_insync_replicas <= self.kafka_topic_replication_factor:
             raise ValueError("Kafka min ISR must be within the replication factor")
-        if self.snapshot_cache_fresh_seconds < 0:
-            raise ValueError("SNAPSHOT_CACHE_FRESH_SECONDS must not be negative")
-        if min(
-            self.materialized_cache_max_request_statuses,
-            self.materialized_cache_max_messages,
-            self.materialized_cache_max_streams,
-        ) < 1:
-            raise ValueError("Materialized cache item limits must be positive")
 
 
 settings = Settings()

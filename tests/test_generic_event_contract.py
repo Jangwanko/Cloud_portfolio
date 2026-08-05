@@ -958,8 +958,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.0.0"',
-        "ver. 2.0.0 / api -",
+        'const DEMO_UI_VERSION = "2.3.1"',
+        "ver. 2.3.1 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",
@@ -1002,20 +1002,31 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert "async function sendNextReservedEvent()" in process_reserved
     assert "await sendQueuedEvent" in process_reserved
     assert "recordKafkaAppended(1, uiSession)" in process_reserved
-    assert "await pollStreamPersistence(baseUrl, token, streamId, acceptedEvents, uiSession)" in (
-        process_reserved
-    )
+    assert "const persistencePromise = pollStreamPersistence(" in process_reserved
+    assert "activeEvents.length," in process_reserved
+    assert "producerState," in process_reserved
     assert 'event.status = "send_failed"' in process_reserved
     assert "const senderCount = Math.min(SEND_CONCURRENCY, activeEvents.length)" in process_reserved
     assert "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))" in (
         process_reserved
+    )
+    assert process_reserved.index("const persistencePromise = pollStreamPersistence(") < (
+        process_reserved.index(
+            "await Promise.all(Array.from({ length: senderCount }, () => sendNextReservedEvent()))"
+        )
+    )
+    assert process_reserved.index("producerState.completed = true") < process_reserved.index(
+        "const persistenceConfirmed = await persistencePromise"
     )
 
     persistence_poll = demo.split("async function pollStreamPersistence", 1)[1].split(
         "async function refreshDlqSummary", 1
     )[0]
     assert "/persistence-summary" in persistence_poll
-    assert "setTimeout(resolve, 3000)" in persistence_poll
+    assert "setTimeout(resolve, PERSISTENCE_POLL_INTERVAL_MS)" in persistence_poll
+    assert "while (!producerState.completed" in persistence_poll
+    assert "producerState.completed ? acceptedTarget : expectedCount" in persistence_poll
+    assert "recordDbPersisted(persistedCount, uiSession)" in persistence_poll
     assert "/v1/event-requests/" not in persistence_poll
 
     verify_envelope = demo.split("async function verifyGenericEnvelope", 1)[1].split(
@@ -1041,8 +1052,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert "deepEqualJson(left[key], right[key])" in deep_equal
     assert "Object.assign(event, accepted)" in send_function
 
-    assert process_reserved.index("await pollStreamPersistence") < process_reserved.index(
-        "await verifyGenericEnvelope"
+    assert process_reserved.index("const persistenceConfirmed = await persistencePromise") < (
+        process_reserved.index("await verifyGenericEnvelope")
     )
     assert "queueStats.envelopeVerified = persistenceConfirmed" in process_reserved
     update_metrics = demo.split("function updateQueueMetrics()", 1)[1].split(
@@ -1050,10 +1061,29 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     )[0]
     assert "queueStats.envelopeVerified === true" in update_metrics
     assert "t(\"resultPartial\")" in update_metrics
+    pipeline_section = demo.split("<h2>Pipeline Evidence</h2>", 1)[1].split("</section>", 1)[0]
+    assert 'data-i18n="dbColumnsTitle"' in pipeline_section
+    assert 'id="envelope-verification"' in pipeline_section
+    assert pipeline_section.index('data-step="db"') < pipeline_section.index(
+        'data-i18n="dbColumnsTitle"'
+    )
+    assert demo.count('data-i18n="dbColumnsTitle"') == 1
+    assert demo.count('class="queue-metric"') == 4
+    assert 'id="run-worker-status"' not in demo
+    assert demo.count('id="ops-worker-status"') == 1
+    assert "pollRunWorkerScaling" not in demo
     advisor = demo.split("function updateOperationsAdvisor", 1)[1].split(
         "let opsRefreshTimer", 1
     )[0]
     assert "queueStats.envelopeVerified === false" in advisor
+    assert (
+        "const runInProgress = Boolean(queueStats.runStartedAt) && !queueStats.runCompletedAt"
+        in advisor
+    )
+    assert "const runHasMismatch = Boolean(queueStats.runCompletedAt)" in advisor
+    assert 'statusKey = "advisorProcessing"' in advisor
+    assert 'reasonKey = "advisorProcessingReason"' in advisor
+    assert 'nextKey = "advisorProcessingNext"' in advisor
     assert 'statusKey = "advisorAttention"' in advisor
 
     auth = demo.split("async function ensureToken", 1)[1].split(

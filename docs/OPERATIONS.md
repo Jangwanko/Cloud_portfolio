@@ -107,15 +107,15 @@ API `/health/ready` 상태:
 | `degraded` | hard failure 없음, PostgreSQL primary/standby/sync/replication guardrail 이탈 |
 | `not_ready` | schema 미준비, Kafka unreachable, non-local unsafe auth secret |
 
-Standby/sync standby count와 replication byte lag는 degraded reason에 반영됩니다. Broker count, Worker lag/replica, materialized cache 상태는 readiness state 결정과 분리된 alert/status 신호입니다. 상세 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 사용합니다.
+Standby/sync standby count와 replication byte lag는 degraded reason에 반영됩니다. Broker count와 Worker lag/replica는 readiness state 결정과 분리된 alert/status 신호입니다. Worker replica는 `/ops/summary`와 Grafana에서 확인합니다. 상세 정책은 [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)를 사용합니다.
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. UI badge와 함께 확인해 static asset과 API image의 배포 상태를 구분합니다. `master` source 예상 조합은 `ver. 2.0.0 / api 2.0.0`입니다. Public demo-lite는 2026-07-27 기준 title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic event `202`입니다. `demo-dev` UI `2.3.0`은 public deployment 확인 전입니다.
+Response의 `app_version`은 실행 중인 API build version입니다. 2026-07-27 local `dev-kafka`는 `ver. 2.2.0 / api 2.0.0`, API/Worker image `1cd84d4df742`, Argo CD `Synced / Healthy`를 확인했습니다. Public demo-lite의 마지막 live 확인은 UI `2.1.0`, API `2.0.0`, generic event `202`이며 UI `2.2.0` release runtime은 별도 확인합니다.
 
 ## Demo Access
 
-Master source Demo UI: `2.0.0`
+Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
 
 Demo-lite candidate Demo UI: `2.3.0` (`demo-dev`, not deployed)
 
@@ -135,7 +135,7 @@ Demo counter semantics:
 - `Kafka 적재`: API가 ingress topic append를 완료한 수
 - `DB 저장`: Worker가 PostgreSQL commit을 완료한 수
 - `총 소요시간`: 전송 시작부터 해당 run의 DB 저장 확인 완료까지
-- Worker: 현재 replica / 최대 replica; full profile `2/8`, demo-lite `1/2`
+- Worker: 현재 core replica / 최대 replica; full profile `2/4`, demo-lite `1/2`
 
 UI operating behavior:
 
@@ -143,10 +143,10 @@ UI operating behavior:
 - event intake: `POST /v2/streams/{stream_id}/events`
 - readiness/DLQ refresh: 기본 30초, 선택 60초
 - auth token: 동일 base/user에서 memory cache 재사용, UI 기준 30분
-- persistence: `master` UI `2.0.0`과 public UI `2.1.0`은 sender 완료 뒤 polling
-- candidate persistence: `demo-dev` UI `2.3.0`은 sender와 1초 polling을 함께 시작
-- candidate Worker 표시: 운영 상태 패널 한 곳에서 현재 replica / 최대 replica 확인
-- candidate Advisor: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
+- persistence: event append 전송과 동시에 stream 단위 `/persistence-summary`를 1초 간격 polling
+- Worker scaling: 운영 상태 패널에서 현재 replica / 최대 replica 확인, 시계열 확장 증거는 Grafana에서 확인
+- Advisor: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
+- DB storage evidence: Pipeline Evidence의 DB 단계 아래에 저장 컬럼과 envelope 검증 배치
 - send failure: event `send_failed` 종료
 - persistence timeout: 일부 미확인 상태, 완료 표시 제외
 - structured evidence: `schema_version`, producer-defined `event_type`, JSON `payload`, JSON `metadata`
@@ -181,11 +181,9 @@ UI에서 `RESET DEMO DB` 확인 문구 입력 뒤 실행합니다.
 
 DB commit 뒤 Worker가 발행하는 항목:
 
-- request status
-- message snapshot
 - notification job
 
-이 발행들은 현재 transactional outbox에 묶여 있지 않습니다. publish failure log/metric과 status reconciliation이 필요합니다.
+이 발행은 현재 transactional outbox에 묶여 있지 않습니다. publish failure log/metric과 notification reconciliation이 필요합니다. request status와 event read는 Worker의 PostgreSQL transaction 결과를 조회합니다.
 
 ## Reliability Claim Boundary
 
@@ -194,10 +192,10 @@ DB commit 뒤 Worker가 발행하는 항목:
 - 같은 `stream_id`의 partition ordering boundary와 inline retry
 - 성공 또는 terminal DLQ 처리 뒤 record 단위 explicit offset commit
 - PostgreSQL transaction과 idempotency state 기반 중복 persistence 방어
-- retry, DLQ 격리, replay guard, materialized cache fallback
+- retry, DLQ 격리, replay guard, PostgreSQL read model
 - accepted, persisted, lag, DLQ 표본을 분리한 관측
 
-exactly-once delivery, partition 간 global ordering, 모든 failure mode의 무손실, production SLA는 현재 검증 범위가 아닙니다. DB commit 이후 status/snapshot/notification publish는 best-effort이며 transactional outbox gap이 남아 있습니다.
+exactly-once delivery, partition 간 global ordering, 모든 failure mode의 무손실, production SLA는 현재 검증 범위가 아닙니다. DB commit 이후 notification publish는 best-effort이며 transactional outbox gap이 남아 있습니다.
 
 ## DLQ 운영 기준
 
@@ -310,7 +308,7 @@ powershell -ExecutionPolicy Bypass -File scripts/restore_postgres_k8s.ps1 `
 - `-Force` 필수
 - `-ResetSchema`: destructive local recovery option
 - unrelated 또는 production data에 사용 금지
-- restore 뒤 row count, sequence, request status, snapshot/cache 정합성 확인
+- restore 뒤 row count, sequence, request status 정합성 확인
 
 ## 보안 기본선
 
@@ -337,7 +335,7 @@ Production direction:
 - external secret manager
 - SSO/VPN/private network for operations surfaces
 - network policy and least privilege
-- Kafka authentication과 topic별 producer ACL: API는 ingress, Worker는 status/snapshot/notification, 승인된 replayer는 ingress replay만 발행
+- Kafka authentication과 topic별 producer ACL: API는 ingress, Worker는 notification, 승인된 replayer는 ingress replay만 발행
 - DLQ payload redaction / retention / audit
 
 ## API Contract Changes

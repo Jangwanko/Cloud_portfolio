@@ -2,6 +2,32 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-05 단순화 source 재검증과 Worker scaling 경계 조정
+
+- API·core Worker·notification Worker를 동일 local image `messaging-portfolio:v2-core-cleanup`으로 임시 rollout
+- generic v2 API contract, same-stream ordering, DB outage recovery, Kafka performance suite 재실행
+- ordering/failure injection 4개 scenario 모두 accepted=persisted, missing·duplicate·mixed payload·DLQ `0`
+- hot single-stream 3회 평균 event `33,201`, error `0.00%`, p95 `76.57ms`, main drain `364.62s`
+- 제거 전 v2 recovery 후보 대비 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소; dirty local image라 stable baseline 제외
+- notification Worker에 `message-notifications` lag KEDA 추가, core Worker 상한 `8→4`, notification Worker 범위 `1→2`
+- benchmark preflight에서 API·core Worker·notification Worker image 일치와 두 consumer group lag `0` 확인
+- current 64-stream KEDA 3회 drain `295.90~321.29s`, fixed core `2` 1회 `295.99s`; 실행 편차로 성능 우위 미확정
+- poll-batch offset commit 실험은 paired KEDA drain 악화로 폐기, record 단위 explicit commit 유지
+- 최신 tracked performance: event `28,605`, p95 `107.41ms`, peak message/notification lag `25,905`/`1,141`, final `0/0`, ordering `100/100`
+
+## 2026-08-05 v2 운영 본체 정리
+
+- Kubernetes·GitOps·Kafka ingress·KEDA Worker·PostgreSQL HA·Prometheus/Grafana 본체 유지
+- API pod별 materialized cache와 compacted snapshot topic 3개 제거
+- request status와 event list의 read model을 PostgreSQL로 단일화; DB read 장애 응답 `503`
+- Worker의 DB commit 이후 Kafka publish를 notification job으로 한정
+- readiness에서 Prometheus·Worker 조회 제거; Worker replica는 15초 cache를 둔 `/ops/summary`로 분리
+- Demo UI `2.3.1`, API `2.1.0` source candidate
+- 삭제 대상에 cache 구현 760줄, cache 전용 validation script, 관련 contract 포함
+- local unit / contract / infrastructure suite: `345 passed`
+- local image `messaging-portfolio:v2-core-cleanup` build 성공, `59,776,838` bytes, user `10001:10001`
+- DB 없는 standalone container에서 `/health/live`, `/`, `/openapi.json` smoke 통과
+
 ## 2026-07-27 문서 정합성과 container build 최적화
 
 - README에 master source, local runtime, public demo-lite, `demo-dev` candidate 상태를 최신순으로 분리
@@ -15,6 +41,27 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - PostgreSQL backup container read-only root filesystem과 `/tmp` `emptyDir` 적용
 - candidate image build·핵심 import 성공, UID/GID `10001`, size `59,783,039` bytes 확인
 - local unit / contract / infrastructure suite: `365 passed`
+
+## 2026-07-27 Demo UI 정보 구조와 진행 상태 판정 정리
+
+- Demo UI `2.3.0`
+- 처리 현황의 중복 Worker 카드와 run 전용 readiness polling 제거
+- Worker 현재/최대 replica 표시는 기존 운영 상태 패널로 단일화
+- 화면 아래에 분리됐던 `DB 저장 컬럼`을 Pipeline Evidence의 DB 단계 뒤로 이동
+- Kafka append·DB persistence 진행 중 Operations Advisor를 `처리 중`으로 표시
+- run 종료 뒤에만 예약·Kafka·DB 수치 불일치 경고
+- local unit / contract / infrastructure suite: `364 passed`
+- local rollout 대기
+
+## 2026-07-27 Local Demo Kafka·DB 진행률 병렬 관측
+
+- Demo UI `2.2.0`
+- event sender 완료 뒤 시작하던 persistence summary polling을 전송 시작 시점으로 이동
+- Kafka append 진행 중 1초 간격 `persisted_count`를 `DB 저장` 카운터에 반영
+- 실행 중 `/health/ready`를 5초 간격 확인하고 Worker 시작·peak replica 유지
+- producer 완료 뒤 실제 accepted event 수로 최종 persistence 목표 확정
+- local unit / contract / infrastructure suite: `364 passed`
+- local rollout: image `1cd84d4df742`, Argo revision `ddb888a`, `Synced / Healthy`, API `6/6`, Worker `2/2`, UI `2.2.0`
 
 ## 2026-07-27 Grafana 제출 화면 정정
 

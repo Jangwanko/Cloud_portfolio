@@ -57,13 +57,6 @@ def _deserialize_json(value: bytes | None):
     return _decode_json(value, validate_structure=True)
 
 
-def _deserialize_materialized_json(value: bytes | None):
-    # Materialized-cache normalizers validate the complete record and nested
-    # payload before it becomes readable. Avoid repeating that recursive walk
-    # while replaying the changelog during API startup.
-    return _decode_json(value, validate_structure=False)
-
-
 def _deserialize_utf8_key(value: bytes | None) -> str | None:
     if value is None:
         return None
@@ -126,24 +119,6 @@ def publish_dlq_job(key: int | str, payload: dict) -> None:
     future.get(timeout=10)
 
 
-def publish_request_status(request_id: str, payload: dict) -> None:
-    producer = get_kafka_producer()
-    future = producer.send(settings.kafka_request_status_topic, key=request_id, value=payload)
-    future.get(timeout=10)
-
-
-def publish_message_snapshot(message_id: int | str, payload: dict) -> None:
-    producer = get_kafka_producer()
-    future = producer.send(settings.kafka_message_snapshot_topic, key=message_id, value=payload)
-    future.get(timeout=10)
-
-
-def publish_stream_snapshot(stream_id: int | str, payload: dict) -> None:
-    producer = get_kafka_producer()
-    future = producer.send(settings.kafka_stream_snapshot_topic, key=stream_id, value=payload)
-    future.get(timeout=10)
-
-
 def publish_notification_job(key: int | str, payload: dict) -> None:
     producer = get_kafka_producer()
     future = producer.send(settings.kafka_notification_topic, key=key, value=payload)
@@ -195,36 +170,6 @@ def build_notification_consumer():
         consumer_timeout_ms=1000,
         **_consumer_frame_limits(),
     )
-
-
-def build_materialized_cache_consumer():
-    from kafka import KafkaConsumer
-
-    return KafkaConsumer(
-        bootstrap_servers=_bootstrap_servers(),
-        enable_auto_commit=False,
-        consumer_timeout_ms=1000,
-        key_deserializer=_deserialize_utf8_key,
-        value_deserializer=_deserialize_materialized_json,
-        **_consumer_frame_limits(),
-    )
-
-
-def publish_state_tombstone(topic: str, key: int | str) -> None:
-    producer = get_kafka_producer()
-    producer.send(topic, key=key, value=None).get(timeout=10)
-
-
-def publish_request_status_tombstone(request_id: str) -> None:
-    publish_state_tombstone(settings.kafka_request_status_topic, request_id)
-
-
-def publish_message_snapshot_tombstone(message_id: int | str) -> None:
-    publish_state_tombstone(settings.kafka_message_snapshot_topic, message_id)
-
-
-def publish_stream_snapshot_tombstone(stream_id: int | str) -> None:
-    publish_state_tombstone(settings.kafka_stream_snapshot_topic, stream_id)
 
 
 def list_recent_topic_messages(topic: str, limit: int) -> list[dict]:

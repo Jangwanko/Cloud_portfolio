@@ -159,7 +159,6 @@ RUN_FAILURE_TESTS=true bash scripts/quick_start_all.sh
 | Linux quick start | `scripts/quick_start_all.sh` | 약 12-18분 |
 | Smoke test | `scripts/smoke_test.ps1` | 약 15-30초 |
 | API contract test | `scripts/test_api_contracts.ps1` | 약 15-30초 |
-| Cache read fallback test | `scripts/test_cache_read_fallback.ps1` | 약 1-2분 |
 | Linux smoke test | `scripts/smoke_test.sh` | 약 15-30초 |
 | DB recovery test | `scripts/test_db_down.ps1` | 약 1-2분 |
 | Linux DB recovery test | `scripts/test_db_down.sh` | 약 1-2분 |
@@ -189,7 +188,7 @@ Kafka performance suite 는 기능 검증과 분리해서 실행합니다.
 powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 ```
 
-이전 benchmark 데이터와 compacted topic replay 크기를 제거한 비교 측정은 아래 명령을 사용합니다. `-CleanBenchmarkState`는 local event/request/idempotency/notification 데이터를 지우고 Kafka 6개 topic을 재생성하므로 disposable local cluster에서만 실행합니다.
+이전 benchmark 데이터를 제거한 비교 측정은 아래 명령을 사용합니다. `-CleanBenchmarkState`는 local event/request/idempotency/notification 데이터를 지우고 current Kafka topic을 재생성하므로 disposable local cluster에서만 실행합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1 -CleanBenchmarkState
@@ -199,7 +198,7 @@ powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1
 
 - 선택한 경우 local DB benchmark state와 Kafka topic 초기화, delayed log deletion quiet period 대기
 - Kubernetes runtime 상태 확인
-- API/Worker 최소 replica, API CPU, 모든 API cache hydration, fresh consumer lag `0` steady-state 확인
+- API/Worker 최소 replica, API CPU, readiness, fresh consumer lag `0` steady-state 확인
 - same-stream ordering 보장 검증
 - Kafka async persisted-status client 관측 지연 측정
 - k6 Kafka intake load 측정
@@ -262,7 +261,6 @@ powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/test_cache_read_fallback.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
@@ -281,12 +279,6 @@ API contract:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1
-```
-
-DB-authorized snapshot / degraded fallback read:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/test_cache_read_fallback.ps1
 ```
 
 DB outage and recovery:

@@ -79,13 +79,9 @@ conn.commit()
 cursor_context.__exit__(None, None, None)
 conn_context.__exit__(None, None, None)
 base = {"min.insync.replicas": str(settings.kafka_min_insync_replicas)}
-compacted = {**base, "cleanup.policy": "compact"}
 topics = [
     (settings.kafka_ingress_topic, base),
     (settings.kafka_dlq_topic, base),
-    (settings.kafka_request_status_topic, compacted),
-    (settings.kafka_message_snapshot_topic, compacted),
-    (settings.kafka_stream_snapshot_topic, compacted),
     (settings.kafka_notification_topic, base),
 ]
 for topic, configs in topics:
@@ -129,11 +125,7 @@ finally {
     "-n", $Namespace, "scale", "deployment/notification-worker",
     "deployment/dlq-replayer", "--replicas=1"
   )
-  Invoke-CleanupKubectl "restarting API cache consumers" @(
-    "-n", $Namespace, "rollout", "restart", "deployment/api"
-  )
-
-  foreach ($deployment in @("api", "worker", "notification-worker", "dlq-replayer")) {
+  foreach ($deployment in @("worker", "notification-worker", "dlq-replayer")) {
     Invoke-CleanupKubectl "waiting for deployment/$deployment rollout" @(
       "-n", $Namespace, "rollout", "status", "deployment/$deployment",
       "--timeout=$($TimeoutSec)s"
@@ -156,4 +148,4 @@ if (-not $resetSucceeded) {
   throw "Local benchmark reset did not complete."
 }
 
-Write-Host "Local benchmark data and all six Kafka topics reset."
+Write-Host "Local benchmark data and all three active Kafka topics reset."

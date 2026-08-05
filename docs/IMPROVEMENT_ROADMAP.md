@@ -2,20 +2,23 @@
 
 이 문서는 현재 포트폴리오의 다음 투자 순서를 정의합니다. 완료 여부는 코드 존재보다 재현 가능한 장애 주입과 원본 증거로 판단합니다.
 
-## Immediate Direction — 2026-07-27
+## Immediate Direction — 2026-08-05
 
 현재 투자 순서:
 
-1. **Demo UI `2.3.0` release 판정**: `demo-dev`의 병렬 Kafka·DB 진행률, Worker 표시 단일화, Advisor 진행 상태를 public demo-lite에 게시한 뒤 badge·readiness·event `202` 재확인
-2. **generic v2 지속 가능 처리량 확정**: 64-stream fixed Worker/KEDA A/B 3회 반복, notification-worker capacity 분리, registry image 재검증, PostgreSQL 처리량과 Worker commit lag 재측정
-3. **신뢰성 gap 제거**: accepted-state read model, transactional outbox, offset crash/rebalance 장애 주입을 각각 재현 가능한 검증으로 종료
-4. **cache bootstrap 상한 설정**: pod별 full replay progress 계측, retention 또는 PostgreSQL bootstrap+Kafka changelog 후보 검증
-5. **복구 지점 자동화**: object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
+1. **generic v2 지속 가능 처리량 확정**: 64-stream fixed/KEDA 각 3회, node 재시작 없는 동일 조건, PostgreSQL throughput·lock·pool과 Worker commit lag 동시 측정
+2. **신뢰성 gap 제거**: accepted-state read model, notification transactional outbox, offset crash/rebalance 장애 주입
+3. **Demo UI `2.3.1` release 판정**: registry image publication 뒤 local runtime과 public demo-lite에서 badge·API version·event `202`·Worker 표시 확인
+4. **복구 지점 자동화**: object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 
-2026-07-21 회복 후보는 clean DB/topic, API min `6`, 모든 cache hydration과 lag `0`을 확인한 동일 hot-stream 조건에서 3회 실행했습니다. 평균 event `29,168`, p95 `101.27ms`, p99 `140.59ms`, main drain `508.58s`이며 첫 v2 후보보다 세 번 모두 개선됐습니다. historical stable legacy baseline보다 평균 event가 `7.92%` 적고 p95가 `25.57%` 높으며, dirty local image와 API floor 변경을 포함합니다. 64-stream A/B 1회에서는 KEDA drain이 `13.35%` 줄었으나 intake가 악화되고 notification backlog가 커졌습니다. stable generic v2 baseline 승격은 A/B 반복과 registry image 재검증 뒤 판정합니다.
+2026-08-05 단순화 source의 hot-stream 3회 평균은 event `33,201`, p95 `76.57ms`, main drain `364.62s`입니다. 제거 전 v2 후보보다 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소했습니다. dirty local image 조건으로 stable baseline은 유지하지 않습니다. 64-stream current KEDA 3회의 drain은 `295.90~321.29s`, fixed core `2` 1회는 `295.99s`로 범위가 겹칩니다. KEDA 성능 우위는 미확정입니다.
 
 완료된 선행 작업:
 
+- API `2.1.0` 단순화 image build·non-root smoke·local cluster 동일 image rollout
+- generic v2 contract, PostgreSQL read, `/ops/summary`, ordering·DB outage suite 재검증
+- notification Worker 독립 KEDA 추가, core `2→4`·notification `1→2` 상한 적용
+- benchmark preflight에 API·core Worker·notification Worker image 일치와 두 consumer lag `0` gate 적용
 - Public demo-lite generic v2 동기화: UI `2.1.0`, API `2.0.0`, event `202`
 - Public 저사양 Worker scaling: lag peak `828`, desired·actual replica `1→2`
 - `dev-kafka` image publication validation gate와 SHA image 검증
@@ -46,16 +49,15 @@
   - 2026-06 status `200` 자료는 역사적 pre-contract-fix 결과로 유지
   - append 직후 Worker status row 생성 전의 짧은 `404`를 계약으로 명시하거나 accepted-state read model로 제거
 
-### 3. DB commit 이후 발행 신뢰성
+### 3. DB commit 이후 notification 발행 신뢰성
 
-- 목표: request status, snapshot, notification 발행에 transactional outbox 또는 동등한 복구 경계 적용
+- 목표: notification job 발행에 transactional outbox 또는 동등한 복구 경계 적용
 - 이유: DB commit 뒤 process crash 시 Kafka 후속 event 누락 가능성 제거
 - 완료 기준:
   - DB commit 직후 Kafka publish 전 강제 종료 실험
-  - 재기동 뒤 모든 후속 event의 최종 발행 확인
+  - 재기동 뒤 notification job의 최종 발행 확인
   - 중복 발행 시 consumer idempotency 확인
   - outbox backlog, retry, terminal failure 운영 지표 제공
-  - demo reset tombstone과 reset 직전 Worker post-commit snapshot 사이 ordering을 epoch/control record로 검증
 
 ### 4. DLQ 현재 상태 모델
 
@@ -78,26 +80,17 @@
   - 수동 local gate `false` → Worker ready → API gate `true` 재현
   - Worker image/version rollout 완료 확인
   - 구 Worker replica가 남아 있으면 v2 route/traffic 차단
-  - v2 canary의 Kafka envelope, PostgreSQL row, status, snapshot JSON 일치
+  - v2 canary의 Kafka envelope, PostgreSQL row, request status JSON 일치
   - 중간 단계 rollback과 forward recovery drill 기록
 
-### 6. Materialized cache replay boundedness와 bootstrap
+### 6. API state 경계 단순화 — source·local 검증 완료
 
-- 현재 상태: 각 API pod가 consumer group 없이 snapshot 세 topic의 모든 partition을 beginning부터 full replay하고 captured initial end offset에 도달한 뒤 `hydrated` gate 개방. Pod별 replay progress metric, retention, DB bootstrap checkpoint 미구현
-- 위험: `message-request-status`와 `message-snapshots` key는 대부분 request/message별 unique 값이므로 compaction만으로 key 수와 cold-start replay 시간이 bounded 되지 않음
-- 목표: PostgreSQL authorization/source-of-truth 경계를 유지하면서 API pod startup과 DB 장애 fallback 준비 시간을 예측 가능한 범위로 제한
-- 설계 후보:
-  - 명시한 recovery window와 tombstone 정책을 가진 snapshot topic retention
-  - PostgreSQL consistent snapshot으로 cache bootstrap 후 기록된 Kafka offset부터 changelog 적용
-  - event별 unique snapshot 대신 stream별 latest-page snapshot 또는 bounded page key 발행
-- 완료 기준:
-  - 선택안의 데이터 보존 범위, stale 허용 범위, 삭제/tombstone 의미 문서화
-  - pod/topic/partition별 current position, captured end offset, remaining records, replay rate, hydration duration custom metric 제공
-  - production-scale key cardinality를 재현한 cold-start에서 hydration 목표 시간 충족
-  - initial hydration 전 fresh cache·degraded fallback 차단, DB 정상 시 membership authorization 선행 자동 검증
-  - DB 장애 중 hydrated membership/message snapshot이 함께 있을 때만 fallback 성공하는 장애 주입 검증
-  - retention 적용 시 필요한 state가 bootstrap 전에 소실되지 않으며, DB bootstrap+changelog 적용 시 snapshot과 시작 offset의 일관성 검증
-  - per-stream latest-page 방식을 선택하면 pagination, update, deletion, tombstone, post-commit publish gap의 복구 계약 검증
+- API pod별 compacted topic full replay 제거
+- request status와 event read를 PostgreSQL source of truth로 통합
+- readiness에서 cache·Worker 운영 정보 제거
+- Worker 운영 정보는 15초 캐시가 있는 `/ops/summary`로 분리
+- current source contract, 새 image, ordering·DB outage, hot-stream 3회와 64-stream KEDA 후보 재검증 완료
+- registry publication과 GitOps release는 별도 승인·배포 단계
 
 ## P1 — 용량 측정과 지속 가능 처리량
 
@@ -113,7 +106,7 @@
 
 ### 8. Fixed Worker 대 KEDA A/B 실험
 
-- 현재 상태: 64-stream clean 조건 1회 완료. KEDA `2→8`에서 all drain `301.42s→261.17s`, notification peak lag `45→11,536`, intake p95 `169.24ms→212.60ms` 확인
+- 현재 상태: current source에서 fixed core `2` 1회와 KEDA core `2→4`·notification `1→2` 3회 완료. fixed drain `295.99s`, KEDA `295.90~321.29s`; 실행 편차로 성능 우위 미확정
 - 목표: 같은 입력과 DB 조건에서 fixed replica와 lag-based KEDA 비교
 - 이유: API intake 성능과 Worker persistence capacity 분리
 - 완료 기준:
@@ -124,7 +117,7 @@
 
 ### 9. 지속 가능 용량과 backpressure
 
-- 현재 상태: 2026-07-21 30초 single hot-stream burst에서 peak message-worker lag `24,504`, main drain `751.76s`, 최종 lag `0` 확인. 약 `846 events/s` intake가 이 조건의 지속 가능한 DB persistence 처리율보다 높다는 신호이며 steady-state 한계는 미측정
+- 현재 상태: 2026-08-05 hot-stream 3회 평균 event `33,201`, peak message-worker lag `31,422`, main drain `364.62s`, 최종 lag `0` 확인. 약 `1,107 events/s` intake가 이 조건의 지속 가능한 DB persistence 처리율보다 높다는 신호이며 steady-state 한계는 미측정
 - 목표: burst intake와 장시간 안정 처리 용량 구분
 - 완료 기준:
   - 30초 burst와 15분 이상 steady-state workload 분리

@@ -1,5 +1,5 @@
 {
-  "started_at": "2026-06-08T10:21:26.747289+00:00",
+  "started_at": "2026-08-05T12:43:55.355391+00:00",
   "base_url": "http://127.0.0.1",
   "namespace": "messaging-app",
   "event_count_per_stream": 100,
@@ -25,7 +25,7 @@
         "dlq": 0
       },
       "timing": {
-        "total_duration_seconds": 6.125,
+        "total_duration_seconds": 6.812,
         "db_outage_seconds": null,
         "recovery_to_completion_seconds": null
       },
@@ -33,7 +33,7 @@
       "streams": [
         {
           "name": "A",
-          "stream_id": 22,
+          "stream_id": 668,
           "prefix": "A",
           "result": "PASS",
           "expected_count": 100,
@@ -84,7 +84,7 @@
         "dlq": 0
       },
       "timing": {
-        "total_duration_seconds": 8.438,
+        "total_duration_seconds": 6.156,
         "db_outage_seconds": null,
         "recovery_to_completion_seconds": null
       },
@@ -92,7 +92,7 @@
       "streams": [
         {
           "name": "A",
-          "stream_id": 23,
+          "stream_id": 669,
           "prefix": "A",
           "result": "PASS",
           "expected_count": 100,
@@ -117,7 +117,7 @@
         },
         {
           "name": "B",
-          "stream_id": 24,
+          "stream_id": 670,
           "prefix": "B",
           "result": "PASS",
           "expected_count": 100,
@@ -142,7 +142,7 @@
         },
         {
           "name": "C",
-          "stream_id": 25,
+          "stream_id": 671,
           "prefix": "C",
           "result": "PASS",
           "expected_count": 100,
@@ -193,21 +193,21 @@
         "dlq": 0
       },
       "timing": {
-        "total_duration_seconds": 22.969,
-        "db_outage_seconds": 20.828,
-        "recovery_to_completion_seconds": 1.375
+        "total_duration_seconds": 22.547,
+        "db_outage_seconds": 20.406,
+        "recovery_to_completion_seconds": 1.297
       },
       "outage": {
         "target": "deployment.apps/messaging-postgresql-ha-pgpool",
         "original_replicas": 2,
-        "down_started_at": "2026-06-08T10:21:44.544157+00:00",
-        "restore_started_at": "2026-06-08T10:21:48.690273+00:00",
-        "db_ready_at": "2026-06-08T10:22:05.374747+00:00"
+        "down_started_at": "2026-08-05T12:44:11.825742+00:00",
+        "restore_started_at": "2026-08-05T12:44:15.991510+00:00",
+        "db_ready_at": "2026-08-05T12:44:32.242877+00:00"
       },
       "streams": [
         {
           "name": "A",
-          "stream_id": 26,
+          "stream_id": 672,
           "prefix": "A",
           "result": "PASS",
           "expected_count": 100,
@@ -258,21 +258,21 @@
         "dlq": 0
       },
       "timing": {
-        "total_duration_seconds": 23.703,
-        "db_outage_seconds": 21.61,
-        "recovery_to_completion_seconds": 1.218
+        "total_duration_seconds": 23.453,
+        "db_outage_seconds": 21.313,
+        "recovery_to_completion_seconds": 1.344
       },
       "outage": {
         "target": "deployment.apps/messaging-postgresql-ha-pgpool",
         "original_replicas": 2,
-        "down_started_at": "2026-06-08T10:22:08.553132+00:00",
-        "restore_started_at": "2026-06-08T10:22:13.073190+00:00",
-        "db_ready_at": "2026-06-08T10:22:30.164381+00:00"
+        "down_started_at": "2026-08-05T12:44:35.098868+00:00",
+        "restore_started_at": "2026-08-05T12:44:39.250877+00:00",
+        "db_ready_at": "2026-08-05T12:44:56.408994+00:00"
       },
       "streams": [
         {
           "name": "A",
-          "stream_id": 27,
+          "stream_id": 673,
           "prefix": "A",
           "result": "PASS",
           "expected_count": 100,
@@ -297,7 +297,7 @@
         },
         {
           "name": "B",
-          "stream_id": 28,
+          "stream_id": 674,
           "prefix": "B",
           "result": "PASS",
           "expected_count": 100,
@@ -322,7 +322,7 @@
         },
         {
           "name": "C",
-          "stream_id": 29,
+          "stream_id": 675,
           "prefix": "C",
           "result": "PASS",
           "expected_count": 100,
@@ -354,6 +354,6 @@
       }
     }
   ],
-  "completed_at": "2026-06-08T10:22:31.831025+00:00",
+  "completed_at": "2026-08-05T12:44:57.878277+00:00",
   "result": "PASS"
 }

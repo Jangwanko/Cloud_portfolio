@@ -1134,36 +1134,19 @@ def test_non_ingress_consumers_use_fail_closed_utf8_key_deserializer(monkeypatch
     monkeypatch.setattr(kafka, "KafkaConsumer", fake_consumer)
     kafka_client.build_dlq_consumer()
     kafka_client.build_notification_consumer()
-    kafka_client.build_materialized_cache_consumer()
 
     assert _deserialize_utf8_key(None) is None
     assert _deserialize_utf8_key(b"stream-7") == "stream-7"
     assert _deserialize_utf8_key(b"\xff") is None
-    assert len(captured) == 3
+    assert len(captured) == 2
     assert all(
         kwargs["key_deserializer"] is _deserialize_utf8_key
         for _topics, kwargs in captured
     )
-    assert captured[2][1]["value_deserializer"] is kafka_client._deserialize_materialized_json
     assert all(
         kwargs["fetch_max_bytes"] == 50 * 1024 * 1024
         and kwargs["receive_message_max_bytes"] == 64 * 1024 * 1024
         for _topics, kwargs in captured
-    )
-
-
-def test_materialized_deserializer_defers_structure_walk_but_rejects_invalid_json():
-    from portfolio import kafka_client
-
-    deeply_nested = b'{"value":{"nested":{"leaf":1}}}'
-    assert kafka_client._deserialize_materialized_json(deeply_nested)["value"]["nested"] == {
-        "leaf": 1
-    }
-    assert kafka_client.is_invalid_kafka_payload(
-        kafka_client._deserialize_materialized_json(b'{"value":NaN}')
-    )
-    assert kafka_client.is_invalid_kafka_payload(
-        kafka_client._deserialize_materialized_json(b"{not-json")
     )
 
 
@@ -1972,30 +1955,29 @@ def test_request_status_owner_conflict_rolls_back_transaction():
     assert conn.rollbacks == 1
 
 
-def test_request_status_publish_uses_stored_normalized_payload_and_skips_failures(
+def test_request_status_store_skips_owner_and_database_failures(
     monkeypatch,
 ):
     from portfolio import state_store
 
-    published = []
+    stored_calls = []
     stored = {
         "request_id": "req-owner",
         "status": "queued",
         "user_id": 3,
         "actor_id": 3,
     }
-    monkeypatch.setattr(worker_main, "store_request_status", lambda *_args: dict(stored))
     monkeypatch.setattr(
         worker_main,
-        "publish_request_status",
-        lambda request_id, payload: published.append((request_id, dict(payload))),
+        "store_request_status",
+        lambda request_id, payload: stored_calls.append((request_id, dict(payload))) or dict(stored),
     )
 
     worker_main.update_request_status(
         "req-owner",
         {"status": "forged-input", "user_id": 3},
     )
-    assert published == [("req-owner", stored)]
+    assert stored_calls == [("req-owner", {"status": "forged-input", "user_id": 3})]
 
     for failure in (
         state_store.RequestStatusOwnerConflict("owner race"),
@@ -2012,14 +1994,13 @@ def test_request_status_publish_uses_stored_normalized_payload_and_skips_failure
             {"status": "queued", "user_id": 3},
         )
 
-    assert published == [("req-owner", stored)]
+    assert len(stored_calls) == 1
 
 
 def test_status_owner_conflict_still_allows_terminal_ingress_offset_commit(monkeypatch):
     from portfolio import state_store
 
     dlq = []
-    status_publishes = []
     monkeypatch.setattr(
         worker_main,
         "persist_ingress_job",
@@ -2031,11 +2012,6 @@ def test_status_owner_conflict_still_allows_terminal_ingress_offset_commit(monke
         lambda *_args: (_ for _ in ()).throw(
             state_store.RequestStatusOwnerConflict("owner race")
         ),
-    )
-    monkeypatch.setattr(
-        worker_main,
-        "publish_request_status",
-        lambda *args: status_publishes.append(args),
     )
     monkeypatch.setattr(
         worker_main,
@@ -2065,7 +2041,6 @@ def test_status_owner_conflict_still_allows_terminal_ingress_offset_commit(monke
     )
 
     assert dlq[0][1]["failed_reason"] == "invalid_persistence_data:DataError"
-    assert status_publishes == []
     assert consumer.seeks == []
     assert committed_offsets(consumer) == [(partition, 71)]
 
@@ -2657,23 +2632,14 @@ def test_generic_envelope_and_persisted_at_propagate_to_internal_payloads(monkey
         "created_at": "2026-07-14T00:00:00+00:00",
         "persisted_at": "2026-07-14T00:00:00.001000+00:00",
     }
-    snapshots = []
-    monkeypatch.setattr(
-        worker_main,
-        "publish_message_snapshot",
-        lambda key, payload: snapshots.append((key, payload)),
-    )
-
     status = worker_main.persisted_status_payload("req-generic", response)
     notification = worker_main.notification_attempt_payload(response)
-    worker_main.publish_persisted_message_snapshot(response)
 
-    for payload in (status, snapshots[0][1]):
-        assert payload["event_type"] == "deployment.finished"
-        assert payload["schema_version"] == 2
-        assert payload["payload"] == response["payload"]
-        assert payload["metadata"] == {"environment": "staging"}
-        assert payload["persisted_at"] == response["persisted_at"]
+    assert status["event_type"] == "deployment.finished"
+    assert status["schema_version"] == 2
+    assert status["payload"] == response["payload"]
+    assert status["metadata"] == {"environment": "staging"}
+    assert status["persisted_at"] == response["persisted_at"]
     assert notification["event_id"] == 10
     assert notification["stream_id"] == 7
     assert notification["event_type"] == "deployment.finished"
@@ -2706,14 +2672,6 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
 
     conn = FakeConn()
     upserted_statuses = []
-    published_statuses = []
-    snapshots = []
-    timestamps = iter(
-        [
-            "2026-07-14T00:00:00.001000+00:00",
-            "2026-07-14T00:00:00.002000+00:00",
-        ]
-    )
 
     @contextmanager
     def fake_get_conn():
@@ -2730,6 +2688,12 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
         "_persist_message_with_cursor",
         lambda _payload, _cursor: dict(response),
     )
+    timestamps = iter(
+        [
+            "2026-07-14T00:00:00.001000+00:00",
+            "2026-07-14T00:00:00.002000+00:00",
+        ]
+    )
     monkeypatch.setattr(worker_main, "now_iso", lambda: next(timestamps))
     monkeypatch.setattr(
         worker_main,
@@ -2738,17 +2702,6 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
             (request_id, dict(payload))
         ),
     )
-    monkeypatch.setattr(
-        worker_main,
-        "publish_persisted_status",
-        lambda request_id, payload: published_statuses.append((request_id, dict(payload))),
-    )
-    monkeypatch.setattr(
-        worker_main,
-        "publish_persisted_message_snapshot",
-        lambda payload: snapshots.append(dict(payload)),
-    )
-
     def fail_after_commit(*_args):
         assert conn.commits == 1
         raise RuntimeError("Kafka notification unavailable")
@@ -2761,8 +2714,7 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
     assert result["request_id"] == response["request_id"]
     assert datetime.fromisoformat(result["persisted_at"])
     assert upserted_statuses[0][1]["persisted_at"] == "2026-07-14T00:00:00.001000+00:00"
-    assert published_statuses[0][1]["persisted_at"] == "2026-07-14T00:00:00.002000+00:00"
-    assert snapshots[0]["persisted_at"] == "2026-07-14T00:00:00.002000+00:00"
+    assert result["persisted_at"] == "2026-07-14T00:00:00.002000+00:00"
     assert conn.commits == 1
     assert "core persistence remains committed" in caplog.text
 
