@@ -62,9 +62,9 @@ class TestOperationalDocumentation:
             "## AWS Migration Blueprint",
             "## 관측 설계 / Observability Map",
             "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
-            "STAR 1 — HPA scale-out과 cache hydration 경합 해결",
-            "STAR 2 — KEDA scale-out의 병목 이동 확인",
-            "STAR 3 — GitOps namespace prune 사고 복구",
+            "STAR 1 — KEDA scale-out의 병목 이동 확인",
+            "STAR 2 — GitOps namespace prune 사고 복구",
+            "STAR 3 — API HPA와 cache hydration 경합 분석",
             "STAR 4 — CPU HPA에서 queue-depth KEDA로 전환",
             "STAR 5 — Pgpool HA와 same-stream ordering 보강",
             "`5,434` requests, p95 `8,175ms`",
@@ -72,14 +72,13 @@ class TestOperationalDocumentation:
             "`31,710` requests, p95 `86.95ms`",
             "API → Kafka → Worker → PostgreSQL",
             "### 현재 검증 수치 / Current Evidence",
-            "Current generic v2 recovery candidate",
+            "Pre-simplification generic v2 recovery candidate",
             "Historical Kafka intake baseline",
-            "Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다",
             "## Demo",
             "### Public demo-lite",
             "## Validation Summary",
             "31,676",
-            "same-stream ordering: `100/100`",
+            "same-stream ordering `100/100`",
             "## Trade-offs",
             "Kafka append-first intake",
             "## Next Improvements",
@@ -95,135 +94,7 @@ class TestOperationalDocumentation:
         star_index = readme.index("## STAR 운영 문제 해결 경험 / Operational STAR Cases")
         assert architecture_index < inventory_index < aws_index < observability_index < star_index
 
-    def test_db_snapshot_materialized_cache_is_declared(self):
-        config = read_text("portfolio/config.py")
-        kafka_client = read_text("portfolio/kafka_client.py")
-        cache = read_text("portfolio/materialized_cache.py")
-        api = read_text("portfolio/api.py")
-        main = read_text("portfolio/main.py")
-        worker = read_text("worker/main.py")
-        kafka_bootstrap = read_text("k8s/gitops/base/kafka-ha.yaml")
-        app_manifest = read_text("k8s/app/manifests-ha.yaml")
-        cache_read_test = read_text("scripts/test_cache_read_fallback.ps1")
 
-        assert "kafka_request_status_topic" in config
-        assert "kafka_message_snapshot_topic" in config
-        assert "kafka_stream_snapshot_topic" in config
-        assert "kafka_notification_topic" in config
-        assert "snapshot_cache_fresh_seconds" in config
-        assert "publish_request_status" in kafka_client
-        assert "publish_message_snapshot" in kafka_client
-        assert "publish_stream_snapshot" in kafka_client
-        assert "publish_notification_job" in kafka_client
-        assert "build_notification_consumer" in kafka_client
-        assert "build_materialized_cache_consumer" in kafka_client
-        assert "get_cached_request_status" in cache
-        assert "list_cached_events" in cache
-        assert "is_cached_stream_member" in cache
-        assert "start_materialized_cache" in cache
-        assert "get_cached_request_status(request_id)" in api
-        assert "list_cached_events(stream_id, limit, before_id)" in api
-        assert "_cached_page_matches_stream_watermark" in api
-        assert "snapshot_cache_fresh_seconds" in api
-        assert "response_model=EventListResponse" in api
-        assert "API started without PostgreSQL startup readiness" in main
-        assert "PostgreSQL startup retry failed" in main
-        assert "start_materialized_cache()" in main
-        assert "publish_request_status(request_id, payload)" in worker
-        assert "publish_message_snapshot" in worker
-        assert "publish_notification_job(response[\"room_id\"], notification_attempt_payload(response))" in worker
-        assert "run_kafka_notification_loop" in worker
-        assert "Wait-FreshCacheRead" in cache_read_test
-        assert "Expected degraded cache read while DB is down" in cache_read_test
-        assert "message-request-status" in kafka_bootstrap
-        assert "message-snapshots" in kafka_bootstrap
-        assert "stream-snapshots" in kafka_bootstrap
-        assert "message-notifications" in kafka_bootstrap
-        assert "cleanup.policy=compact" in kafka_bootstrap
-        assert "KAFKA_REQUEST_STATUS_TOPIC" in app_manifest
-        assert "KAFKA_MESSAGE_SNAPSHOT_TOPIC" in app_manifest
-        assert "KAFKA_STREAM_SNAPSHOT_TOPIC" in app_manifest
-        assert "KAFKA_NOTIFICATION_TOPIC" in app_manifest
-        assert "KAFKA_NOTIFICATION_CONSUMER_GROUP" in app_manifest
-        assert "name: notification-worker" in app_manifest
-        assert 'value: "notification"' in app_manifest
-        assert "job_name: notification-worker" in app_manifest
-
-        architecture = read_text("docs/ARCHITECTURE.md")
-        for document in (architecture,):
-            assert "DB membership" in document
-            assert "watermark" in document
-            assert "snapshot_age_seconds" in document
-            assert "degraded=true" in document
-            assert "message-snapshots" in document
-            assert "stream-snapshots" in document
-            assert "API local materialized cache" in document
-
-        readme = read_text("README.md")
-        assert "DB membership/watermark 검증" in readme
-        assert "degraded cache" in readme
-        assert "Prometheus --> KEDA" not in readme
-        assert "KEDA `type: kafka`" in architecture
-        assert "Prometheus / kafka-exporter는 같은 lag를 운영자가 관측" in architecture
-        assert "replica 증가만으로 성능 개선을 단정하지 않습니다" in architecture
-
-    def test_read_cache_validation_and_slo_are_documented(self):
-        requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
-        test_results = read_text("docs/TEST_RESULTS.md")
-        metrics_reference = read_text("docs/METRICS_REFERENCE.md")
-        observability = read_text("docs/OBSERVABILITY.md")
-
-        for token in (
-            "DB Snapshot Cache / Degraded Read 검증 절차",
-            "scripts/test_cache_read_fallback.ps1",
-            "stream을 생성",
-            "Worker가 PostgreSQL commit",
-            "message-snapshots",
-            "stream-snapshots",
-            "source=cache",
-            "degraded=false",
-            "degraded=true",
-            "snapshot_age_seconds",
-            "DB failure + cache miss",
-            "Membership guard",
-        ):
-            assert token in test_results
-
-        for token in (
-            "Read cache hit ratio",
-            "Snapshot age",
-            "Cache rebuild time",
-            "Stale response count",
-            "Degraded read count",
-            "Per-pod snapshot replay progress",
-            "미구현 custom metric",
-            "snapshot_age_seconds > 30s",
-            "snapshot_age_seconds > 120s",
-            "Degraded read ratio",
-        ):
-            assert token in requirements
-
-        for token in (
-            "Read cache operating signals",
-            "Read cache hit ratio",
-            "Per-pod snapshot replay progress",
-            "consumer group lag와 섞어 해석하지 않습니다",
-            "source=cache",
-            "degraded=true",
-        ):
-            assert token in metrics_reference
-
-        for token in (
-            "read cache hit ratio",
-            "snapshot age",
-            "degraded read count",
-            "pod별 hydration 상태",
-            "captured initial end offset",
-        ):
-            assert token in observability
-
-        for document in (requirements, metrics_reference, observability):
-            assert "| Snapshot consumer lag |" not in document
 
     def test_architecture_docs_include_normal_and_failure_diagrams(self):
         architecture = read_text("docs/ARCHITECTURE.md")
@@ -343,7 +214,6 @@ class TestOperationalDocumentation:
             if ".terraform" not in path.parts
         ).lower()
 
-        assert "Redis queue 단계" in architecture
         assert "## Redis Historical Context" in test_results
         assert "Kafka append-first baseline, Worker Kafka KEDA 효과와 분리" in test_results
         assert "redis" not in requirements
@@ -375,9 +245,9 @@ class TestOperationalDocumentation:
         assert "plan` / `apply`는 실행하지 않았" in combined
         assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined
-        assert "DB membership/watermark 검증 뒤 fresh cache" in combined
-        assert "DB-down read는 `source=cache`, `degraded=true`" in combined
-        assert "`source=cache`, `degraded=true`" in combined
+        assert "PostgreSQL read model" in combined
+        assert "DB read 장애는 `503`" in combined
+        assert "`/ops/summary`" in combined
         assert "Worker success path transaction 통합" in combined
         assert "28839" in combined
         assert "8.08ms" in combined
@@ -554,20 +424,12 @@ class TestManifestContracts:
         assert "$temporaryOutputPath" in suite_script
         assert "Move-Item -LiteralPath $temporaryOutputPath -Destination $outputPath -Force" in suite_script
 
-    def test_api_contract_waits_for_real_materialized_cache_hydration(self):
+    def test_api_contract_checks_separate_operations_summary(self):
         contract_script = read_text("scripts/test_api_contracts.ps1")
 
-        assert "function Wait-MaterializedCacheHydrated" in contract_script
-        assert 'Assert-HasProperty $health "materialized_cache" "readiness"' in contract_script
-        assert (
-            'Assert-HasProperty $health.materialized_cache "hydrated" '
-            '"readiness.materialized_cache"'
-        ) in contract_script
-        assert "$lastCache.ready -eq $true -and $lastCache.hydrated -eq $true" in contract_script
-        assert (
-            'Assert-Equal $health.materialized_cache.hydrated $true '
-            '"readiness.materialized_cache.hydrated"'
-        ) in contract_script
+        assert 'Uri "$BaseUrl/ops/summary"' in contract_script
+        assert 'Assert-HasProperty $operations "worker" "operations"' in contract_script
+        assert "Wait-MaterializedCacheHydrated" not in contract_script
 
     def test_argocd_gitops_contract_matches_local_ha_runtime(self):
         install_script = read_text("k8s/scripts/install-argocd.ps1")
@@ -607,9 +469,15 @@ class TestManifestContracts:
             assert "topic: message-ingress" in manifest
             assert 'lagThreshold: "100"' in manifest
             assert "minReplicaCount: 2" in manifest
-            assert "maxReplicaCount: 8" in manifest
+            assert "maxReplicaCount: 4" in manifest
+            assert "name: notification-worker-keda" in manifest
+            assert "name: notification-worker-keda-hpa" in manifest
+            assert "consumerGroup: notification-worker" in manifest
+            assert "topic: message-notifications" in manifest
+            assert "minReplicaCount: 1" in manifest
+            assert "maxReplicaCount: 2" in manifest
 
-        assert "lag threshold: `100` for the local demo cluster" in architecture
+        assert "lag threshold `100`" in architecture
         assert "KEDA lag threshold: `100` for the local demo cluster" in kafka_experiment
 
     def test_portfolio_status_check_covers_runtime_control_plane(self):

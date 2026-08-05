@@ -24,3 +24,10 @@ spec:
         topic: message-ingress
         lagThreshold: "100"
         offsetResetPolicy: earliest
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-worker-keda
+  namespace: messaging-app
+$patch: delete

@@ -21,9 +21,7 @@ from portfolio.kafka_client import (
     build_notification_consumer,
     is_invalid_kafka_payload,
     publish_dlq_job,
-    publish_message_snapshot,
     publish_notification_job,
-    publish_request_status,
 )
 from portfolio.metrics import (
     dlq_events_total,
@@ -95,9 +93,7 @@ def _topic_partition(message) -> TopicPartition:
 def _commit_processed_record(consumer, message) -> None:
     partition = _topic_partition(message)
     consumer.commit(
-        offsets={
-            partition: OffsetAndMetadata(message.offset + 1, "", -1),
-        }
+        offsets={partition: OffsetAndMetadata(message.offset + 1, "", -1)}
     )
 
 
@@ -864,7 +860,7 @@ def insert_notification_attempt(cur, payload: dict) -> None:
 def update_request_status(request_id: str, payload: dict) -> None:
     with observe_worker_stage("request_status_update"):
         try:
-            stored_payload = store_request_status(request_id, payload)
+            store_request_status(request_id, payload)
         except RequestStatusOwnerConflict:
             logging.warning(
                 "Skipped request status owner conflict request_id=%s",
@@ -873,38 +869,6 @@ def update_request_status(request_id: str, payload: dict) -> None:
             return
         except Exception as exc:  # noqa: BLE001
             logging.warning("Failed to store request status in PostgreSQL request_id=%s error=%s", request_id, exc)
-            return
-        try:
-            publish_request_status(request_id, stored_payload)
-        except Exception as exc:  # noqa: BLE001
-            logging.warning("Failed to publish request status state request_id=%s error=%s", request_id, exc)
-
-
-def publish_persisted_message_snapshot(response: dict) -> None:
-    event_type, event_payload, event_metadata = _event_envelope(response)
-    body = response.get("body") or _legacy_body_preview(event_payload)
-    snapshot = {
-        "id": response["id"],
-        "request_id": response["request_id"],
-        "stream_id": response["room_id"],
-        "stream_seq": response["room_seq"],
-        "user_id": response["user_id"],
-        "actor_id": response["user_id"],
-        "body": body,
-        "event_type": event_type,
-        "category": response.get("category"),
-        "payment_id": response.get("payment_id"),
-        "schema_version": int(response.get("schema_version") or 1),
-        "payload": event_payload,
-        "metadata": event_metadata,
-        "created_at": response["created_at"],
-    }
-    if response.get("persisted_at") is not None:
-        snapshot["persisted_at"] = response["persisted_at"]
-    try:
-        publish_message_snapshot(response["id"], snapshot)
-    except Exception as exc:  # noqa: BLE001
-        logging.warning("Failed to publish message snapshot message_id=%s error=%s", response["id"], exc)
 
 
 def move_to_dlq(job_payload: dict, reason: str) -> None:
@@ -981,13 +945,6 @@ def store_attempt(payload: dict) -> None:
             raise last_error
 
 
-def publish_persisted_status(request_id: str, payload: dict) -> None:
-    try:
-        publish_request_status(request_id, payload)
-    except Exception as exc:  # noqa: BLE001
-        logging.warning("Failed to publish request status state request_id=%s error=%s", request_id, exc)
-
-
 def persist_ingress_job(job_payload: dict) -> dict:
     request_id = job_payload["request_id"]
 
@@ -1003,13 +960,10 @@ def persist_ingress_job(job_payload: dict) -> dict:
 
         conn.commit()
 
-    # This observation is captured only after psycopg2 commit() has returned.
-    # The atomic request-status row already contains the immediately pre-commit
-    # persistence timestamp; compacted snapshots carry the commit observation.
+    # The durable status row is written inside the transaction. The returned
+    # timestamp is refreshed after commit() so the Worker histogram measures
+    # the actual commit-observed boundary without a second state publish.
     response["persisted_at"] = now_iso()
-    status_payload["persisted_at"] = response["persisted_at"]
-    publish_persisted_status(request_id, status_payload)
-    publish_persisted_message_snapshot(response)
     if not response.get("_idempotency_hit"):
         try:
             with observe_worker_stage("notification_publish"):

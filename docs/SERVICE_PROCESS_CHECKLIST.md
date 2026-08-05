@@ -64,7 +64,7 @@ Readiness state는 HTTP status와 reason을 함께 읽습니다.
 - `ready` / HTTP `200`: schema startup 완료, Kafka reachable, PostgreSQL HA guardrail 충족, non-local 기본 secret 미사용
 - `degraded` / HTTP `200`: PostgreSQL primary unavailable, ready/synchronous standby 부족, replication byte lag 초과
 - `not_ready` / HTTP `503`: schema startup 미완료, Kafka unreachable, non-local 환경의 unsafe auth secret 사용
-- Worker, notification-worker, materialized cache 상태: response의 운영 정보이며 readiness state 결정에서는 제외
+- Worker와 notification-worker 상태: `/ops/summary`, Grafana, consumer lag에서 확인; readiness state 결정에서는 제외
 
 ### 이상 신호를 읽는 법
 

@@ -18,18 +18,17 @@ from portfolio.auth import is_unsafe_auth_secret
 from portfolio.config import settings
 from portfolio.db import close_pool, get_postgres_runtime_status, init_pool_with_retry, run_alembic_migrations
 from portfolio.kafka_client import ping_kafka
-from portfolio.materialized_cache import (
-    get_materialized_cache_status,
-    start_materialized_cache,
-    stop_materialized_cache,
-)
 from portfolio.metrics import api_request_latency_seconds, api_requests_total, metrics_response
-from portfolio.schemas import LiveHealthResponse, ReadinessResponse, RootResponse
+from portfolio.schemas import LiveHealthResponse, OpsSummaryResponse, ReadinessResponse, RootResponse
 
 _degraded_started_at: float | None = None
 _db_startup_ready = False
 _db_startup_stop = threading.Event()
 _db_startup_thread: threading.Thread | None = None
+_worker_status_lock = threading.Lock()
+_worker_status_cached: dict | None = None
+_worker_status_cached_until = 0.0
+_WORKER_STATUS_CACHE_SECONDS = 15.0
 
 
 class RequestBodyLimitMiddleware:
@@ -131,14 +130,12 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001
         logging.warning("API started without PostgreSQL startup readiness: %s", exc)
         _start_db_startup_retry()
-    start_materialized_cache()
     yield
     _db_startup_stop.set()
-    stop_materialized_cache()
     close_pool()
 
 
-app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="2.1.0", lifespan=lifespan)
 app.include_router(api_router)
 app.include_router(generic_router)
 app.mount(
@@ -221,6 +218,7 @@ def root():
         "project": "reliable-event-processing-system",
         "docs": "/docs",
         "health": "/health/ready",
+        "operations": "/ops/summary",
         "metrics": "/metrics",
     }
 
@@ -249,63 +247,83 @@ def _degraded_grace_remaining(status: str) -> int | None:
     return max(0, settings.readiness_degraded_grace_seconds - elapsed)
 
 
-def _prometheus_query_value(query: str) -> int | None:
+def _fetch_worker_runtime_status() -> dict:
+    namespace = settings.k8s_namespace
+    deployment = settings.worker_deployment_name
+    hpa = settings.worker_hpa_name
+    metric_names = (
+        "kube_deployment_spec_replicas",
+        "kube_deployment_status_replicas_available",
+        "kube_horizontalpodautoscaler_status_desired_replicas",
+        "kube_horizontalpodautoscaler_spec_max_replicas",
+    )
+    matcher = "|".join(metric_names)
+    query = f'{{namespace="{namespace}",__name__=~"{matcher}"}}'
     url = f"{settings.prometheus_base_url.rstrip('/')}/api/v1/query?{urlencode({'query': query})}"
     with urlopen(url, timeout=2) as response:  # noqa: S310 - URL is local cluster configuration.
         payload = json.loads(response.read().decode("utf-8"))
 
     results = payload.get("data", {}).get("result", [])
-    if not results:
-        return None
-    value = results[0].get("value", [None, None])[1]
-    if value is None:
-        return None
-    return int(float(value))
+    values = {name: None for name in metric_names}
+    for result in results:
+        labels = result.get("metric", {})
+        name = labels.get("__name__")
+        if name not in values:
+            continue
+        if name.startswith("kube_deployment_") and labels.get("deployment") != deployment:
+            continue
+        if name.startswith("kube_horizontalpodautoscaler_") and labels.get(
+            "horizontalpodautoscaler"
+        ) != hpa:
+            continue
+        value = result.get("value", [None, None])[1]
+        if value is not None:
+            values[name] = int(float(value))
+
+    return {
+        "deployment": deployment,
+        "desired_replicas": values["kube_deployment_spec_replicas"],
+        "available_replicas": values["kube_deployment_status_replicas_available"],
+        "hpa_desired_replicas": values[
+            "kube_horizontalpodautoscaler_status_desired_replicas"
+        ],
+        "max_replicas": values["kube_horizontalpodautoscaler_spec_max_replicas"],
+        "source": "prometheus",
+        "error": None,
+    }
 
 
 def _worker_runtime_status() -> dict:
-    namespace = settings.k8s_namespace
-    deployment = settings.worker_deployment_name
-    hpa = settings.worker_hpa_name
-    try:
-        desired = _prometheus_query_value(
-            f'kube_deployment_spec_replicas{{namespace="{namespace}",deployment="{deployment}"}}'
-        )
-        available = _prometheus_query_value(
-            f'kube_deployment_status_replicas_available{{namespace="{namespace}",deployment="{deployment}"}}'
-        )
-        hpa_desired = _prometheus_query_value(
-            f'kube_horizontalpodautoscaler_status_desired_replicas{{namespace="{namespace}",horizontalpodautoscaler="{hpa}"}}'
-        )
-        hpa_max = _prometheus_query_value(
-            f'kube_horizontalpodautoscaler_spec_max_replicas{{namespace="{namespace}",horizontalpodautoscaler="{hpa}"}}'
-        )
-        return {
-            "deployment": deployment,
-            "desired_replicas": desired,
-            "available_replicas": available,
-            "hpa_desired_replicas": hpa_desired,
-            "max_replicas": hpa_max,
-            "source": "prometheus",
-            "error": None,
-        }
-    except Exception as exc:  # noqa: BLE001
-        return {
-            "deployment": deployment,
-            "desired_replicas": None,
-            "available_replicas": None,
-            "hpa_desired_replicas": None,
-            "max_replicas": None,
-            "source": "unavailable",
-            "error": type(exc).__name__,
-        }
+    global _worker_status_cached, _worker_status_cached_until
+
+    now = time.monotonic()
+    if _worker_status_cached is not None and now < _worker_status_cached_until:
+        return dict(_worker_status_cached)
+
+    with _worker_status_lock:
+        now = time.monotonic()
+        if _worker_status_cached is not None and now < _worker_status_cached_until:
+            return dict(_worker_status_cached)
+        try:
+            status = _fetch_worker_runtime_status()
+        except Exception as exc:  # noqa: BLE001
+            status = {
+                "deployment": settings.worker_deployment_name,
+                "desired_replicas": None,
+                "available_replicas": None,
+                "hpa_desired_replicas": None,
+                "max_replicas": None,
+                "source": "unavailable",
+                "error": type(exc).__name__,
+            }
+        _worker_status_cached = status
+        _worker_status_cached_until = now + _WORKER_STATUS_CACHE_SECONDS
+        return dict(status)
 
 
 def _build_readiness_payload() -> tuple[int, dict]:
     postgres_status = get_postgres_runtime_status()
     kafka_reachable = ping_kafka()
-    worker_status = _worker_runtime_status()
-    cache_status = get_materialized_cache_status()
     reasons: list[str] = []
     status_code = 200
     overall_status = "ready"
@@ -354,12 +372,6 @@ def _build_readiness_payload() -> tuple[int, dict]:
             "sync_standby_count": postgres_status["sync_standby_count"],
             "max_replication_delay_bytes": postgres_status["max_replication_delay_bytes"],
         },
-        "materialized_cache": {
-            "ready": bool(cache_status["ready"]),
-            "hydrated": bool(cache_status["hydrated"]),
-            "last_error": cache_status["last_error"],
-        },
-        "worker": worker_status,
     }
     return status_code, payload
 
@@ -370,3 +382,11 @@ def health_ready():
     if status_code >= 400:
         return JSONResponse(status_code=status_code, content=payload)
     return payload
+
+
+@app.get("/ops/summary", response_model=OpsSummaryResponse)
+def operations_summary():
+    return {
+        "app_version": app.version,
+        "worker": _worker_runtime_status(),
+    }

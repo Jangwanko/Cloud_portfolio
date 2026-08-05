@@ -26,9 +26,9 @@
 - API: Kafka append 성공 뒤 `202 Accepted`
 - Envelope: `schema_version`, `event_type`, JSON `payload`, JSON `metadata`
 - Worker: Kafka record 처리와 PostgreSQL commit
-- Post-commit publish: request status, snapshots, notification job
+- Post-commit publish: notification job
 - Failure: inline retry → DLQ publish → replay guard
-- Read model: DB-committed snapshot 기반 cache
+- Read model: PostgreSQL request status와 event row
 
 DB commit과 후속 Kafka publish는 하나의 transaction이 아닙니다. 현재 publish는 best-effort이며 process crash gap은 남아 있습니다.
 
@@ -63,7 +63,7 @@ Readiness state의 직접 조건에서 제외되는 신호:
 - Kafka broker replica count / ISR
 - Pgpool replica availability
 - Worker/notification-worker replica와 consumer lag
-- materialized cache ready/error telemetry
+- Worker replica·KEDA desired replica는 `/ops/summary`와 Grafana에서 확인
 - DLQ / replay activity
 - Prometheus scrape availability
 
@@ -154,7 +154,7 @@ incident 종료 조건:
 - message-worker lag 감소 후 기대 수준 복귀
 - accepted 수와 persisted 수 reconciliation
 - DLQ / replay terminal event 조사
-- post-commit status/snapshot/notification 누락 확인
+- post-commit notification 누락 확인
 - customer/event producer 재시도 영향 확인
 
 서비스 요구와 SLO guardrail은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 세부 절차는 [RUNBOOK.md](RUNBOOK.md), 개선 완료 조건은 [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)에 있습니다.
