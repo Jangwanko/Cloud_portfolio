@@ -7,7 +7,7 @@ Reliable Event Processing System 관측 범위:
 - lag
 - DLQ
 - replica 상태
-- read cache / degraded read
+- PostgreSQL read availability
 
 Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title은 시계열·링크 호환을 위한 물리 식별자로 유지합니다. 포트폴리오의 현재 의미 모델은 generic event/stream 기준입니다.
 
@@ -15,9 +15,9 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 
 - API가 요청을 빠르게 `accepted` 하는가?
 - Kafka ingress topic에 쌓인 event를 Worker consumer group이 따라잡는가?
-- DB commit 이후 snapshot compacted topic 기반 local materialized cache가 DB outage 중 degraded read를 보조하는가?
-- message read 응답의 `source`, `degraded`, `snapshot_age_seconds`로 DB membership/watermark-gated snapshot과 degraded fallback이 정상 동작하는가?
-- read cache hit ratio, snapshot age, degraded read count와 pod별 hydration 상태로 read path가 DB outage를 얼마나 흡수하는가?
+- readiness와 Worker 운영 조회가 서로 다른 endpoint와 판정 기준을 유지하는가?
+- request status와 event list 조회가 PostgreSQL 정상 시 완료되고, DB read 장애 시 `503`으로 명확히 실패하는가?
+- Worker replica 정보가 readiness 판정과 분리된 `/ops/summary`와 Grafana에서 일치하는가?
 - `accepted` 된 요청이 PostgreSQL에 언제 `persisted` 되는가?
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
@@ -226,26 +226,24 @@ Kafka 자체 상태는 kafka-exporter를 통해 직접 봅니다.
 
 `Kafka Consumer Group Lag`가 증가하면서 core `Worker Throughput`이 낮으면 Worker 처리 병목을 먼저 봅니다. lag가 증가하면서 `db_persist` stage도 증가하면 PostgreSQL / Pgpool persistence path를 먼저 봅니다. persistence와 notification consumer group은 legend로 분리합니다.
 
-### Materialized cache replay 관측 경계
+### Readiness와 Operations Summary 경계
 
-Snapshot cache consumer는 consumer group을 사용하지 않습니다. 각 API pod가 `message-request-status`, `message-snapshots`, `stream-snapshots`의 모든 partition을 beginning부터 replay하므로 `kafka_consumergroup_lag`를 cache rebuild 지표로 사용하지 않습니다.
+`/health/ready`:
 
-현재 구현 상태:
+- schema startup
+- Kafka bootstrap/append 연결
+- PostgreSQL primary·standby·sync·replication guardrail
+- non-local auth secret 안전성
 
-- readiness payload의 materialized cache `ready`, `hydrated`, `last_error` 확인; item count는 현재 응답에 없음
-- `hydrated=true`: pod startup 시 캡처한 initial end offsets까지 모든 partition position 도달
-- `ready=false`, `hydrated=false`: startup replay 미완료 또는 consumer loop 오류 뒤 cache clear/rebuild 대기
-- API response의 `source`, `degraded`, `snapshot_age_seconds`: 실제 read 결과 해석
+`/ops/summary`:
 
-현재 장애 주입 증거는 PostgreSQL StatefulSet 전체 scale-down/recovery입니다. Primary promotion/failover 동작과 같은 결과로 해석하지 않습니다.
+- Worker desired replica
+- Worker available replica
+- KEDA HPA desired replica
+- Worker max replica
+- Prometheus 단일 query 결과를 15초 재사용
 
-아직 없는 지표:
-
-- pod/topic/partition별 current position과 captured initial end offset
-- remaining replay records와 hydration duration
-- replay rate, invalid snapshot discard count, hydration 실패 count
-
-위 항목은 custom per-pod metric으로 구현한 뒤 Grafana와 alert 기준을 정합니다. 현재 문서나 dashboard에서 `snapshot consumer group lag`를 구현된 신호로 해석하지 않습니다.
+Worker 조회 실패는 readiness state를 바꾸지 않습니다. 데모와 운영 화면은 `source=unavailable`과 `error`를 표시하고 Grafana 시계열을 함께 확인합니다.
 
 ## Ordering / Failure Injection 관측
 

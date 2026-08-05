@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka source UI version: `2.3.0`
+Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
 
 Public demo-lite last verified UI version: `2.1.0`
 
@@ -37,7 +37,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source: UI `2.3.0`, API `2.0.0`, generic `/v2/streams/{stream_id}/events` 사용
+- `dev-kafka` source candidate: UI `2.3.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary` 사용
 - local `dev-kafka` live 2026-07-27: UI `2.2.0`, API `2.0.0`, image `1cd84d4df742`, API `6/6`, Worker `2/2`, Argo CD `Synced / Healthy`
 - public demo-lite last verified: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 event `202`
 - `demo-dev` candidate: UI `2.3.0`, API `2.0.0`, 저사양 Kubernetes overlay와 UI 진행 상태 개선, 공개 서버 미배포
@@ -49,6 +49,7 @@ API boundary:
 - generic intake: `POST /v2/streams/{stream_id}/events`
 - generic read aliases: `GET /v2/event-requests/{request_id}`, `GET /v2/streams/{stream_id}/events`
 - demo batch summary: `GET /v1/streams/{stream_id}/persistence-summary`
+- operator summary: `GET /ops/summary` (Worker replica, 15초 cache)
 
 ## Quick Start
 
@@ -58,7 +59,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.3.0` image build/load:
+- 현재 `2.3.1` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -85,7 +86,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- 화면 `ver. 2.3.0`과 API version `2.0.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.3.1`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
@@ -110,7 +111,7 @@ Public demo-lite 확인:
 | `Kafka 적재` / `Kafka Appended` | API가 `message-ingress` topic append에 성공한 수 |
 | `DB 저장` / `DB Persisted` | Worker가 PostgreSQL commit까지 끝낸 수 |
 | `총 소요시간` / `Total Elapsed` | 전송 시작부터 현재 run의 DB 저장 완료까지 걸린 시간 |
-| `Worker` | 현재 Worker replica / 최대 replica. full profile `2/8`, demo-lite `1/2` |
+| `Worker` | 현재 core Worker replica / 최대 replica. full profile `2/4`, demo-lite `1/2` |
 
 Persistence 확인 방식:
 
@@ -129,7 +130,7 @@ Persistence 확인 방식:
 - API는 Kafka에 event를 전달한다.
 - Worker는 Kafka event를 소비해 DB에 저장한다.
 - Kafka append와 DB 저장은 서로 다른 완료 조건으로 갱신
-- UI `2.3.0`에서는 Kafka append가 끝나기 전에도 DB 저장 증가 확인 가능
+- UI `2.3.1`에서는 Kafka append가 끝나기 전에도 DB 저장 증가 확인 가능
 - 일부 `send_failed` 또는 persistence 미확인 존재: `완료` 대신 부분 확인 상태
 
 ## Authentication Reuse

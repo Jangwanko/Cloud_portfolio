@@ -8,7 +8,8 @@
 - Kafka: KRaft broker `3`, partition `8`, replication factor `3`, `min.insync.replicas=2`
 - PostgreSQL: primary `1`, standby `2`, Pgpool `2`
 - API: CPU HPA `6→8`
-- Worker: Kafka lag KEDA `2→8`, threshold `100`
+- Core Worker: Kafka lag KEDA `2→4`, threshold `100`
+- Notification Worker: Kafka lag KEDA `1→2`, threshold `100`
 - 관측: Prometheus, Grafana, kafka-exporter, kube-state-metrics
 - 환경 한계: single-node kind, node·AZ failover 증거 제외
 
@@ -29,8 +30,7 @@
   - local 3-broker KRaft cluster
   - ingress topic: `message-ingress`
   - DLQ topic: `message-ingress-dlq`
-  - Request status compacted topic: `message-request-status`
-  - DB snapshot compacted topics: `message-snapshots`, `stream-snapshots`
+  - Request status / event read: PostgreSQL source of truth
   - Worker autoscaling: KEDA Kafka lag scaler
 
 ## 실행

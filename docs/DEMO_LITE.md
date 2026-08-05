@@ -29,7 +29,8 @@ Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니
 | PostgreSQL | primary `1` + standby `2` | single instance |
 | Pgpool | `2` | `1` |
 | API | `6→8` | `1→2` |
-| Worker | `2→8` | `1→2` |
+| Core Worker | `2→4` | `1→2` |
+| Notification Worker | `1→2` | fixed `1` |
 | 목적 | HA·복구·성능 실험 | 공개 시연과 저사양 운영 |
 
 ## UI 버전 경계

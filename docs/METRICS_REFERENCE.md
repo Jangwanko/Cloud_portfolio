@@ -126,9 +126,8 @@ Worker 내부 구간별 latency.
 - `db_persist`: PostgreSQL transaction으로 event 영속화
 - `request_status_update`: request status 갱신
 - request status DB row: message persistence와 같은 PostgreSQL transaction
-- request status compacted topic: DB commit 이후 best-effort publish
-- DB read fallback: DB commit 이후 snapshot topic `message-snapshots` / `stream-snapshots` 원본 사용
-- message read 응답 `source`, `degraded`, `snapshot_age_seconds`: DB membership/watermark-gated snapshot hit / stale fallback 판단용 API-level signal
+- DB read: PostgreSQL source of truth 사용, read 장애 시 `503`
+- Worker replica: `/ops/summary`가 Prometheus 조회를 15초 cache해 반환; readiness 판정과 분리
 - `notification_enqueue`: DB commit 이후 `message-notifications` topic으로 후속 notification 작업 생성
 - `notification_db_insert`: 별도 `notification-worker`가 notification attempt record 저장. 외부 채널 실제 발송 결과 제외
 - `notification_publish`: DB commit 이후 notification job publish
@@ -151,7 +150,7 @@ sum(increase(messaging_notification_publish_failures_total{job="worker"}[15m]))
 
 ### `messaging_event_persist_lag_seconds`
 
-API가 Kafka append 전에 기록한 payload `queued_at`부터 Worker의 PostgreSQL `commit()`이 반환된 직후 기록한 `persisted_at`까지의 lag입니다. queue wait, Worker 처리, DB 작업, inline retry를 포함합니다. DB commit 이후 request status/snapshot/notification publish 시간은 제외합니다. API와 Worker clock 차이는 별도 고려가 필요합니다.
+API가 Kafka append 전에 기록한 payload `queued_at`부터 Worker의 PostgreSQL `commit()`이 반환된 직후 기록한 `persisted_at`까지의 lag입니다. queue wait, Worker 처리, DB 작업, inline retry를 포함합니다. DB commit 이후 notification publish 시간은 제외합니다. PostgreSQL status row의 `persisted_at`은 같은 transaction 안에서 기록되므로 이 histogram의 commit-observed timestamp와 구분합니다. API와 Worker clock 차이는 별도 고려가 필요합니다.
 
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_event_persist_lag_seconds_bucket{job="worker"}[1m])) by (le))
@@ -169,32 +168,18 @@ API가 Kafka append 전에 기록한 payload `queued_at`부터 Worker handler �
 histogram_quantile(0.95, sum(rate(messaging_queue_wait_seconds_bucket{job="worker"}[1m])) by (le))
 ```
 
-## Read cache operating signals
+## Operations summary signals
 
-DB snapshot materialized cache 현재 검증 기준:
+`GET /ops/summary`는 데모의 Worker 상태 표시에 필요한 Kubernetes metric을 Prometheus에서 읽습니다.
 
-- API 응답 메타데이터
-- 운영 신호 후보
-- Prometheus counter / histogram 승격 후보
+- `desired_replicas`: Deployment spec replica
+- `available_replicas`: ready·available Worker replica
+- `hpa_desired_replicas`: KEDA가 만든 HPA의 desired replica
+- `max_replicas`: Worker HPA 상한
+- `source`: `prometheus` 또는 `unavailable`
+- `error`: 조회 실패 유형
 
-| 신호 | 현재 확인 방법 | 운영 해석 |
-| --- | --- | --- |
-| Read cache hit ratio | `GET /streams/{stream_id}/events` 응답의 `source=cache` 비율 | 낮아지면 pod hydration 지연, cache rebuild, DB fallback 증가 가능성 |
-| Snapshot age | 응답의 `snapshot_age_seconds` | warning `> 30s`, critical `> 120s` 후보 |
-| Cache rebuild time | API pod restart 후 첫 fresh `source=cache` 응답까지 시간 | API pod 교체 뒤 read cache 복구 속도 |
-| Stale response count | `source=cache`, `degraded=true` 응답 수 | DB failure 중 stale cache fallback이 사용자 read를 받치고 있는 정도 |
-| Degraded read count | `degraded=true` 응답 수 | read path가 정상 DB/cache 경로를 벗어난 빈도 |
-| Per-pod snapshot replay progress | 미구현 custom metric: current position / captured initial end offset / remaining records / hydration duration | pod별 cold-start replay와 cache gate 개방 지연 측정 |
-
-Materialized cache consumer는 `group_id` 없이 각 API pod가 모든 snapshot partition을 직접 assign하고 beginning부터 replay합니다. 따라서 kafka-exporter의 `kafka_consumergroup_lag` series가 존재하지 않으며, Worker/notification consumer group lag와 섞어 해석하지 않습니다. 현재는 readiness payload의 `ready`, `hydrated`, `last_error`와 API read 응답을 확인합니다. Cache item count와 partition별 replay progress는 아직 노출하지 않습니다.
-
-`message-request-status`와 `message-snapshots`는 대부분 request/message별 unique key를 사용합니다. Compaction만으로 전체 key 수와 pod cold-start replay가 bounded 되지는 않습니다. Retention 또는 bootstrap/changelog 구조가 적용되기 전에는 cache rebuild time을 장기 SLO로 확정하지 않습니다.
-
-`source=cache` 해석:
-
-- `degraded=false`: fresh cache hit
-- `degraded=true`: DB failure 또는 stale fallback을 cache가 받친 상태
-- `source=cache`만으로 성공 판단 제외
+API process는 한 번의 Prometheus vector query를 사용하고 결과를 15초 재사용합니다. 이 신호는 readiness 판정에서 제외합니다.
 
 ## DLQ metrics
 
@@ -346,7 +331,7 @@ kafka_brokers
 
 ### `kafka_consumergroup_lag`
 
-consumer group lag를 topic / partition 단위로 보여줍니다. 현재 적용 대상은 `message-worker`, `notification-worker`, DLQ replayer처럼 group id가 있는 consumer입니다. API materialized cache replay에는 적용되지 않습니다.
+consumer group lag를 topic / partition 단위로 보여줍니다. 현재 적용 대상은 `message-worker`, `notification-worker`, DLQ replayer처럼 group id가 있는 consumer입니다.
 
 ```promql
 sum by (topic) (clamp_min(kafka_consumergroup_lag{consumergroup="message-worker"}, 0))

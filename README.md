@@ -15,12 +15,13 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 | 관측·복구 | Prometheus·Grafana, lag·replica·persistence·restore 지표, DB outage·ordering·backup/restore 검증 |
 | Cloud boundary | EKS·MSK·RDS·ECR 중심 Terraform migration blueprint; AWS `plan/apply`와 실제 배포 증거 없음 |
 
-현재 상태 — 2026-07-27:
+현재 상태 — 2026-08-05:
 
 | 대상 | 확인된 버전·상태 | 증거 경계 |
 | --- | --- | --- |
-| `master` source | UI `2.0.0`, API `2.0.0`, tests `365 passed` | generic v2·`202` source와 local test |
-| local `dev-kafka` runtime | API `2.0.0`, image `9349ba9` | 2026-07-21 cache ready·hydrated, Argo `Synced / Healthy`, lag `0` |
+| `dev-kafka` source candidate | UI `2.3.1`, API `2.1.0`, tests `345 passed` | generic v2·`202`; PostgreSQL read model, 별도 `/ops/summary`, snapshot cache 제거 |
+| local candidate validation | image `messaging-portfolio:v2-core-cleanup`, API `2.1.0` | API·core Worker·notification Worker 동일 image로 임시 rollout; ordering·DB outage·성능 suite 통과 |
+| local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo `dev-kafka` revision `803ab339`, `Synced / Healthy`; current `2.1.0` candidate publication 전 |
 | public demo-lite runtime | UI `2.1.0`, API `2.0.0` | 2026-07-27 live generic v2·`202`; Worker `1→2`, peak lag `828` |
 | `demo-dev` candidate | UI `2.3.0`, API `2.0.0`, tests `368 passed` | 저사양 source·test 완료, public deployment 미확인 |
 
@@ -41,8 +42,8 @@ flowchart LR
         subgraph App[messaging-app namespace]
             API[API Deployment<br/>6–8 pods · CPU HPA]
             Kafka[Kafka StatefulSet<br/>3 pods · PVC]
-            Worker[Worker Deployment<br/>2–8 pods · lag KEDA]
-            Notify[Notification Worker<br/>1 pod]
+            Worker[Worker Deployment<br/>2–4 pods · lag KEDA]
+            Notify[Notification Worker<br/>1–2 pods · lag KEDA]
             DLQ[DLQ Replayer<br/>1 pod]
             Pool[Pgpool<br/>2 pods]
             DB[PostgreSQL StatefulSet<br/>3 pods · synchronous replica]
@@ -80,9 +81,9 @@ flowchart LR
 | Stateless workload | API·Worker·notification-worker·DLQ replayer를 Deployment로 구성 | rollout, replica 교체, 수평 확장 |
 | Stateful workload | Kafka와 PostgreSQL을 StatefulSet·PVC로 구성 | stable identity와 데이터 지속성 |
 | API scaling | CPU `65%`, HPA `6→8`, scale-up·down stabilization | 부하 중 동시 cold start와 replica 진동 억제 |
-| Worker scaling | KEDA Kafka scaler, lag threshold `100`, `2→8` | backlog를 처리 수요로 사용 |
+| Worker scaling | KEDA Kafka scaler, lag threshold `100`, core `2→4`, notification `1→2` | backlog를 처리 수요로 사용하고 DB 경합을 측정 상한으로 제한 |
 | Rollout ordering | Secret wave `-3` → migration Job `-2` → Worker `-1` → API `0` | schema와 consumer 호환 경계 보호 |
-| Health gate | startup·readiness·liveness probe, DB HA guardrail, cache hydration gate | traffic 진입과 process 생존 상태 분리 |
+| Health gate | startup·readiness·liveness probe, Kafka 연결, DB HA guardrail | traffic 진입과 process 생존 상태 분리 |
 | Delivery provenance | tested commit, registry digest, overlay tag, Argo revision, runtime image 확인 | source와 실제 실행 artifact 연결 |
 | Namespace lifecycle | Namespace에 `Prune=false`, stateful bootstrap과 application rollout 분리 | namespace prune에 따른 PVC 연쇄 삭제 방지 |
 
@@ -94,18 +95,18 @@ flowchart LR
 
 | Kubernetes object | 기준 replica | 역할 | 확장·복구 기준 |
 | --- | ---: | --- | --- |
-| `api` Deployment | `6→8` | ingress 요청, Kafka append, status·snapshot read, `/metrics` | CPU HPA, readiness, pod별 materialized cache hydration |
-| `worker` Deployment | `2→8` | event consume, PostgreSQL persistence, retry·DLQ | KEDA consumer lag, record 단위 offset commit |
-| `notification-worker` Deployment | `1` | notification attempt 저장 | 별도 consumer lag과 처리량 관측 |
+| `api` Deployment | `6→8` | ingress 요청, Kafka append, PostgreSQL status·event read, `/metrics` | CPU HPA, readiness |
+| `worker` Deployment | `2→4` | event consume, PostgreSQL persistence, retry·DLQ | KEDA consumer lag, record 단위 explicit offset commit |
+| `notification-worker` Deployment | `1→2` | notification attempt 저장 | 별도 consumer lag 기반 KEDA와 처리량 관측 |
 | `dlq-replayer` Deployment | `1` | replay guard 확인 뒤 ingress 재주입 | terminal record 단위 offset commit |
-| `kafka` StatefulSet | `3` | workload buffer, partition ordering, compacted snapshot topics | replication factor `3`, `min.insync.replicas=2`, pod별 PVC |
+| `kafka` StatefulSet | `3` | workload buffer, partition ordering, notification 분리 | replication factor `3`, `min.insync.replicas=2`, pod별 PVC |
 | PostgreSQL StatefulSet | `3` | durable source of truth | `synchronous_commit=on`, `ANY 1`, sync/quorum standby 확인 |
 | Pgpool Deployment | `2` | writable primary routing과 connection entrypoint | PDB `minAvailable=1`, readiness |
 | `kafka-exporter` Deployment | `1` | broker·topic·consumer group metric 제공 | Prometheus scrape |
 | `prometheus` Deployment | `1` | application·Kafka·Kubernetes metric 수집과 alert 평가 | scrape target missing alert |
 | `grafana` Deployment | `1` | latency·lag·replica·DB·DLQ dashboard | Prometheus datasource |
 | Schema migration Job | release마다 | Alembic schema 적용 | Argo sync wave `-2` 완료 gate |
-| Topic bootstrap Job | bootstrap 시 | topic partition·replication·compaction 설정 | Kafka ready 이후 실행 |
+| Topic bootstrap Job | bootstrap 시 | ingress·DLQ·notification topic의 partition·replication 설정 | Kafka ready 이후 실행 |
 | PostgreSQL backup CronJob | 주 1회 | logical backup을 backup PVC에 기록 | restore drill과 별도 검증 |
 
 PostgreSQL·Pgpool은 local HA 설치·복구 경로에서 관리합니다. Argo CD, KEDA, metrics-server, ingress-nginx는 platform controller 영역에 배치됩니다. 세부 manifest는 [GitOps base](k8s/gitops/base), [Architecture](docs/ARCHITECTURE.md), [Quick Start](docs/QUICK_START.md)에 있습니다.
@@ -153,7 +154,6 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 | PostgreSQL·Pgpool | primary reachability, standby·sync standby count, replication delay, DB pool in use | writable path와 HA guardrail, connection pressure |
 | DLQ path | DLQ event·replay counter, failure reason, replay guard | retry exhaustion과 재처리 결과 |
 | Pod·rollout | restart, unavailable replica, readiness, Argo revision, runtime image | crash, OOM, scheduling, 잘못된 artifact rollout |
-| Read cache | `source`, `degraded`, `snapshot_age_seconds`, hydration ready | DB membership/watermark 검증과 degraded cache 동작 |
 | Backup·restore | Job/PVC 상태, dump size, schema version, table count, max sequence | backup 생성과 실제 restore 성공 분리 |
 
 판정 규칙:
@@ -166,27 +166,20 @@ Prometheus는 application pod의 headless Service, kafka-exporter, Kubernetes me
 - backup Job 완료: backup artifact 생성 상태
 - disposable DB restore와 row/schema 비교: 복원 성공 증거
 
-Materialized cache는 consumer group을 사용하지 않습니다. pod별 position, captured end offset, remaining record, hydration duration은 개선 예정 custom metric입니다. 현재 dashboard에서 `snapshot consumer group lag`로 표현하지 않습니다. 지표 정의와 alert 연결은 [Observability](docs/OBSERVABILITY.md), [Metrics Reference](docs/METRICS_REFERENCE.md), [Runbook](docs/RUNBOOK.md)에 있습니다.
+Readiness는 schema startup, Kafka append 가능 여부, PostgreSQL HA guardrail만 판정합니다. Worker replica는 `/ops/summary`가 Prometheus에서 읽고 15초 동안 재사용합니다. 지표 정의와 alert 연결은 [Observability](docs/OBSERVABILITY.md), [Metrics Reference](docs/METRICS_REFERENCE.md), [Runbook](docs/RUNBOOK.md)에 있습니다.
 
 ## STAR 운영 문제 해결 경험 / Operational STAR Cases
 
 ### Current cases
 
-### STAR 1 — HPA scale-out과 cache hydration 경합 해결
+### STAR 1 — KEDA scale-out의 병목 이동 확인
 
-- **S**: 첫 generic v2 후보 event `25,378`, p95 `123.96ms`, drain `751.76초`; 부하 중 증가한 API pod마다 full cache replay 실행
-- **T**: intake, cache startup, post-commit publish, DB 처리량을 분리한 clean benchmark 확보
-- **A**: cache frame·fetch·poll 조정, producer `linger_ms=0`, API HPA min `3→6`·stabilization, DB·topic reset과 hydration·CPU·lag steady-state gate 적용
-- **R**: 3회 평균 event `29,168`, p95 `101.27ms`; event `14.93%` 증가, p95 `18.30%` 감소, drain 처리율 `69.3%` 증가
+- **S**: core Worker만 `2→8`로 늘린 실험에서 notification lag `11,536`, event `7.35%` 감소, p95 `25.62%` 증가
+- **T**: downstream 병목과 single-node DB 경합을 분리하고 현재 cluster에 맞는 scaling 상한 설정
+- **A**: notification Worker에 독립 lag KEDA 추가, core `2→4`·notification `1→2`로 제한, 세 workload image 일치와 시작 lag `0`을 preflight에서 강제, fixed/KEDA 반복 측정
+- **R**: current source KEDA 실행에서 message/notification lag `25,905`/`1,141`을 모두 `0`으로 drain하고 ordering `100/100` 확인. 실행별 drain 편차가 커 KEDA 성능 향상 주장은 보류하고 backlog 이동과 처리 상한을 운영 신호로 채택
 
-### STAR 2 — KEDA scale-out의 병목 이동 확인
-
-- **S**: single hot stream의 partition 순차 처리로 replica 숫자와 API request count의 KEDA 설명력 부족
-- **T**: multi-stream workload에서 fixed Worker와 KEDA의 lag·replica·drain 비교
-- **A**: 64 streams, fixed `2` / KEDA `2→8`, arm별 DB·topic reset과 lag `0` gate, message·notification lag와 p95 수집
-- **R**: drain `301.42초→261.17초` (`13.35%` 감소); notification lag `11,536`, event `7.35%` 감소, p95 `25.62%` 증가로 downstream·single-node contention 식별
-
-### STAR 3 — GitOps namespace prune 사고 복구
+### STAR 2 — GitOps namespace prune 사고 복구
 
 - **S**: Namespace desired-state 전환 중 prune으로 PostgreSQL·Pgpool·PVC와 local backup 소실
 - **T**: workload·동기 복제 guardrail 복구, 재발 방지, restore 검증 경계 수립
@@ -196,6 +189,13 @@ Materialized cache는 consumer group을 사용하지 않습니다. pod별 positi
 ### Historical cases
 
 과거 실험은 당시 queue와 계약을 그대로 표기합니다. Redis와 Kafka 결과는 서로 다른 baseline입니다.
+
+### STAR 3 — API HPA와 cache hydration 경합 분석
+
+- **S**: 첫 generic v2 후보 event `25,378`, p95 `123.96ms`, drain `751.76초`; 부하 중 증가한 API pod마다 full cache replay 실행
+- **T**: intake, cache startup, post-commit publish, DB 처리량을 분리한 clean benchmark 확보
+- **A**: cache frame·fetch·poll 조정, producer `linger_ms=0`, API HPA min `3→6`·stabilization, DB·topic reset과 hydration·CPU·lag steady-state gate 적용
+- **R**: 3회 평균 event `29,168`, p95 `101.27ms`; 이후 구조 감사에서 pod별 full replay와 메모리 상한 위험을 확인해 current source에서 cache 경로 제거
 
 ### STAR 4 — CPU HPA에서 queue-depth KEDA로 전환
 
@@ -213,16 +213,19 @@ Materialized cache는 consumer group을 사용하지 않습니다. pod별 positi
 
 ### 현재 검증 수치 / Current Evidence
 
-Current generic v2 recovery candidate는 3회 평균 `29,168` event `202`, p95 `101.27ms`입니다. Multi-stream Worker A/B candidate는 fixed/KEDA `22,125`/`20,499`, p95 `169.24ms`/`212.60ms`입니다. Historical Kafka intake baseline은 legacy contract `31,676` requests, p95 `80.65ms`입니다.
+현재 `2.1.0` 단순화 source의 hot-stream 3회 평균은 event `33,201`, error `0.00%`, p95 `76.57ms`, main drain `364.62초`입니다. 제거 전 v2 후보보다 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소했습니다. dirty local image 조건이므로 stable baseline으로 승격하지 않습니다.
 
-Current v2는 첫 v2 후보보다 event 수 `14.93%` 증가, p95 `18.30%` 감소를 3회 반복에서 확인했습니다. Historical baseline보다 event 수 `7.92%` 낮고 p95 `25.57%` 높습니다. 계약과 실행 조건이 달라 직접적인 세대 간 성능 결론에서 제외합니다. 세부 조건과 원본은 [Validation Results](docs/TEST_RESULTS.md)와 [results evidence guide](results/README.md)에 있습니다.
+최신 64-stream KEDA 실행은 event `28,605`, p95 `107.41ms`, message/notification peak lag `25,905`/`1,141`, all-pipeline drain `321.29초`, 최종 lag `0/0`, ordering `100/100`입니다. 반복 실행의 drain 편차로 KEDA 성능 향상은 확정하지 않았습니다. Historical Kafka intake baseline은 legacy contract `31,676` requests·p95 `80.65ms`입니다. current 결과와 직접 합치지 않습니다. 세부 조건과 원본은 [Validation Results](docs/TEST_RESULTS.md)와 [results evidence guide](results/README.md)에 있습니다.
+
+Pre-simplification generic v2 recovery candidate는 cache·snapshot 경로가 있던 당시의 historical evidence입니다. 3회 평균 event `29,168`, p95 `101.27ms`, main drain `508.58초`이며 current source 수치로 사용하지 않습니다.
 
 ## Demo
 
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
-| `dev-kafka` source | UI `2.3.0`, API `2.0.0` | generic v2 + `202`; Kafka append·DB persistence 동시 갱신, DB 저장 컬럼을 pipeline 내부에 배치, 처리 중 Advisor 판정 분리 |
-| local `dev-kafka` live, 2026-07-27 | UI `2.2.0`, API `2.0.0`, image `1cd84d4df742` | API `6/6`, Worker `2/2`, Argo `Synced / Healthy`; UI `2.3.0` 배포 전 |
+| `dev-kafka` source | UI `2.3.1`, API `2.1.0` | generic v2 + `202`; Worker 운영 조회를 `/ops/summary`로 분리, PostgreSQL read model 사용 |
+| local candidate validation, 2026-08-05 | API `2.1.0`, image `messaging-portfolio:v2-core-cleanup` | 임시 local rollout에서 API·Worker image 일치, ordering·DB outage·benchmark 검증; registry publication 전 |
+| local GitOps live, 2026-08-05 | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | API `6/6`, core Worker `2/2`, notification Worker `1/1`, Argo revision `803ab339`, `Synced / Healthy` |
 | public demo-lite, 마지막 live 확인 | UI `2.1.0`, API `2.0.0` | generic v2 + `202`; UI `2.2.0` release `626e8296b79d` 게시, runtime 확인 대기 |
 
 ### Local Quick Start
@@ -243,9 +246,10 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 
 ## Validation Summary
 
-- 최신 병합 전 suite `365 passed`; same-stream ordering: `100/100`; failure injection missing·duplicate·mixed payload·DLQ `0`
+- current source suite `345 passed`; image build, non-root 실행, live/root/OpenAPI smoke 검증 통과
 - DB 장애 중 Kafka append `202`; 복구 뒤 persistence·consumer lag `0`
-- DB membership/watermark 검증 뒤 fresh cache; DB 장애 중 hydrated degraded cache
+- same-stream ordering `100/100`; `stream_seq 1..100` 확인
+- status·event 조회는 PostgreSQL source of truth 사용; DB 장애 중 read `503`
 - PostgreSQL restart `3/3 ready`, sync/quorum standby `2`; host dump restore의 schema·table·row·sequence 일치
 
 `202 Accepted`의 완료 범위는 Kafka append입니다. Workload contract와 reliability 경계는 [Architecture](docs/ARCHITECTURE.md)와 [Service Requirements](docs/SERVICE_REQUIREMENTS.md)에 있습니다.

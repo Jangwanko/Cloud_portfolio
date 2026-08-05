@@ -21,56 +21,19 @@
 서비스 요구와 SLO guardrail: [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)
 
 ## 구성 요소
-- API (`FastAPI`)
-  - 범용 event request 수락
-  - Kafka ingress topic append
-  - versioned event envelope 검증과 accepted response 구성
-  - order reference adapter와 legacy body-only route 호환
-  - DB snapshot local materialized cache
-  - health / readiness / metrics 노출
-- Kafka
-  - ingress event log
-  - 업무 stream 단위 partition ordering boundary
-  - DLQ topic
-  - request status compacted topic
-  - message / stream snapshot compacted topics
-  - consumer group offset 관리
-- Worker
-  - Kafka consumer group으로 ingress topic 소비
-  - legacy/generic envelope 정규화
-  - `schema_version`, `event_type`, `payload`, `metadata`를 포함한 PostgreSQL 영속화
-  - retry / DLQ 처리
-- Notification Worker
-  - `message-notifications` topic 소비
-  - core message transaction과 분리된 notification attempt 기록
-- DLQ Replayer
-  - Kafka DLQ topic 소비
-  - ingress topic 재주입
-- PostgreSQL HA
-  - `bitnami/postgresql-ha` 기반
-  - pgpool 경유 접근
-  - 모든 PostgreSQL pod의 `postgresql.auto.conf`에 `synchronous_commit=on`, `synchronous_standby_names=ANY 1` 지속 설정
-  - install/recovery helper가 현재 primary의 streaming `sync`/`quorum` standby 1개 이상을 확인한 뒤 완료
-- Prometheus / Grafana
-  - metrics 수집, alert, dashboard
-- Kubernetes autoscaling
-  - API CPU 기반 HPA
-  - Worker KEDA Kafka lag scaling
-- Schema Migration Job
-  - GitOps 일반 Sync wave `-2`
-  - Worker/API rollout 전 Alembic head 적용
-- metrics-server
-  - HPA용 resource metrics 제공
-- ingress-nginx
-  - 로컬 kind 환경의 ingress 진입
-- Runtime Secrets
-  - auth key와 운영 credential 분리
-- PostgreSQL Backup / Restore
-  - 수동 logical backup
-  - backup본 기반 restore
-  - 주 1회 backup `CronJob`
-  - 2026-07-21 host logical dump의 disposable DB restore와 핵심 row/schema 정합성 확인
-  - 같은 host 장애를 견디는 object storage 사본과 자동 restore는 미구현
+
+- API Deployment: generic event 검증, Kafka append, PostgreSQL status·event 조회, readiness·metrics 제공
+- Kafka StatefulSet: ingress·DLQ·notification topic, stream key partition ordering, Worker lag source
+- Worker Deployment: ingress consume, PostgreSQL transaction, inline retry, DLQ 이동, record 단위 explicit offset commit
+- Notification Worker: core persistence 뒤 notification job 소비와 attempt 기록
+- DLQ Replayer: replay guard 확인 뒤 ingress topic 재주입
+- PostgreSQL HA·Pgpool: durable source of truth, synchronous replica, writable primary routing
+- Prometheus·Grafana·kafka-exporter: application·Kafka·Kubernetes 신호 수집과 시각화
+- HPA·KEDA: API CPU 확장과 Worker consumer lag 확장
+- Argo CD·Migration Job: Secret → schema → Worker → API rollout 순서 적용
+- Backup CronJob·restore drill: logical backup 생성과 disposable DB 복원 검증
+
+Current source는 API pod별 Kafka snapshot replay를 사용하지 않습니다. 읽기와 request status는 PostgreSQL이 담당합니다.
 
 ## 외부 진입
 현재 로컬 검증 기준 기본 진입점:
@@ -85,86 +48,55 @@
 - HTTPS: self-signed certificate 기반 TLS 종료 확인용 보조 경로
 
 ## 요청 처리 흐름
-1. producer: `stream_id`, `event_type`, `payload`, `metadata`를 포함한 event request 전송
-2. API: DB 직접 write 제외, Kafka ingress topic append
-3. Kafka message key: `stream_id`; order reference adapter에서는 `order_id`를 같은 key로 매핑
-4. Worker consumer group: partition 분산 consume
-5. Worker: Kafka record key와 envelope `stream_id` 일치 검증
-6. Worker: PostgreSQL event 영속화
-7. Worker: generic envelope와 legacy alias를 함께 정규화해 구조화 필드 영속화
-8. Worker: DB commit 이후 request status, snapshot, notification event를 best-effort 발행
-9. 실패 event: retry 수행
-10. retry 한도 초과: Kafka DLQ topic 이동
-11. DLQ Replayer: 복구 조건 충족 시 ingress topic 재주입
 
-정상 event 흐름:
+### 정상 event 흐름
+
+1. Client가 `stream_id`, `event_type`, `payload`, `metadata` 전송
+2. API가 `stream_id`를 key로 `message-ingress`에 append
+3. Kafka append 성공 시 `202 Accepted` 반환
+4. `message-worker` consumer group이 partition을 분산 consume
+5. Worker가 membership·idempotency·sequence를 검증하고 PostgreSQL transaction으로 event와 request status 저장
+6. commit 완료 뒤 notification job 발행
+7. transient failure는 같은 record inline retry, terminal failure는 DLQ 이동
+8. status·event 조회는 PostgreSQL source of truth 사용
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant API
-    participant Kafka as Kafka ingress topic
+    participant Kafka
     participant Worker
     participant DB as PostgreSQL HA
 
-    Client->>API: generic event request
-    API->>Kafka: append versioned envelope with stream key
-    API-->>Client: 202 event accepted
+    Client->>API: POST /v2/streams/{id}/events
+    API->>Kafka: append envelope, key=stream_id
+    API-->>Client: 202 Accepted
     Worker->>Kafka: consume partition
-    Worker->>Worker: normalize legacy/generic envelope
-    Worker->>DB: persist payload, metadata, and stream_seq
-    Worker->>DB: update request status
-    Worker->>DB: commit core persistence transaction
-    Worker->>Kafka: publish status, snapshots, notification after commit
-    Kafka-->>API: materialized cache consumes DB snapshot
-    Client->>API: GET stream history
-    API-->>Client: source=cache, degraded=false
+    Worker->>DB: event + request status
+    Worker->>DB: commit
+    Worker->>Kafka: notification job
+    Client->>API: GET status / events
+    API->>DB: authorized read
+    DB-->>API: durable state
 ```
 
-DB snapshot cache / degraded read 흐름:
+PostgreSQL read 장애 시 status·event endpoint는 `503`을 반환합니다. Kafka intake가 정상이면 event append와 `202` 경로는 계속 사용할 수 있습니다.
+
+### 장애 / DLQ 흐름
 
 ```mermaid
 sequenceDiagram
-    participant Client
-    participant API
-    participant Cache as API local materialized cache
-    participant Snapshots as message-snapshots / stream-snapshots
-    participant DB as PostgreSQL HA
-
-    DB-->>Snapshots: committed message / stream snapshot
-    Snapshots-->>Cache: each API pod replays every partition from beginning
-    Cache->>Cache: reach captured initial end offsets, hydrated=true
-    Client->>API: GET stream events
-    API->>DB: authorize membership and read latest sequence watermark
-    DB-->>API: membership allowed, last_seq
-    API->>Cache: require hydrated latest contiguous page matching watermark
-    API-->>Client: source=cache, degraded=false
-    Client->>API: GET stream events during DB failure
-    API->>DB: membership / primary read
-    DB--xAPI: unavailable
-    API->>Cache: require hydrated membership and message snapshot
-    API-->>Client: source=cache, degraded=true, snapshot_age_seconds
-```
-
-각 API pod의 materialized cache consumer는 `group_id` 없이 모든 snapshot partition을 직접 `assign`하고 `seek_to_beginning`합니다. Pod startup 시 partition별 end offset을 캡처하고 현재 position이 모두 해당 지점에 도달한 뒤에만 `hydrated=true`, `ready=true`로 cache gate를 엽니다. 따라서 이 경로에는 kafka-exporter가 보여 줄 snapshot consumer group lag이 없습니다. 현재 source의 readiness payload는 `ready`, `hydrated`, `last_error`를 노출하며 cache item count는 노출하지 않습니다. Position/end-offset/remaining record/hydration duration의 pod별 custom metric은 미구현입니다.
-
-Compaction은 같은 key의 이전 값 제거에 유효합니다. `message-request-status`와 `message-snapshots`는 request/message별 unique key가 대부분이므로 key cardinality와 cold-start replay 길이는 계속 증가할 수 있습니다. Retention window, PostgreSQL consistent bootstrap 뒤 Kafka changelog 적용, per-stream latest-page snapshot은 [Improvement Roadmap](IMPROVEMENT_ROADMAP.md)의 비교·검증 대상입니다.
-
-장애 / DLQ 흐름:
-
-```mermaid
-sequenceDiagram
-    participant Kafka as Kafka ingress topic
+    participant Kafka
     participant Worker
-    participant DLQ as Kafka DLQ topic
-    participant Replayer as DLQ Replayer
-    participant DB as PostgreSQL HA
+    participant DLQ
+    participant Replayer
+    participant DB
 
     Worker->>Kafka: consume event
-    Worker->>Worker: inline retry on transient failure
-    Worker->>DLQ: publish after retry limit
-    Replayer->>DLQ: consume replayable event
-    Replayer->>Kafka: re-append until max replay count
+    Worker->>Worker: inline retry
+    Worker->>DLQ: retry exhausted
+    Replayer->>DLQ: claim replayable event
+    Replayer->>Kafka: re-append
     Worker->>DB: persist after recovery
 ```
 
@@ -179,17 +111,14 @@ Kafka를 request intake 경로에 둔 이유:
 - `stream_id` key 기반 partitioning으로 같은 업무 stream ordering boundary 구분
 - Worker가 key 누락·비 UTF-8·payload stream 불일치를 invalid ingress로 terminal 격리해 partition ordering 전제 보호
 - Worker consumer group 기반 partition 분산 소비
-- 처리 성공, validation rejection, DLQ terminal 처리 뒤 해당 record offset commit
+- 처리 성공, validation rejection, DLQ terminal 처리 뒤 해당 record offset explicit commit
 - 예외 발생 record의 partition seek-back과 이후 같은 partition record 처리 보류
 - DLQ topic 분리, 실패 이벤트 보존과 replay
 - Worker scaling 기준: queue length 제외, consumer lag 사용
 - Worker success path: message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리
 - 알림 처리: DB commit 이후 `message-notifications` topic best-effort 전달, 별도 `notification-worker`가 `notification_attempts` 기록. 외부 채널 실제 발송은 현재 범위 제외
-- post-commit 발행: 현재 transactional outbox 미적용, DB commit 뒤 process crash 시 후속 event 누락 gap 존재
-- compacted cache consumer: topic key와 request/event/stream payload identity, owner, BIGINT, envelope schema 검증 뒤 반영
-- compacted cache replay: consumer group 공유 없이 API pod별 full replay, initial end offset 도달 뒤 hydrated gate 개방
-- cache authorization: DB 정상 시 PostgreSQL membership과 latest sequence watermark에 연속으로 일치하는 fresh snapshot만 사용, DB 장애 시 hydrated membership/message cache가 함께 있을 때만 degraded fallback
-- local Kafka trust boundary: self-consistent forged snapshot 방어용 application principal / topic producer ACL 미검증; production에서 인증·최소 권한 ACL 필요
+- post-commit notification 발행: 현재 transactional outbox 미적용, DB commit 뒤 process crash 시 notification job 누락 gap 존재
+- local Kafka trust boundary: PLAINTEXT demo 구성; production에서 broker 인증과 topic별 최소 권한 ACL 필요
 - `event_type` 의미와 `metadata` 분류: producer/adapter 소유; generic Worker가 domain taxonomy를 강제하지 않음
 - order reference adapter 분류 예시: `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`
 - AI 기반 운영 요약과 자동 응답: core persistence path 밖의 후속 과제
@@ -198,10 +127,12 @@ Kafka를 request intake 경로에 둔 이유:
 
 ### 호환 식별자 경계
 
-- 유지 대상: `message-*` Kafka topic, `message-worker` consumer group, `messaging-app` namespace, `rooms`/`messages` table
-- 유지 이유: consumer offset, compacted state, deployment selector, database migration compatibility
+- 유지 대상: active `message-ingress`, `message-ingress-dlq`, `message-notifications`, `message-worker` consumer group, `messaging-app` namespace, `rooms`/`messages` table
+- 유지 이유: consumer offset, deployment selector, database migration compatibility
 - 범용 의미 모델: v2 public contract와 envelope column에서 제공
 - 물리 이름 교체: 별도 migration·rollout·rollback 계획 없이 수행 제외
+- 이전 compacted topic 3개: source bootstrap·consumer·publisher에서 제거. 기존 cluster의 topic 삭제는 retention·rollback 확인 뒤 별도 수행
+- event list의 `source`, `degraded`, `snapshot_age_seconds`: v2 response 호환을 위해 유지하며 current source는 `database`, `false`, `null` 고정
 
 ### Generic v2 Rollout Boundary
 
@@ -225,32 +156,14 @@ GitOps 순서:
 `GENERIC_EVENTS_V2_ENABLED`는 v2 POST intake만 제어합니다. GitOps base와 수동 app manifest의 Secret 값은 `false`이며, `local-ha` overlay가 API Deployment에만 `true` env를 추가합니다. 인증과 stream 생성은 공유 `/v1` resource API를 사용하고, request status와 event list는 `/v2` GET alias도 제공합니다.
 
 ## 인증 / 인가
-현재 최소 범위의 인증 / 인가가 적용되어 있습니다.
 
-- 사용자 생성 시 `password_hash` 저장
-- `/v1/auth/login`으로 bearer token 발급
-- 주요 API는 로그인 사용자 기준으로 처리
-- stream membership 검증 적용
-
-중요한 점:
-- 인증: token payload 기준 처리, DB down 중 인증 경로 차단 방지
-- Kafka-centered intake: membership / idempotency / request status 같은 state write를 Kafka append 앞에서 제외
-- API: request를 Kafka에 먼저 append
-- Worker persistence 단계: 최종 검증 / 상태 갱신
-- idempotency state: actor와 route 단위로 격리하며, legacy plain-route response는 owner·stream·필수 persisted field 검증 뒤에만 승계
-- DB read fallback: Kafka ingress event 읽기 제외
-- local materialized cache 원본: DB commit 이후 `message-snapshots`, stream 생성 commit 이후 `stream-snapshots`
-- request lifecycle status: `message-request-status` 보조 기록
-- `accepted`: Kafka 수락 상태, DB snapshot 아님
-- `GET /streams/{stream_id}/events`: hydrated cache 후보를 먼저 읽되 PostgreSQL 정상 시 DB membership authorization과 latest stream sequence watermark 조회 선행
-- fresh snapshot: initial hydration 완료, cache ready, snapshot freshness 충족, cached page의 sequence가 DB watermark부터 끊김 없이 연속일 때 cache 응답
-- cache miss 또는 stale: PostgreSQL 조회
-- PostgreSQL 조회 실패 + hydrated membership / stale message snapshot 존재: `degraded=true` 반환
-- initial hydration 미완료: fresh cache와 DB 장애 fallback 모두 사용 제외
-- 응답 필드: `source`, `degraded`, `snapshot_age_seconds`, `items`
-- API startup: PostgreSQL 초기화 실패만으로 process 종료 제외
-- DB outage/recovery 중 새 API pod: Kafka intake는 기동 가능하지만 materialized cache는 initial hydration 완료 전 fallback 제공 제외
-- PostgreSQL primary promotion: 설계상 Pgpool/repmgr 경로를 사용하지만 이번 cache fallback 검증은 전체 StatefulSet outage/recovery이며 promotion 성공 증거로 사용 제외
+- password: PBKDF2-SHA256과 random salt
+- token: HMAC 서명, expiry와 claim type 검증
+- stream read: PostgreSQL membership 확인 뒤 event 조회
+- intake: API hot path에서 DB membership 조회 제외, Worker persistence 단계에서 최종 authorization
+- non-local unsafe auth secret: readiness `not_ready`, business API `503`
+- request body: transport `1 MiB`, payload `65,536` bytes, metadata `16,384` bytes
+- JSON: nesting·cycle·NUL·Unicode scalar·non-finite number 검증
 
 ## 장애 시나리오별 동작
 
@@ -286,66 +199,24 @@ GitOps 순서:
 - automatic replayer: 각 poll batch 전에 PostgreSQL primary reachability 재확인
 
 ## 자동 확장
-현재 autoscaling은 API와 Worker가 서로 다른 기준을 사용합니다.
 
-- API HPA
-  - min replicas: `6`
-  - max replicas: `8`
-  - target CPU: `65%`
-  - scale-up stabilization: `60s`, 최대 `2 pods / 60s`
-  - scale-down stabilization: `120s`, 최대 `50% / 60s`
-- Worker KEDA
-  - min replicas: `2`
-  - max replicas: `8`
-  - trigger: KEDA `type: kafka`
-  - bootstrap servers: `kafka.messaging-app.svc.cluster.local:9092`
-  - consumer group: `message-worker`
-  - topic: `message-ingress`
-  - lag threshold: `100` for the local demo cluster
+### API HPA
 
-### Worker 스케일링 기준 변경
+- CPU target `65%`
+- replica `6→8`
+- scale-up stabilization `60s`, 최대 `2 pods/60s`
+- scale-down stabilization `120s`
 
-변경 전:
+API pod는 stateless request 처리와 PostgreSQL read를 담당합니다. scale-out 시 Kafka changelog replay나 대형 local state rebuild가 없습니다.
 
-- API와 Worker 모두 CPU 사용률 중심 HPA 적용
-- Worker가 DB connection, lock, commit 대기 상태에 들어가면 CPU가 낮아도 미처리 요청 증가
-- CPU 사용률만으로 Kafka 유입 속도와 Worker 영속화 속도의 차이 확인 불가
+### Worker KEDA
 
-변경 과정:
+- Kafka scaler topic `message-ingress`
+- consumer group `message-worker`
+- lag threshold `100`
+- core Worker replica `2→4`, notification Worker replica `1→2`
 
-- Redis queue 단계: Worker 기준을 CPU에서 queue depth 기반 KEDA로 변경
-- Kafka 전환 단계: Redis queue depth 대신 `message-ingress`의 `message-worker` consumer lag 사용
-- API: 요청 처리 자원 사용량을 반영하는 CPU HPA 유지
-- Worker: 미처리 이벤트 수를 반영하는 KEDA Kafka scaler 적용
-
-현재 동작:
-
-- KEDA가 Kafka broker에서 topic, consumer group, partition별 lag 확인
-- lag threshold `100`을 기준으로 `worker-keda-hpa` external metric 생성
-- Worker replica를 최소 `2`, 최대 `8` 범위에서 조정
-- Prometheus / kafka-exporter는 같은 lag를 운영자가 관측하고, replica / drain 흐름을 Grafana에 제공
-
-판단 기준:
-
-- API throughput 증가만으로 Worker scale-out 효과를 평가하지 않음
-- consumer lag 최고치와 감소 추이 확인
-- API queued-at-to-DB-commit histogram과 consumer lag 확인
-- backlog가 `0`까지 줄어드는 drain time 확인
-
-이 기준을 선택한 이유:
-
-- Worker의 처리 압력은 CPU보다 ingress rate와 PostgreSQL persistence 처리량의 차이에서 먼저 발생
-- DB 지연 중 CPU가 낮아도 Kafka backlog는 계속 증가
-- consumer lag는 Worker가 아직 처리하지 못한 이벤트 수를 직접 표시
-- DB 복구 후 Worker 확장과 backlog 해소 여부를 같은 지표로 추적 가능
-
-2026-07-21 generic v2 회복 후보 3회에서는 Worker가 KEDA max `8`까지 확장된 main backlog를 평균 `508.58s`에 배출했습니다. Peak lag와 drain을 합친 처리율은 약 `55.2 events/s`입니다. 첫 v2 후보의 약 `32.6 events/s`보다 높지만 single hot-stream 조건이라 PostgreSQL sequence lock과 partition 집중의 영향을 함께 받습니다. Worker max 변경 전 Kafka partition 수, stream 분산도, DB connection / lock wait를 측정해야 합니다. fixed replica와 KEDA의 동일 조건 직접 비교값은 아직 없습니다.
-
-replica 증가만으로 성능 개선을 단정하지 않습니다.
-
-API pod는 consumer group 없이 compacted state topic 전체를 replay합니다. API HPA의 급격한 scale-out은 새 pod마다 cache hydration CPU와 Kafka fetch를 동시에 발생시킬 수 있습니다. 현재 min `6`과 scale-up stabilization은 100 VU 단기 부하에서 이 시작 부하를 억제하기 위한 local HA 설정입니다. 장기 해법은 bounded retention 또는 PostgreSQL bootstrap+Kafka changelog 경계입니다.
-
-Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지 않습니다. API는 Kafka append를 먼저 수행하고, Worker persistence 단계에서 stream / membership을 primary state 기준으로 검증합니다. 조회 API의 membership check는 Pgpool primary routing hint를 사용해 standby replication lag 영향을 줄입니다.
+KEDA 효과는 API request 수가 아니라 consumer lag, Worker replica, accepted-to-commit lag, backlog drain time으로 판정합니다. 한 hot stream은 한 partition·sequence lock 경계에 묶이므로 multi-stream A/B와 분리합니다.
 
 ## 관측성
 현재 관측 가능한 항목:
@@ -359,7 +230,7 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
 - worker replica count / KEDA desired replicas
 - Kafka health
 - Kafka broker count
-- Kafka consumer group lag (`message-worker` / `notification-worker`; API snapshot cache replay 제외)
+- Kafka consumer group lag (`message-worker` / `notification-worker`)
 - Kafka topic partition offset
 - PostgreSQL primary / standby / replication state / replication delay
 - DB / Kafka / Worker health
@@ -409,7 +280,7 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
 - baseline 조건: `X-Idempotency-Key`를 끈 Kafka append 중심 경로
 - idempotency header: API PostgreSQL claim 선점 제외, Kafka payload 포함
 - 최종 deduplication: Worker persistence 단계 처리
-- DB read fallback: DB commit 이후 snapshot topic만 사용
+- DB read fallback: 제공하지 않음; PostgreSQL read 장애 시 `503`
 - idempotency state: API hot path에서 분리하고 Worker persistence transaction의 `idempotency_keys`에서 최종 deduplication
 - Kafka lag / consumer group metric: KEDA와 consumer group 상태 기준 해석
 - 멀티 파드 stream ordering boundary: Kafka key와 partition 기준 유지
@@ -417,53 +288,29 @@ Stream 생성 직후 event append는 PostgreSQL read-after-write에 의존하지
 
 ## 신뢰성 상태 모델
 
-`Reliable`은 현재 구현과 검증 범위에 붙인 이름입니다.
-
-- 같은 `stream_id`의 partition ordering boundary
-- 실패 record inline retry와 뒤 record backpressure
-- 성공 또는 terminal DLQ 처리 뒤 explicit offset commit
-- PostgreSQL transaction/idempotency state 기반 중복 persistence 방어
-- DLQ 격리, replay guard, materialized snapshot fallback
-- 장애 주입과 consumer lag/drain 관측
-
-다음 항목은 보장 범위가 아닙니다.
-
-- exactly-once delivery
-- partition 간 global ordering
-- 모든 process/broker/DB failure 조합에서의 무손실
-- 검증 환경 밖의 production SLA
-- DB commit 이후 best-effort status/snapshot/notification publish의 원자성
-
-API `GET /health/ready`는 schema startup, Kafka intake 연결, PostgreSQL primary/HA guardrail, non-local auth secret 안전성을 기준으로 상태를 결정합니다. Worker replica/lag와 materialized cache 상태는 응답에 포함되지만 state 결정 조건에서 제외됩니다.
-
-응답의 `app_version`은 실행 중인 API build version을 제공합니다. Demo UI version badge는 이 값과 `DEMO_UI_VERSION`을 함께 표시해 static asset과 API image의 반영 상태를 구분합니다.
-
-`grace_remaining_seconds`는 degraded 시작 뒤 남은 운영 context를 제공하며 readiness state 전환 자체를 지연하지 않습니다.
+`GET /health/ready`는 traffic 진입에 필요한 핵심 의존성만 검사합니다.
 
 ### `ready`
-- schema migration startup 완료
-- Kafka bootstrap reachable
-- PostgreSQL writable primary reachable
-- HA mode에서 standby / sync standby minimum 충족
-- replication byte lag threshold 이내
-- non-local 환경에서 기본값·빈 값·32-byte 미만 auth secret 미사용
+
+- schema startup 완료
+- Kafka bootstrap/append 경로 연결
+- PostgreSQL primary와 HA guardrail 충족
+- non-local auth secret 안전
 
 ### `degraded`
-- PostgreSQL primary가 일시적으로 unavailable하지만 Kafka append path는 살아 있음
-- standby / sync standby minimum 미달
-- replication byte lag threshold 초과
+
+- PostgreSQL primary는 쓰기 가능
+- ready/sync standby 수 또는 replication delay가 local HA 목표 이탈
+- HTTP `200`, reason 배열에 이탈 항목 포함
 
 ### `not_ready`
+
 - schema startup 미완료
-- Kafka bootstrap unreachable
-- non-local 환경의 unsafe auth secret
+- Kafka 연결 불가
+- non-local unsafe auth secret
+- HTTP `503`
 
-별도 alert / status script 확인:
-
-- broker count와 topic/partition 상태
-- Pgpool replica readiness
-- Worker replica, consumer lag, processing failures
-- DLQ / replay signal
+Worker replica 정보는 `/ops/summary`에서 제공하며 readiness 판정에 참여하지 않습니다. 이 endpoint는 Prometheus 결과를 15초 재사용합니다.
 
 ## readiness와 alert 해석
 - readiness: 현재 intake 가능 여부 즉시 반영

@@ -512,7 +512,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.3.0 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.3.1 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -760,7 +760,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.3.0";
+    const DEMO_UI_VERSION = "2.3.1";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -1704,7 +1704,16 @@
       try {
         const baseUrl = currentBaseUrl();
         const readinessResponse = await fetch(`${baseUrl}/health/ready`);
-        const readiness = await readinessResponse.json();
+        let readiness = await readinessResponse.json();
+        try {
+          const operationsResponse = await fetch(`${baseUrl}/ops/summary`);
+          if (operationsResponse.ok) {
+            const operations = await operationsResponse.json();
+            readiness = { ...readiness, worker: operations.worker };
+          }
+        } catch (error) {
+          log(`worker status unavailable: ${describeFetchFailure(error)}`);
+        }
         latestReadiness = readiness;
         setDemoVersion(readiness.app_version);
         updateReadinessPanel(readiness);

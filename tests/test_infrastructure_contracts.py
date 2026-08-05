@@ -214,7 +214,6 @@ def test_powershell_postgresql_recovery_restores_sync_replication_safely() -> No
     recovery_scripts = [
         _read("scripts/reset_k8s_state.ps1"),
         _read("scripts/test_db_down.ps1"),
-        _read("scripts/test_cache_read_fallback.ps1"),
     ]
 
     assert ".status.readyReplicas" in configure
@@ -345,10 +344,18 @@ def test_destructive_benchmark_reset_is_explicit_and_restores_workers() -> None:
     assert 'autoscaling.keda.sh/paused-replicas="0"' in reset
     assert "autoscaling.keda.sh/paused-replicas-" in reset
     assert "_reset_demo_event_data" in reset
-    assert "cleanup.policy" in reset
+    for topic_setting in (
+        "settings.kafka_ingress_topic",
+        "settings.kafka_dlq_topic",
+        "settings.kafka_notification_topic",
+    ):
+        assert topic_setting in reset
+    assert "kafka_request_status_topic" not in reset
+    assert "kafka_message_snapshot_topic" not in reset
+    assert "kafka_stream_snapshot_topic" not in reset
     assert "[int]$KafkaCleanupQuietSec = 75" in reset
     assert "Start-Sleep -Seconds $KafkaCleanupQuietSec" in reset
-    assert '"rollout", "restart", "deployment/api"' in reset
+    assert '"rollout", "restart", "deployment/api"' not in reset
     assert "Assert-KubectlSuccess" in reset
     assert "Invoke-CleanupKubectl" in reset
     assert "Cleanup failures:" in reset
@@ -358,7 +365,13 @@ def test_destructive_benchmark_reset_is_explicit_and_restores_workers() -> None:
     assert '[ValidateSet("keda", "fixed")]' in suite
     assert "Set-WorkerScalingExperimentMode" in suite
     assert "Restore-WorkerScaling" in suite
+    assert "notification-worker-keda" in suite
+    assert "notification-worker-keda-hpa" in suite
+    assert 'Wait-DeploymentReplicaCount -Name "notification-worker" -Expected 1' in suite
     assert "$scalingRestoreError" in suite
+    assert '$health.app_version' in suite
+    assert 'Add-Line ("api_version: {0}"' in suite
+    assert 'openapi.info.version -ne "2.0.0"' not in suite
     assert "K6StreamCount" in suite
     assert "K6StreamCount" in runner
     assert "K6_STREAM_COUNT" in load
