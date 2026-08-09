@@ -2,6 +2,16 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-10 demo-lite 7일 보존 상한
+
+- PostgreSQL backup dump를 생성 시각 기준 7일 뒤 제거하고 completed backup Job TTL도 7일로 제한
+- backup CronJob timezone을 `Asia/Seoul`로 고정, latest 8 count guard 유지
+- Kafka 3개 active topic에 7일 retention, partition별 `128MiB`, segment `32MiB` 적용
+- 기존 Kafka topic도 bootstrap의 `kafka-configs --alter`로 동일 정책 수렴
+- Prometheus retention `7d`·`512MB`, `emptyDir` `768MiB` 상한 적용
+- PostgreSQL event row는 durable service state이므로 자동 삭제 대상에서 제외
+- demo-lite·demo-lite-k3s render와 local suite `349 passed`
+
 ## 2026-08-05 demo-lite 저사양 v2 본체 동기화
 
 - `master`의 API `2.1.0`·Demo UI `2.3.1`·PostgreSQL read model을 `demo-dev`에 이식

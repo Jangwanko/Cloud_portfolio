@@ -1,13 +1,14 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-05`, 최신 public runtime 확인은 `2026-07-27`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-05`, fresh demo-lite k3s bootstrap 확인은 `2026-08-10`, 외부 public URL의 마지막 전체 계약 확인은 `2026-07-27`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Master source | API `2.1.0`, Demo UI `2.3.1` | merge `cab7647`; local suite `345 passed`; image build·non-root 실행·live/root/OpenAPI smoke 통과 |
-| Demo-lite source candidate | API `2.1.0`, Demo UI `2.3.1` | `demo-dev` suite `348 passed`; demo-lite·demo-lite-k3s render 통과; public deployment 확인 전 |
+| Demo-lite source candidate | API `2.1.0`, Demo UI `2.3.1` | `demo-dev` suite `349 passed`; demo-lite·demo-lite-k3s render와 7일 artifact retention contract 통과; public 반영 전 |
+| Fresh demo-lite k3s runtime | API `2.1.0`, Demo UI `2.3.1`, image `207d7b90813a` | Argo `Synced / Healthy`, core deployments ready, Worker KEDA `1→2` Ready, initial backup·PVC Bound 확인; 외부 domain·event `202` 재확인 대기 |
 | Candidate runtime | API·core Worker·notification Worker image `messaging-portfolio:v2-core-cleanup` | local cluster 임시 rollout, 세 workload image 일치, generic v2·ordering·DB outage·performance suite 통과; registry publication 전 |
 | Restored local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo revision `803ab339`, `Synced / Healthy`, self-heal `true`, API `6/6`, core Worker `2/2`, notification Worker `1/1` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |

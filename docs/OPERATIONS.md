@@ -272,9 +272,17 @@ powershell -ExecutionPolicy Bypass -File scripts/backup_postgres_k8s.ps1
 Scheduled local backup:
 
 - CronJob: `postgres-weekly-backup`
-- schedule: `0 3 * * 0`
+- schedule: `0 3 * * 0`, `Asia/Seoul`
 - storage: `postgres-backups` PVC
-- retention script: latest 8 dumps
+- retention: 생성 시각 기준 7일; secondary count guard로 latest 8 dumps 상한 유지
+- completed backup Job: 성공 뒤 최대 7일
+
+Demo-lite operational artifact retention:
+
+- Kafka ingress·DLQ·notification: `retention.ms=604800000` (`7d`)
+- Kafka partition별 상한: `retention.bytes=134217728` (`128MiB`), segment `32MiB`
+- Prometheus: `7d`, TSDB block `512MB`, `emptyDir` `768Mi`
+- PostgreSQL event row: 자동 삭제 제외. durable read model과 운영 부산물 retention을 분리
 
 CronJob 존재는 restore 성공 증거가 아닙니다. 최근 job exit, dump size, restore drill을 함께 확인합니다.
 

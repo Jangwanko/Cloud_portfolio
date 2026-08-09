@@ -375,11 +375,13 @@ metadata:
   namespace: messaging-app
 spec:
   schedule: "0 3 * * 0"
+  timeZone: "Asia/Seoul"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 604800
       template:
         spec:
           automountServiceAccountToken: false
@@ -413,6 +415,7 @@ spec:
                   timestamp="$(date +%Y%m%d-%H%M%S)"
                   output="/backups/postgres-${timestamp}.sql"
                   pg_dump -h messaging-postgresql-ha-pgpool -p 5432 -U portfolio -d portfolio > "$output"
+                  find /backups -type f -name 'postgres-*.sql' -mmin +10079 -delete
                   find /backups -type f -name 'postgres-*.sql' | sort | head -n -8 | xargs -r rm -f
                   echo "Weekly PostgreSQL backup written to $output"
               volumeMounts:

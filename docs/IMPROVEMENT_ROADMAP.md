@@ -22,7 +22,7 @@
 - Public demo-lite generic v2 동기화: UI `2.1.0`, API `2.0.0`, event `202`
 - Public 저사양 Worker scaling: lag peak `828`, desired·actual replica `1→2`
 - `dev-kafka` image publication validation gate와 SHA image 검증
-- `demo-dev` UI `2.3.1` / API `2.1.0` 저사양 source 후보: `348 passed`, public deployment 확인 대기
+- `demo-dev` UI `2.3.1` / API `2.1.0` 저사양 source 후보: `349 passed`, 7일 artifact retention render·contract 확인; fresh k3s image `207d7b90813a`, Argo `Synced / Healthy`, core workload·backup 확인. retention 배포와 외부 domain·event `202` 재확인 대기
 
 ## P0 — 데이터 유실 경계와 API 계약
 

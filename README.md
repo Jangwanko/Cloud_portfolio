@@ -15,7 +15,7 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 | 관측·복구 | Prometheus·Grafana, lag·replica·persistence·restore 지표, DB outage·ordering·backup/restore 검증 |
 | Cloud boundary | EKS·MSK·RDS·ECR 중심 Terraform migration blueprint; AWS `plan/apply`와 실제 배포 증거 없음 |
 
-현재 상태 — 2026-08-05:
+현재 상태 — 2026-08-10:
 
 | 대상 | 확인된 버전·상태 | 증거 경계 |
 | --- | --- | --- |
@@ -23,7 +23,8 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 | local candidate validation | image `messaging-portfolio:v2-core-cleanup`, API `2.1.0` | API·core Worker·notification Worker 동일 image로 임시 rollout; ordering·DB outage·성능 suite 통과 |
 | local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo `dev-kafka` revision `803ab339`, `Synced / Healthy`; current `2.1.0` candidate publication 전 |
 | public demo-lite runtime | UI `2.1.0`, API `2.0.0` | 2026-07-27 live generic v2·`202`; Worker `1→2`, peak lag `828` |
-| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `348 passed` | Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`; public deployment 미확인 |
+| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `349 passed` | Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`; 운영 부산물 7일 retention, public 반영 전 |
+| fresh demo-lite k3s runtime | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | Argo `Synced / Healthy`, API·Worker·notification Worker ready, backup PVC `Bound`; 외부 domain·event `202` 재확인 대기 |
 
 ## Kubernetes 설계 / Kubernetes Architecture
 
@@ -107,7 +108,7 @@ flowchart LR
 | `grafana` Deployment | `1` | latency·lag·replica·DB·DLQ dashboard | Prometheus datasource |
 | Schema migration Job | release마다 | Alembic schema 적용 | Argo sync wave `-2` 완료 gate |
 | Topic bootstrap Job | bootstrap 시 | ingress·DLQ·notification topic의 partition·replication 설정 | Kafka ready 이후 실행 |
-| PostgreSQL backup CronJob | 주 1회 | logical backup을 backup PVC에 기록 | restore drill과 별도 검증 |
+| PostgreSQL backup CronJob | 주 1회 | logical backup을 backup PVC에 기록 | `Asia/Seoul`, 7일 보존, restore drill 별도 검증 |
 
 PostgreSQL·Pgpool은 local HA 설치·복구 경로에서 관리합니다. Argo CD, KEDA, metrics-server, ingress-nginx는 platform controller 영역에 배치됩니다. 세부 manifest는 [GitOps base](k8s/gitops/base), [Architecture](docs/ARCHITECTURE.md), [Quick Start](docs/QUICK_START.md)에 있습니다.
 

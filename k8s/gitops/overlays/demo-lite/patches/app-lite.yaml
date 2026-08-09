@@ -93,13 +93,29 @@ spec:
     spec:
       containers:
         - name: prometheus
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=7d
+            - --storage.tsdb.retention.size=512MB
+            - --web.external-url=http://localhost/prometheus/
+            - --web.route-prefix=/prometheus/
           resources:
             requests:
               cpu: "100m"
               memory: "192Mi"
+              ephemeral-storage: "128Mi"
             limits:
               cpu: "400m"
               memory: "384Mi"
+              ephemeral-storage: "768Mi"
+          volumeMounts:
+            - name: prometheus-data
+              mountPath: /prometheus
+      volumes:
+        - name: prometheus-data
+          emptyDir:
+            sizeLimit: 768Mi
 ---
 apiVersion: apps/v1
 kind: Deployment
