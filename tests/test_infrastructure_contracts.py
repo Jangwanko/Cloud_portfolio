@@ -540,6 +540,29 @@ def test_demo_lite_keeps_low_resource_topology_with_current_v2_contract() -> Non
         assert committed_secret not in postgresql
 
 
+def test_demo_lite_bounds_operational_artifact_retention() -> None:
+    app_patch = _read("k8s/gitops/overlays/demo-lite/patches/app-lite.yaml")
+    topic_patch = _read(
+        "k8s/gitops/overlays/demo-lite/patches/kafka-topic-bootstrap-lite.yaml"
+    )
+    manifest = _read("k8s/gitops/base/manifests-ha.yaml")
+    manual_manifest = _read("k8s/app/manifests-ha.yaml")
+
+    for rendered_source in (manifest, manual_manifest):
+        assert 'timeZone: "Asia/Seoul"' in rendered_source
+        assert "ttlSecondsAfterFinished: 604800" in rendered_source
+        assert "-mmin +10079 -delete" in rendered_source
+
+    assert "retention.ms=604800000" in topic_patch
+    assert "retention.bytes=134217728" in topic_patch
+    assert "segment.bytes=33554432" in topic_patch
+    assert "kafka-configs.sh" in topic_patch
+
+    assert "--storage.tsdb.retention.time=7d" in app_patch
+    assert "--storage.tsdb.retention.size=512MB" in app_patch
+    assert "sizeLimit: 768Mi" in app_patch
+
+
 def test_demo_lite_local_and_public_image_boundaries_are_separate() -> None:
     local_overlay = _read("k8s/gitops/overlays/demo-lite/kustomization.yaml")
     public_overlay = _read("k8s/gitops/overlays/demo-lite-k3s/kustomization.yaml")

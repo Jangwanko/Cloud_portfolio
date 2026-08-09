@@ -17,6 +17,10 @@ spec:
               until /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --list >/dev/null 2>&1; do
                 sleep 3
               done
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress --partitions 3 --replication-factor 1 --config min.insync.replicas=1
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress-dlq --partitions 3 --replication-factor 1 --config min.insync.replicas=1
-              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-notifications --partitions 3 --replication-factor 1 --config min.insync.replicas=1
+              topic_config="min.insync.replicas=1,retention.ms=604800000,retention.bytes=134217728,segment.bytes=33554432"
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress --partitions 3 --replication-factor 1 --config min.insync.replicas=1 --config retention.ms=604800000 --config retention.bytes=134217728 --config segment.bytes=33554432
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-ingress-dlq --partitions 3 --replication-factor 1 --config min.insync.replicas=1 --config retention.ms=604800000 --config retention.bytes=134217728 --config segment.bytes=33554432
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$bootstrap" --create --if-not-exists --topic message-notifications --partitions 3 --replication-factor 1 --config min.insync.replicas=1 --config retention.ms=604800000 --config retention.bytes=134217728 --config segment.bytes=33554432
+              for topic in message-ingress message-ingress-dlq message-notifications; do
+                /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$bootstrap" --alter --entity-type topics --entity-name "$topic" --add-config "$topic_config"
+              done

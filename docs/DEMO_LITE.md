@@ -6,8 +6,9 @@
 | --- | --- |
 | Public `demo-lite` runtime | UI `2.1.0`, API `2.0.0`, generic v2, event `202` |
 | Public scaling evidence | `message-worker` lag peak `828`, HPA desired·actual replica `1→2` |
-| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `348 passed`, public deployment 미확인 |
+| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `349 passed`, 7일 retention source, public 반영 전 |
 | `master` source | UI `2.3.1`, API `2.1.0`, merge `cab7647`, full local HA profile |
+| Fresh k3s bootstrap | image `207d7b90813a`, UI `2.3.1`, API `2.1.0`, Argo CD `Synced / Healthy`, 외부 domain 재연결 대기 |
 
 Public runtime과 branch source는 UI badge, readiness `app_version`, runtime image로 각각 확인합니다. Branch의 최신 commit만으로 public 배포 완료를 판단하지 않습니다.
 
@@ -22,6 +23,17 @@ Public runtime과 branch source는 UI badge, readiness `app_version`, runtime im
 Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니다. Full local HA의 broker·standby 구성과 성능 수치를 대체하지 않습니다.
 
 현재 candidate는 full source의 API cache·snapshot topic 3개 제거와 PostgreSQL read model을 그대로 사용합니다. 저사양 profile은 Kafka broker `1`, partition `3`, replication factor `1`, PostgreSQL single instance, core Worker `1→2`, notification Worker fixed `1`로 제한합니다. notification job을 쌓아 두지 않도록 최소 consumer `1`을 유지합니다.
+
+## Storage retention
+
+- PostgreSQL logical dump: `Asia/Seoul` 일요일 03:00 생성, 7일 경과 파일 삭제, latest 8 secondary cap
+- Completed backup Job: `ttlSecondsAfterFinished=604800`
+- Kafka ingress·DLQ·notification: 7일, partition별 `128MiB`, segment `32MiB`
+- Prometheus: 7일, block `512MB`, `emptyDir` `768MiB`
+- PostgreSQL event row: 자동 삭제 제외. demo reset 또는 별도 data lifecycle 정책으로 관리
+- Pod log: kubelet size rotation 사용. host journald 상한은 서버 bootstrap 운영 설정으로 관리
+
+7일 기준은 demo workload가 만든 운영 부산물의 로컬 디스크 점유를 제한합니다. PostgreSQL durable state와 object-storage backup 정책은 별도 경계입니다.
 
 ## Profile 차이
 

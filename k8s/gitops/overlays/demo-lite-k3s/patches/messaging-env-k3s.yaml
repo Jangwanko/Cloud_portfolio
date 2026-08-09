@@ -4,4 +4,4 @@ metadata:
   name: messaging-env
   namespace: messaging-app
 stringData:
-  APP_VERSION: "207d7b90813a"
+  APP_VERSION: "8e399e670bc0"

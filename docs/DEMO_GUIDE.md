@@ -4,7 +4,7 @@ Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
 
 Public demo-lite last verified UI version: `2.1.0`
 
-Demo-lite candidate: UI `2.3.1`, API `2.1.0` (`demo-dev`, not deployed)
+Fresh demo-lite k3s runtime: UI `2.3.1`, API `2.1.0`, image `207d7b90813a`; external domain verification pending
 
 ## Purpose
 
@@ -41,6 +41,7 @@ Version boundary:
 - local `dev-kafka` live 2026-07-27: UI `2.2.0`, API `2.0.0`, image `1cd84d4df742`, API `6/6`, Worker `2/2`, Argo CD `Synced / Healthy`
 - public demo-lite last verified: title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 event `202`
 - `demo-dev` candidate: UI `2.3.1`, API `2.1.0`, PostgreSQL read model, API·core Worker `1→2`, notification Worker fixed `1`, 공개 서버 미배포
+- fresh demo-lite k3s bootstrap: UI `2.3.1`, API `2.1.0`, image `207d7b90813a`, Argo `Synced / Healthy`; 외부 domain과 generic event `202` 재확인 대기
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
 API boundary:

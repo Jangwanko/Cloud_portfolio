@@ -107,7 +107,9 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
 - Public demo-lite는 2026-07-27 live 기준 title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 route와 event `202` 계약이 반영된 branch/deployment 전용 상태입니다. 같은 날 Prometheus에서 `message-worker` lag peak `828`, HPA desired와 actual Worker replica `1→2`를 확인했습니다. Candidate UI `2.3.1`은 public deployment 확인 전입니다.
-- `demo-dev`에는 저사양 자원 경계를 유지한 UI `2.3.1`, API `2.1.0` candidate가 있습니다. Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`, active topic `3`, PostgreSQL read model, migration → Worker → API gate가 기준입니다. local suite는 `348 passed`입니다.
+- 2026-08-10 fresh demo-lite k3s bootstrap은 release image `207d7b90813a`, UI `2.3.1`, API `2.1.0`, Argo CD `Synced / Healthy`, API·core Worker·notification Worker ready, Worker KEDA `1→2` Ready, initial backup과 `postgres-backups` PVC `Bound`를 확인했습니다. 외부 domain 재연결과 generic event `202` 재확인은 대기입니다.
+- `demo-dev`에는 저사양 자원 경계를 유지한 UI `2.3.1`, API `2.1.0` candidate가 있습니다. Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`, active topic `3`, PostgreSQL read model, migration → Worker → API gate가 기준입니다. 2026-08-10 retention candidate local suite는 `349 passed`입니다.
+- 2026-08-10 demo-lite storage candidate는 backup dump·completed backup Job·Kafka active topic·Prometheus 시계열을 최대 7일로 제한합니다. Kafka는 partition별 `128MiB`, Prometheus는 block `512MB`와 `emptyDir` `768MiB` 상한을 함께 사용합니다. PostgreSQL event row는 자동 삭제 대상에서 제외합니다.
 
 ## Important Docs
 
