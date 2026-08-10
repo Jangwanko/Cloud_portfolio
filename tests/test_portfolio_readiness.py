@@ -62,7 +62,7 @@ class TestOperationalDocumentation:
             "## AWS Migration Blueprint",
             "## 관측 설계 / Observability Map",
             "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
-            "STAR 1 — KEDA scale-out의 병목 이동 확인",
+            "STAR 1 — KEDA scale-out의 DB 경합과 drain 개선",
             "STAR 2 — GitOps namespace prune 사고 복구",
             "STAR 3 — API HPA와 cache hydration 경합 분석",
             "STAR 4 — CPU HPA에서 queue-depth KEDA로 전환",
@@ -374,7 +374,9 @@ class TestManifestContracts:
         assert "K6_STREAM_COUNT" in k6_script
         assert "data.streamIds[streamIndex]" in k6_script
         assert "-K6StreamCount $K6StreamCount" in suite_script
-        assert '[ValidateSet("keda", "fixed")]' in suite_script
+        assert '[ValidateSet("keda", "core-keda", "fixed")]' in suite_script
+        assert '$WorkerScalingMode -eq "core-keda"' in suite_script
+        assert "notification_worker_scaling_mode" in suite_script
         assert "Restore-WorkerScaling" in suite_script
         assert "k6 job did not finish within $TimeoutSec seconds" in k6_runner
         assert "-AllowThresholdFailure" not in suite_script

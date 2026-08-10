@@ -7,6 +7,8 @@
 - `kafka-performance/latest.txt`: Kafka 성능 suite의 마지막 완료 출력
 - `kafka-performance/worker-ab-fixed.txt`: 2026-07-21 historical 64-stream Worker fixed `2` arm 전체 출력
 - `kafka-performance/worker-ab-keda.txt`: 2026-07-21 historical 64-stream Worker KEDA `2→8` arm 전체 출력
+- `kafka-performance/notification-batch-fixed-run*.txt`: 2026-08-10 notification batch candidate의 fixed `2` clean 반복 원본
+- `kafka-performance/notification-batch-keda-run*.txt`: 2026-08-10 notification batch candidate의 KEDA `2→4` clean 반복 원본
 - `kafka-performance/failed-YYYYMMDD-HHMMSS.txt`: 실패한 suite의 부분 출력. `latest.txt`를 덮어쓰지 않으며 기본 Git 추적 제외
 - `ordering-failure/latest.json`: ordering / failure injection suite의 마지막 완료 결과
 - `postgres-restore/latest.json`: host logical dump를 disposable database에 복원한 마지막 정합성 검증 원본
@@ -19,20 +21,22 @@ PostgreSQL restore 원본은 dump 파일 자체를 Git에 넣지 않습니다. `
 
 PostgreSQL recovery JSON은 실행 시각, source/script hash, 관측값과 한계를 구조화한 추적 요약입니다. 전체 raw terminal transcript는 보관하지 않았으므로 JSON 자체를 원시 출력으로 해석하지 않습니다.
 
-## Latest Completed Kafka Performance Suite — 2026-08-05
+## Latest Completed Kafka Performance Suite — 2026-08-10
 
-- 실행: `2026-08-05T22:08:55+09:00`, `dev-kafka` local merge HEAD `100efd4`, dirty worktree
-- image: API·core Worker·notification Worker 모두 `messaging-portfolio:v2-core-cleanup`, API `2.1.0`
+- 실행 범위: `2026-08-10T11:46:27~12:32:34+09:00`, `dev-kafka` HEAD `e378164`, dirty worktree
+- image: API·core Worker·notification Worker 모두 `messaging-portfolio:notification-batch`, API `2.1.0`
 - 조건: generic v2, 100 VU / 30s, 64 streams, core KEDA `2→4`, notification KEDA `1→2`
-- 초기화: local DB event state와 현재 active Kafka topic 재생성, 시작 message/notification lag `0`
-- intake: total HTTP `28,672`, event `202` `28,605`, error `0.00%`, avg `53.67ms`, p95 `107.41ms`, p99 `157.78ms`
-- ordering: 100 events, `stream_seq 1..100`, pass in `7.92s`
-- main load: message-worker peak `25,905`, notification-worker peak `1,141`, all-pipeline drain `321.29s`, final both `0`
-- HPA follow-up: message-worker peak `9,734`, notification-worker peak `1,026`, all-pipeline drain `140.52s`, final both `0`
-- 판정: local source candidate의 완결성·drain 증거. 앞선 두 KEDA 반복보다 intake와 drain이 악화돼 stable baseline과 KEDA 성능 향상 주장 제외
-- 원본 범위: `latest.txt`는 마지막 완료 실행 전체 출력. hot-stream 3회와 fixed/KEDA 중간 실행 수치는 `docs/TEST_RESULTS.md`에 조건·판정과 함께 기록
+- 초기화: 각 실행 전 local DB event state와 active Kafka topic 재생성, deletion quiet period `75s`, 시작 message/notification lag `0`
+- fixed `2` 3회 평균: event `30,289.67`, avg `48.25ms`, p95 `88.53ms`, p99 `131.30ms`, peak message lag `27,013.33`, drain `222.49s`, backlog 처리율 `121.42 events/s`
+- KEDA `2→4` 3회 평균: event `30,351.33`, avg `47.82ms`, p95 `94.28ms`, p99 `135.11ms`, peak message lag `26,714`, drain `194.05s`, backlog 처리율 `137.67 events/s`
+- KEDA 판정: fixed 대비 backlog 처리율 `13.38%` 증가, drain `12.78%` 감소. KEDA drain `190.71~195.75s`, fixed drain `215.81~230.86s`
+- trade-off: KEDA p95 평균 `6.49%`, p99 평균 `2.90%` 증가. API latency 개선 근거에서 제외
+- 공통 결과: 오류 `0.00%`, same-stream ordering `100/100`, main·notification final lag `0/0`; KEDA 세 실행 모두 core Worker `4` 도달
+- 마지막 실행: event `30,307`, p95 `95.42ms`, peak message/notification lag `26,726`/`16`, drain `195.75s`
+- 판정: local dirty image의 current A/B candidate. 반복 일관성을 확인했지만 CI publication 전이므로 stable release baseline 승격 제외
+- 원본 범위: `latest.txt`는 마지막 KEDA 실행 전체 출력. fixed/KEDA 각 3회 원본을 함께 추적
 
-같은 source의 hot single-stream 3회 평균은 event `33,201`, avg `39.61ms`, p95 `76.57ms`, p99 `111.49ms`, main drain `364.62s`입니다. 제거 전 v2 recovery 후보보다 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소했습니다. local dirty image 조건이라 stable baseline으로 승격하지 않습니다.
+2026-08-05 단순화 source의 hot single-stream 3회 평균 event `33,201`, p95 `76.57ms`, main drain `364.62s`는 historical candidate로 유지합니다. stream 분포가 달라 현재 64-stream A/B와 직접 비교하지 않습니다.
 
 ## Multi-stream Worker A/B Candidate — 2026-07-21
 
@@ -72,7 +76,7 @@ PostgreSQL recovery JSON은 실행 시각, source/script hash, 관측값과 한�
 - `oldest_sample_age_seconds`: 조회 표본의 가장 오래된 record age
 - unresolved DLQ depth / current incident backlog: 별도 상태 모델 없이는 이 파일과 DLQ sample로 산출 불가
 - Worker KEDA 효과: consumer lag peak, Worker commit-observed latency, backlog drain time으로 관찰. 2026-06 비교에서는 historical row-visible proxy만 사용 가능
-- fixed replica 대 KEDA 직접 비교: current fixed 1회와 KEDA 3회의 drain 범위가 겹치므로 성능 우위 주장 제외
+- fixed replica 대 KEDA 직접 비교: 2026-08-10 동일 candidate·clean 조건 각 3회에서 KEDA drain 범위가 fixed보다 짧음. API p95 증가는 별도 trade-off로 유지
 
 ## Update Checklist
 

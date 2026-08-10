@@ -19,12 +19,11 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 
 | 대상 | 확인된 버전·상태 | 증거 경계 |
 | --- | --- | --- |
-| `master` source | UI `2.3.1`, API `2.1.0`, tests `345 passed` | merge `cab7647`, CI `#77`, image `cab76474db1c`; PostgreSQL read model, `/ops/summary`, snapshot cache 제거 |
-| local candidate validation | image `messaging-portfolio:v2-core-cleanup`, API `2.1.0` | API·core Worker·notification Worker 동일 image로 임시 rollout; ordering·DB outage·성능 suite 통과 |
-| local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo `dev-kafka` revision `803ab339`, `Synced / Healthy`; current `2.1.0` candidate publication 전 |
-| public demo-lite runtime | UI `2.1.0`, API `2.0.0` | 2026-07-27 live generic v2·`202`; Worker `1→2`, peak lag `828` |
-| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `349 passed` | Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`; 운영 부산물 7일 retention, public 반영 전 |
-| fresh demo-lite k3s runtime | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | Argo `Synced / Healthy`, API·Worker·notification Worker ready, backup PVC `Bound`; 외부 domain·event `202` 재확인 대기 |
+| `dev-kafka` source candidate | UI `2.3.1`, API `2.1.0`, tests `354 passed` | notification batch persistence와 Worker DB roundtrip 축소; clean fixed/KEDA 각 3회 검증 |
+| local candidate validation | image `messaging-portfolio:notification-batch`, API `2.1.0` | API·core Worker·notification Worker 동일 image; ordering `100/100`, 오류 `0%`, 최종 lag `0/0` |
+| local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validate·publish를 통과한 GHCR image; local candidate는 아직 publication 전 |
+| public demo-lite runtime | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | 2026-08-09 신규 서버에서 Argo `Synced / Healthy`, generic v2·`202`, Worker KEDA `1→2` |
+| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `358 passed` | Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`, 운영 부산물 7일 retention |
 
 ## Kubernetes 설계 / Kubernetes Architecture
 
@@ -173,12 +172,12 @@ Readiness는 schema startup, Kafka append 가능 여부, PostgreSQL HA guardrail
 
 ### Current cases
 
-### STAR 1 — KEDA scale-out의 병목 이동 확인
+### STAR 1 — KEDA scale-out의 DB 경합과 drain 개선
 
-- **S**: core Worker만 `2→8`로 늘린 실험에서 notification lag `11,536`, event `7.35%` 감소, p95 `25.62%` 증가
-- **T**: downstream 병목과 single-node DB 경합을 분리하고 현재 cluster에 맞는 scaling 상한 설정
-- **A**: notification Worker에 독립 lag KEDA 추가, core `2→4`·notification `1→2`로 제한, 세 workload image 일치와 시작 lag `0`을 preflight에서 강제, fixed/KEDA 반복 측정
-- **R**: current source KEDA 실행에서 message/notification lag `25,905`/`1,141`을 모두 `0`으로 drain하고 ordering `100/100` 확인. 실행별 drain 편차가 커 KEDA 성능 향상 주장은 보류하고 backlog 이동과 처리 상한을 운영 신호로 채택
+- **S**: 이전 KEDA 실행에서 Worker replica가 늘어도 DB stage latency와 notification backlog가 함께 증가해 fixed 대비 drain 이점이 불안정
+- **T**: record 단위 offset 안전성을 유지하면서 PostgreSQL roundtrip과 downstream commit 경합 축소
+- **A**: stream sequence 할당을 atomic statement로 변경, authorization read 통합, 성공 event INFO log 제거, notification attempt를 최대 20건씩 한 transaction으로 저장. clean DB/topic에서 fixed `2`와 KEDA `2→4`를 각각 3회 실행
+- **R**: fixed 대비 KEDA backlog 처리율 `13.38%` 증가, 평균 drain `222.49→194.05초`로 `12.78%` 감소. 오류 `0%`, ordering `100/100`, final lag `0/0` 유지. API p95 평균은 `88.53→94.28ms`로 `6.49%` 증가해 latency trade-off를 함께 기록
 
 ### STAR 2 — GitOps namespace prune 사고 복구
 
@@ -214,9 +213,9 @@ Readiness는 schema startup, Kafka append 가능 여부, PostgreSQL HA guardrail
 
 ### 현재 검증 수치 / Current Evidence
 
-현재 `2.1.0` 단순화 source의 hot-stream 3회 평균은 event `33,201`, error `0.00%`, p95 `76.57ms`, main drain `364.62초`입니다. 제거 전 v2 후보보다 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소했습니다. dirty local image 조건이므로 stable baseline으로 승격하지 않습니다.
+현재 notification batch candidate의 64-stream clean A/B는 fixed `2`와 KEDA `2→4`를 각각 3회 실행했습니다. fixed 평균은 event `30,290`, p95 `88.53ms`, drain `222.49초`, backlog 처리율 `121.42 events/s`입니다. KEDA 평균은 event `30,351`, p95 `94.28ms`, drain `194.05초`, backlog 처리율 `137.67 events/s`입니다.
 
-최신 64-stream KEDA 실행은 event `28,605`, p95 `107.41ms`, message/notification peak lag `25,905`/`1,141`, all-pipeline drain `321.29초`, 최종 lag `0/0`, ordering `100/100`입니다. 반복 실행의 drain 편차로 KEDA 성능 향상은 확정하지 않았습니다. Historical Kafka intake baseline은 legacy contract `31,676` requests·p95 `80.65ms`입니다. current 결과와 직접 합치지 않습니다. 세부 조건과 원본은 [Validation Results](docs/TEST_RESULTS.md)와 [results evidence guide](results/README.md)에 있습니다.
+KEDA는 세 실행 모두 `2→4`로 확장했고 drain은 `190.71~195.75초`였습니다. fixed의 `215.81~230.86초`보다 세 실행 전체에서 짧았습니다. KEDA API p95가 평균 `6.49%` 늘어 scale-out 효과는 consumer backlog 처리와 drain 개선으로 한정합니다. Historical Kafka intake baseline은 legacy contract `31,676` requests·p95 `80.65ms`이며 current generic v2 A/B와 직접 비교하지 않습니다. 세부 조건과 6개 원본은 [Validation Results](docs/TEST_RESULTS.md)와 [results evidence guide](results/README.md)에 있습니다.
 
 Pre-simplification generic v2 recovery candidate는 cache·snapshot 경로가 있던 당시의 historical evidence입니다. 3회 평균 event `29,168`, p95 `101.27ms`, main drain `508.58초`이며 current source 수치로 사용하지 않습니다.
 
@@ -224,10 +223,11 @@ Pre-simplification generic v2 recovery candidate는 cache·snapshot 경로가 �
 
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
-| `master` / `dev-kafka` source | UI `2.3.1`, API `2.1.0` | generic v2 + `202`; Worker 운영 조회를 `/ops/summary`로 분리, PostgreSQL read model 사용 |
-| local candidate validation, 2026-08-05 | API `2.1.0`, image `messaging-portfolio:v2-core-cleanup` | 임시 local rollout에서 API·Worker image 일치, ordering·DB outage·benchmark 검증; registry publication 전 |
-| local GitOps live, 2026-08-05 | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | API `6/6`, core Worker `2/2`, notification Worker `1/1`, Argo revision `803ab339`, `Synced / Healthy` |
-| public demo-lite, 마지막 live 확인 | UI `2.1.0`, API `2.0.0` | generic v2 + `202`; UI `2.2.0` release `626e8296b79d` 게시, runtime 확인 대기 |
+| `dev-kafka` source | UI `2.3.1`, API `2.1.0` | generic v2 + `202`; Worker 운영 조회를 `/ops/summary`로 분리, PostgreSQL read model 사용 |
+| local candidate validation, 2026-08-10 | API `2.1.0`, image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, ordering·final lag·오류율 검증; registry publication 전 |
+| local GitOps release | UI `2.3.1`, API `2.1.0`, image `66e9cc995dca` | CI validation 뒤 게시된 `dev-kafka` GHCR image |
+| public demo-lite, 2026-08-09 | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | 신규 서버 Argo `Synced / Healthy`, generic v2 + `202`, KEDA `1→2` |
+| `demo-dev` profile | UI `2.3.1`, API `2.1.0` | 저사양 topology와 7일 storage retention 유지 |
 
 ### Local Quick Start
 
@@ -243,11 +243,12 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 
 ### Public demo-lite
 
-2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 2026-07-27 기준 UI `2.1.0` / API `2.0.0`, generic v2, event `202` 확인. `demo-dev` UI `2.3.1` / API `2.1.0`은 public deployment 확인 전입니다.
+2코어급 축소 deployment: [Demo UI](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Readiness](https://vm118.js-banjiha.cloud/health/ready) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s). 2026-08-09 신규 서버에서 UI `2.3.1`, API `2.1.0`, generic v2, event `202`, Argo `Synced / Healthy`를 확인했습니다.
 
 ## Validation Summary
 
-- current source suite `345 passed`; image build, non-root 실행, live/root/OpenAPI smoke 검증 통과
+- current source suite `354 passed`; candidate image build·import·rollout, live/root/OpenAPI smoke 검증 통과
+- 64-stream fixed/KEDA 각 3회: KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, p95 `6.49%` 증가
 - DB 장애 중 Kafka append `202`; 복구 뒤 persistence·consumer lag `0`
 - same-stream ordering `100/100`; `stream_seq 1..100` 확인
 - status·event 조회는 PostgreSQL source of truth 사용; DB 장애 중 read `503`
@@ -267,7 +268,7 @@ Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다. Quick st
 ## Next Improvements
 
 - EKS multi-node·multi-AZ topology spread, disruption drill
-- fixed/KEDA 3회 반복, notification capacity 분리
+- Worker crash·consumer group rebalance·offset recovery 장애 주입
 - ALB·ACM·Route 53, IRSA·ESO/CSI, AMP·AMG 구현
 - RDS failover·PITR, S3 restore, Worker crash·consumer group rebalance·offset recovery
 - transactional outbox와 accepted-state read model

@@ -11,6 +11,7 @@ from uuid import uuid4
 from kafka.structs import OffsetAndMetadata, TopicPartition
 from prometheus_client import start_http_server
 from psycopg2 import DataError, InterfaceError, OperationalError
+from psycopg2.extras import execute_values
 
 from portfolio.config import settings
 from portfolio.db import get_conn, get_cursor, init_pool_with_retry, reconnect_pool
@@ -656,8 +657,22 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
             )
         return _message_row_response(existing)
 
-    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM rooms WHERE id=%s", (room_id,))
-    if cur.fetchone() is None:
+    cur.execute(
+        """
+        /*NO LOAD BALANCE*/
+        SELECT
+            EXISTS(SELECT 1 FROM rooms WHERE id=%s) AS stream_exists,
+            EXISTS(SELECT 1 FROM users WHERE id=%s) AS actor_exists,
+            EXISTS(
+                SELECT 1
+                FROM room_members
+                WHERE room_id=%s AND user_id=%s
+            ) AS member_exists
+        """,
+        (room_id, user_id, room_id, user_id),
+    )
+    authorization = cur.fetchone()
+    if not authorization["stream_exists"]:
         _reject_ingress_authorization(
             "stream_not_found",
             request_id=request_id,
@@ -665,8 +680,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
             user_id=user_id,
         )
 
-    cur.execute("/*NO LOAD BALANCE*/ SELECT id FROM users WHERE id=%s", (user_id,))
-    if cur.fetchone() is None:
+    if not authorization["actor_exists"]:
         _reject_ingress_authorization(
             "actor_not_found",
             request_id=request_id,
@@ -674,11 +688,7 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
             user_id=user_id,
         )
 
-    cur.execute(
-        "/*NO LOAD BALANCE*/ SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s",
-        (room_id, user_id),
-    )
-    if cur.fetchone() is None:
+    if not authorization["member_exists"]:
         _reject_ingress_authorization(
             "membership_missing",
             request_id=request_id,
@@ -689,23 +699,21 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
     cur.execute(
         """
         INSERT INTO room_sequences (room_id, last_seq)
-        VALUES (%s, 0)
-        ON CONFLICT (room_id) DO NOTHING
+        VALUES (%s, 1)
+        ON CONFLICT (room_id)
+        DO UPDATE SET
+            last_seq = room_sequences.last_seq + 1,
+            updated_at = NOW()
+        RETURNING last_seq
         """,
         (room_id,),
     )
-    cur.execute(
-        "/*NO LOAD BALANCE*/ SELECT last_seq FROM room_sequences WHERE room_id=%s FOR UPDATE",
-        (room_id,),
-    )
     seq_row = cur.fetchone()
-    last_seq = int(seq_row["last_seq"])
-
-    expected_seq = last_seq + 1
+    expected_seq = int(seq_row["last_seq"])
     if room_seq is None:
         room_seq = expected_seq
 
-    if room_seq <= last_seq:
+    if room_seq < expected_seq:
         cur.execute(
             """
             /*NO LOAD BALANCE*/
@@ -755,15 +763,6 @@ def _persist_message_with_cursor(job_payload: dict, cur) -> dict:
         ),
     )
     message = cur.fetchone()
-    cur.execute(
-        """
-        UPDATE room_sequences
-        SET last_seq=%s, updated_at=NOW()
-        WHERE room_id=%s
-        """,
-        (room_seq, room_id),
-    )
-
     response = _message_row_response(message)
 
     if x_idempotency_key:
@@ -857,6 +856,47 @@ def insert_notification_attempt(cur, payload: dict) -> None:
         raise NotificationTargetMissing("Notification target event is missing")
 
 
+def insert_notification_attempt_batch(cur, payloads: list[dict]) -> set[tuple[int, int]]:
+    if not payloads:
+        return set()
+
+    rows = [
+        (
+            payload["event_id"],
+            payload["stream_id"],
+            json.dumps(payload, allow_nan=False),
+        )
+        for payload in payloads
+    ]
+    targets = execute_values(
+        cur,
+        """
+        WITH incoming (event_id, stream_id, payload) AS (VALUES %s),
+        targets AS (
+            SELECT DISTINCT ON (incoming.event_id, incoming.stream_id)
+                   incoming.event_id, incoming.stream_id, incoming.payload
+            FROM incoming
+            JOIN messages
+              ON messages.id = incoming.event_id
+             AND messages.room_id = incoming.stream_id
+        ), inserted AS (
+            INSERT INTO notification_attempts (message_id, room_id, payload)
+            SELECT event_id, stream_id, payload
+            FROM targets
+            ON CONFLICT (message_id) DO NOTHING
+            RETURNING message_id
+        )
+        SELECT event_id, stream_id
+        FROM targets
+        """,
+        rows,
+        template="(%s, %s, %s::jsonb)",
+        page_size=len(rows),
+        fetch=True,
+    )
+    return {(int(row["event_id"]), int(row["stream_id"])) for row in targets}
+
+
 def update_request_status(request_id: str, payload: dict) -> None:
     with observe_worker_stage("request_status_update"):
         try:
@@ -935,6 +975,30 @@ def store_attempt(payload: dict) -> None:
                     conn.commit()
             return
         except (DataError, NotificationTargetMissing):
+            raise
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt == 0:
+                reconnect_pool()
+                time.sleep(1)
+                continue
+            raise last_error
+
+
+def store_attempt_batch(payloads: list[dict]) -> set[tuple[int, int]]:
+    if not payloads:
+        return set()
+
+    last_error = None
+    for attempt in range(2):
+        try:
+            with observe_worker_stage("notification_db_insert"):
+                with get_conn() as conn:
+                    with get_cursor(conn) as cur:
+                        targets = insert_notification_attempt_batch(cur, payloads)
+                    conn.commit()
+            return targets
+        except DataError:
             raise
         except Exception as exc:  # noqa: BLE001
             last_error = exc
@@ -1159,12 +1223,6 @@ def handle_notification_job(raw: str) -> str:
     except (TypeError, ValueError, json.JSONDecodeError, RecursionError) as exc:
         logging.error("Notification payload rejected because it is not valid JSON")
         return "rejected"
-    logging.info(
-        "Notification processed event_id=%s stream_id=%s preview=%s",
-        payload.get("event_id"),
-        payload.get("stream_id"),
-        payload.get("payload_preview") or payload.get("body_preview"),
-    )
     try:
         store_attempt(payload)
     except NotificationTargetMissing:
@@ -1241,6 +1299,110 @@ def _process_worker_batch(
                 worker_processing_seconds.observe(time.perf_counter() - started_at)
 
 
+def _process_notification_batch(consumer, records: dict) -> None:
+    messages = [message for partition_records in records.values() for message in partition_records]
+    if not messages:
+        return
+
+    started_at = time.perf_counter()
+    normalized_by_message: list[tuple[object, dict | None]] = []
+    valid_payloads = []
+    for message in messages:
+        try:
+            payload = message.value if isinstance(message.value, dict) else json.loads(message.value)
+            payload = _normalize_notification_payload(payload)
+        except (TypeError, ValueError, json.JSONDecodeError, RecursionError):
+            logging.error("Notification payload rejected because it is not valid JSON")
+            normalized_by_message.append((message, None))
+            continue
+        normalized_by_message.append((message, payload))
+        valid_payloads.append(payload)
+
+    try:
+        persisted_targets = store_attempt_batch(valid_payloads)
+    except DataError:
+        # A validated row can still violate a PostgreSQL constraint. Fall back
+        # to record handling so one terminal row cannot discard valid peers.
+        _process_worker_batch(
+            consumer,
+            records,
+            handle_notification_job,
+            "notification",
+        )
+        return
+    except Exception as exc:  # noqa: BLE001
+        health_status.labels(component="worker").set(0)
+        worker_failures_total.inc()
+        for partition, partition_records in records.items():
+            if not partition_records:
+                continue
+            first = partition_records[0]
+            try:
+                _seek_failed_record(consumer, first)
+            except Exception:  # noqa: BLE001
+                logging.exception(
+                    "Kafka notification worker failed to seek topic=%s partition=%s offset=%s",
+                    first.topic,
+                    first.partition,
+                    first.offset,
+                )
+                raise
+        logging.exception("Kafka notification batch failed; partitions rewound error=%s", exc)
+        time.sleep(1)
+        return
+
+    failed_partitions: set[TopicPartition] = set()
+    per_record_seconds = (time.perf_counter() - started_at) / len(messages)
+    for message, payload in normalized_by_message:
+        partition = _topic_partition(message)
+        if partition in failed_partitions:
+            continue
+        if payload is None:
+            result = "rejected"
+        elif (payload["event_id"], payload["stream_id"]) in persisted_targets:
+            result = "success"
+        else:
+            result = "rejected"
+            logging.warning(
+                "Notification skipped because persisted target is missing event_id=%s stream_id=%s",
+                payload["event_id"],
+                payload["stream_id"],
+            )
+
+        try:
+            _commit_processed_record(consumer, message)
+        except Exception as exc:  # noqa: BLE001
+            failed_partitions.add(partition)
+            try:
+                _seek_failed_record(consumer, message)
+            except Exception:  # noqa: BLE001
+                logging.exception(
+                    "Kafka notification worker failed to seek topic=%s partition=%s offset=%s",
+                    message.topic,
+                    message.partition,
+                    message.offset,
+                )
+                raise
+            worker_processed_total.labels(result="failure").inc()
+            worker_failures_total.inc()
+            health_status.labels(component="worker").set(0)
+            logging.exception(
+                "Kafka notification worker failed to commit topic=%s partition=%s offset=%s error=%s",
+                message.topic,
+                message.partition,
+                message.offset,
+                exc,
+            )
+            continue
+
+        worker_processed_total.labels(result=result).inc()
+        if result == "success":
+            worker_last_success_timestamp.set(time.time())
+        if not failed_partitions:
+            health_status.labels(component="worker").set(1)
+        worker_processing_seconds.observe(per_record_seconds)
+
+
 def run_kafka_notification_loop() -> None:
     health_status.labels(component="worker").set(1)
     logging.info(
@@ -1265,12 +1427,7 @@ def run_kafka_notification_loop() -> None:
                 records = consumer.poll(timeout_ms=1000, max_records=20)
                 if not records:
                     continue
-                _process_worker_batch(
-                    consumer,
-                    records,
-                    handle_notification_job,
-                    "notification",
-                )
+                _process_notification_batch(consumer, records)
         except Exception as exc:  # noqa: BLE001
             worker_failures_total.inc()
             health_status.labels(component="worker").set(0)
