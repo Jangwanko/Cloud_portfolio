@@ -167,6 +167,7 @@ Prometheus scrape topology:
 - `messaging_dlq_events_total`: Worker가 Kafka DLQ로 보낸 event 수
 - `messaging_dlq_replay_total`: DLQ Replayer replay / max replay skip 결과
 - `messaging_notification_publish_failures_total`: core DB commit 이후 notification job publish 실패 수. persistence rollback을 뜻하지 않으며 notification 누락 조사 신호
+- `messaging_worker_stage_latency_seconds{job="notification-worker",stage="notification_db_insert"}`: notification poll batch의 PostgreSQL transaction 시간. 한 observation은 최대 20건이므로 event 단위 latency로 해석 제외
 
 ### PostgreSQL
 

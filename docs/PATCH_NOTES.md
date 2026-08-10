@@ -2,6 +2,25 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-10 Worker DB roundtrip과 notification batch 최적화
+
+- stream authorization 확인 3회를 `EXISTS` 기반 single read로 통합
+- stream sequence의 insert·select·update 3단계를 atomic upsert `RETURNING`으로 축소
+- notification attempt를 poll당 최대 20건씩 `execute_values` 한 statement·한 transaction으로 저장
+- notification DB commit 뒤 record 단위 explicit offset commit 유지
+- batch DB 오류 시 partition 첫 record rewind, DataError 시 record 단위 처리로 fallback
+- notification 성공 event별 INFO log 제거, Prometheus 처리 counter 유지
+- benchmark에 core KEDA·notification fixed 분리 mode와 scaling mode metadata 추가
+- clean 64-stream A/B fixed `2`·KEDA `2→4` 각 3회 완료
+- KEDA backlog 처리율 `121.42→137.67 events/s`, `13.38%` 증가
+- 평균 drain `222.49→194.05s`, `12.78%` 감소; 모든 KEDA run이 fixed drain 범위보다 짧음
+- API p95 평균 `88.53→94.28ms`, `6.49%` 증가를 trade-off로 기록
+- 모든 실행 error `0.00%`, ordering `100/100`, final message/notification lag `0/0`
+- local suite `354 passed`; candidate image `messaging-portfolio:notification-batch` build·import·rollout·smoke 통과
+- dirty local candidate와 CI publication 전 조건으로 stable release baseline 승격 제외
+- dev-kafka commit `8d334b8`, CI image `8d334b8abeaf`, demo-dev commit `8640ca0`, demo-lite release `7610475` 확인
+- public demo-lite image `8640ca010960` 게시 뒤 UI `2.3.1`, API `2.1.0`, readiness `ready` 확인
+
 ## 2026-08-05 단순화 source 재검증과 Worker scaling 경계 조정
 
 - API·core Worker·notification Worker를 동일 local image `messaging-portfolio:v2-core-cleanup`으로 임시 rollout

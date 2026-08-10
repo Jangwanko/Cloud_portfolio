@@ -43,6 +43,8 @@ results/kafka-performance/*
 !results/kafka-performance/latest.txt
 !results/kafka-performance/worker-ab-fixed.txt
 !results/kafka-performance/worker-ab-keda.txt
+!results/kafka-performance/notification-batch-fixed-run*.txt
+!results/kafka-performance/notification-batch-keda-run*.txt
 !results/ordering-failure/
 results/ordering-failure/*
 !results/ordering-failure/latest.json

@@ -9,7 +9,7 @@
 - 주문·결제 lifecycle은 범용 처리 경계를 보여주는 reference scenario입니다. `/v1/orders/{order_id}/events`, `category`, `payment_id`, body-only stream route는 기존 client와 과거 증거를 위한 compatibility adapter/alias로 유지하며 핵심 정체성으로 설명하지 않습니다.
 - 데모는 주문 lifecycle을 reference scenario로 사용하되 Kafka append와 DB persistence를 서로 다른 운영 증거로 보여줍니다.
 - Kafka / Worker / DLQ / PostgreSQL read model / observability는 event domain과 무관하게 수락 이후 처리와 장애 대응을 담당합니다.
-- 마지막 승격 기준 브랜치는 `master`입니다. 2026-08-05 운영 본체 단순화는 `dev-kafka` source candidate이며 아직 `master`에 승격하지 않았습니다.
+- 마지막 승격 기준 브랜치는 `master`입니다. 2026-08-10 notification batch 최적화는 `dev-kafka` commit `8d334b8`과 image `8d334b8abeaf` 검증 뒤 현재 master 병합에 포함했습니다.
 - 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 일반 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 저사양 데모 관련 개발 작업은 `demo-dev`에서 진행합니다. 작업 시작 전 현재 브랜치를 확인하고, 대상 역할에 맞는 브랜치에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
@@ -51,7 +51,7 @@ Kafka event stream 성능 기준선:
 
 Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool HA, pool 튜닝, Worker inline retry, stream ordering 보강 후에도 Kafka append-first intake baseline이 유지되는지 확인한 결과입니다.
 
-현재 Kafka 문서에는 Worker fixed replica와 KEDA scale-out을 직접 비교한 수치가 없습니다. 이 비교가 필요하면 Worker를 고정한 실험과 KEDA 활성 실험을 같은 조건에서 별도로 실행하고, API request count보다 consumer lag, Worker accepted-to-commit-observed lag, backlog drain time을 함께 비교해야 합니다.
+2026-08-10 동일 notification batch candidate에서 Worker fixed `2`와 KEDA `2→4`를 clean 조건으로 각각 3회 비교했습니다. KEDA 효과는 API request count보다 consumer lag, backlog drain time, backlog 처리율을 중심으로 해석하며 API latency trade-off를 함께 기록합니다.
 
 ## Current Kafka Validation Summary
 
@@ -65,6 +65,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-21 64-stream Worker A/B candidate: dirty image `perf-v17`, API `6`, clean DB/topic, 100 VU / 30s. Fixed `2`는 event `22,125`, p95 `169.24ms`, message/notification peak lag `21,170`/`45`, all drain `301.42s`. KEDA `2→8`은 event `20,499`, p95 `212.60ms`, peak `18,950`/`11,536`, all drain `261.17s`. Drain `13.35%` 감소와 notification backlog 이동을 확인했으나 intake event `7.35%` 감소·p95 `25.62%` 증가, 각 1회와 dirty image 조건으로 stable baseline 제외.
 - 2026-08-05 current simplified v2 hot-stream candidate: local image `messaging-portfolio:v2-core-cleanup`, API `6`, clean DB/topic, 100 VU / 30s, 3회 평균 event `33,201`, error `0.00%`, avg `39.61ms`, p95 `76.57ms`, p99 `111.49ms`, peak lag `31,422`, main drain `364.62s`. 제거 전 v2 recovery 후보 대비 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소. dirty local image 조건으로 stable baseline 제외.
 - 2026-08-05 current 64-stream record-commit candidate: fixed core `2` 1회는 event `30,566`, p95 `93.55ms`, drain `295.99s`. core KEDA `2→4`·notification KEDA `1→2` 3회는 event `31,644`/`31,853`/`28,605`, p95 `88.06`/`87.64`/`107.41ms`, drain `295.90`/`305.97`/`321.29s`. 최신 tracked run peak message/notification lag `25,905`/`1,141`, final `0/0`, ordering `100/100`. 편차로 KEDA 성능 우위와 stable baseline 제외.
+- 2026-08-10 notification batch 64-stream A/B candidate: local image `messaging-portfolio:notification-batch`, API `6`, clean DB/topic, 100 VU / 30s, fixed `2`와 KEDA `2→4` 각 3회. Fixed 평균 event `30,289.67`, p95 `88.53ms`, drain `222.49s`, backlog 처리율 `121.42 events/s`. KEDA 평균 event `30,351.33`, p95 `94.28ms`, drain `194.05s`, backlog 처리율 `137.67 events/s`. KEDA 처리율 `13.38%` 증가, drain `12.78%` 감소, p95 `6.49%` 증가. 모든 실행 error `0.00%`, ordering `100/100`, final lag `0/0`; dirty local image라 stable release baseline 제외.
 - poll-batch offset commit 실험은 paired KEDA arm의 drain이 fixed보다 `9.24%` 길어 폐기했습니다. current source는 성공/terminal record 단위 explicit offset commit을 유지합니다.
 - 이 v2 후보는 stable legacy baseline 대비 total requests `19.87%` 감소, avg/p95 `53.70%` 증가, p99 `47.82%` 증가입니다. 2026-06-18 last legacy raw 대비 total requests `8.68%` 감소, avg `17.68%`, p95 `3.92%`, p99 `1.66%` 증가입니다. Fresh cluster clean state와 현재 resource 조건이 함께 달라 원인을 v2에만 귀속하지 않습니다.
 - 같은 실행의 ordering은 100 events, `stream_seq 1..100`, `7.93s`, pass입니다. Persistence sample은 50/50, status-observed avg `79.96ms`, p95 `81.28ms`, max `2384.10ms`이며 client polling/network를 포함해 과거 row-visible proxy와 비교하지 않습니다.
@@ -74,6 +75,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-06-09 k6 rerun: 100 VU / 30s, `34,284` requests, error `0.00%`, avg `36.86ms`, p95 `66.06ms`, p99 `104.99ms`; same-stream ordering revalidated with `stream_id=30`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=31`, 50 events persisted; Worker consumer lag reached `36394` and drained to `0` after about 14 minutes. Treat this as an intake-vs-persistence capacity signal, not a direct replacement for the stable 2nd baseline. 이 실행의 persistence latency도 row-visible proxy입니다.
 - Worker success path transaction tuning is applied after that rerun: message persistence and request status update share one PostgreSQL transaction; notification enqueue happens after DB commit.
 - Notification attempts are decoupled from core persistence through Kafka `message-notifications` and a separate `notification-worker`.
+- Notification Worker는 poll당 최대 20건을 한 PostgreSQL statement·transaction으로 저장합니다. DB commit 뒤 offset은 record 단위로 commit하고, DB 오류 시 partition 첫 record rewind, DataError 시 record 처리 fallback을 사용합니다.
 - 현재 notification 경계는 `notification_attempts` 기록까지입니다. 이메일/SMS/push 같은 외부 채널의 실제 발송 성공을 구현하거나 증명한 것으로 쓰지 않습니다.
 - Post-tuning performance suite at `2026-06-09T02:17:11+09:00`: `28,839` requests, error `0.00%`, avg `53.47ms`, p95 `108.68ms`, p99 `134.53ms`; same-stream ordering revalidated with `stream_id=34`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=35`, row-visible proxy p95 `8.08ms`; Worker consumer lag reached `29204` and drained to `0` after about 10 minutes. Treat this as persistence-path improvement but not a stable intake baseline replacement because API intake throughput and p95 worsened.
 - Notification path split suite at `2026-06-18T03:29:47+09:00`: `27,795` requests, error `0.00%`, avg `57.64ms`, p95 `119.28ms`, p99 `150.60ms`; same-stream ordering revalidated with `stream_id=38`, 100 events, `stream_seq 1..100`, ordering `pass`; async persistence sample used `stream_id=39`, row-visible proxy p95 `22.13ms`; Worker consumer lag drained to `0` after about 16 minutes; notification-worker consumer lag was `0`. Treat this as operational-boundary improvement, not a performance improvement.
@@ -96,18 +98,19 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.3.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. 2026-08-05 복원된 local GitOps runtime은 UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2`, Argo revision `803ab339`, `Synced / Healthy`입니다.
+- 현재 master와 `dev-kafka` source는 Demo UI `2.3.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. notification batch 최적화의 dev GitOps release image는 `8d334b8abeaf`입니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
-- 2026-08-05 v2 운영 본체 단순화 source candidate는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`입니다. local image `messaging-portfolio:v2-core-cleanup`은 `59,776,838` bytes, user `10001:10001`, live/root/OpenAPI smoke 통과입니다. API·core Worker·notification Worker 동일 image의 임시 local rollout, ordering/failure injection과 performance suite를 완료했습니다. registry publication과 GitOps release는 아직 수행하지 않았습니다.
+- 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, master merge `cab7647`로 승격했습니다. dev-kafka CI `#76`, master CI `#77`의 validate·publish를 통과했습니다.
+- 2026-08-10 notification batch 최적화는 local suite `354 passed`, image `messaging-portfolio:notification-batch`, clean 64-stream fixed/KEDA 각 3회 완료 뒤 dev-kafka commit `8d334b8`과 image `8d334b8abeaf`로 게시했습니다. 성능 수치는 dirty local benchmark image 조건을 유지합니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
 - 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
-- Public demo-lite는 2026-07-27 live 기준 title `Reliable Event Processing Console`, UI `2.1.0`, API `2.0.0`, generic v2 route와 event `202` 계약이 반영된 branch/deployment 전용 상태입니다. 같은 날 Prometheus에서 `message-worker` lag peak `828`, HPA desired와 actual Worker replica `1→2`를 확인했습니다. Candidate UI `2.3.0`은 public deployment 확인 전입니다.
-- `demo-dev`에는 저사양 자원 경계를 유지한 UI `2.3.0` candidate가 있습니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, API `2.0.0`, migration → Worker → API gate를 포함합니다.
+- Public demo-lite는 release image `8640ca010960`, UI `2.3.1`, API `2.1.0`으로 갱신했고 2026-08-10 readiness `ready`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
+- `demo-dev`는 public demo-lite의 저사양 자원 경계를 관리합니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, migration → Worker → API gate를 포함합니다.
 
 ## Important Docs
 
@@ -197,9 +200,9 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.3.1`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
-- 문서에 등록된 public demo-lite deployment는 UI `2.1.0` / API `2.0.0` branch/deployment 전용 상태입니다.
-- `demo-dev` candidate의 source Demo UI는 `2.3.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
+- 현재 master와 `dev-kafka` source는 Demo UI `2.3.1`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
+- 문서에 등록된 public demo-lite deployment는 UI `2.3.1` / API `2.1.0`, release image `8640ca010960`입니다.
+- `demo-dev` source Demo UI는 `2.3.1`, API는 `2.1.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.
