@@ -29,6 +29,8 @@ _worker_status_lock = threading.Lock()
 _worker_status_cached: dict | None = None
 _worker_status_cached_until = 0.0
 _WORKER_STATUS_CACHE_SECONDS = 15.0
+_DB_STARTUP_RETRY_MAX_SECONDS = 30.0
+_DB_STARTUP_WARNING_INTERVAL_SECONDS = 60.0
 
 
 class RequestBodyLimitMiddleware:
@@ -98,12 +100,28 @@ def _initialize_db_startup() -> None:
 
 
 def _retry_db_startup_until_ready() -> None:
-    while not _db_startup_stop.is_set() and not _db_startup_ready:
+    retry_delay = settings.startup_retry_delay
+    last_warning_at = float("-inf")
+
+    while not _db_startup_ready:
+        if _db_startup_stop.wait(retry_delay):
+            return
         try:
             _initialize_db_startup()
         except Exception as exc:  # noqa: BLE001
-            logging.warning("PostgreSQL startup retry failed: %s", exc)
-            _db_startup_stop.wait(settings.startup_retry_delay)
+            now = time.monotonic()
+            next_retry_delay = min(retry_delay * 2, _DB_STARTUP_RETRY_MAX_SECONDS)
+            if now - last_warning_at >= _DB_STARTUP_WARNING_INTERVAL_SECONDS:
+                logging.warning(
+                    "PostgreSQL startup retry still failing; next retry in %.1fs: %s",
+                    next_retry_delay,
+                    exc,
+                )
+                last_warning_at = now
+            retry_delay = next_retry_delay
+        else:
+            logging.info("PostgreSQL startup readiness recovered")
+            return
 
 
 def _start_db_startup_retry() -> None:

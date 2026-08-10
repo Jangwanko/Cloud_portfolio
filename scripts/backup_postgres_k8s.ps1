@@ -3,7 +3,9 @@ param(
   [string]$ServiceName = "messaging-postgresql-ha-pgpool",
   [string]$DbName = "portfolio",
   [string]$DbUser = "portfolio",
-  [string]$OutputDir = "backups"
+  [string]$OutputDir = "backups",
+  [ValidateRange(1, 365)]
+  [int]$RetentionDays = 7
 )
 
 $ErrorActionPreference = "Stop"
@@ -87,6 +89,16 @@ try {
 
   if (-not (Test-Path -LiteralPath $outputFile) -or (Get-Item -LiteralPath $outputFile).Length -le 0) {
     throw "PostgreSQL backup file is missing or empty: $outputFile"
+  }
+
+  $retentionCutoff = (Get-Date).AddDays(-$RetentionDays)
+  $expiredBackups = @(
+    Get-ChildItem -LiteralPath $resolvedOutputDir -File -Filter "postgres-*.sql" |
+      Where-Object { $_.LastWriteTime -lt $retentionCutoff }
+  )
+  if ($expiredBackups.Count -gt 0) {
+    $expiredBackups | Remove-Item -Force
+    Write-Host "Removed $($expiredBackups.Count) PostgreSQL backup(s) older than $RetentionDays days."
   }
   Write-Host "PostgreSQL backup written to $outputFile"
 }

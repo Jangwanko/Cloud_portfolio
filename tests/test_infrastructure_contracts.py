@@ -297,6 +297,25 @@ def test_backup_restore_clients_do_not_expose_or_reencode_database_credentials()
     assert "Failed to reset the public schema before restore" in reset_block
 
 
+def test_postgres_backups_are_atomic_and_expire_after_seven_days() -> None:
+    backup = _read("scripts/backup_postgres_k8s.ps1")
+    manifest = _read("k8s/gitops/base/manifests-ha.yaml")
+
+    assert "[int]$RetentionDays = 7" in backup
+    assert 'Get-ChildItem -LiteralPath $resolvedOutputDir -File -Filter "postgres-*.sql"' in backup
+    assert "Where-Object { $_.LastWriteTime -lt $retentionCutoff }" in backup
+    assert "$expiredBackups | Remove-Item -Force" in backup
+
+    backup_cronjob = manifest.split("name: postgres-weekly-backup", 1)[1].split(
+        "---", 1
+    )[0]
+    assert 'partial="${output}.partial"' in backup_cronjob
+    assert "trap 'rm -f \"$partial\"' EXIT" in backup_cronjob
+    assert 'mv "$partial" "$output"' in backup_cronjob
+    assert "-mmin +10080 -delete" in backup_cronjob
+    assert "head -n -8" not in backup_cronjob
+
+
 def test_application_and_alembic_defaults_do_not_embed_a_database_password() -> None:
     config = _read("portfolio/config.py")
     alembic_ini = _read("alembic.ini")
@@ -430,6 +449,20 @@ def test_application_image_and_pods_run_non_root() -> None:
     assert manifest.count("runAsNonRoot: true") >= 7
     assert "readOnlyRootFilesystem: true" in manifest
     assert 'drop: ["ALL"]' in manifest
+
+
+def test_api_runtime_avoids_per_request_access_log_and_server_header() -> None:
+    dockerfile = _read("Dockerfile")
+    manifest = _read("k8s/gitops/base/manifests-ha.yaml")
+    alembic_env = _read("alembic/env.py")
+
+    for runtime in (dockerfile, manifest):
+        assert "--no-access-log" in runtime
+        assert "--no-server-header" in runtime
+
+    assert "api_requests_total.labels(" in _read("portfolio/main.py")
+    assert "api_request_latency_seconds.labels(" in _read("portfolio/main.py")
+    assert "fileConfig(config.config_file_name, disable_existing_loggers=False)" in alembic_env
 
 
 def test_batch_containers_have_resource_budgets_and_read_only_roots() -> None:

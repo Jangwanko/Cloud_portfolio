@@ -44,6 +44,13 @@ Runtime request 경계:
 - 허용 설정 범위: `1..16777216` bytes. generic envelope 내부의 payload/metadata 상한은 각각 `65,536`/`16,384` UTF-8 JSON bytes로 더 작게 적용
 - schema migration startup이 끝나지 않았거나 non-local auth secret이 unsafe하면 `/v1/*`, `/v2/*` business API를 readiness 우회 호출해도 `503`
 
+Runtime log 경계:
+
+- Uvicorn request별 access log 비활성화; request rate·status·latency는 Prometheus metric으로 집계
+- Uvicorn server lifecycle과 application warning/error logger 유지; Alembic logging 설정이 기존 logger를 비활성화하지 않도록 분리
+- PostgreSQL startup retry `2→4→8→16→30초` exponential backoff, 반복 warning 최대 60초당 1회
+- request audit가 필요한 운영 환경: ingress 또는 외부 log pipeline에서 sampling·retention·개인정보 redaction을 별도 설계
+
 ### PostgreSQL Helm Credential
 
 - Secret: `messaging-postgresql-ha-postgresql`
@@ -111,13 +118,13 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. 현재 CI validation을 통과한 local GitOps release는 UI `2.3.1`, API `2.1.0`, image `66e9cc995dca`입니다. Public demo-lite는 2026-08-09 신규 서버에서 UI `2.3.1`, API `2.1.0`, generic event `202`, Argo `Synced / Healthy`를 확인했습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. 현재 `dev-kafka` GitOps target은 UI `2.3.1`, API `2.1.0`, image `8d334b8abeaf`입니다. Public demo-lite는 2026-08-10 신규 서버에서 image `8640ca010960`, UI `2.3.1`, API `2.1.0`, generic event `202`, Argo `Synced / Healthy`를 확인했습니다.
 
 ## Demo Access
 
 Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
 
-Public demo-lite Demo UI: `2.3.1` / API `2.1.0` (2026-08-09 live)
+Public demo-lite Demo UI: `2.3.1` / API `2.1.0` / image `8640ca010960` (2026-08-10 live)
 
 Local surfaces:
 
@@ -272,7 +279,10 @@ Scheduled local backup:
 - CronJob: `postgres-weekly-backup`
 - schedule: `0 3 * * 0`
 - storage: `postgres-backups` PVC
-- retention script: latest 8 dumps
+- write boundary: `.partial` 파일에 dump 완료 후 최종 `.sql`로 atomic rename
+- retention: 생성 후 7일을 넘긴 `postgres-*.sql` 삭제
+
+수동 script도 기본 `RetentionDays=7`을 적용합니다. 다른 기간이 필요한 일회성 검증은 `-RetentionDays`를 명시합니다.
 
 CronJob 존재는 restore 성공 증거가 아닙니다. 최근 job exit, dump size, restore drill을 함께 확인합니다.
 

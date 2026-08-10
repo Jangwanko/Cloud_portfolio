@@ -7,8 +7,8 @@
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Source candidate | API `2.1.0`, Demo UI `2.3.1` | local suite `354 passed`; notification batch·DB roundtrip 최적화 포함 |
-| Candidate runtime | image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, generic v2·ordering·final lag·오류율 검증; registry publication 전 |
-| Local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validation 뒤 게시된 GHCR image |
+| Current source release | source `8d334b8`, image `8d334b8abeaf` | notification batch 최적화, fixed/KEDA 각 3회, CI validate·publish 통과 |
+| Local GitOps target | image `8d334b8abeaf`, UI `2.3.1`, API `2.1.0` | `dev-kafka` overlay가 참조하는 immutable GHCR image |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
@@ -19,8 +19,22 @@
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
-| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | 기존 master/dev 검증 유지; current candidate publication 전 |
-| Public demo-lite | image `207d7b90813a`, UI `2.3.1`, API `2.1.0` | 2026-08-09 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `8d334b8abeaf`, master image `7035cdab4050` 게시 확인 |
+| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
+
+## Runtime Log·Retry Optimization Candidate — 2026-08-10
+
+- candidate image `messaging-portfolio:runtime-log-opt`, API·core Worker·notification Worker 동일 image
+- Uvicorn access log·server header 명시적 비활성화, Prometheus request counter·latency histogram 유지
+- PostgreSQL startup retry exponential backoff `2→4→8→16→30초`, 반복 warning 60초 throttle
+- isolated smoke: final image `59,777,816` bytes, user `10001:10001`, `/health/live` `200`, `Server` header 없음, health 6회와 Prometheus counter 6회 일치
+- DB 미연결 12초 smoke: initial warning 1건과 throttled retry warning 1건; 성공 request access log `0`
+- same-time 64-stream KEDA candidate 2회: event 평균 `29,153`, p95 평균 `104.04ms`, drain 평균 `205.67초`, 오류 `0%`, ordering `100/100`, final lag `0/0`
+- 기존 published image paired control 1회: event `29,338`, p95 `105.72ms`, drain `200.64초`, 오류 `0%`, ordering `100/100`, final lag `0/0`
+- 판정: intake·latency·drain이 서로 엇갈려 throughput 개선 근거 제외; candidate의 처리 성능 회귀도 paired control 오차 범위에서 확인되지 않음
+- 이전 notification batch 3회보다 두 image 모두 느린 현재 host 조건; 차이를 runtime log 변경에 귀속하지 않음
+- 원본: Git ignored local files `runtime-log-opt-keda-run1..2.txt`, `runtime-log-control-keda-run1.txt`; stable baseline 미승격
+- local suite `357 passed`; final cluster smoke에서 API 6개 pod lifecycle log 유지, health access log `0`, readiness `ready` 확인
 
 원본 위치:
 

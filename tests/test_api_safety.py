@@ -346,6 +346,48 @@ def test_business_api_is_blocked_until_schema_startup_completes(monkeypatch):
     assert response.status_code == 503
 
 
+def test_database_startup_retry_uses_capped_backoff_and_throttled_warnings(
+    monkeypatch, caplog
+):
+    from portfolio import main
+
+    class FakeStop:
+        def __init__(self):
+            self.waits = []
+
+        def wait(self, delay):
+            self.waits.append(delay)
+            return False
+
+    stop = FakeStop()
+    attempts = 0
+
+    def initialize():
+        nonlocal attempts
+        attempts += 1
+        if attempts <= 6:
+            raise RuntimeError("database unavailable")
+        main._db_startup_ready = True
+
+    monotonic_values = iter(range(6))
+    monkeypatch.setattr(main, "_db_startup_ready", False)
+    monkeypatch.setattr(main, "_db_startup_stop", stop)
+    monkeypatch.setattr(main, "_initialize_db_startup", initialize)
+    monkeypatch.setattr(main, "settings", SimpleNamespace(startup_retry_delay=2.0))
+    monkeypatch.setattr(main.time, "monotonic", lambda: next(monotonic_values))
+    caplog.set_level("WARNING")
+
+    main._retry_db_startup_until_ready()
+
+    assert stop.waits == [2.0, 4.0, 8.0, 16.0, 30.0, 30.0, 30.0]
+    warnings = [
+        record
+        for record in caplog.records
+        if "PostgreSQL startup retry still failing" in record.message
+    ]
+    assert len(warnings) == 1
+
+
 def test_nonlocal_business_api_is_blocked_for_unsafe_auth_secret(monkeypatch):
     from portfolio import main
 
