@@ -45,10 +45,10 @@ class TestOperationalDocumentation:
             assert "SERVICE_REQUIREMENTS.md" in document
 
         assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
-        assert "reference scenario built on the generic event contract" in readme
-        assert "## 핵심 요약 / Executive Summary" in readme
+        assert "through a working event-processing workload" in readme
+        assert "## 한눈에 보기 / Executive Summary" in readme
         assert "## AWS Migration Blueprint" in readme
-        assert "## Trade-offs" in readme
+        assert "## 운영 경계와 다음 단계" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in architecture
 
@@ -56,33 +56,27 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
 
         for token in (
-            "## 핵심 요약 / Executive Summary",
+            "## 한눈에 보기 / Executive Summary",
             "## Kubernetes 설계 / Kubernetes Architecture",
             "## Pod 구성 / Workload Inventory",
             "## AWS Migration Blueprint",
             "## 관측 설계 / Observability Map",
             "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
-            "STAR 1 — KEDA scale-out의 DB 경합과 drain 개선",
-            "STAR 2 — GitOps namespace prune 사고 복구",
-            "STAR 3 — API HPA와 cache hydration 경합 분석",
-            "STAR 4 — CPU HPA에서 queue-depth KEDA로 전환",
-            "STAR 5 — Pgpool HA와 same-stream ordering 보강",
-            "`5,434` requests, p95 `8,175ms`",
-            "`19,528` requests·p95 `1,954ms`",
-            "`31,710` requests, p95 `86.95ms`",
+            "### 사례 1 — Worker scaling 기준을 CPU에서 queue backlog로 전환",
+            "### 사례 2 — Worker 확장 뒤 DB 경합",
+            "### 사례 3 — GitOps namespace prune 사고 복구",
+            "### 사례 4 — DB 장애 중 API pod 재시도·로그 폭증",
+            "### 추가 트러블슈팅 기록",
+            "5,434 requests·p95 8,175ms",
+            "p95 `80.65ms`",
             "API → Kafka → Worker → PostgreSQL",
-            "### 현재 검증 수치 / Current Evidence",
-            "Pre-simplification generic v2 recovery candidate",
-            "Historical Kafka intake baseline",
+            "## 트러블슈팅 검증 요약 / Troubleshooting Evidence",
             "## Demo",
-            "### Public demo-lite",
-            "## Validation Summary",
-            "31,676",
-            "same-stream ordering `100/100`",
-            "## Trade-offs",
-            "Kafka append-first intake",
-            "## Next Improvements",
-            "transactional outbox",
+            "Public demo-lite",
+            "same-stream ordering",
+            "## 운영 경계와 다음 단계",
+            "Kafka append",
+            "disk-pressure alert",
             "consumer group rebalance",
         ):
             assert token in readme
@@ -241,7 +235,8 @@ class TestOperationalDocumentation:
         assert "Kafka append-first intake" in combined
         assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
         assert "status `200`" in combined
-        assert "`202 Accepted`의 완료 범위는 Kafka append" in combined
+        assert "202 Accepted" in combined
+        assert "Kafka append" in combined
         assert "plan` / `apply`는 실행하지 않았" in combined
         assert "현재 AWS에 배포된 Terraform stack은 없습니다" in combined
         assert "Worker persistence capacity 신호" in combined

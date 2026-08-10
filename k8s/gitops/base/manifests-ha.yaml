@@ -70,7 +70,7 @@ spec:
           command:
             - sh
             - -c
-            - exec python -m uvicorn portfolio.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}
+            - exec python -m uvicorn portfolio.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2} --no-access-log --no-server-header
           ports:
             - containerPort: 8000
           envFrom:
@@ -420,8 +420,12 @@ spec:
                   set -eu
                   timestamp="$(date +%Y%m%d-%H%M%S)"
                   output="/backups/postgres-${timestamp}.sql"
-                  pg_dump -h messaging-postgresql-ha-pgpool -p 5432 -U portfolio -d portfolio > "$output"
-                  find /backups -type f -name 'postgres-*.sql' | sort | head -n -8 | xargs -r rm -f
+                  partial="${output}.partial"
+                  trap 'rm -f "$partial"' EXIT
+                  pg_dump -h messaging-postgresql-ha-pgpool -p 5432 -U portfolio -d portfolio > "$partial"
+                  mv "$partial" "$output"
+                  trap - EXIT
+                  find /backups -type f -name 'postgres-*.sql' -mmin +10080 -delete
                   echo "Weekly PostgreSQL backup written to $output"
               volumeMounts:
                 - name: postgres-backups

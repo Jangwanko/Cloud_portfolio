@@ -1,6 +1,6 @@
 # Demo Guide
 
-Master / dev-kafka source: UI `2.3.1`, API `2.1.0`
+Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
 
@@ -35,9 +35,9 @@ Grafana 접근:
 
 Version boundary:
 
-- master / `dev-kafka` source: UI `2.3.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary` 사용
-- dev GitOps release: UI `2.3.1`, API `2.1.0`, image `8d334b8abeaf`
-- public demo-lite 2026-08-10: title `Reliable Event Processing Console`, UI `2.3.1`, API `2.1.0`, image `8640ca010960`, readiness `ready`, generic v2 event `202`
+- `dev-kafka` source candidate: UI `2.3.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary` 사용
+- `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f`
+- public demo-lite 2026-08-10: title `Reliable Event Processing Console`, UI `2.3.1`, API `2.1.0`, image `8640ca010960`, generic v2 event `202`, Argo `Synced / Healthy`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 

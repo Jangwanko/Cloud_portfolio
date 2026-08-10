@@ -2,6 +2,20 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-10 runtime log·backup retention·README 최적화
+
+- Uvicorn access log와 server header를 Docker·Kubernetes 실행 경로에서 명시적으로 비활성화
+- Prometheus request count·status·latency metric과 application warning/error log 유지
+- Alembic logging 설정의 기존 Uvicorn logger 비활성화 차단
+- PostgreSQL startup retry `2→4→8→16→30초` backoff와 반복 warning 60초 throttle 적용
+- generic v2 intake hot path 재감사: stateless JWT 검증, envelope 생성, Kafka send·ack 1회, PostgreSQL roundtrip `0`; ordering·idempotence 위험이 있는 producer 동시성 변경 제외
+- PostgreSQL CronJob dump를 `.partial`에 쓴 뒤 atomic rename; 7일 초과 backup 삭제
+- 수동 backup script 기본 retention `7일`, `RetentionDays` 범위 `1..365`
+- README `290줄·2,608단어`에서 약 `190줄·1,600단어`로 압축; Kubernetes → Pod → AWS → 관측 → STAR 순서 유지
+- 게시된 dev·master·demo-lite image SHA를 README·운영·demo·test 문서에 동기화
+- 64-stream clean KEDA candidate 2회와 기존 image paired control 1회 실행; 처리량·p95·drain이 엇갈려 throughput 개선 주장 제외, 오류 `0%`·ordering `100/100`·final lag `0/0` 유지
+- local suite `357 passed`; final image `59,777,816` bytes, user `10001:10001`, live·readiness·metric·logger smoke 통과
+
 ## 2026-08-10 Worker DB roundtrip과 notification batch 최적화
 
 - stream authorization 확인 3회를 `EXISTS` 기반 single read로 통합
@@ -833,7 +847,7 @@ Performance suite:
 
 - notification path 분리는 성능 개선보다 장애 격리 개선입니다.
 - 알림 기록 실패가 핵심 persistence transaction을 망가뜨리지 않는 구조가 됐습니다.
-- 반면 이번 성능 suite에서는 API intake와 accepted-to-persisted latency가 개선되지 않았습니다.
+- 이번 성능 suite의 API intake와 accepted-to-persisted latency는 개선되지 않았습니다.
 - 다음 튜닝 후보는 Worker DB write throughput, Kafka consumer batch 처리, PostgreSQL lock/commit 비용 분리 측정입니다.
 
 ## 남은 튜닝 항목
