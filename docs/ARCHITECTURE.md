@@ -25,7 +25,7 @@
 - API Deployment: generic event 검증, Kafka append, PostgreSQL status·event 조회, readiness·metrics 제공
 - Kafka StatefulSet: ingress·DLQ·notification topic, stream key partition ordering, Worker lag source
 - Worker Deployment: ingress consume, PostgreSQL transaction, inline retry, DLQ 이동, record 단위 explicit offset commit
-- Notification Worker: core persistence 뒤 notification job 소비와 attempt 기록
+- Notification Worker: core persistence 뒤 notification job 소비, poll당 최대 20건의 attempt를 한 PostgreSQL transaction으로 기록
 - DLQ Replayer: replay guard 확인 뒤 ingress topic 재주입
 - PostgreSQL HA·Pgpool: durable source of truth, synchronous replica, writable primary routing
 - Prometheus·Grafana·kafka-exporter: application·Kafka·Kubernetes 신호 수집과 시각화
@@ -116,7 +116,9 @@ Kafka를 request intake 경로에 둔 이유:
 - DLQ topic 분리, 실패 이벤트 보존과 replay
 - Worker scaling 기준: queue length 제외, consumer lag 사용
 - Worker success path: message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리
-- 알림 처리: DB commit 이후 `message-notifications` topic best-effort 전달, 별도 `notification-worker`가 `notification_attempts` 기록. 외부 채널 실제 발송은 현재 범위 제외
+- 알림 처리: DB commit 이후 `message-notifications` topic best-effort 전달. 별도 `notification-worker`가 poll당 최대 20건을 한 statement·transaction으로 `notification_attempts`에 기록. DB commit 뒤 각 record offset을 순서대로 commit
+- notification batch failure: DB 연결 오류 시 poll에 포함된 각 partition의 첫 record로 rewind. PostgreSQL DataError는 record 단위 처리로 전환해 terminal row와 정상 row 분리
+- notification replay: DB commit 뒤 offset commit 전 crash는 같은 job 재처리 가능. `notification_attempts.message_id` unique constraint와 `ON CONFLICT DO NOTHING`으로 중복 insert 억제
 - post-commit notification 발행: 현재 transactional outbox 미적용, DB commit 뒤 process crash 시 notification job 누락 gap 존재
 - local Kafka trust boundary: PLAINTEXT demo 구성; production에서 broker 인증과 topic별 최소 권한 ACL 필요
 - `event_type` 의미와 `metadata` 분류: producer/adapter 소유; generic Worker가 domain taxonomy를 강제하지 않음

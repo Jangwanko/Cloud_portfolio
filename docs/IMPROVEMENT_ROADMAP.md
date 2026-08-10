@@ -2,16 +2,16 @@
 
 이 문서는 현재 포트폴리오의 다음 투자 순서를 정의합니다. 완료 여부는 코드 존재보다 재현 가능한 장애 주입과 원본 증거로 판단합니다.
 
-## Immediate Direction — 2026-08-05
+## Immediate Direction — 2026-08-10
 
 현재 투자 순서:
 
-1. **generic v2 지속 가능 처리량 확정**: 64-stream fixed/KEDA 각 3회, node 재시작 없는 동일 조건, PostgreSQL throughput·lock·pool과 Worker commit lag 동시 측정
-2. **신뢰성 gap 제거**: accepted-state read model, notification transactional outbox, offset crash/rebalance 장애 주입
-3. **Demo UI `2.3.1` release 판정**: registry image publication 뒤 local runtime과 public demo-lite에서 badge·API version·event `202`·Worker 표시 확인
+1. **offset 장애 경계 검증**: notification batch와 core Worker의 DB commit 직후 강제 종료, consumer group rebalance, idempotent replay 확인
+2. **신뢰성 gap 제거**: accepted-state read model과 notification transactional outbox 구현·장애 주입
+3. **지속 가능 처리량 확정**: 15분 이상 일정 입력률에서 lag가 증가하지 않는 최대 처리량, DB pool·lock·commit latency 동시 측정
 4. **복구 지점 자동화**: object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 
-2026-08-05 단순화 source의 hot-stream 3회 평균은 event `33,201`, p95 `76.57ms`, main drain `364.62s`입니다. 제거 전 v2 후보보다 event `13.83%` 증가, p95 `24.39%` 감소, drain `28.31%` 감소했습니다. dirty local image 조건으로 stable baseline은 유지하지 않습니다. 64-stream current KEDA 3회의 drain은 `295.90~321.29s`, fixed core `2` 1회는 `295.99s`로 범위가 겹칩니다. KEDA 성능 우위는 미확정입니다.
+2026-08-10 notification batch candidate의 clean 64-stream A/B는 fixed `2`와 KEDA `2→4`를 각각 3회 실행했습니다. KEDA backlog 처리율은 `13.38%` 증가했고 평균 drain은 `12.78%` 감소했습니다. KEDA p95 평균은 `6.49%` 증가했습니다. 반복 범위는 분리됐지만 dirty local image 조건이므로 stable release baseline은 유지하지 않습니다.
 
 완료된 선행 작업:
 
@@ -19,7 +19,9 @@
 - generic v2 contract, PostgreSQL read, `/ops/summary`, ordering·DB outage suite 재검증
 - notification Worker 독립 KEDA 추가, core `2→4`·notification `1→2` 상한 적용
 - benchmark preflight에 API·core Worker·notification Worker image 일치와 두 consumer lag `0` gate 적용
-- Public demo-lite generic v2 동기화: UI `2.1.0`, API `2.0.0`, event `202`
+- fixed/KEDA 각 3회 clean A/B, 6개 원본과 latency trade-off 기록
+- notification batch transaction, core sequence·authorization DB roundtrip 축소
+- Public demo-lite 신규 서버 배포: UI `2.3.1`, API `2.1.0`, event `202`, Argo `Synced / Healthy`
 - Public 저사양 Worker scaling: lag peak `828`, desired·actual replica `1→2`
 - `dev-kafka` image publication validation gate와 SHA image 검증
 - `demo-dev` UI `2.3.1` / API `2.1.0` 저사양 source 후보: `349 passed`, 7일 artifact retention render·contract 확인; fresh k3s image `207d7b90813a`, Argo `Synced / Healthy`, core workload·backup 확인. retention 배포와 외부 domain·event `202` 재확인 대기
@@ -104,15 +106,15 @@
   - histogram 정의, 단위, clock source 문서화
   - historical row-visible proxy, current client status-observed, Worker commit-observed 지표를 동일 workload에서 비교
 
-### 8. Fixed Worker 대 KEDA A/B 실험
+### 8. Fixed Worker 대 KEDA A/B 실험 — candidate 완료
 
-- 현재 상태: current source에서 fixed core `2` 1회와 KEDA core `2→4`·notification `1→2` 3회 완료. fixed drain `295.99s`, KEDA `295.90~321.29s`; 실행 편차로 성능 우위 미확정
+- 현재 상태: notification batch candidate에서 fixed core `2`와 KEDA core `2→4`·notification `1→2` 각 3회 완료. fixed 평균 drain `222.49s`, KEDA `194.05s`; backlog 처리율 `13.38%` 증가, p95 `6.49%` 증가
 - 목표: 같은 입력과 DB 조건에서 fixed replica와 lag-based KEDA 비교
 - 이유: API intake 성능과 Worker persistence capacity 분리
 - 완료 기준:
   - workload, partition, DB pool, image, 초기 backlog 동일
   - peak consumer lag, API queued-at-to-commit p95, drain time, DB throughput 기록
-  - 최소 3회 반복과 편차 공개
+  - 최소 3회 반복과 편차 공개 — 완료
   - API request count를 Worker scaling 효과의 단독 근거로 사용하지 않음
 
 ### 9. 지속 가능 용량과 backpressure

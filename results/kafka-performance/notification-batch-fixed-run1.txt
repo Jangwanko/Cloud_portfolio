@@ -1,0 +1,365 @@
+# Kafka Performance Suite
+timestamp: 2026-08-10T11:46:04.8998587+09:00
+namespace: messaging-app
+base_url: http://localhost
+k6_profile: single500
+k6_single_vus: 100
+k6_stream_count: 64
+stage_duration: 30s
+think_time: 0.05
+ordering_event_count: 100
+event_count: 50
+lag_sample_interval_seconds: 5
+max_lag_metric_age_seconds: 30
+lag_drain_timeout_seconds: 1200
+steady_state_timeout_seconds: 600
+worker_scaling_mode: fixed
+notification_worker_scaling_mode: fixed
+fixed_worker_replicas: 2
+result_file_name: notification-batch-fixed-run1.txt
+clean_benchmark_state: True
+source_branch: dev-kafka
+source_commit: e37816406460e5e92968cded31a571b510b53547
+source_worktree_dirty: True
+
+==> Reset before performance suite
+Elapsed: 25.36s
+
+==> Reset local benchmark data and Kafka topics
+Elapsed: 85.43s
+
+==> Configure Worker scaling experiment
+Elapsed: 0.52s
+
+==> Preflight Kubernetes state
+api_image: messaging-portfolio:notification-batch
+worker_image: messaging-portfolio:notification-batch
+notification_worker_image: messaging-portfolio:notification-batch
+api_version: 2.1.0
+initial_message_worker_lag: 0
+initial_notification_worker_lag: 0
+NAME                                             READY   STATUS      RESTARTS         AGE
+api-7945f48558-4824h                             1/1     Running     0                2m20s
+api-7945f48558-c7ghm                             1/1     Running     0                2m20s
+api-7945f48558-g4r8m                             1/1     Running     0                2m20s
+api-7945f48558-rd6fd                             1/1     Running     0                2m30s
+api-7945f48558-rgj8h                             1/1     Running     0                2m30s
+api-7945f48558-tqhhc                             1/1     Running     0                2m30s
+dlq-replayer-59774d676c-vr9f4                    1/1     Running     0                8s
+grafana-578ccb7cf-c8c5j                          1/1     Running     3 (3h24m ago)    14d
+kafka-0                                          1/1     Running     5 (3h24m ago)    20d
+kafka-1                                          1/1     Running     5 (3h24m ago)    20d
+kafka-2                                          1/1     Running     5 (3h24m ago)    20d
+kafka-exporter-67456d7dbd-47wdj                  1/1     Running     12 (3h23m ago)   20d
+kube-state-metrics-6f78f6d6bd-2xrd5              1/1     Running     8 (3h24m ago)    20d
+messaging-postgresql-ha-pgpool-9b47c6dc7-4b4gw   1/1     Running     1 (3h24m ago)    4d14h
+messaging-postgresql-ha-pgpool-9b47c6dc7-jpldz   1/1     Running     1 (3h24m ago)    4d14h
+messaging-postgresql-ha-postgresql-0             1/1     Running     5 (3h24m ago)    20d
+messaging-postgresql-ha-postgresql-1             1/1     Running     6 (3h24m ago)    20d
+messaging-postgresql-ha-postgresql-2             1/1     Running     6 (3h24m ago)    20d
+messaging-schema-migration-m9krd                 0/1     Completed   0                4d12h
+notification-worker-845874d458-mtdvv             1/1     Running     0                82s
+postgres-weekly-backup-29760660-qjz7w            0/1     Completed   3                5d2h
+postgres-weekly-backup-29770740-jkcxw            0/1     Completed   3                3h24m
+prometheus-78dc5648f5-7wlfm                      1/1     Running     5 (3h24m ago)    20d
+worker-6b58f9ddd9-l9f75                          1/1     Running     0                8s
+worker-6b58f9ddd9-t9wh2                          1/1     Running     0                8s
+Elapsed: 1.32s
+
+==> Wait for post-reset performance steady state
+steady-state: api=6/6 api_cpu=1/65% worker=2/2 notification_worker=1/1 lag=0/0 consecutive=0/3
+steady-state: api=6/6 api_cpu=1/65% worker=2/2 notification_worker=1/1 lag=0/0 consecutive=1/3
+steady-state: api=6/6 api_cpu=1/65% worker=2/2 notification_worker=1/1 lag=0/0 consecutive=2/3
+Elapsed: 11.67s
+
+==> Same-stream ordering guarantee
+{
+    "stream_id":  1618,
+    "event_count":  100,
+    "first_stream_seq":  1,
+    "last_stream_seq":  100,
+    "first_payload_message":  "ordering-event-0001",
+    "last_payload_message":  "ordering-event-0100",
+    "ordering":  "pass"
+}
+Elapsed: 8.1s
+
+==> Kafka async persistence latency
+{
+    "event_count":  50,
+    "stream_id":  1619,
+    "measurement":  "queued_at to client observation of persisted status; includes polling interval and network delay",
+    "accept_http_latency_ms":  {
+                                   "count":  50,
+                                   "avg_ms":  67.42,
+                                   "p95_ms":  71.98,
+                                   "max_ms":  165.02
+                               },
+    "accepted_to_status_observed_ms":  {
+                                           "count":  50,
+                                           "avg_ms":  35.16,
+                                           "p95_ms":  89.3,
+                                           "max_ms":  283.81
+                                       },
+    "status_poll_count":  {
+                              "count":  50,
+                              "avg":  1.02,
+                              "p95":  1,
+                              "max":  2
+                          }
+}
+Elapsed: 4.54s
+
+==> k6 Kafka intake load
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+     execution: local
+        script: /scripts/load_test_k6.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * users_500: 100 looping VUs for 30s (exec: eventFlow, gracefulStop: 30s)
+
+
+running (0m01.0s), 100/100 VUs, 220 complete and 0 interrupted iterations
+users_500   [   1% ] 100 VUs  00.2s/30s
+
+running (0m02.0s), 100/100 VUs, 1172 complete and 0 interrupted iterations
+users_500   [   4% ] 100 VUs  01.2s/30s
+
+running (0m03.0s), 100/100 VUs, 2208 complete and 0 interrupted iterations
+users_500   [   7% ] 100 VUs  02.2s/30s
+
+running (0m04.0s), 100/100 VUs, 3293 complete and 0 interrupted iterations
+users_500   [  11% ] 100 VUs  03.2s/30s
+
+running (0m05.0s), 100/100 VUs, 4314 complete and 0 interrupted iterations
+users_500   [  14% ] 100 VUs  04.2s/30s
+
+running (0m06.0s), 100/100 VUs, 5302 complete and 0 interrupted iterations
+users_500   [  17% ] 100 VUs  05.2s/30s
+
+running (0m07.0s), 100/100 VUs, 6288 complete and 0 interrupted iterations
+users_500   [  21% ] 100 VUs  06.2s/30s
+
+running (0m08.0s), 100/100 VUs, 7351 complete and 0 interrupted iterations
+users_500   [  24% ] 100 VUs  07.2s/30s
+
+running (0m09.0s), 100/100 VUs, 8413 complete and 0 interrupted iterations
+users_500   [  27% ] 100 VUs  08.2s/30s
+
+running (0m10.0s), 100/100 VUs, 8413 complete and 0 interrupted iterations
+users_500   [  31% ] 100 VUs  09.2s/30s
+
+running (0m11.0s), 100/100 VUs, 8933 complete and 0 interrupted iterations
+users_500   [  34% ] 100 VUs  10.2s/30s
+
+running (0m12.0s), 100/100 VUs, 9934 complete and 0 interrupted iterations
+users_500   [  37% ] 100 VUs  11.2s/30s
+
+running (0m13.0s), 100/100 VUs, 11070 complete and 0 interrupted iterations
+users_500   [  41% ] 100 VUs  12.2s/30s
+
+running (0m14.0s), 100/100 VUs, 12122 complete and 0 interrupted iterations
+users_500   [  44% ] 100 VUs  13.2s/30s
+
+running (0m15.0s), 100/100 VUs, 13107 complete and 0 interrupted iterations
+users_500   [  47% ] 100 VUs  14.2s/30s
+
+running (0m16.0s), 100/100 VUs, 14084 complete and 0 interrupted iterations
+users_500   [  51% ] 100 VUs  15.2s/30s
+
+running (0m17.0s), 100/100 VUs, 15107 complete and 0 interrupted iterations
+users_500   [  54% ] 100 VUs  16.2s/30s
+
+running (0m18.0s), 100/100 VUs, 16176 complete and 0 interrupted iterations
+users_500   [  57% ] 100 VUs  17.2s/30s
+
+running (0m19.0s), 100/100 VUs, 17250 complete and 0 interrupted iterations
+users_500   [  61% ] 100 VUs  18.2s/30s
+
+running (0m20.0s), 100/100 VUs, 18269 complete and 0 interrupted iterations
+users_500   [  64% ] 100 VUs  19.2s/30s
+
+running (0m21.0s), 100/100 VUs, 19246 complete and 0 interrupted iterations
+users_500   [  67% ] 100 VUs  20.2s/30s
+
+running (0m22.0s), 100/100 VUs, 20327 complete and 0 interrupted iterations
+users_500   [  71% ] 100 VUs  21.2s/30s
+
+running (0m23.0s), 100/100 VUs, 21369 complete and 0 interrupted iterations
+users_500   [  74% ] 100 VUs  22.2s/30s
+
+running (0m24.0s), 100/100 VUs, 22487 complete and 0 interrupted iterations
+users_500   [  77% ] 100 VUs  23.2s/30s
+
+running (0m25.0s), 100/100 VUs, 23589 complete and 0 interrupted iterations
+users_500   [  81% ] 100 VUs  24.2s/30s
+
+running (0m26.0s), 100/100 VUs, 24622 complete and 0 interrupted iterations
+users_500   [  84% ] 100 VUs  25.2s/30s
+
+running (0m27.0s), 100/100 VUs, 25636 complete and 0 interrupted iterations
+users_500   [  87% ] 100 VUs  26.2s/30s
+
+running (0m28.0s), 100/100 VUs, 26709 complete and 0 interrupted iterations
+users_500   [  91% ] 100 VUs  27.2s/30s
+
+running (0m29.0s), 100/100 VUs, 27817 complete and 0 interrupted iterations
+users_500   [  94% ] 100 VUs  28.2s/30s
+
+running (0m30.0s), 100/100 VUs, 28851 complete and 0 interrupted iterations
+users_500   [  97% ] 100 VUs  29.2s/30s
+=== k6 Load Test Summary ===
+Base URL           : http://api.messaging-app.svc.cluster.local:8000
+Profile            : single500
+Stream count       : 64
+Stage duration     : 30s (100 concurrent users)
+Idempotency header  : disabled
+Total HTTP requests: 29784
+Error rate         : 0.00%
+Latency avg (ms)   : 50.10
+Latency p95 (ms)   : 87.78
+Latency p99 (ms)   : 131.84
+Event status 202  : 29717
+Event status 401  : 0
+Event status 403  : 0
+Event status 404  : 0
+Event status 409  : 0
+Event status 500  : 0
+Event status 503  : 0
+Event status other: 0
+============================
+
+running (0m30.8s), 000/100 VUs, 29717 complete and 0 interrupted iterations
+users_500 ✓ [ 100% ] 100 VUs  30s
+Elapsed: 36.88s
+
+==> Main load Kafka consumer lag drain
+main_load: message-worker lag=26808 age=2.63s; notification-worker lag=1 age=2.63s
+main_load: message-worker lag=26094 age=2.66s; notification-worker lag=2 age=2.66s
+main_load: message-worker lag=25481 age=2.67s; notification-worker lag=2 age=2.68s
+main_load: message-worker lag=24747 age=2.69s; notification-worker lag=1 age=2.69s
+main_load: message-worker lag=24099 age=2.70s; notification-worker lag=2 age=2.71s
+main_load: message-worker lag=23346 age=2.73s; notification-worker lag=3 age=2.73s
+main_load: message-worker lag=22740 age=2.74s; notification-worker lag=2 age=2.74s
+main_load: message-worker lag=21991 age=2.75s; notification-worker lag=2 age=2.76s
+main_load: message-worker lag=21383 age=2.78s; notification-worker lag=2 age=2.78s
+main_load: message-worker lag=20600 age=2.80s; notification-worker lag=2 age=2.80s
+main_load: message-worker lag=19991 age=2.82s; notification-worker lag=0 age=2.83s
+main_load: message-worker lag=19378 age=2.84s; notification-worker lag=1 age=2.84s
+main_load: message-worker lag=18774 age=2.86s; notification-worker lag=2 age=2.86s
+main_load: message-worker lag=18036 age=2.87s; notification-worker lag=3 age=2.89s
+main_load: message-worker lag=17435 age=2.89s; notification-worker lag=1 age=2.90s
+main_load: message-worker lag=16694 age=2.91s; notification-worker lag=2 age=2.92s
+main_load: message-worker lag=16059 age=2.93s; notification-worker lag=2 age=2.94s
+main_load: message-worker lag=15301 age=2.95s; notification-worker lag=0 age=2.96s
+main_load: message-worker lag=14691 age=2.97s; notification-worker lag=1 age=2.98s
+main_load: message-worker lag=13971 age=2.99s; notification-worker lag=2 age=3.00s
+main_load: message-worker lag=13353 age=3.00s; notification-worker lag=2 age=3.01s
+main_load: message-worker lag=12568 age=3.01s; notification-worker lag=0 age=3.02s
+main_load: message-worker lag=11962 age=3.03s; notification-worker lag=3 age=3.03s
+main_load: message-worker lag=11453 age=3.05s; notification-worker lag=2 age=3.05s
+main_load: message-worker lag=10837 age=3.06s; notification-worker lag=3 age=3.06s
+main_load: message-worker lag=10121 age=3.08s; notification-worker lag=2 age=3.08s
+main_load: message-worker lag=9539 age=3.09s; notification-worker lag=2 age=3.10s
+main_load: message-worker lag=8813 age=3.11s; notification-worker lag=2 age=3.11s
+main_load: message-worker lag=8213 age=3.12s; notification-worker lag=0 age=3.12s
+main_load: message-worker lag=7439 age=3.14s; notification-worker lag=2 age=3.14s
+main_load: message-worker lag=6832 age=3.16s; notification-worker lag=4 age=3.16s
+main_load: message-worker lag=6072 age=3.17s; notification-worker lag=0 age=3.18s
+main_load: message-worker lag=5441 age=3.19s; notification-worker lag=0 age=3.19s
+main_load: message-worker lag=4698 age=3.20s; notification-worker lag=0 age=3.21s
+main_load: message-worker lag=4094 age=3.22s; notification-worker lag=2 age=3.22s
+main_load: message-worker lag=3733 age=3.24s; notification-worker lag=1 age=3.24s
+main_load: message-worker lag=3239 age=3.26s; notification-worker lag=0 age=3.26s
+main_load: message-worker lag=2653 age=3.28s; notification-worker lag=0 age=3.29s
+main_load: message-worker lag=2154 age=3.30s; notification-worker lag=0 age=3.30s
+main_load: message-worker lag=1576 age=3.31s; notification-worker lag=0 age=3.31s
+main_load: message-worker lag=1090 age=3.33s; notification-worker lag=0 age=3.33s
+main_load: message-worker lag=506 age=3.35s; notification-worker lag=0 age=3.35s
+main_load: message-worker lag=8 age=3.37s; notification-worker lag=0 age=3.37s
+main_load: message-worker lag=0 age=3.39s; notification-worker lag=0 age=3.39s
+main_load: message-worker lag=0 age=3.41s; notification-worker lag=0 age=3.41s
+main_load_message_worker_peak_consumer_lag: 26808
+main_load_notification_worker_peak_consumer_lag: 4
+main_load_all_consumer_backlog_drain_seconds: 220.79
+main_load_message_worker_final_consumer_lag: 0
+main_load_notification_worker_final_consumer_lag: 0
+worker accepted_to_commit_lag_p95_5m_seconds: 279.674344546281
+Elapsed: 220.8s
+
+==> HPA and metrics sanity
+
+Elapsed: 20.01s
+
+==> Post-HPA Kafka consumer lag drain
+post_hpa: message-worker lag=10474 age=3.44s; notification-worker lag=0 age=3.45s
+post_hpa: message-worker lag=9920 age=3.47s; notification-worker lag=1 age=3.47s
+post_hpa: message-worker lag=9417 age=3.49s; notification-worker lag=0 age=3.49s
+post_hpa: message-worker lag=8834 age=3.50s; notification-worker lag=35 age=3.51s
+post_hpa: message-worker lag=8340 age=3.52s; notification-worker lag=1 age=3.52s
+post_hpa: message-worker lag=7768 age=3.54s; notification-worker lag=0 age=3.54s
+post_hpa: message-worker lag=7281 age=3.55s; notification-worker lag=0 age=3.55s
+post_hpa: message-worker lag=6683 age=3.57s; notification-worker lag=8 age=3.58s
+post_hpa: message-worker lag=6185 age=3.59s; notification-worker lag=0 age=3.59s
+post_hpa: message-worker lag=5608 age=3.60s; notification-worker lag=1 age=3.62s
+post_hpa: message-worker lag=5128 age=3.64s; notification-worker lag=1 age=3.64s
+post_hpa: message-worker lag=4869 age=3.65s; notification-worker lag=1 age=3.65s
+post_hpa: message-worker lag=4389 age=3.66s; notification-worker lag=0 age=3.66s
+post_hpa: message-worker lag=3824 age=3.68s; notification-worker lag=0 age=3.68s
+post_hpa: message-worker lag=3332 age=3.70s; notification-worker lag=0 age=3.70s
+post_hpa: message-worker lag=2753 age=3.71s; notification-worker lag=1 age=3.71s
+post_hpa: message-worker lag=2351 age=3.73s; notification-worker lag=0 age=3.74s
+post_hpa: message-worker lag=1756 age=3.75s; notification-worker lag=32 age=3.76s
+post_hpa: message-worker lag=1282 age=3.78s; notification-worker lag=0 age=3.78s
+post_hpa: message-worker lag=783 age=3.79s; notification-worker lag=1 age=3.79s
+post_hpa: message-worker lag=300 age=3.81s; notification-worker lag=0 age=3.81s
+post_hpa: message-worker lag=0 age=3.82s; notification-worker lag=0 age=3.82s
+post_hpa: message-worker lag=0 age=3.83s; notification-worker lag=0 age=3.83s
+post_hpa_message_worker_peak_consumer_lag: 10474
+post_hpa_notification_worker_peak_consumer_lag: 35
+post_hpa_all_consumer_backlog_drain_seconds: 110.4
+post_hpa_message_worker_final_consumer_lag: 0
+post_hpa_notification_worker_final_consumer_lag: 0
+Elapsed: 110.4s
+
+==> Final runtime snapshot
+NAME                                             READY   STATUS      RESTARTS         AGE
+api-7945f48558-4824h                             1/1     Running     0                9m13s
+api-7945f48558-c7ghm                             1/1     Running     0                9m13s
+api-7945f48558-g4r8m                             1/1     Running     0                9m13s
+api-7945f48558-rd6fd                             1/1     Running     0                9m23s
+api-7945f48558-rgj8h                             1/1     Running     0                9m23s
+api-7945f48558-tqhhc                             1/1     Running     0                9m23s
+dlq-replayer-59774d676c-vr9f4                    1/1     Running     0                7m1s
+grafana-578ccb7cf-c8c5j                          1/1     Running     3 (3h31m ago)    14d
+kafka-0                                          1/1     Running     5 (3h31m ago)    20d
+kafka-1                                          1/1     Running     5 (3h31m ago)    20d
+kafka-2                                          1/1     Running     5 (3h31m ago)    20d
+kafka-exporter-67456d7dbd-47wdj                  1/1     Running     12 (3h30m ago)   20d
+kube-state-metrics-6f78f6d6bd-2xrd5              1/1     Running     8 (3h31m ago)    20d
+messaging-postgresql-ha-pgpool-9b47c6dc7-4b4gw   1/1     Running     1 (3h31m ago)    4d14h
+messaging-postgresql-ha-pgpool-9b47c6dc7-jpldz   1/1     Running     1 (3h31m ago)    4d14h
+messaging-postgresql-ha-postgresql-0             1/1     Running     5 (3h31m ago)    20d
+messaging-postgresql-ha-postgresql-1             1/1     Running     6 (3h31m ago)    20d
+messaging-postgresql-ha-postgresql-2             1/1     Running     6 (3h31m ago)    20d
+messaging-schema-migration-m9krd                 0/1     Completed   0                4d13h
+notification-worker-845874d458-mtdvv             1/1     Running     0                8m15s
+postgres-weekly-backup-29760660-qjz7w            0/1     Completed   3                5d2h
+postgres-weekly-backup-29770740-jkcxw            0/1     Completed   3                3h31m
+prometheus-78dc5648f5-7wlfm                      1/1     Running     5 (3h31m ago)    20d
+worker-6b58f9ddd9-l9f75                          1/1     Running     0                7m1s
+worker-6b58f9ddd9-t9wh2                          1/1     Running     0                7m1s
+NAME      REFERENCE        TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+api-hpa   Deployment/api   cpu: 1%/65%   6         8         6          20d
+Elapsed: 0.22s
+
+Kafka performance suite completed successfully.
+
+==> Final reset

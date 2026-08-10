@@ -1550,6 +1550,113 @@ def test_notification_existing_target_new_or_duplicate_is_success(
     assert committed_offsets(consumer) == [(partition, 71)]
 
 
+def test_notification_batch_uses_one_store_call_and_commits_each_record(monkeypatch):
+    stored_batches = []
+
+    def store_batch(payloads):
+        stored_batches.append(payloads)
+        return {(payload["event_id"], payload["stream_id"]) for payload in payloads}
+
+    monkeypatch.setattr(worker_main, "store_attempt_batch", store_batch)
+    consumer = FakeConsumer()
+    partition = TopicPartition("message-notifications", 0)
+    records = {
+        partition: [
+            message(
+                "message-notifications",
+                0,
+                10,
+                notification_payload(event_id=10),
+            ),
+            message(
+                "message-notifications",
+                0,
+                11,
+                notification_payload(event_id=11),
+            ),
+        ]
+    }
+
+    worker_main._process_notification_batch(consumer, records)
+
+    assert len(stored_batches) == 1
+    assert [payload["event_id"] for payload in stored_batches[0]] == [10, 11]
+    assert committed_offsets(consumer) == [(partition, 11), (partition, 12)]
+    assert consumer.seeks == []
+
+
+def test_notification_batch_commits_invalid_and_missing_targets(monkeypatch):
+    monkeypatch.setattr(worker_main, "store_attempt_batch", lambda _payloads: set())
+    consumer = FakeConsumer()
+    partition = TopicPartition("message-notifications", 1)
+    records = {
+        partition: [
+            message("message-notifications", 1, 20, "invalid-json"),
+            message(
+                "message-notifications",
+                1,
+                21,
+                notification_payload(event_id=999),
+            ),
+        ]
+    }
+
+    worker_main._process_notification_batch(consumer, records)
+
+    assert committed_offsets(consumer) == [(partition, 21), (partition, 22)]
+    assert consumer.seeks == []
+
+
+def test_notification_batch_database_failure_rewinds_each_partition(monkeypatch):
+    def fail_batch(_payloads):
+        raise worker_main.OperationalError("database unavailable")
+
+    monkeypatch.setattr(worker_main, "store_attempt_batch", fail_batch)
+    monkeypatch.setattr(worker_main.time, "sleep", lambda _seconds: None)
+    consumer = FakeConsumer()
+    partition_0 = TopicPartition("message-notifications", 0)
+    partition_1 = TopicPartition("message-notifications", 1)
+    records = {
+        partition_0: [
+            message("message-notifications", 0, 30, notification_payload(event_id=30))
+        ],
+        partition_1: [
+            message("message-notifications", 1, 40, notification_payload(event_id=40))
+        ],
+    }
+
+    worker_main._process_notification_batch(consumer, records)
+
+    assert consumer.commits == []
+    assert consumer.seeks == [(partition_0, 30), (partition_1, 40)]
+
+
+def test_notification_batch_insert_uses_one_values_statement(monkeypatch):
+    calls = []
+
+    def fake_execute_values(cur, sql, rows, **kwargs):
+        calls.append((cur, sql, rows, kwargs))
+        return [{"event_id": 10, "stream_id": 7}, {"event_id": 11, "stream_id": 7}]
+
+    monkeypatch.setattr(worker_main, "execute_values", fake_execute_values)
+    cursor = object()
+    payloads = [notification_payload(event_id=10), notification_payload(event_id=11)]
+
+    targets = worker_main.insert_notification_attempt_batch(cursor, payloads)
+
+    assert targets == {(10, 7), (11, 7)}
+    assert len(calls) == 1
+    _cursor, sql, rows, kwargs = calls[0]
+    assert "WITH incoming" in sql
+    assert "ON CONFLICT (message_id) DO NOTHING" in sql
+    assert len(rows) == 2
+    assert kwargs == {
+        "template": "(%s, %s, %s::jsonb)",
+        "page_size": 2,
+        "fetch": True,
+    }
+
+
 def test_invalid_dlq_payload_is_skipped_instead_of_blocking_partition():
     assert dlq_replayer.replay_one({"request_id": "missing-room"}) is False
 
@@ -2123,16 +2230,65 @@ def test_existing_request_identity_conflict_rolls_back_and_terminally_commits(
     assert committed_offsets(consumer) == [(partition, 72)]
 
 
+@pytest.mark.parametrize(
+    ("authorization", "expected_reason"),
+    [
+        (
+            {"stream_exists": False, "actor_exists": True, "member_exists": True},
+            "stream_not_found",
+        ),
+        (
+            {"stream_exists": True, "actor_exists": False, "member_exists": True},
+            "actor_not_found",
+        ),
+        (
+            {"stream_exists": True, "actor_exists": True, "member_exists": False},
+            "membership_missing",
+        ),
+    ],
+)
+def test_worker_combined_authorization_read_preserves_rejection_reason(
+    authorization,
+    expected_reason,
+):
+    class FakeCursor:
+        def __init__(self):
+            self.rows = [None, authorization]
+
+        def execute(self, _sql, _params=None):
+            pass
+
+        def fetchone(self):
+            return self.rows.pop(0)
+
+    with pytest.raises(worker_main.IngressAuthorizationError, match=expected_reason):
+        worker_main._persist_message_with_cursor(
+            {
+                "route": "POST:/v2/streams/7/events",
+                "request_id": "req-auth",
+                "room_id": 7,
+                "user_id": 3,
+                "event_type": "example.created",
+                "schema_version": 2,
+                "payload": {"message": "auth"},
+                "metadata": {},
+            },
+            FakeCursor(),
+        )
+
+
 def test_worker_persists_generic_envelope_without_projecting_order_columns():
     class FakeCursor:
         def __init__(self):
             self.executed = []
             self.rows = [
                 None,
-                {"id": 7},
-                {"id": 3},
-                {"member": 1},
-                {"last_seq": 0},
+                {
+                    "stream_exists": True,
+                    "actor_exists": True,
+                    "member_exists": True,
+                },
+                {"last_seq": 1},
                 {
                     "id": 10,
                     "request_id": "req-generic",
@@ -2205,10 +2361,12 @@ def test_worker_reclassifies_deprecated_order_adapter_payload_before_insert():
             self.executed = []
             self.rows = [
                 None,
-                {"id": 7},
-                {"id": 3},
-                {"member": 1},
-                {"last_seq": 0},
+                {
+                    "stream_exists": True,
+                    "actor_exists": True,
+                    "member_exists": True,
+                },
+                {"last_seq": 1},
                 {
                     "id": 10,
                     "request_id": "req-order",
@@ -2348,14 +2506,14 @@ def test_worker_adopts_same_actor_legacy_idempotency_and_ignores_other_actor():
                 self.next_row = None if cached is None else {"response_json": cached}
             elif "FROM messages WHERE request_id=%s" in normalized:
                 self.next_row = None
-            elif "SELECT id FROM rooms" in normalized:
-                self.next_row = {"id": 7}
-            elif "SELECT id FROM users" in normalized:
-                self.next_row = {"id": 4}
-            elif "SELECT 1 FROM room_members" in normalized:
-                self.next_row = {"member": 1}
-            elif "SELECT last_seq FROM room_sequences" in normalized:
-                self.next_row = {"last_seq": 1}
+            elif "AS stream_exists" in normalized:
+                self.next_row = {
+                    "stream_exists": True,
+                    "actor_exists": True,
+                    "member_exists": True,
+                }
+            elif "INSERT INTO room_sequences" in normalized:
+                self.next_row = {"last_seq": 2}
             elif "INSERT INTO messages (" in normalized:
                 self.next_row = {
                     "id": 11,
@@ -2516,14 +2674,14 @@ def test_malformed_scoped_idempotency_cache_falls_through_and_is_overwritten(
                 self.next_row = None if cached is None else {"response_json": cached}
             elif "FROM messages WHERE request_id=%s" in normalized:
                 self.next_row = None
-            elif "SELECT id FROM rooms" in normalized:
-                self.next_row = {"id": 7}
-            elif "SELECT id FROM users" in normalized:
-                self.next_row = {"id": 3}
-            elif "SELECT 1 FROM room_members" in normalized:
-                self.next_row = {"member": 1}
-            elif "SELECT last_seq FROM room_sequences" in normalized:
-                self.next_row = {"last_seq": 0}
+            elif "AS stream_exists" in normalized:
+                self.next_row = {
+                    "stream_exists": True,
+                    "actor_exists": True,
+                    "member_exists": True,
+                }
+            elif "INSERT INTO room_sequences" in normalized:
+                self.next_row = {"last_seq": 1}
             elif "INSERT INTO messages (" in normalized:
                 self.next_row = {
                     "id": 22,
@@ -2577,10 +2735,12 @@ def test_worker_rejects_different_request_that_reuses_persisted_room_sequence():
         def __init__(self):
             self.rows = [
                 None,
-                {"id": 7},
-                {"id": 3},
-                {"member": 1},
-                {"last_seq": 4},
+                {
+                    "stream_exists": True,
+                    "actor_exists": True,
+                    "member_exists": True,
+                },
+                {"last_seq": 5},
                 {
                     "id": 9,
                     "request_id": "original-request",
