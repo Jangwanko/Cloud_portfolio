@@ -362,7 +362,10 @@ def test_destructive_benchmark_reset_is_explicit_and_restores_workers() -> None:
     assert "[switch]$CleanBenchmarkState" in suite
     assert "reset_kafka_benchmark_state.ps1" in suite
     assert "-ConfirmDataLoss" in suite
-    assert '[ValidateSet("keda", "fixed")]' in suite
+    assert '[ValidateSet("keda", "core-keda", "fixed")]' in suite
+    assert '$WorkerScalingMode -eq "core-keda"' in suite
+    assert '"autoscaling.keda.sh/paused-replicas=1"' in suite
+    assert "notification_worker_scaling_mode" in suite
     assert "Set-WorkerScalingExperimentMode" in suite
     assert "Restore-WorkerScaling" in suite
     assert "notification-worker-keda" in suite
@@ -387,6 +390,22 @@ def test_destructive_benchmark_reset_is_explicit_and_restores_workers() -> None:
     assert "worker_scaling_mode: keda" in keda_evidence
     assert "main_load_all_consumer_backlog_drain_seconds: 261.17" in keda_evidence
     assert "worker-keda-hpa   Deployment/worker" in keda_evidence
+
+
+def test_notification_success_path_does_not_emit_per_event_info_logs() -> None:
+    worker = _read("worker/main.py")
+
+    assert "Notification processed event_id=" not in worker
+    assert 'worker_processed_total.labels(result=result).inc()' in worker
+
+
+def test_worker_allocates_stream_sequence_with_one_atomic_statement() -> None:
+    worker = _read("worker/main.py")
+
+    assert "last_seq = room_sequences.last_seq + 1" in worker
+    assert "RETURNING last_seq" in worker
+    assert "SELECT last_seq FROM room_sequences" not in worker
+    assert "UPDATE room_sequences SET last_seq" not in worker
 
 
 def test_quick_starts_install_postgresql_before_application_workloads() -> None:

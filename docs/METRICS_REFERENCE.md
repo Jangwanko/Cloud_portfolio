@@ -129,7 +129,7 @@ Worker 내부 구간별 latency.
 - DB read: PostgreSQL source of truth 사용, read 장애 시 `503`
 - Worker replica: `/ops/summary`가 Prometheus 조회를 15초 cache해 반환; readiness 판정과 분리
 - `notification_enqueue`: DB commit 이후 `message-notifications` topic으로 후속 notification 작업 생성
-- `notification_db_insert`: 별도 `notification-worker`가 notification attempt record 저장. 외부 채널 실제 발송 결과 제외
+- `notification_db_insert`: 별도 `notification-worker`가 poll batch를 한 PostgreSQL transaction으로 저장한 시간. histogram observation 1개는 event 1건이 아니라 최대 20건의 batch일 수 있음. 외부 채널 실제 발송 결과 제외
 - `notification_publish`: DB commit 이후 notification job publish
 
 ```promql

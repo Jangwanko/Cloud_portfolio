@@ -273,7 +273,9 @@ class TestKafkaIntakeBoundary:
     def test_worker_validates_membership_before_persistence(self):
         worker = (ROOT / "worker/main.py").read_text(encoding="utf-8")
 
-        assert "SELECT 1 FROM room_members WHERE room_id=%s AND user_id=%s" in worker
+        assert "AS stream_exists" in worker
+        assert "AS actor_exists" in worker
+        assert "AS member_exists" in worker
         assert '"membership_missing"' in worker
         assert '"Event authorization rejected"' in worker
 
@@ -308,10 +310,12 @@ class TestKafkaIntakeBoundary:
                 self.executed = []
                 self.rows = [
                     None,
-                    {"id": 1},
-                    {"id": 2},
-                    {"member": 1},
-                    {"last_seq": 0},
+                    {
+                        "stream_exists": True,
+                        "actor_exists": True,
+                        "member_exists": True,
+                    },
+                    {"last_seq": 1},
                     {
                         "id": 10,
                         "request_id": "req-1",

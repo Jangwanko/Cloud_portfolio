@@ -1,26 +1,26 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-05`, 최신 public runtime 확인은 `2026-07-27`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-09`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.3.1` | local suite `345 passed`; image build·non-root 실행·live/root/OpenAPI smoke 통과 |
-| Candidate runtime | API·core Worker·notification Worker image `messaging-portfolio:v2-core-cleanup` | local cluster 임시 rollout, 세 workload image 일치, generic v2·ordering·DB outage·performance suite 통과; registry publication 전 |
-| Restored local GitOps runtime | UI `2.3.0`, API `2.0.0`, image `a9a02ddd63a2` | Argo revision `803ab339`, `Synced / Healthy`, self-heal `true`, API `6/6`, core Worker `2/2`, notification Worker `1/1` |
+| Source candidate | API `2.1.0`, Demo UI `2.3.1` | local suite `354 passed`; notification batch·DB roundtrip 최적화 포함 |
+| Candidate runtime | image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, generic v2·ordering·final lag·오류율 검증; registry publication 전 |
+| Local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validation 뒤 게시된 GHCR image |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
 | Operations summary | Worker desired·available·HPA desired·max | Prometheus 단일 query, 15초 결과 캐시; local candidate runtime 확인 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
-| Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | current 64-stream run: peak lag `25,905`/`1,141`, final `0/0`; 실행 편차로 성능 개선 확정 제외 |
-| Fixed/KEDA A/B | fixed `2` 1회와 KEDA `2→4` 3회 | 같은 source·record commit 후보; drain 범위가 겹쳐 stable 비교 미채택 |
-| Generic v2 performance | hot-stream 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | current simplified source의 dirty local image candidate; stable baseline 미채택 |
+| Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
+| Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
+| Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | 기존 master/dev 검증 유지; current candidate publication 전 |
-| Public demo-lite | UI `2.1.0`, API `2.0.0`, event `202` | 2026-07-27 live evidence; current candidate와 분리 |
+| Public demo-lite | image `207d7b90813a`, UI `2.3.1`, API `2.1.0` | 2026-08-09 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
 
 원본 위치:
 
@@ -56,6 +56,7 @@
 - 최신 2026-07-21 performance 원본의 event status `202`: `29,608`, 다른 event status `0`
 - 첫 v2 비교 원본의 event status `202`: `25,378`, 다른 event status `0`
 - 최신 2026-08-05 current source 원본의 event status `202`: `28,605`, 다른 event status `0`
+- 최신 2026-08-10 notification batch 원본의 event status `202`: `30,307`, 다른 event status `0`
 
 ### Row-visible latency proxy
 
@@ -85,7 +86,31 @@
 - unresolved depth / current incident backlog: 제공하지 않음
 - oldest unresolved SLO: 제공하지 않음
 
-## Current Simplified v2 Candidate — 2026-08-05
+## Notification Batch Fixed/KEDA A/B Candidate — 2026-08-10
+
+공통 조건은 `messaging-portfolio:notification-batch`, API `6`, 64 streams, 100 VU / 30s, 실행별 clean DB/topic, deletion quiet period `75s`, 시작 consumer lag `0`입니다. Fixed core `2`와 KEDA core `2→4`·notification `1→2`를 각각 3회 실행했습니다. source HEAD는 `e378164`이며 candidate 변경이 있는 dirty worktree입니다.
+
+| Mode | Event `202` 3회 | Avg latency 평균 | p95 평균 | p99 평균 | Peak message lag 평균 | Drain 3회 | Backlog 처리율 평균 |
+| --- | --- | ---: | ---: | ---: | ---: | --- | ---: |
+| fixed core `2` | `29,717` / `31,316` / `29,836` | `48.25ms` | `88.53ms` | `131.30ms` | `27,013.33` | `220.79` / `230.86` / `215.81s` | `121.42 events/s` |
+| KEDA core `2→4` | `30,214` / `30,533` / `30,307` | `47.82ms` | `94.28ms` | `135.11ms` | `26,714` | `190.71` / `195.69` / `195.75s` | `137.67 events/s` |
+
+판정:
+
+- KEDA backlog 처리율 `13.38%` 증가, 평균 drain `12.78%` 감소
+- KEDA 세 실행의 drain `190.71~195.75s`, fixed 세 실행의 `215.81~230.86s`보다 모두 짧음
+- 두 arm 모두 error `0.00%`, same-stream ordering `100/100`, final message/notification lag `0/0`
+- KEDA 세 실행 모두 core Worker replica `4` 도달
+- KEDA API p95 평균 `6.49%`, p99 평균 `2.90%` 증가; API latency 개선 주장 제외
+- notification attempt를 poll당 최대 20건씩 한 PostgreSQL transaction으로 저장해 downstream commit 경합 축소
+- core persistence는 sequence allocation atomic statement와 authorization single read 적용
+- notification 성공 event별 INFO log 제거; 처리 결과는 Prometheus counter 유지
+- notification batch DB commit 뒤 Kafka offset은 record 단위로 commit. DB 오류 시 partition 첫 record로 rewind, DataError는 record 처리로 fallback
+- local dirty candidate라 stable release baseline 승격과 public runtime 성능 주장 제외
+
+원본: [latest KEDA run](../results/kafka-performance/latest.txt), `notification-batch-fixed-run1..3.txt`, `notification-batch-keda-run1..3.txt`.
+
+## Historical Simplified v2 Candidate — 2026-08-05
 
 검증 image `messaging-portfolio:v2-core-cleanup`은 API, core Worker, notification Worker에 동일하게 배치했습니다. API pod별 materialized cache, request-status/message/stream snapshot topic과 Worker post-commit snapshot 발행을 제거한 source입니다. DB·topic clean reset, 시작 consumer lag `0`, API `6/6`, core Worker `2/2`, notification Worker `1/1`을 확인한 뒤 실행했습니다.
 

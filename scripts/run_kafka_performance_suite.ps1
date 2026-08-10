@@ -19,7 +19,7 @@ param(
   [int]$LagDrainTimeoutSec = 1200,
   [ValidateRange(30, 1800)]
   [int]$SteadyStateTimeoutSec = 600,
-  [ValidateSet("keda", "fixed")]
+  [ValidateSet("keda", "core-keda", "fixed")]
   [string]$WorkerScalingMode = "keda",
   [ValidateRange(1, 8)]
   [int]$FixedWorkerReplicas = 2,
@@ -116,17 +116,26 @@ function Set-WorkerScalingExperimentMode() {
   if ($LASTEXITCODE -ne 0) {
     throw "Failed to enable Worker KEDA for scaling experiment"
   }
-  kubectl -n $Namespace annotate scaledobject notification-worker-keda `
-    autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) {
-    throw "Failed to enable notification Worker KEDA for scaling experiment"
+  if ($WorkerScalingMode -eq "core-keda") {
+    kubectl -n $Namespace annotate scaledobject notification-worker-keda `
+      "autoscaling.keda.sh/paused-replicas=1" `
+      --overwrite | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to pin notification Worker replicas for core-KEDA experiment"
+    }
+  } else {
+    kubectl -n $Namespace annotate scaledobject notification-worker-keda `
+      autoscaling.keda.sh/paused-replicas- 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to enable notification Worker KEDA for scaling experiment"
+    }
   }
   Wait-DeploymentReplicaCount -Name "worker" -Expected 2
   Wait-DeploymentReplicaCount -Name "notification-worker" -Expected 1
 }
 
 function Restore-WorkerScaling() {
-  if ($WorkerScalingMode -ne "fixed") {
+  if ($WorkerScalingMode -eq "keda") {
     return
   }
   kubectl -n $Namespace annotate scaledobject worker-keda `
@@ -291,7 +300,7 @@ function Wait-PerformanceSteadyState() {
   $consecutiveSamples = 0
   while ((Get-Date) -lt $deadline) {
     $apiHpa = Get-KubernetesJson @("-n", $Namespace, "get", "hpa", "api-hpa")
-    $workerHpa = if ($WorkerScalingMode -eq "keda") {
+    $workerHpa = if ($WorkerScalingMode -ne "fixed") {
       Get-KubernetesJson @("-n", $Namespace, "get", "hpa", "worker-keda-hpa")
     } else {
       $null
@@ -314,7 +323,7 @@ function Wait-PerformanceSteadyState() {
     } else {
       [int]$workerHpa.spec.minReplicas
     }
-    $expectedNotificationWorkerReplicas = if ($WorkerScalingMode -eq "fixed") {
+    $expectedNotificationWorkerReplicas = if ($WorkerScalingMode -ne "keda") {
       1
     } else {
       [int]$notificationWorkerHpa.spec.minReplicas
@@ -469,6 +478,7 @@ Add-Line ("max_lag_metric_age_seconds: {0}" -f $MaxLagMetricAgeSec)
 Add-Line ("lag_drain_timeout_seconds: {0}" -f $LagDrainTimeoutSec)
 Add-Line ("steady_state_timeout_seconds: {0}" -f $SteadyStateTimeoutSec)
 Add-Line ("worker_scaling_mode: {0}" -f $WorkerScalingMode)
+Add-Line ("notification_worker_scaling_mode: {0}" -f $(if ($WorkerScalingMode -eq "keda") { "keda" } else { "fixed" }))
 Add-Line ("fixed_worker_replicas: {0}" -f $FixedWorkerReplicas)
 Add-Line ("result_file_name: {0}" -f $ResultFileName)
 Add-Line ("clean_benchmark_state: {0}" -f $CleanBenchmarkState.IsPresent)
