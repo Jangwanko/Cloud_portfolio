@@ -111,7 +111,13 @@ English: The Terraform source is a migration blueprint. It maps validated local 
 
 API acceptance latency는 Kafka append까지의 수락 경로를 나타냅니다. KEDA 효과는 consumer lag, commit lag, backlog drain time으로 판정합니다. Argo `Synced / Healthy`는 runtime image 확인과 함께 사용합니다.
 
-지표 정의·dashboard·대응 연결: [Observability](docs/OBSERVABILITY.md) · [Metrics Reference](docs/METRICS_REFERENCE.md) · [Runbook](docs/RUNBOOK.md)
+Phase 1 read-only Ops Agent는 Application·Prometheus·Kubernetes·Argo CD 신호를 `ops.evidence.v1` bundle로 보존합니다. 2026-08-12 `local-ha` live capture에서 Kafka partition `8/8`, lag `0`, Worker `2/2`, PostgreSQL sync standby `2`, Argo `Synced / Healthy`를 실제 source로 확인했습니다. 두 label-on-use Worker series의 부재는 `0`이 아닌 `MISSING/UNKNOWN`으로 유지했습니다.
+
+Phase 2 v1 evaluator는 이 `PARTIAL` bundle을 condition별 dependency로 평가해 backlog·partition concentration·DB degradation·Worker replica unavailable을 모두 `ABSENT`로, `NO_BACKLOG_PRESSURE_DETECTED`를 `PRESENT`로 기록했습니다. 별도 v2 sequence evaluator는 실제 positive backlog 세 run을 모두 `PRESENT`로 재생했고 short burst·sustainable high·transient spike에서는 `PRESENT`를 만들지 않았습니다. Phase 3 single Diagnosis Agent는 확정된 `PRESENT` 뒤에서만 allowlisted read-only 조사를 선택하고 evidence ID 기반 hypothesis를 출력하며 condition, recovery, remediation은 결정하지 않습니다.
+
+English: The Ops Agent captures normalized read-only evidence, evaluates deterministic single-bundle and calibrated sequence conditions, and runs one bounded evidence-grounded diagnosis step after backlog is `PRESENT`. Recovery decisions and remediation remain outside the implemented boundary.
+
+지표 정의·evidence 계약·대응 연결: [Observability](docs/OBSERVABILITY.md) · [Ops Agent](docs/OPS_AGENT.md) · [Metrics Reference](docs/METRICS_REFERENCE.md) · [Runbook](docs/RUNBOOK.md)
 
 ## STAR 운영 문제 해결 경험 / Operational STAR Cases
 
@@ -190,5 +196,5 @@ Demo는 `Reserved → Kafka Appended → DB Persisted`를 서로 독립적으로
 
 - 설계·배포: [Architecture](docs/ARCHITECTURE.md) · [GitOps](docs/GITOPS.md) · [AWS IaC Plan](docs/AWS_IAC_PLAN.md)
 - 관측·대응: [Observability](docs/OBSERVABILITY.md) · [Runbook](docs/RUNBOOK.md) · [Reliability Policy](docs/RELIABILITY_POLICY.md)
-- 실행·검증: [Quick Start](docs/QUICK_START.md) · [Service Checklist](docs/SERVICE_PROCESS_CHECKLIST.md) · [Test Results](docs/TEST_RESULTS.md)
+- 실행·검증: [Quick Start](docs/QUICK_START.md) · [Ops Agent](docs/OPS_AGENT.md) · [Service Checklist](docs/SERVICE_PROCESS_CHECKLIST.md) · [Test Results](docs/TEST_RESULTS.md)
 - 요구·개선: [Service Requirements](docs/SERVICE_REQUIREMENTS.md) · [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)

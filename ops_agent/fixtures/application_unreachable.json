@@ -1,0 +1,1 @@
+{"source":"application_http","status":"ERROR","partial":false,"collected_at":"2026-08-12T01:02:03Z","data":{},"error":{"type":"ConnectionError","message":"application endpoint unreachable"}}

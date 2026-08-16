@@ -22,6 +22,29 @@ Prometheus의 `messaging_*` metric prefix와 기존 Grafana dashboard UID/title�
 - 병목이 API intake, Kafka lag, Worker 처리량, PostgreSQL persistence 중 어디에 있는가?
 - KEDA가 Kafka consumer lag를 기준으로 Worker replica를 늘리는가?
 
+## Read-only Evidence Bundle
+
+Phase 1 `ops_agent`는 dashboard를 대체하지 않고 incident 시점의 신호를 versioned Evidence Bundle로 고정합니다.
+
+- schema: `ops.evidence.v1`
+- sources: Application, Prometheus, Kubernetes, Argo CD
+- preservation: source timestamp, freshness, partition/Pod coverage, semantic flags, raw artifact SHA-256
+- missing contract: absent series, 실제 `0`, Kafka offset `-1` 분리
+- authority: collection completeness만 기록하며 condition, 원인, remediation 미판정
+
+2026-08-12 `local-ha` live capture는 Kafka 3종의 partition `8/8`과 실제 scrape timestamp를 확보했습니다. Worker 재시작 후 새 처리 이력이 없어 terminal counter와 `db_persist` stage series는 `MISSING/UNKNOWN`이며, 이 때문에 bundle은 runtime 장애가 아닌 evidence completeness 기준 `PARTIAL`입니다.
+
+상세 계약, 실제 partition 값, Phase 2 required/optional evidence와 보수적 tri-state rule: [OPS_AGENT.md](OPS_AGENT.md)
+
+Phase 3의 primary trace는 `ops.diagnosis.v1` JSON입니다. 현재 exporter를
+추가하지 않았으며, 후속 low-cardinality metric contract는
+`ops_agent_diagnosis_total`, `ops_agent_abstention_total`,
+`ops_agent_tool_calls_total`, `ops_agent_schema_violation_total`,
+`ops_agent_citation_validation_failure_total`,
+`ops_agent_step_budget_exhausted_total`,
+`ops_agent_diagnosis_duration_seconds`로 제한합니다. `incident_id`,
+`diagnosis_id`, `evidence_id`는 Prometheus label로 사용하지 않습니다.
+
 ## Grafana 패널
 
 | Panel | PromQL / Metric | Interpretation |

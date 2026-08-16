@@ -11,6 +11,7 @@
 ├─ infra/                     # AWS IaC(Terraform) 코드
 ├─ k8s/                       # Kubernetes 배포/검증 리소스
 ├─ monitoring/                # Prometheus/Grafana 설정
+├─ ops_agent/                 # evidence collector + deterministic evaluator + bounded diagnosis
 ├─ portfolio/                 # FastAPI 애플리케이션 본체
 ├─ results/                   # Git 추적 latest validation evidence
 ├─ scripts/                   # 운영/테스트 자동화 스크립트
@@ -27,11 +28,12 @@
 - `scripts/`: quick start, 장애 재현, 성능 측정, 백업/복구 스크립트
 - `infra/`: AWS migration blueprint용 Terraform 환경/모듈
 - `monitoring/`: Prometheus 규칙, Grafana 대시보드 설정
+- `ops_agent/`: Phase 1 collectors, Phase 2 evaluators, Phase 3 single grounded Diagnosis Agent, calibration summary, versioned policy와 fixtures
 - `k8s/`: 배포/스케일링/검증 매니페스트
 - `docs/`: 실행 가이드, 아키텍처, 테스트 결과 문서
 - `alembic/`: schema version history
 - `tools/`: bootstrap 뒤 생성되는 ignored local binaries와 재현용 vendored Helm chart source
-- `results/`: 마지막 성능/ordering 원본과 provenance guide; 중간 산출물 기본 추적 제외
+- `results/`: 마지막 성능/ordering 원본과 provenance guide; allowlist된 Ops Agent live capture 외 중간 산출물 기본 추적 제외
 
 ## 주요 파일 설명
 - `Dockerfile`: digest-pinned Python base, BuildKit pip cache, bytecode 제외, UID/GID `10001` non-root 실행, 요청별 Uvicorn access log·server header 제외
@@ -47,6 +49,27 @@
 - `results/ordering-failure/latest.json`: 마지막 ordering/failure injection 원본
 - `results/postgres-restore/latest.json`: 마지막 disposable PostgreSQL restore 정합성 원본
 - `results/postgres-recovery/latest.json`: 마지막 PostgreSQL restart/sync/cache/outage recovery tracked structured summary
+- `ops_agent/README.md`: Phase 경계, evidence status/freshness, read-only·보안 계약
+- `ops_agent/controller.py`: source result를 `ops.evidence.v1` bundle로 정규화
+- `ops_agent/models.py`: strict Evidence Bundle schema
+- `ops_agent/evaluator.py`: frozen bundle을 source 재조회 없이 deterministic tri-state condition으로 평가
+- `ops_agent/sequence_evaluator.py`: ordered bundle sequence의 calibrated backlog activation을 평가
+- `ops_agent/sequence_models.py`: `ops.conditions.v2` policy, ordered source reference, output integrity schema
+- `ops_agent/diagnosis_models.py`: `ops.diagnosis.v1`, hypothesis, step/stop, usage와 deterministic ID schema
+- `ops_agent/diagnosis_tools.py`: normalized Evidence만 반환하는 fixed read-only tool registry
+- `ops_agent/diagnosis_agent.py`: explicit live opt-in Responses API loop와 bounded cost/step policy
+- `ops_agent/diagnosis_validator.py`: citation/tool/budget/rebalance/forbidden-claim validation
+- `ops_agent/diagnosis_evals.py`: scripted golden artifact 평가 metric
+- `ops_agent/evaluation_models.py`: strict `ops.conditions.v1` output, policy/profile, provenance 계약
+- `ops_agent/calibration.py`: Evidence Bundle에서 rate·lag·replica·KEDA·PostgreSQL·Worker stage 값을 threshold 없이 요약
+- `ops_agent/collectors/`: Application, Prometheus, Kubernetes, Argo CD fixed read-only collectors
+- `ops_agent/policies/local-ha.yaml`: GitOps local-ha endpoint, resource, freshness, partition policy
+- `ops_agent/fixtures/`: synthetic unit-test input; live capture와 분리
+- `scripts/worker_backlog_calibration.py`: 기존 KEDA 정책을 유지한 multi-stream 3-run evidence timeline runner
+- `scripts/worker_backlog_negative_controls.py`: frozen pressure candidate의 short/sustainable/transient false-positive calibration runner
+- `results/ops-agent/live-baseline/no-backlog-20260812.json`: 2026-08-12 captured no-backlog operations reference
+- `results/ops-agent/live-baseline/no-backlog-20260812.conditions.json`: captured bundle의 deterministic derived result
+- `results/ops-agent/diagnosis/golden-eval-v1.json`: Phase 3 offline golden evaluation summary
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
 - `demo/order-dashboard.html`: Reliable Event Processing System 흐름과 order reference payload를 보여주는 브라우저 데모; 파일명은 URL 호환을 위해 유지
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
@@ -72,6 +95,7 @@
 - 아키텍처: [ARCHITECTURE.md](ARCHITECTURE.md)
 - 신뢰성 정책: [RELIABILITY_POLICY.md](RELIABILITY_POLICY.md)
 - 관측 지표 안내: [OBSERVABILITY.md](OBSERVABILITY.md)
+- Ops Agent evidence 계약: [OPS_AGENT.md](OPS_AGENT.md)
 - AWS IaC 설계: [AWS_IAC_PLAN.md](AWS_IAC_PLAN.md)
 - 테스트 결과: [TEST_RESULTS.md](TEST_RESULTS.md)
 - 개선 로드맵: [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)

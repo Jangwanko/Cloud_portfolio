@@ -1,0 +1,66 @@
+{
+  "collected_at": "2026-08-12T00:39:08.106160Z",
+  "data": {
+    "ops_summary": {
+      "body": {
+        "app_version": "2.1.0",
+        "worker": {
+          "available_replicas": 2,
+          "deployment": "worker",
+          "desired_replicas": 2,
+          "error": null,
+          "hpa_desired_replicas": 2,
+          "max_replicas": 4,
+          "source": "prometheus"
+        }
+      },
+      "body_status": null,
+      "collected_at": "2026-08-12T00:39:08.106160Z",
+      "error": null,
+      "http_status": 200,
+      "path": "/ops/summary",
+      "semantic": {
+        "advisory": true,
+        "cache_max_age_seconds": 15,
+        "notes": "advisory application summary with an in-process 15 second cache",
+        "type": "application_ops_summary"
+      },
+      "source_timestamp": null,
+      "status": "OK"
+    },
+    "readiness": {
+      "body": {
+        "app_version": "2.1.0",
+        "grace_remaining_seconds": null,
+        "kafka": {
+          "bootstrap_reachable": true
+        },
+        "postgres": {
+          "ha_mode": true,
+          "max_replication_delay_bytes": 0,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2
+        },
+        "queue_backend": "kafka",
+        "reason": [],
+        "status": "ready"
+      },
+      "body_status": "ready",
+      "collected_at": "2026-08-12T00:39:08.106160Z",
+      "error": null,
+      "http_status": 200,
+      "path": "/health/ready",
+      "semantic": {
+        "advisory": false,
+        "type": "application_readiness"
+      },
+      "source_timestamp": null,
+      "status": "OK"
+    }
+  },
+  "error": null,
+  "partial": false,
+  "source": "application_http",
+  "status": "OK"
+}

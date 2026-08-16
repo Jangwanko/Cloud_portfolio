@@ -18,6 +18,56 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 
 Argo CD를 설치하지 않은 `quick_start_all.ps1` profile에서는 `-SkipArgoCd` 사용.
 
+GitOps `local-ha`에서 incident 시작 시 normalized read-only evidence 보존:
+
+```powershell
+.\tools\kubectl.exe config current-context
+.venv\Scripts\python.exe -m ops_agent collect `
+  --profile local-ha `
+  --incident-id <incident-id> `
+  --context kind-messaging-ha `
+  --output results/ops-agent/evidence-<incident-id>.json
+```
+
+현재 policy는 Argo CD가 enabled이고 partition `8`을 기대합니다. manual full profile과 demo-lite에 그대로 사용하지 않습니다. Bundle `COMPLETE/PARTIAL/FAILED`는 수집 완전성 상태이며 runtime health 판정이 아닙니다. 상세 해석은 [OPS_AGENT.md](OPS_AGENT.md)를 사용합니다.
+
+수집을 마친 immutable bundle의 deterministic condition 평가:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate `
+  --input results/ops-agent/evidence-<incident-id>.json `
+  --output results/ops-agent/conditions-<incident-id>.json
+```
+
+Evaluation `COMPLETE/PARTIAL`은 condition 판정 가능 여부입니다. `PRESENT` condition도 원인이나 조치를 확정하지 않으며, evaluator는 source를 재조회하지 않습니다.
+
+약 15초 간격으로 수집해 이미 고정한 bundle sequence의 backlog activation 평가:
+
+```powershell
+$inputs = Get-ChildItem results/ops-agent/<incident>/sample-*.json | Sort-Object Name | ForEach-Object FullName
+.venv\Scripts\python.exe -m ops_agent evaluate-sequence `
+  --input $inputs `
+  --output results/ops-agent/conditions-<incident>-v2.json
+```
+
+입력 순서는 수집 시각 순서여야 합니다. V2의 `PRESENT`는 calibrated activation 관측이며 recovery/clearing이나 원인 진단을 뜻하지 않습니다.
+
+V2에서 `CORE_BACKLOG_PRESSURE=PRESENT`가 확정된 sequence만 Phase 3
+Diagnosis Agent에 전달합니다:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent diagnose `
+  --conditions results/ops-agent/conditions-<incident>-v2.json `
+  --input $inputs `
+  --output results/ops-agent/diagnosis/<incident>.json `
+  --live
+```
+
+`--live`는 OpenAI API 비용 opt-in입니다. Agent는 fixed read-only tool만
+사용하고 condition을 변경하거나 recovery/remediation을 실행하지 않습니다.
+HTTP 429/401/API access 오류이면 offline fixture로 정상 결과를 대체하지 말고
+live Diagnosis Run을 미생성 상태로 유지합니다.
+
 확인 항목:
 
 - API readiness

@@ -1,0 +1,77 @@
+{
+  "schema_version": "ops.diagnosis.golden.v1",
+  "fixtures": [
+    {
+      "name": "no_incident_invalid_entry",
+      "entry_allowed": false,
+      "expected_tools": [],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "invalid_entry"
+    },
+    {
+      "name": "uniform_backlog",
+      "entry_allowed": true,
+      "expected_tools": ["get_partition_lag", "get_worker_stage_latency"],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "insufficient_evidence"
+    },
+    {
+      "name": "partition_concentration",
+      "entry_allowed": true,
+      "expected_tools": ["get_partition_lag"],
+      "allowed_supported_hypotheses": ["HOT_KEY_SUSPECTED"],
+      "expect_abstention": false,
+      "expected_stop_reason": "sufficient_evidence"
+    },
+    {
+      "name": "db_degraded_context",
+      "entry_allowed": true,
+      "expected_tools": ["get_postgres_health", "get_application_readiness"],
+      "allowed_supported_hypotheses": ["WORKER_PATH_PRESSURE_SUSPECTED"],
+      "expect_abstention": false,
+      "expected_stop_reason": "sufficient_evidence"
+    },
+    {
+      "name": "worker_unavailable_context",
+      "entry_allowed": true,
+      "expected_tools": ["get_worker_replica_status", "get_keda_status"],
+      "allowed_supported_hypotheses": ["WORKER_PATH_PRESSURE_SUSPECTED"],
+      "expect_abstention": false,
+      "expected_stop_reason": "sufficient_evidence"
+    },
+    {
+      "name": "stale_evidence",
+      "entry_allowed": true,
+      "expected_tools": ["get_worker_stage_latency"],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "insufficient_evidence"
+    },
+    {
+      "name": "insufficient_evidence",
+      "entry_allowed": true,
+      "expected_tools": ["get_partition_lag", "get_worker_stage_latency", "get_pod_restart_status"],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "insufficient_evidence"
+    },
+    {
+      "name": "consumer_rebalance_unavailable",
+      "entry_allowed": true,
+      "expected_tools": [],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "insufficient_evidence"
+    },
+    {
+      "name": "tool_error",
+      "entry_allowed": true,
+      "expected_tools": [],
+      "allowed_supported_hypotheses": [],
+      "expect_abstention": true,
+      "expected_stop_reason": "tool_error"
+    }
+  ]
+}

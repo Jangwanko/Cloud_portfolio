@@ -243,6 +243,12 @@ KEDA 효과는 API request 수가 아니라 consumer lag, Worker replica, accept
 - accepted/commit clock source와 cluster 재측정 증거
 - post-commit publish backlog와 retry
 
+### Read-only operational evidence layer
+
+Phase 1 `ops_agent`는 workload data path 밖에서 Application, Prometheus, Kubernetes, Argo CD를 읽고 `ops.evidence.v1` bundle을 생성합니다. source timestamp, freshness, coverage, missing/anomaly, runtime image, GitOps revision, raw artifact hash를 한 시점의 증거로 고정합니다.
+
+Phase 2 evaluator는 data path와 source에 다시 접근하지 않고 고정된 bundle의 condition별 required evidence를 deterministic tri-state로 평가합니다. V1은 single bundle의 no-backlog와 현재 상태를 판정하고, v2는 ordered bundle digest와 timing/source identity를 검증해 calibrated three-capture backlog activation을 판정합니다. Phase 3 single Diagnosis Agent는 v2 `PRESENT`를 고정 입력으로 받아 normalized read-only evidence tool만 선택하고 grounded hypothesis를 구조화합니다. Condition 재판정, recovery, write/remediation은 이 layer에 없습니다. 상세 계약은 [OPS_AGENT.md](OPS_AGENT.md)에 있습니다.
+
 ## 백업과 복구
 현재 PostgreSQL 운영 보강은 아래처럼 구성되어 있습니다.
 

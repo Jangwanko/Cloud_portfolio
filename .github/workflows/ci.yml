@@ -44,7 +44,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Python Compile Check
-        run: python -m compileall portfolio worker alembic
+        run: python -m compileall portfolio worker alembic ops_agent
 
       - name: Unit Tests
         run: python -m pytest -q

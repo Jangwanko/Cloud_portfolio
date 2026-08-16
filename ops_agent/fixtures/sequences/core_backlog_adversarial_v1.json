@@ -1,0 +1,45 @@
+{
+  "schema_version": "ops.sequence-fixtures.v1",
+  "description": "Mutation specifications for local-ha.conditions.v2 sequence gates.",
+  "cases": [
+    {
+      "name": "decreasing_lag",
+      "operation": "set_capture_measurements",
+      "latest_total_lag_records": [12000, 10000, 8000],
+      "lag_slope_records_per_second": [100, 100, 100],
+      "expected_reason": "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+    },
+    {
+      "name": "only_two_qualifying_captures",
+      "operation": "truncate_captures",
+      "capture_count": 2,
+      "expected_reason": "SEQUENCE_CAPTURE_COUNT_INSUFFICIENT"
+    },
+    {
+      "name": "stale_middle_bundle",
+      "operation": "stale_required_lag",
+      "capture_index": 1,
+      "expected_reason": "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+    },
+    {
+      "name": "partial_partition_coverage",
+      "operation": "remove_required_partition",
+      "capture_index": 1,
+      "partition": "7",
+      "expected_reason": "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+    },
+    {
+      "name": "changed_consumer_group",
+      "operation": "change_consumer_group",
+      "capture_index": 1,
+      "consumer_group": "another-worker",
+      "expected_reason": "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+    },
+    {
+      "name": "reordered_timestamps",
+      "operation": "reorder_captures",
+      "order": [0, 2, 1],
+      "expected_reason": "SEQUENCE_CAPTURE_TIMESTAMPS_NOT_STRICTLY_INCREASING"
+    }
+  ]
+}

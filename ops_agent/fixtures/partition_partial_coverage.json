@@ -1,0 +1,1 @@
+{"expected_partition_ids":["0","1","2"],"observed_partition_ids":["0","2"],"missing_partition_ids":["1"],"unexpected_partition_ids":[],"complete":false}

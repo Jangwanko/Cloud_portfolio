@@ -1,0 +1,3689 @@
+{
+  "schema_version": "ops.backlog-negative-control-run.v1",
+  "scenario": {
+    "name": "sustainable-high",
+    "purpose": "long distributed load near the observed two-Worker drain rate",
+    "vus": 8,
+    "streams": 64,
+    "duration": "180s",
+    "think_time": 0.05
+  },
+  "started_at": "2026-08-16T04:10:33.907400Z",
+  "load_started_at": "2026-08-16T04:10:35.087258Z",
+  "completed_at": "2026-08-16T04:16:21.465847Z",
+  "status": "COMPLETE",
+  "load_returncode": 0,
+  "load_result": {
+    "total_http_requests": 22323,
+    "error_rate_percent": 0.0,
+    "event_status_202": 22256
+  },
+  "initial_keda_contract": {
+    "scale_target_name": "worker",
+    "min_replicas": 2,
+    "max_replicas": 4,
+    "polling_interval_seconds": 5,
+    "cooldown_period_seconds": 120
+  },
+  "final_keda_contract": {
+    "scale_target_name": "worker",
+    "min_replicas": 2,
+    "max_replicas": 4,
+    "polling_interval_seconds": 5,
+    "cooldown_period_seconds": 120
+  },
+  "keda_contract_unchanged": true,
+  "manual_keda_changes": false,
+  "manual_replica_changes": false,
+  "returned_to_baseline_twice": true,
+  "measurements": {
+    "sample_count": 24,
+    "load_phase_sample_count": 12,
+    "max_total_lag": 3111,
+    "peak_sample_number": 11,
+    "first_positive_lag": 396,
+    "max_produce_rate_records_per_second": 123.73333333333333,
+    "max_committed_offset_rate_records_per_second": 119.66666666666667,
+    "max_lag_slope_records_per_second": 32.05,
+    "min_lag_slope_records_per_second": -51.85,
+    "max_worker_desired_replicas": 4,
+    "max_worker_available_replicas": 4,
+    "postgres_ready_all_samples": true
+  },
+  "candidate_evaluation": {
+    "candidate_version": "phase2.5.pressure-candidate.v1",
+    "result": "NOT_PRESENT",
+    "reason": "NO_THREE_CAPTURE_SUSTAINED_GROWTH_MATCH",
+    "thresholds": {
+      "total_lag_floor": 7000,
+      "lag_slope_floor_records_per_second": 100.0,
+      "consecutive_capture_count": 3,
+      "required_lag_growth_intervals": 2
+    },
+    "growth_signal": {
+      "independent_vote_count": 1,
+      "primary": "lag_slope_records_per_second",
+      "produce_minus_committed_role": "arithmetic_consistency_check"
+    },
+    "usable_capture_count": 24,
+    "matched_windows": [],
+    "observations": [
+      {
+        "sample_index": 0,
+        "sample_number": 0,
+        "collection_started_at": "2026-08-16T04:10:34.182227+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 1,
+        "sample_number": 1,
+        "collection_started_at": "2026-08-16T04:10:50.432376+00:00",
+        "usable": true,
+        "total_lag": 396,
+        "lag_slope_records_per_second": 6.6,
+        "produce_rate_records_per_second": 19.516666666666666,
+        "committed_offset_rate_records_per_second": 12.916666666666666,
+        "produce_minus_committed_records_per_second": 6.6,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 2,
+        "sample_number": 2,
+        "collection_started_at": "2026-08-16T04:11:05.489714+00:00",
+        "usable": true,
+        "total_lag": 1346,
+        "lag_slope_records_per_second": 22.433333333333334,
+        "produce_rate_records_per_second": 50.71666666666667,
+        "committed_offset_rate_records_per_second": 28.283333333333335,
+        "produce_minus_committed_records_per_second": 22.433333333333334,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 3,
+        "sample_number": 3,
+        "collection_started_at": "2026-08-16T04:11:20.495926+00:00",
+        "usable": true,
+        "total_lag": 1514,
+        "lag_slope_records_per_second": 25.233333333333334,
+        "produce_rate_records_per_second": 81.55,
+        "committed_offset_rate_records_per_second": 56.31666666666667,
+        "produce_minus_committed_records_per_second": 25.233333333333327,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 4,
+        "sample_number": 4,
+        "collection_started_at": "2026-08-16T04:11:35.438996+00:00",
+        "usable": true,
+        "total_lag": 1561,
+        "lag_slope_records_per_second": 26.016666666666666,
+        "produce_rate_records_per_second": 112.2,
+        "committed_offset_rate_records_per_second": 86.18333333333334,
+        "produce_minus_committed_records_per_second": 26.016666666666666,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 5,
+        "sample_number": 5,
+        "collection_started_at": "2026-08-16T04:11:50.439852+00:00",
+        "usable": true,
+        "total_lag": 2319,
+        "lag_slope_records_per_second": 32.05,
+        "produce_rate_records_per_second": 123.66666666666667,
+        "committed_offset_rate_records_per_second": 91.61666666666666,
+        "produce_minus_committed_records_per_second": 32.05000000000001,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 6,
+        "sample_number": 6,
+        "collection_started_at": "2026-08-16T04:12:05.501592+00:00",
+        "usable": true,
+        "total_lag": 2642,
+        "lag_slope_records_per_second": 21.6,
+        "produce_rate_records_per_second": 123.48333333333333,
+        "committed_offset_rate_records_per_second": 101.88333333333334,
+        "produce_minus_committed_records_per_second": 21.599999999999994,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 7,
+        "sample_number": 7,
+        "collection_started_at": "2026-08-16T04:12:20.544828+00:00",
+        "usable": true,
+        "total_lag": 2808,
+        "lag_slope_records_per_second": 21.566666666666666,
+        "produce_rate_records_per_second": 123.4,
+        "committed_offset_rate_records_per_second": 101.83333333333333,
+        "produce_minus_committed_records_per_second": 21.566666666666677,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 8,
+        "sample_number": 8,
+        "collection_started_at": "2026-08-16T04:12:35.457810+00:00",
+        "usable": true,
+        "total_lag": 2862,
+        "lag_slope_records_per_second": 21.683333333333334,
+        "produce_rate_records_per_second": 123.6,
+        "committed_offset_rate_records_per_second": 101.91666666666667,
+        "produce_minus_committed_records_per_second": 21.683333333333323,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 9,
+        "sample_number": 9,
+        "collection_started_at": "2026-08-16T04:12:50.459290+00:00",
+        "usable": true,
+        "total_lag": 2983,
+        "lag_slope_records_per_second": 11.066666666666666,
+        "produce_rate_records_per_second": 123.58333333333333,
+        "committed_offset_rate_records_per_second": 112.51666666666667,
+        "produce_minus_committed_records_per_second": 11.066666666666663,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 10,
+        "sample_number": 10,
+        "collection_started_at": "2026-08-16T04:13:05.472474+00:00",
+        "usable": true,
+        "total_lag": 3108,
+        "lag_slope_records_per_second": 7.766666666666667,
+        "produce_rate_records_per_second": 123.23333333333333,
+        "committed_offset_rate_records_per_second": 115.46666666666667,
+        "produce_minus_committed_records_per_second": 7.766666666666666,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 11,
+        "sample_number": 11,
+        "collection_started_at": "2026-08-16T04:13:20.451412+00:00",
+        "usable": true,
+        "total_lag": 3111,
+        "lag_slope_records_per_second": 5.05,
+        "produce_rate_records_per_second": 123.55,
+        "committed_offset_rate_records_per_second": 118.5,
+        "produce_minus_committed_records_per_second": 5.049999999999997,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 12,
+        "sample_number": 12,
+        "collection_started_at": "2026-08-16T04:13:35.465501+00:00",
+        "usable": true,
+        "total_lag": 3106,
+        "lag_slope_records_per_second": 4.066666666666666,
+        "produce_rate_records_per_second": 123.73333333333333,
+        "committed_offset_rate_records_per_second": 119.66666666666667,
+        "produce_minus_committed_records_per_second": 4.066666666666663,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 13,
+        "sample_number": 13,
+        "collection_started_at": "2026-08-16T04:13:50.438644+00:00",
+        "usable": true,
+        "total_lag": 2139,
+        "lag_slope_records_per_second": -14.066666666666666,
+        "produce_rate_records_per_second": 104.16666666666667,
+        "committed_offset_rate_records_per_second": 118.23333333333333,
+        "produce_minus_committed_records_per_second": -14.066666666666663,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 14,
+        "sample_number": 14,
+        "collection_started_at": "2026-08-16T04:14:05.397757+00:00",
+        "usable": true,
+        "total_lag": 353,
+        "lag_slope_records_per_second": -45.916666666666664,
+        "produce_rate_records_per_second": 73.5,
+        "committed_offset_rate_records_per_second": 119.41666666666667,
+        "produce_minus_committed_records_per_second": -45.91666666666667,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 15,
+        "sample_number": 15,
+        "collection_started_at": "2026-08-16T04:14:20.391022+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -51.85,
+        "produce_rate_records_per_second": 42.43333333333333,
+        "committed_offset_rate_records_per_second": 94.28333333333333,
+        "produce_minus_committed_records_per_second": -51.85,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 16,
+        "sample_number": 16,
+        "collection_started_at": "2026-08-16T04:14:35.420896+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -51.766666666666666,
+        "produce_rate_records_per_second": 11.4,
+        "committed_offset_rate_records_per_second": 63.166666666666664,
+        "produce_minus_committed_records_per_second": -51.766666666666666,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 17,
+        "sample_number": 17,
+        "collection_started_at": "2026-08-16T04:14:50.397465+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -35.65,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 35.65,
+        "produce_minus_committed_records_per_second": -35.65,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 18,
+        "sample_number": 18,
+        "collection_started_at": "2026-08-16T04:15:05.415256+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -5.883333333333334,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 5.883333333333334,
+        "produce_minus_committed_records_per_second": -5.883333333333334,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 19,
+        "sample_number": 19,
+        "collection_started_at": "2026-08-16T04:15:20.398729+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 20,
+        "sample_number": 20,
+        "collection_started_at": "2026-08-16T04:15:35.492622+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 21,
+        "sample_number": 21,
+        "collection_started_at": "2026-08-16T04:15:50.397918+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 22,
+        "sample_number": 22,
+        "collection_started_at": "2026-08-16T04:16:05.400760+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      },
+      {
+        "sample_index": 23,
+        "sample_number": 23,
+        "collection_started_at": "2026-08-16T04:16:20.402636+00:00",
+        "usable": true,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "produce_minus_committed_records_per_second": 0.0,
+        "rate_gap_matches_lag_slope": true,
+        "lag_floor_met": false,
+        "growth_signal_met": false,
+        "candidate_sample_met": false
+      }
+    ]
+  },
+  "samples": [
+    {
+      "bundle_id": "7e54220a-b21f-45cc-86e3-adabcf382d25",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample000",
+      "collection_started_at": "2026-08-16T04:10:34.182227+00:00",
+      "collection_completed_at": "2026-08-16T04:10:34.815963+00:00",
+      "collection_status": "PARTIAL",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 12822,
+            "committed_offset": 12822,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 25760,
+            "committed_offset": 25760,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 18569,
+            "committed_offset": 18569,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 12920,
+            "committed_offset": 12920,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 10145,
+            "committed_offset": 10145,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 11675,
+            "committed_offset": 11675,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 15714,
+            "committed_offset": 15714,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 15754,
+            "committed_offset": 15754,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 336
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "UNKNOWN",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 60
+        }
+      },
+      "sample_number": 0,
+      "phase": "baseline",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-000.json",
+      "collector_wall_seconds": 1.187
+    },
+    {
+      "bundle_id": "8b53c41a-256a-475e-bb7d-5306d157a4f9",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample001",
+      "collection_started_at": "2026-08-16T04:10:50.432376+00:00",
+      "collection_completed_at": "2026-08-16T04:10:51.117109+00:00",
+      "collection_status": "PARTIAL",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 19.516666666666666,
+        "committed_offset_rate_records_per_second": 12.916666666666666,
+        "total_lag": 396,
+        "lag_slope_records_per_second": 6.6,
+        "per_partition": {
+          "0": {
+            "end_offset": 12964,
+            "committed_offset": 12906,
+            "lag": 58,
+            "end_offset_delta": 142,
+            "committed_offset_delta": 84,
+            "lag_delta": 58
+          },
+          "1": {
+            "end_offset": 25968,
+            "committed_offset": 25882,
+            "lag": 86,
+            "end_offset_delta": 208,
+            "committed_offset_delta": 122,
+            "lag_delta": 86
+          },
+          "2": {
+            "end_offset": 18710,
+            "committed_offset": 18681,
+            "lag": 29,
+            "end_offset_delta": 141,
+            "committed_offset_delta": 112,
+            "lag_delta": 29
+          },
+          "3": {
+            "end_offset": 13073,
+            "committed_offset": 13029,
+            "lag": 44,
+            "end_offset_delta": 153,
+            "committed_offset_delta": 109,
+            "lag_delta": 44
+          },
+          "4": {
+            "end_offset": 10234,
+            "committed_offset": 10234,
+            "lag": 0,
+            "end_offset_delta": 89,
+            "committed_offset_delta": 89,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 11723,
+            "committed_offset": 11723,
+            "lag": 0,
+            "end_offset_delta": 48,
+            "committed_offset_delta": 48,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 15877,
+            "committed_offset": 15798,
+            "lag": 79,
+            "end_offset_delta": 163,
+            "committed_offset_delta": 84,
+            "lag_delta": 79
+          },
+          "7": {
+            "end_offset": 15981,
+            "committed_offset": 15881,
+            "lag": 100,
+            "end_offset_delta": 227,
+            "committed_offset_delta": 127,
+            "lag_delta": 100
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "UNKNOWN",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 60
+        }
+      },
+      "sample_number": 1,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-001.json",
+      "collector_wall_seconds": 1.328
+    },
+    {
+      "bundle_id": "876bd46b-290c-40e8-8ffd-fe0f33397f66",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample002",
+      "collection_started_at": "2026-08-16T04:11:05.489714+00:00",
+      "collection_completed_at": "2026-08-16T04:11:06.709259+00:00",
+      "collection_status": "PARTIAL",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 50.71666666666667,
+        "committed_offset_rate_records_per_second": 28.283333333333335,
+        "total_lag": 1346,
+        "lag_slope_records_per_second": 22.433333333333334,
+        "per_partition": {
+          "0": {
+            "end_offset": 13198,
+            "committed_offset": 12906,
+            "lag": 292,
+            "end_offset_delta": 376,
+            "committed_offset_delta": 84,
+            "lag_delta": 292
+          },
+          "1": {
+            "end_offset": 26286,
+            "committed_offset": 26062,
+            "lag": 224,
+            "end_offset_delta": 526,
+            "committed_offset_delta": 302,
+            "lag_delta": 224
+          },
+          "2": {
+            "end_offset": 18951,
+            "committed_offset": 18830,
+            "lag": 121,
+            "end_offset_delta": 382,
+            "committed_offset_delta": 261,
+            "lag_delta": 121
+          },
+          "3": {
+            "end_offset": 13298,
+            "committed_offset": 13218,
+            "lag": 80,
+            "end_offset_delta": 378,
+            "committed_offset_delta": 298,
+            "lag_delta": 80
+          },
+          "4": {
+            "end_offset": 10377,
+            "committed_offset": 10370,
+            "lag": 7,
+            "end_offset_delta": 232,
+            "committed_offset_delta": 225,
+            "lag_delta": 7
+          },
+          "5": {
+            "end_offset": 11819,
+            "committed_offset": 11815,
+            "lag": 4,
+            "end_offset_delta": 144,
+            "committed_offset_delta": 140,
+            "lag_delta": 4
+          },
+          "6": {
+            "end_offset": 16143,
+            "committed_offset": 15798,
+            "lag": 345,
+            "end_offset_delta": 429,
+            "committed_offset_delta": 84,
+            "lag_delta": 345
+          },
+          "7": {
+            "end_offset": 16330,
+            "committed_offset": 16057,
+            "lag": 273,
+            "end_offset_delta": 576,
+            "committed_offset_delta": 303,
+            "lag_delta": 273
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "UNKNOWN",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 60
+        }
+      },
+      "sample_number": 2,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-002.json",
+      "collector_wall_seconds": 1.985
+    },
+    {
+      "bundle_id": "037a8718-9919-4555-9890-5a09c2cc26b1",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample003",
+      "collection_started_at": "2026-08-16T04:11:20.495926+00:00",
+      "collection_completed_at": "2026-08-16T04:11:21.501122+00:00",
+      "collection_status": "PARTIAL",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 81.55,
+        "committed_offset_rate_records_per_second": 56.31666666666667,
+        "total_lag": 1514,
+        "lag_slope_records_per_second": 25.233333333333334,
+        "per_partition": {
+          "0": {
+            "end_offset": 13432,
+            "committed_offset": 13116,
+            "lag": 316,
+            "end_offset_delta": 610,
+            "committed_offset_delta": 294,
+            "lag_delta": 316
+          },
+          "1": {
+            "end_offset": 26606,
+            "committed_offset": 26330,
+            "lag": 276,
+            "end_offset_delta": 846,
+            "committed_offset_delta": 570,
+            "lag_delta": 276
+          },
+          "2": {
+            "end_offset": 19178,
+            "committed_offset": 19088,
+            "lag": 90,
+            "end_offset_delta": 609,
+            "committed_offset_delta": 519,
+            "lag_delta": 90
+          },
+          "3": {
+            "end_offset": 13537,
+            "committed_offset": 13427,
+            "lag": 110,
+            "end_offset_delta": 617,
+            "committed_offset_delta": 507,
+            "lag_delta": 110
+          },
+          "4": {
+            "end_offset": 10527,
+            "committed_offset": 10525,
+            "lag": 2,
+            "end_offset_delta": 382,
+            "committed_offset_delta": 380,
+            "lag_delta": 2
+          },
+          "5": {
+            "end_offset": 11900,
+            "committed_offset": 11900,
+            "lag": 0,
+            "end_offset_delta": 225,
+            "committed_offset_delta": 225,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 16399,
+            "committed_offset": 16056,
+            "lag": 343,
+            "end_offset_delta": 685,
+            "committed_offset_delta": 342,
+            "lag_delta": 343
+          },
+          "7": {
+            "end_offset": 16673,
+            "committed_offset": 16296,
+            "lag": 377,
+            "end_offset_delta": 919,
+            "committed_offset_delta": 542,
+            "lag_delta": 377
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 40
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "UNKNOWN",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 90,
+        "evidence_status_counts": {
+          "OK": 90
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 90
+        }
+      },
+      "sample_number": 3,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-003.json",
+      "collector_wall_seconds": 1.891
+    },
+    {
+      "bundle_id": "c6ac7992-3af1-4b99-8da2-a6df77e2d23a",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample004",
+      "collection_started_at": "2026-08-16T04:11:35.438996+00:00",
+      "collection_completed_at": "2026-08-16T04:11:36.482145+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 112.2,
+        "committed_offset_rate_records_per_second": 86.18333333333334,
+        "total_lag": 1561,
+        "lag_slope_records_per_second": 26.016666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 13655,
+            "committed_offset": 13361,
+            "lag": 294,
+            "end_offset_delta": 833,
+            "committed_offset_delta": 539,
+            "lag_delta": 294
+          },
+          "1": {
+            "end_offset": 26917,
+            "committed_offset": 26598,
+            "lag": 319,
+            "end_offset_delta": 1157,
+            "committed_offset_delta": 838,
+            "lag_delta": 319
+          },
+          "2": {
+            "end_offset": 19414,
+            "committed_offset": 19330,
+            "lag": 84,
+            "end_offset_delta": 845,
+            "committed_offset_delta": 761,
+            "lag_delta": 84
+          },
+          "3": {
+            "end_offset": 13759,
+            "committed_offset": 13701,
+            "lag": 58,
+            "end_offset_delta": 839,
+            "committed_offset_delta": 781,
+            "lag_delta": 58
+          },
+          "4": {
+            "end_offset": 10660,
+            "committed_offset": 10659,
+            "lag": 1,
+            "end_offset_delta": 515,
+            "committed_offset_delta": 514,
+            "lag_delta": 1
+          },
+          "5": {
+            "end_offset": 11996,
+            "committed_offset": 11996,
+            "lag": 0,
+            "end_offset_delta": 321,
+            "committed_offset_delta": 321,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 16667,
+            "committed_offset": 16364,
+            "lag": 303,
+            "end_offset_delta": 953,
+            "committed_offset_delta": 650,
+            "lag_delta": 303
+          },
+          "7": {
+            "end_offset": 17023,
+            "committed_offset": 16521,
+            "lag": 502,
+            "end_offset_delta": 1269,
+            "committed_offset_delta": 767,
+            "lag_delta": 502
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 4054,
+        "sum_seconds_delta": 50.382732487015325,
+        "mean_seconds": 0.012427906385548922,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:11:31.524000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 4,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-004.json",
+      "collector_wall_seconds": 1.735
+    },
+    {
+      "bundle_id": "6f4c7ccd-9bc8-4792-98ae-961db32e0855",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample005",
+      "collection_started_at": "2026-08-16T04:11:50.439852+00:00",
+      "collection_completed_at": "2026-08-16T04:11:51.845700+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.66666666666667,
+        "committed_offset_rate_records_per_second": 91.61666666666666,
+        "total_lag": 2319,
+        "lag_slope_records_per_second": 32.05,
+        "per_partition": {
+          "0": {
+            "end_offset": 13891,
+            "committed_offset": 13560,
+            "lag": 331,
+            "end_offset_delta": 927,
+            "committed_offset_delta": 654,
+            "lag_delta": 273
+          },
+          "1": {
+            "end_offset": 27243,
+            "committed_offset": 26693,
+            "lag": 550,
+            "end_offset_delta": 1275,
+            "committed_offset_delta": 811,
+            "lag_delta": 464
+          },
+          "2": {
+            "end_offset": 19643,
+            "committed_offset": 19474,
+            "lag": 169,
+            "end_offset_delta": 933,
+            "committed_offset_delta": 793,
+            "lag_delta": 140
+          },
+          "3": {
+            "end_offset": 13994,
+            "committed_offset": 13858,
+            "lag": 136,
+            "end_offset_delta": 921,
+            "committed_offset_delta": 829,
+            "lag_delta": 92
+          },
+          "4": {
+            "end_offset": 10813,
+            "committed_offset": 10794,
+            "lag": 19,
+            "end_offset_delta": 579,
+            "committed_offset_delta": 560,
+            "lag_delta": 19
+          },
+          "5": {
+            "end_offset": 12077,
+            "committed_offset": 12068,
+            "lag": 9,
+            "end_offset_delta": 354,
+            "committed_offset_delta": 345,
+            "lag_delta": 9
+          },
+          "6": {
+            "end_offset": 16921,
+            "committed_offset": 16444,
+            "lag": 477,
+            "end_offset_delta": 1044,
+            "committed_offset_delta": 646,
+            "lag_delta": 398
+          },
+          "7": {
+            "end_offset": 17368,
+            "committed_offset": 16740,
+            "lag": 628,
+            "end_offset_delta": 1387,
+            "committed_offset_delta": 859,
+            "lag_delta": 528
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 4581,
+        "sum_seconds_delta": 70.52579748102835,
+        "mean_seconds": 0.015395284322424874,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:11:46.525000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 5,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-005.json",
+      "collector_wall_seconds": 2.094
+    },
+    {
+      "bundle_id": "1f0db4e2-0b15-431e-9897-84aca5b888b8",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample006",
+      "collection_started_at": "2026-08-16T04:12:05.501592+00:00",
+      "collection_completed_at": "2026-08-16T04:12:06.587209+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.48333333333333,
+        "committed_offset_rate_records_per_second": 101.88333333333334,
+        "total_lag": 2642,
+        "lag_slope_records_per_second": 21.6,
+        "per_partition": {
+          "0": {
+            "end_offset": 14122,
+            "committed_offset": 13720,
+            "lag": 402,
+            "end_offset_delta": 924,
+            "committed_offset_delta": 814,
+            "lag_delta": 110
+          },
+          "1": {
+            "end_offset": 27561,
+            "committed_offset": 26952,
+            "lag": 609,
+            "end_offset_delta": 1275,
+            "committed_offset_delta": 890,
+            "lag_delta": 385
+          },
+          "2": {
+            "end_offset": 19878,
+            "committed_offset": 19747,
+            "lag": 131,
+            "end_offset_delta": 927,
+            "committed_offset_delta": 917,
+            "lag_delta": 10
+          },
+          "3": {
+            "end_offset": 14225,
+            "committed_offset": 14002,
+            "lag": 223,
+            "end_offset_delta": 927,
+            "committed_offset_delta": 784,
+            "lag_delta": 143
+          },
+          "4": {
+            "end_offset": 10953,
+            "committed_offset": 10953,
+            "lag": 0,
+            "end_offset_delta": 576,
+            "committed_offset_delta": 583,
+            "lag_delta": -7
+          },
+          "5": {
+            "end_offset": 12167,
+            "committed_offset": 12164,
+            "lag": 3,
+            "end_offset_delta": 348,
+            "committed_offset_delta": 349,
+            "lag_delta": -1
+          },
+          "6": {
+            "end_offset": 17185,
+            "committed_offset": 16613,
+            "lag": 572,
+            "end_offset_delta": 1042,
+            "committed_offset_delta": 815,
+            "lag_delta": 227
+          },
+          "7": {
+            "end_offset": 17720,
+            "committed_offset": 17018,
+            "lag": 702,
+            "end_offset_delta": 1390,
+            "committed_offset_delta": 961,
+            "lag_delta": 429
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 5636,
+        "sum_seconds_delta": 91.45363198099949,
+        "mean_seconds": 0.016226691267033265,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:12:01.523000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 6,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-006.json",
+      "collector_wall_seconds": 1.86
+    },
+    {
+      "bundle_id": "31d0ea72-765c-4449-9e56-688fe145b852",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample007",
+      "collection_started_at": "2026-08-16T04:12:20.544828+00:00",
+      "collection_completed_at": "2026-08-16T04:12:21.492822+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.4,
+        "committed_offset_rate_records_per_second": 101.83333333333333,
+        "total_lag": 2808,
+        "lag_slope_records_per_second": 21.566666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 14358,
+            "committed_offset": 13805,
+            "lag": 553,
+            "end_offset_delta": 926,
+            "committed_offset_delta": 689,
+            "lag_delta": 237
+          },
+          "1": {
+            "end_offset": 27880,
+            "committed_offset": 27342,
+            "lag": 538,
+            "end_offset_delta": 1274,
+            "committed_offset_delta": 1012,
+            "lag_delta": 262
+          },
+          "2": {
+            "end_offset": 20104,
+            "committed_offset": 19933,
+            "lag": 171,
+            "end_offset_delta": 926,
+            "committed_offset_delta": 845,
+            "lag_delta": 81
+          },
+          "3": {
+            "end_offset": 14465,
+            "committed_offset": 14294,
+            "lag": 171,
+            "end_offset_delta": 928,
+            "committed_offset_delta": 867,
+            "lag_delta": 61
+          },
+          "4": {
+            "end_offset": 11106,
+            "committed_offset": 11106,
+            "lag": 0,
+            "end_offset_delta": 579,
+            "committed_offset_delta": 581,
+            "lag_delta": -2
+          },
+          "5": {
+            "end_offset": 12245,
+            "committed_offset": 12245,
+            "lag": 0,
+            "end_offset_delta": 345,
+            "committed_offset_delta": 345,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 17437,
+            "committed_offset": 16920,
+            "lag": 517,
+            "end_offset_delta": 1038,
+            "committed_offset_delta": 864,
+            "lag_delta": 174
+          },
+          "7": {
+            "end_offset": 18061,
+            "committed_offset": 17203,
+            "lag": 858,
+            "end_offset_delta": 1388,
+            "committed_offset_delta": 907,
+            "lag_delta": 481
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 6089,
+        "sum_seconds_delta": 98.1535381360136,
+        "mean_seconds": 0.016119812471015536,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:12:16.521000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 7,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-007.json",
+      "collector_wall_seconds": 1.86
+    },
+    {
+      "bundle_id": "22122976-1ef6-476e-b581-8756f56891ae",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample008",
+      "collection_started_at": "2026-08-16T04:12:35.457810+00:00",
+      "collection_completed_at": "2026-08-16T04:12:36.448266+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.6,
+        "committed_offset_rate_records_per_second": 101.91666666666667,
+        "total_lag": 2862,
+        "lag_slope_records_per_second": 21.683333333333334,
+        "per_partition": {
+          "0": {
+            "end_offset": 14586,
+            "committed_offset": 14169,
+            "lag": 417,
+            "end_offset_delta": 931,
+            "committed_offset_delta": 808,
+            "lag_delta": 123
+          },
+          "1": {
+            "end_offset": 28192,
+            "committed_offset": 27493,
+            "lag": 699,
+            "end_offset_delta": 1275,
+            "committed_offset_delta": 895,
+            "lag_delta": 380
+          },
+          "2": {
+            "end_offset": 20338,
+            "committed_offset": 20210,
+            "lag": 128,
+            "end_offset_delta": 924,
+            "committed_offset_delta": 880,
+            "lag_delta": 44
+          },
+          "3": {
+            "end_offset": 14689,
+            "committed_offset": 14534,
+            "lag": 155,
+            "end_offset_delta": 930,
+            "committed_offset_delta": 833,
+            "lag_delta": 97
+          },
+          "4": {
+            "end_offset": 11243,
+            "committed_offset": 11242,
+            "lag": 1,
+            "end_offset_delta": 583,
+            "committed_offset_delta": 583,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12341,
+            "committed_offset": 12341,
+            "lag": 0,
+            "end_offset_delta": 345,
+            "committed_offset_delta": 345,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 17707,
+            "committed_offset": 17060,
+            "lag": 647,
+            "end_offset_delta": 1040,
+            "committed_offset_delta": 696,
+            "lag_delta": 344
+          },
+          "7": {
+            "end_offset": 18411,
+            "committed_offset": 17596,
+            "lag": 815,
+            "end_offset_delta": 1388,
+            "committed_offset_delta": 1075,
+            "lag_delta": 313
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 1016
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 6079,
+        "sum_seconds_delta": 100.20738838198487,
+        "mean_seconds": 0.016484189567689565,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:12:31.521000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 8,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-008.json",
+      "collector_wall_seconds": 1.735
+    },
+    {
+      "bundle_id": "dd17d47d-fb4b-4c1f-b5d4-cd4a20a663a7",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample009",
+      "collection_started_at": "2026-08-16T04:12:50.459290+00:00",
+      "collection_completed_at": "2026-08-16T04:12:51.701332+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.58333333333333,
+        "committed_offset_rate_records_per_second": 112.51666666666667,
+        "total_lag": 2983,
+        "lag_slope_records_per_second": 11.066666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 14821,
+            "committed_offset": 14213,
+            "lag": 608,
+            "end_offset_delta": 930,
+            "committed_offset_delta": 653,
+            "lag_delta": 277
+          },
+          "1": {
+            "end_offset": 28514,
+            "committed_offset": 27937,
+            "lag": 577,
+            "end_offset_delta": 1271,
+            "committed_offset_delta": 1244,
+            "lag_delta": 27
+          },
+          "2": {
+            "end_offset": 20571,
+            "committed_offset": 20458,
+            "lag": 113,
+            "end_offset_delta": 928,
+            "committed_offset_delta": 984,
+            "lag_delta": -56
+          },
+          "3": {
+            "end_offset": 14927,
+            "committed_offset": 14780,
+            "lag": 147,
+            "end_offset_delta": 933,
+            "committed_offset_delta": 922,
+            "lag_delta": 11
+          },
+          "4": {
+            "end_offset": 11394,
+            "committed_offset": 11394,
+            "lag": 0,
+            "end_offset_delta": 581,
+            "committed_offset_delta": 600,
+            "lag_delta": -19
+          },
+          "5": {
+            "end_offset": 12422,
+            "committed_offset": 12422,
+            "lag": 0,
+            "end_offset_delta": 345,
+            "committed_offset_delta": 354,
+            "lag_delta": -9
+          },
+          "6": {
+            "end_offset": 17962,
+            "committed_offset": 17337,
+            "lag": 625,
+            "end_offset_delta": 1041,
+            "committed_offset_delta": 893,
+            "lag_delta": 148
+          },
+          "7": {
+            "end_offset": 18754,
+            "committed_offset": 17841,
+            "lag": 913,
+            "end_offset_delta": 1386,
+            "committed_offset_delta": 1101,
+            "lag_delta": 285
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 6835,
+        "sum_seconds_delta": 97.0029680579628,
+        "mean_seconds": 0.014192094814625135,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:12:46.520000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 9,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-009.json",
+      "collector_wall_seconds": 2.047
+    },
+    {
+      "bundle_id": "56b7ccd4-40df-44bb-9dac-4b006f70b540",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample010",
+      "collection_started_at": "2026-08-16T04:13:05.472474+00:00",
+      "collection_completed_at": "2026-08-16T04:13:06.464542+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.23333333333333,
+        "committed_offset_rate_records_per_second": 115.46666666666667,
+        "total_lag": 3108,
+        "lag_slope_records_per_second": 7.766666666666667,
+        "per_partition": {
+          "0": {
+            "end_offset": 15045,
+            "committed_offset": 14560,
+            "lag": 485,
+            "end_offset_delta": 923,
+            "committed_offset_delta": 840,
+            "lag_delta": 83
+          },
+          "1": {
+            "end_offset": 28829,
+            "committed_offset": 28071,
+            "lag": 758,
+            "end_offset_delta": 1268,
+            "committed_offset_delta": 1119,
+            "lag_delta": 149
+          },
+          "2": {
+            "end_offset": 20804,
+            "committed_offset": 20683,
+            "lag": 121,
+            "end_offset_delta": 926,
+            "committed_offset_delta": 936,
+            "lag_delta": -10
+          },
+          "3": {
+            "end_offset": 15144,
+            "committed_offset": 15046,
+            "lag": 98,
+            "end_offset_delta": 919,
+            "committed_offset_delta": 1044,
+            "lag_delta": -125
+          },
+          "4": {
+            "end_offset": 11529,
+            "committed_offset": 11526,
+            "lag": 3,
+            "end_offset_delta": 576,
+            "committed_offset_delta": 573,
+            "lag_delta": 3
+          },
+          "5": {
+            "end_offset": 12518,
+            "committed_offset": 12515,
+            "lag": 3,
+            "end_offset_delta": 351,
+            "committed_offset_delta": 351,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18229,
+            "committed_offset": 17496,
+            "lag": 733,
+            "end_offset_delta": 1044,
+            "committed_offset_delta": 883,
+            "lag_delta": 161
+          },
+          "7": {
+            "end_offset": 19107,
+            "committed_offset": 18200,
+            "lag": 907,
+            "end_offset_delta": 1387,
+            "committed_offset_delta": 1182,
+            "lag_delta": 205
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 2392
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 6954,
+        "sum_seconds_delta": 92.02884034995894,
+        "mean_seconds": 0.013233943104682044,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:13:01.520000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 10,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-010.json",
+      "collector_wall_seconds": 1.735
+    },
+    {
+      "bundle_id": "9115443a-72cb-4eb1-8b59-8a3b387396e6",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample011",
+      "collection_started_at": "2026-08-16T04:13:20.451412+00:00",
+      "collection_completed_at": "2026-08-16T04:13:21.369818+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.55,
+        "committed_offset_rate_records_per_second": 118.5,
+        "total_lag": 3111,
+        "lag_slope_records_per_second": 5.05,
+        "per_partition": {
+          "0": {
+            "end_offset": 15283,
+            "committed_offset": 14684,
+            "lag": 599,
+            "end_offset_delta": 925,
+            "committed_offset_delta": 879,
+            "lag_delta": 46
+          },
+          "1": {
+            "end_offset": 29159,
+            "committed_offset": 28481,
+            "lag": 678,
+            "end_offset_delta": 1279,
+            "committed_offset_delta": 1139,
+            "lag_delta": 140
+          },
+          "2": {
+            "end_offset": 21032,
+            "committed_offset": 20977,
+            "lag": 55,
+            "end_offset_delta": 928,
+            "committed_offset_delta": 1044,
+            "lag_delta": -116
+          },
+          "3": {
+            "end_offset": 15388,
+            "committed_offset": 15280,
+            "lag": 108,
+            "end_offset_delta": 923,
+            "committed_offset_delta": 986,
+            "lag_delta": -63
+          },
+          "4": {
+            "end_offset": 11684,
+            "committed_offset": 11683,
+            "lag": 1,
+            "end_offset_delta": 578,
+            "committed_offset_delta": 577,
+            "lag_delta": 1
+          },
+          "5": {
+            "end_offset": 12595,
+            "committed_offset": 12593,
+            "lag": 2,
+            "end_offset_delta": 350,
+            "committed_offset_delta": 348,
+            "lag_delta": 2
+          },
+          "6": {
+            "end_offset": 18478,
+            "committed_offset": 17688,
+            "lag": 790,
+            "end_offset_delta": 1041,
+            "committed_offset_delta": 768,
+            "lag_delta": 273
+          },
+          "7": {
+            "end_offset": 19450,
+            "committed_offset": 18572,
+            "lag": 878,
+            "end_offset_delta": 1389,
+            "committed_offset_delta": 1369,
+            "lag_delta": 20
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 5376
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 7128,
+        "sum_seconds_delta": 92.0147352149679,
+        "mean_seconds": 0.012908913470113342,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:13:16.518000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 11,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-011.json",
+      "collector_wall_seconds": 1.672
+    },
+    {
+      "bundle_id": "5b302e1d-465f-4151-8379-f152e3cfe809",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample012",
+      "collection_started_at": "2026-08-16T04:13:35.465501+00:00",
+      "collection_completed_at": "2026-08-16T04:13:36.452293+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 123.73333333333333,
+        "committed_offset_rate_records_per_second": 119.66666666666667,
+        "total_lag": 3106,
+        "lag_slope_records_per_second": 4.066666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 15513,
+            "committed_offset": 14981,
+            "lag": 532,
+            "end_offset_delta": 927,
+            "committed_offset_delta": 812,
+            "lag_delta": 115
+          },
+          "1": {
+            "end_offset": 29469,
+            "committed_offset": 28719,
+            "lag": 750,
+            "end_offset_delta": 1277,
+            "committed_offset_delta": 1226,
+            "lag_delta": 51
+          },
+          "2": {
+            "end_offset": 21268,
+            "committed_offset": 21213,
+            "lag": 55,
+            "end_offset_delta": 930,
+            "committed_offset_delta": 1003,
+            "lag_delta": -73
+          },
+          "3": {
+            "end_offset": 15621,
+            "committed_offset": 15568,
+            "lag": 53,
+            "end_offset_delta": 932,
+            "committed_offset_delta": 1034,
+            "lag_delta": -102
+          },
+          "4": {
+            "end_offset": 11827,
+            "committed_offset": 11822,
+            "lag": 5,
+            "end_offset_delta": 584,
+            "committed_offset_delta": 580,
+            "lag_delta": 4
+          },
+          "5": {
+            "end_offset": 12686,
+            "committed_offset": 12686,
+            "lag": 0,
+            "end_offset_delta": 345,
+            "committed_offset_delta": 345,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18747,
+            "committed_offset": 18021,
+            "lag": 726,
+            "end_offset_delta": 1040,
+            "committed_offset_delta": 961,
+            "lag_delta": 79
+          },
+          "7": {
+            "end_offset": 19800,
+            "committed_offset": 18815,
+            "lag": 985,
+            "end_offset_delta": 1389,
+            "committed_offset_delta": 1219,
+            "lag_delta": 170
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 3416
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 7215,
+        "sum_seconds_delta": 91.3992551689844,
+        "mean_seconds": 0.012667949434370673,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:13:31.518000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 12,
+      "phase": "load",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-012.json",
+      "collector_wall_seconds": 1.688
+    },
+    {
+      "bundle_id": "6afcbaaa-a232-4731-9685-6bc6cd769bd0",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample013",
+      "collection_started_at": "2026-08-16T04:13:50.438644+00:00",
+      "collection_completed_at": "2026-08-16T04:13:51.287825+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 104.16666666666667,
+        "committed_offset_rate_records_per_second": 118.23333333333333,
+        "total_lag": 2139,
+        "lag_slope_records_per_second": -14.066666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15248,
+            "lag": 354,
+            "end_offset_delta": 781,
+            "committed_offset_delta": 1035,
+            "lag_delta": -254
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29088,
+            "lag": 499,
+            "end_offset_delta": 1073,
+            "committed_offset_delta": 1151,
+            "lag_delta": -78
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 777,
+            "committed_offset_delta": 890,
+            "lag_delta": -113
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 778,
+            "committed_offset_delta": 925,
+            "lag_delta": -147
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 483,
+            "committed_offset_delta": 483,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 297,
+            "committed_offset_delta": 297,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18179,
+            "lag": 665,
+            "end_offset_delta": 882,
+            "committed_offset_delta": 842,
+            "lag_delta": 40
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19312,
+            "lag": 621,
+            "end_offset_delta": 1179,
+            "committed_offset_delta": 1471,
+            "lag_delta": -292
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "True",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 6985,
+        "sum_seconds_delta": 84.9167559639973,
+        "mean_seconds": 0.012157015886041131,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:13:46.516000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 13,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-013.json",
+      "collector_wall_seconds": 1.516
+    },
+    {
+      "bundle_id": "d6e61ab1-a36a-4797-b692-7cdbd46c36f9",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample014",
+      "collection_started_at": "2026-08-16T04:14:05.397757+00:00",
+      "collection_completed_at": "2026-08-16T04:14:06.063815+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 73.5,
+        "committed_offset_rate_records_per_second": 119.41666666666667,
+        "total_lag": 353,
+        "lag_slope_records_per_second": -45.916666666666664,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 557,
+            "committed_offset_delta": 1042,
+            "lag_delta": -485
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 758,
+            "committed_offset_delta": 1516,
+            "lag_delta": -758
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 544,
+            "committed_offset_delta": 665,
+            "lag_delta": -121
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 561,
+            "committed_offset_delta": 659,
+            "lag_delta": -98
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 348,
+            "committed_offset_delta": 351,
+            "lag_delta": -3
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 201,
+            "committed_offset_delta": 204,
+            "lag_delta": -3
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18642,
+            "lag": 202,
+            "end_offset_delta": 615,
+            "committed_offset_delta": 1146,
+            "lag_delta": -531
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19782,
+            "lag": 151,
+            "end_offset_delta": 826,
+            "committed_offset_delta": 1582,
+            "lag_delta": -756
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 7011,
+        "sum_seconds_delta": 73.41231758501453,
+        "mean_seconds": 0.0104710194815311,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:14:01.517000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 14,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-014.json",
+      "collector_wall_seconds": 1.25
+    },
+    {
+      "bundle_id": "da5b4f4e-4727-4746-bacc-d263887a5d70",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample015",
+      "collection_started_at": "2026-08-16T04:14:20.391022+00:00",
+      "collection_completed_at": "2026-08-16T04:14:21.074493+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 42.43333333333333,
+        "committed_offset_rate_records_per_second": 94.28333333333333,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -51.85,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 319,
+            "committed_offset_delta": 918,
+            "lag_delta": -599
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 428,
+            "committed_offset_delta": 1106,
+            "lag_delta": -678
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 316,
+            "committed_offset_delta": 371,
+            "lag_delta": -55
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 317,
+            "committed_offset_delta": 425,
+            "lag_delta": -108
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 193,
+            "committed_offset_delta": 194,
+            "lag_delta": -1
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 124,
+            "committed_offset_delta": 126,
+            "lag_delta": -2
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 366,
+            "committed_offset_delta": 1156,
+            "lag_delta": -790
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 483,
+            "committed_offset_delta": 1361,
+            "lag_delta": -878
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 5446,
+        "sum_seconds_delta": 52.50005382600283,
+        "mean_seconds": 0.009640112711348297,
+        "p95_finite_bucket_upper_bound_seconds": 0.1,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:14:16.515000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 15,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-015.json",
+      "collector_wall_seconds": 1.313
+    },
+    {
+      "bundle_id": "3a8e20cb-4598-4593-abb2-a250a6e53cdc",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample016",
+      "collection_started_at": "2026-08-16T04:14:35.420896+00:00",
+      "collection_completed_at": "2026-08-16T04:14:36.278559+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 11.4,
+        "committed_offset_rate_records_per_second": 63.166666666666664,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -51.766666666666666,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 89,
+            "committed_offset_delta": 621,
+            "lag_delta": -532
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 118,
+            "committed_offset_delta": 868,
+            "lag_delta": -750
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 80,
+            "committed_offset_delta": 135,
+            "lag_delta": -55
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 84,
+            "committed_offset_delta": 137,
+            "lag_delta": -53
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 50,
+            "committed_offset_delta": 55,
+            "lag_delta": -5
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 33,
+            "committed_offset_delta": 33,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 97,
+            "committed_offset_delta": 823,
+            "lag_delta": -726
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 133,
+            "committed_offset_delta": 1118,
+            "lag_delta": -985
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 3640,
+        "sum_seconds_delta": 28.705545066991323,
+        "mean_seconds": 0.007886138754667945,
+        "p95_finite_bucket_upper_bound_seconds": 0.05,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:14:31.515000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 16,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-016.json",
+      "collector_wall_seconds": 1.485
+    },
+    {
+      "bundle_id": "1d2d5749-f267-4c01-b0e8-3e9e930e1a90",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample017",
+      "collection_started_at": "2026-08-16T04:14:50.397465+00:00",
+      "collection_completed_at": "2026-08-16T04:14:51.051351+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 35.65,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -35.65,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 354,
+            "lag_delta": -354
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 499,
+            "lag_delta": -499
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 665,
+            "lag_delta": -665
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 621,
+            "lag_delta": -621
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 2065,
+        "sum_seconds_delta": 12.34707537498429,
+        "mean_seconds": 0.0059792132566509875,
+        "p95_finite_bucket_upper_bound_seconds": 0.05,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:14:46.514000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 17,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-017.json",
+      "collector_wall_seconds": 1.297
+    },
+    {
+      "bundle_id": "c8de5d8b-4536-4d17-a7f7-7027aa2dbcf6",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample018",
+      "collection_started_at": "2026-08-16T04:15:05.415256+00:00",
+      "collection_completed_at": "2026-08-16T04:15:06.059644+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 5.883333333333334,
+        "total_lag": 0,
+        "lag_slope_records_per_second": -5.883333333333334,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 202,
+            "lag_delta": -202
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 151,
+            "lag_delta": -151
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 357,
+        "sum_seconds_delta": 1.21828233299493,
+        "mean_seconds": 0.003412555554607647,
+        "p95_finite_bucket_upper_bound_seconds": 0.003,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:15:01.513000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 18,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-018.json",
+      "collector_wall_seconds": 1.25
+    },
+    {
+      "bundle_id": "29a49ef3-089b-4140-a548-18f89b600050",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample019",
+      "collection_started_at": "2026-08-16T04:15:20.398729+00:00",
+      "collection_completed_at": "2026-08-16T04:15:21.055018+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 0,
+        "sum_seconds_delta": 0,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:15:16.512000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 19,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-019.json",
+      "collector_wall_seconds": 1.282
+    },
+    {
+      "bundle_id": "449bf4b2-fdd9-4991-809f-f15fcdb80504",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample020",
+      "collection_started_at": "2026-08-16T04:15:35.492622+00:00",
+      "collection_completed_at": "2026-08-16T04:15:36.179212+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 0,
+        "sum_seconds_delta": 0,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:15:31.512000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 20,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-020.json",
+      "collector_wall_seconds": 1.375
+    },
+    {
+      "bundle_id": "ce9cff18-8087-446c-bd5f-06f118bb3f02",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample021",
+      "collection_started_at": "2026-08-16T04:15:50.397918+00:00",
+      "collection_completed_at": "2026-08-16T04:15:51.074546+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 4,
+        "current_replicas": 4,
+        "ready_replicas": 4,
+        "available_replicas": 4,
+        "observed_generation": 337
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 0,
+        "sum_seconds_delta": 0,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:15:46.511000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 21,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-021.json",
+      "collector_wall_seconds": 1.313
+    },
+    {
+      "bundle_id": "94a9c6cc-87cc-4b04-9f62-9f3f3a260601",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample022",
+      "collection_started_at": "2026-08-16T04:16:05.400760+00:00",
+      "collection_completed_at": "2026-08-16T04:16:06.063274+00:00",
+      "collection_status": "COMPLETE",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 338
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "OK",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": 0,
+        "sum_seconds_delta": 0,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 4,
+        "sum_series": 4,
+        "counter_decrease": false,
+        "source_timestamps": [
+          "2026-08-16T04:16:01.510000+00:00"
+        ],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "FRESH": 60
+        }
+      },
+      "sample_number": 22,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-022.json",
+      "collector_wall_seconds": 1.25
+    },
+    {
+      "bundle_id": "d8ffdfa3-0483-474b-933a-0aa6c4ae09f7",
+      "incident_id": "phase2-5-negative-sustainable-high-run02-sample023",
+      "collection_started_at": "2026-08-16T04:16:20.402636+00:00",
+      "collection_completed_at": "2026-08-16T04:16:21.152625+00:00",
+      "collection_status": "PARTIAL",
+      "kafka": {
+        "window_seconds": 60,
+        "produce_rate_records_per_second": 0.0,
+        "committed_offset_rate_records_per_second": 0.0,
+        "total_lag": 0,
+        "lag_slope_records_per_second": 0.0,
+        "per_partition": {
+          "0": {
+            "end_offset": 15602,
+            "committed_offset": 15602,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "1": {
+            "end_offset": 29587,
+            "committed_offset": 29587,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "2": {
+            "end_offset": 21348,
+            "committed_offset": 21348,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "3": {
+            "end_offset": 15705,
+            "committed_offset": 15705,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "4": {
+            "end_offset": 11877,
+            "committed_offset": 11877,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "5": {
+            "end_offset": 12719,
+            "committed_offset": 12719,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "6": {
+            "end_offset": 18844,
+            "committed_offset": 18844,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          },
+          "7": {
+            "end_offset": 19933,
+            "committed_offset": 19933,
+            "lag": 0,
+            "end_offset_delta": 0,
+            "committed_offset_delta": 0,
+            "lag_delta": 0
+          }
+        },
+        "anomalies": []
+      },
+      "worker": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 338
+      },
+      "keda": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "postgres": {
+        "readiness_body_status": "ready",
+        "values": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        }
+      },
+      "worker_db_persist_stage_latency": {
+        "status": "UNKNOWN",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 60,
+        "evidence_status_counts": {
+          "OK": 60
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 60
+        }
+      },
+      "sample_number": 23,
+      "phase": "recovery",
+      "bundle_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/bundles/sample-023.json",
+      "collector_wall_seconds": 1.36
+    }
+  ]
+}

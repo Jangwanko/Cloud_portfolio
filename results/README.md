@@ -13,6 +13,13 @@
 - `ordering-failure/latest.json`: ordering / failure injection suite의 마지막 완료 결과
 - `postgres-restore/latest.json`: host logical dump를 disposable database에 복원한 마지막 정합성 검증 원본
 - `postgres-recovery/latest.json`: 2026-07-21 PostgreSQL 전체 재시작 뒤 sync 설정, 당시 cache fallback, outage recovery의 마지막 tracked structured summary
+- `ops-agent/live-baseline/no-backlog-20260812.json`: 실제 `local-ha`에서 수집한 Phase 1 no-backlog Evidence Bundle
+- `ops-agent/live-baseline/no-backlog-20260812.conditions.json`: 위 bundle의 deterministic Phase 2 condition evaluation
+- `ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/`: 위 bundle이 참조하는 named Application·Prometheus·Kubernetes·Argo CD redacted projection 4개
+- `ops-agent/calibration/20260816T032411Z/`: Phase 2.5 multi-stream backlog manifest, analysis, sanitized run summary 3개
+- `ops-agent/negative-control/20260816T040746Z/`: frozen pressure candidate negative-control manifest, analysis, sanitized summary 3개
+- `ops-agent/sequence-validation/20260816T044352Z/summary.json`: actual positive/negative bundle sequence의 v2 replay ID, activation window, local output hash 요약
+- `ops-agent/diagnosis/golden-eval-v1.json`: scripted offline Phase 3 grounding/tool/stop evaluation 요약
 - 그 밖의 날짜별·중간 산출물: 로컬 보관, 기본 Git 추적 제외
 
 fixed Worker/KEDA A/B처럼 두 원본을 함께 보존해야 하는 실행은 `run_kafka_performance_suite.ps1 -ResultFileName <name>.txt`를 사용합니다. 각 파일에 `k6_stream_count`, `worker_scaling_mode`, `fixed_worker_replicas`, source revision과 dirty 여부를 남기고, 조건이 다른 파일을 하나의 baseline으로 합치지 않습니다.
@@ -20,6 +27,77 @@ fixed Worker/KEDA A/B처럼 두 원본을 함께 보존해야 하는 실행은 `
 PostgreSQL restore 원본은 dump 파일 자체를 Git에 넣지 않습니다. `latest.json`에 dump size/hash, 검증 script hash, source/restore 비교값과 한계를 남깁니다.
 
 PostgreSQL recovery JSON은 실행 시각, source/script hash, 관측값과 한계를 구조화한 추적 요약입니다. 전체 raw terminal transcript는 보관하지 않았으므로 JSON 자체를 원시 출력으로 해석하지 않습니다.
+
+## Ops Agent No-backlog Live Capture - 2026-08-12
+
+- profile/context: `local-ha` / `kind-messaging-ha`
+- topic/group: `message-ingress` / `message-worker`
+- Kafka: end/committed/lag partition `8/8`, lag 전부 `0`, missing·extra·`-1`·offset decrease 없음
+- Worker: desired/current/ready/available `2/2/2/2`, Pod coverage `2/2`, KEDA Ready `true`
+- PostgreSQL: primary reachable, standby/sync standby `2/2`, replication delay `0` bytes
+- Argo CD: `Synced / Healthy`, revision `004f2e7791543de2d570c287cf8938410c61807c`
+- collection: `PARTIAL`, 114 evidence; label-on-use Worker metric 2개 `MISSING/UNKNOWN`
+- provenance: collector worktree HEAD `004f2e7`, dirty state, collector tree SHA-256 기록, raw projection 4개 hash 일치
+- 판정: stable release·성능 baseline 제외, captured no-backlog operations reference
+- Phase 2: source collection `PARTIAL`, condition evaluation `COMPLETE`; 네 condition `ABSENT`, no-backlog assessment `PRESENT`
+
+`PARTIAL`은 runtime degraded 의미가 아닙니다. 두 Worker series는 재시작 뒤 해당 60초 window에 새 처리 event가 없어 생성되지 않았고, Kafka backlog required evidence는 complete/fresh입니다. 상세 해석은 [Ops Agent 문서](../docs/OPS_AGENT.md)와 [capture guide](ops-agent/live-baseline/README.md)를 사용합니다.
+
+## Ops Agent Worker Backlog Calibration - 2026-08-16
+
+- profile/context: `local-ha` / `kind-messaging-ha`
+- workload: 64 streams, 100 VU, 30초, 3 runs, k6 error `0.00%`
+- sampling: 약 15초 간격 `ops.evidence.v1` 71개; source projection 284개
+- bundle status: `COMPLETE` 63, `PARTIAL` 8; required Kafka evidence는 71개 모두 `OK/FRESH`
+- scaling: 기존 KEDA min/max `2/4`, polling `5s`, cooldown `120s`; 수동 scale/patch 없음
+- pressure: peak lag `17,537` / `25,256` / `24,096`; Worker desired/available `4/4` 도달
+- drain: lag `0` 복귀 `196.781s` / `256.575s` / `256.543s`
+- baseline return: Worker `2/2` 복귀 `316.779s` / `346.609s` / `361.580s`
+- PostgreSQL: 전 구간 ready/HA, standby/sync standby `2/2`; max replication delay `10,696` bytes
+- candidate only: lag `>=7,000`, 60초 slope `>=100/s`, produce>commit, 세 capture 지속과 두 번의 lag 증가
+
+`PARTIAL` 8개 중 하나는 baseline stage series `MISSING`, 일곱 개는 scale-out 직후 이전/현재 Worker Pod label coverage 차이로 stage freshness가 `UNKNOWN`인 capture입니다. 결측과 freshness 불확실은 0으로 바꾸지 않습니다. 71개 bundle과 raw projection은 약 88 MB이고 runtime topology를 포함해 local-only로 보존합니다. Git은 sanitized [analysis](ops-agent/calibration/20260816T032411Z/analysis.md), manifest, 세 run summary만 추적합니다. V1의 single-bundle positive lag는 `UNKNOWN`이며 v2 ordered sequence replay에서는 세 positive run 모두 `PRESENT`입니다.
+
+## CORE_BACKLOG_PRESSURE Negative Controls - 2026-08-16
+
+- frozen candidate: lag `>=7,000`, 60초 slope `>=100/s`, 세 capture와 두 번의 lag 증가
+- growth vote: slope 하나; `produce-committed`는 산술 일치 검증
+- short burst: peak lag `3,997`, candidate `NOT_PRESENT`
+- sustainable high: 180초·약 `123.6 events/s`, peak lag `3,111`, candidate `NOT_PRESENT`
+- single transient: peak lag `8,854`, candidate sample 2개, rising window 0, `NOT_PRESENT`
+- evidence: 51 bundles, Kafka required evidence 모두 `OK/FRESH`, raw projection 204개 hash 일치
+- final state: 모든 control lag `0`, KEDA inactive, Worker `2/2`; scaling contract unchanged
+
+Runtime bundle/raw 약 62 MB는 local-only로 유지합니다. Git은 sanitized [analysis](ops-agent/negative-control/20260816T040746Z/analysis.md), manifest, 세 summary만 추적합니다. `local-ha.conditions.v2` actual replay에서 세 control 모두 activation window가 없었고 `PRESENT`가 발생하지 않았습니다. V1 evaluator와 Phase 3는 변경하지 않았습니다.
+
+## Sequence Evaluator Replay - 2026-08-16
+
+- schema/policy: `ops.conditions.v2` / `local-ha.conditions.v2`
+- positive: run 1/2/3 모두 `CORE_BACKLOG_PRESSURE=PRESENT`, matched capture indexes `[1,2,3]`
+- negative: short burst, sustainable high, single transient spike 모두 `PRESENT` 없음
+- provenance: ordered canonical bundle digest, collection/Kafka source timing, policy/evaluator/ruleset을 evaluation ID에 결합
+- local-only: 여섯 full condition output과 원본 bundle/raw
+- tracked: [sanitized replay summary](ops-agent/sequence-validation/20260816T044352Z/summary.json)
+
+이 replay는 activation만 검증합니다. Recovery/clearing hysteresis는 구현하지 않았습니다. Phase 3 diagnosis는 이 결과를 입력으로 사용하는 별도 단계입니다.
+
+## Phase 3 Diagnosis Evaluation - 2026-08-16
+
+- schema: `ops.diagnosis.v1`
+- entry gate: `ops.conditions.v2` / `CORE_BACKLOG_PRESSURE=PRESENT`
+- normalized read-only tools: `9`
+- golden fixtures: `9`, scripted offline model, live API call 없음
+- output-repair fixtures: `5`, tool-free one-turn repair budget 검증
+- offline result: schema/citation/tool selection/abstention/budget/stop compliance `1.0`
+- invalid result counts: fabricated citation `0`, unnecessary tool `0`, forbidden tool `0`
+- live run: positive run-01 + `gpt-5.6-luna`, 4 tool calls + output repair 1회, VALID
+- live stop/usage: `insufficient_evidence`, API turns `6`, total tokens `44,264`
+- live artifact: local-only `ops-agent/diagnosis/20260816-positive-run-01-luna.json`
+
+Golden summary는 Agent harness regression이며 live model 정확도 주장이 아닙니다.
+Live Diagnosis Run은 runtime topology를 포함하므로 이 디렉터리에 local-only로
+보존하고 Git에서 무시합니다. 최초 invalid output은 completed artifact로 쓰지
+않았고 tool 없는 repair 결과가 validator를 통과한 뒤에만 저장했습니다.
 
 ## Latest Completed Kafka Performance Suite — 2026-08-10
 
@@ -85,3 +163,4 @@ PostgreSQL recovery JSON은 실행 시각, source/script hash, 관측값과 한�
 3. `docs/TEST_RESULTS.md`에 최신 결과와 안정 기준선 채택 여부 분리 기록
 4. HTTP status, proxy 정의, 결측값과 제한 사항 명시
 5. Redis queue-first 결과와 Kafka event-stream 결과 분리
+6. Ops Agent capture는 bundle schema, source/dirty state, collector tree hash, raw refs/hash, freshness/coverage, synthetic/live 분류 기록
