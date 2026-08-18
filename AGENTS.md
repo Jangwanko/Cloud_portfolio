@@ -96,6 +96,9 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Phase 2.5는 2026-08-16 actual `local-ha`에서 64-stream, 100 VU, 30초 부하를 현재 KEDA `2→4` 정책 그대로 3회 실행하고 15초 간격 Evidence Bundle 71개를 보존했습니다. 세 run peak lag는 `17,537` / `25,256` / `24,096`, lag `0` 복귀는 `196.781s` / `256.575s` / `256.543s`입니다. lag `>=7,000`, 60초 slope `>=100/s`, 세 capture와 두 번의 lag 증가는 `local-ha.conditions.v2` activation rule로 구현했습니다. `produce-committed`는 산술 검증일 뿐 독립 vote가 아닙니다.
 - Phase 2.6 negative controls는 같은 candidate를 변경하지 않고 short burst, 180초 sustainable high, single transient spike에 적용했습니다. Peak lag `3,997` / `3,111` / `8,854`, candidate는 모두 `NOT_PRESENT`입니다. Actual v2 replay에서도 세 control은 `PRESENT`가 아니며 positive 세 run은 모두 `[1,2,3]` window에서 `PRESENT`입니다. V1과 recovery/clearing rule은 변경하지 않았습니다.
 - Phase 3 single Diagnosis Agent는 `CORE_BACKLOG_PRESSURE=PRESENT`와 ordered digest를 다시 검증한 뒤 fixed normalized read-only tool 9개만 선택합니다. 출력은 `ops.diagnosis.v1`이며 evidence ID citation, hypothesis gap, structured stop reason을 보존합니다. 기본 모델은 `gpt-5.6-luna`, live call은 `--live` opt-in이며 normal CI는 API를 호출하지 않습니다. Condition 재판정, recovery, remediation, arbitrary shell/kubectl/PromQL/URL은 금지됩니다. Phase 3.1은 validator semantic failure에 tool 없는 output repair를 최대 1회 허용하며 transport retry와 별도 budget으로 관리합니다.
+- Phase 4 recovery calibration은 host-local k6 arrival-rate workload와 measurement orchestrator입니다. 최종 `20260816T100600Z`는 rates `0/30/75/110/330 records/s`, 64 streams, A/B/C 각 1회, continuous-ingress E 3회, zero-ingress F 1회를 current KEDA `2→4` 그대로 실행했습니다. E peak lag `20,806 / 21,834 / 21,151`, F `20,998`이며 모두 기존 v2 activation을 재현했습니다. 349 bundle과 1,396 raw projection hash 검증은 PASS입니다.
+- Phase 4.1 deterministic recovery v1은 기존 `CORE_BACKLOG_PRESSURE=PRESENT` activation과 ordered post-activation bundle digest를 입력으로 ACTIVE/RECOVERING/UNKNOWN을 평가합니다. RECOVERING은 fresh usable 3 capture, 각 60초 slope `<0`, committed rate `>=` produce rate, PostgreSQL ready를 요구합니다. Kafka exporter negative lag는 `INVALID_ONLY`로 보존하며 clamp/derived replacement를 하지 않습니다.
+- Phase 4.2 `worker-backlog-local-ha.recovery.v2`는 기존 v1을 기본 호환 policy로 유지하면서 MEDIUM measured ingress `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, fresh usable PostgreSQL-ready capture 3개가 RECOVERING 뒤 연속된 경우에만 incident-scope `WORKER_BACKLOG_RECOVERED`를 반환합니다. E1~E6 stable count는 `3/1/3/4/5/14`, v2 replay는 E1·E3·E4·E5·E6 RECOVERED, E2 UNKNOWN입니다. Worker replica/KEDA 상태/lag==0은 필수 조건이 아니며 clearing, post-recovery regression manager, Recovery LLM, remediation은 미구현입니다.
 - Unit / contract test count는 코드 변경에 따라 달라지므로 현재 작업에서 `.venv\Scripts\python.exe -m pytest -q`를 실행하고 실제 출력을 보고합니다. 과거 문서의 서로 다른 pass count를 현재 상태로 재사용하지 않습니다.
 - 2026-07-14 전체 정합성 감사의 identity refactor 이전 local suite는 `115 passed`입니다.
 - 2026-07-14 generic v2 전환 작업 중간 checkpoint의 local suite는 `195 passed`입니다. 같은 날 이후 reliability 보강 결과나 현재 pass count로 해석하지 않으며, 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
@@ -111,6 +114,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-08-10 notification batch 최적화는 local suite `354 passed`, clean 64-stream fixed/KEDA 각 3회, source `8d334b8`, dev image `8d334b8abeaf`, master image `7035cdab4050`까지 게시했습니다.
 - 2026-08-11 runtime log·backup retention·README 최적화는 local suite `357 passed`, image `messaging-portfolio:runtime-log-opt` `59,777,816` bytes, user `10001:10001`, live·readiness·metric·logger smoke를 통과했습니다. 64-stream clean KEDA candidate 2회와 published image paired control 1회는 처리량·p95·drain이 엇갈려 throughput 개선 근거와 stable baseline에서 제외합니다. `dev-kafka` source `a2b157f`, CI image `a2b157f1283f`, overlay commit `004f2e7`까지 게시했습니다.
 - 2026-08-16 Phase 3.1 candidate 기준 full suite `515 passed`, Ops Agent suite `158 passed`입니다. 9개 offline golden fixture와 5개 output repair fixture는 schema/citation/tool/abstention/budget/stop/repair 계약을 통과했습니다. Actual positive run-01 Luna dry-run은 4개 normalized tool 호출 뒤 최초 stop consistency INVALID, tool-free repair 1회 후 VALID로 완료됐습니다. 최종 stop은 `insufficient_evidence`, API turns `6`, total tokens `44,264`이며 artifact는 local-only입니다. Captured reference는 source/raw/canonical bundle provenance를 함께 기록합니다.
+- 2026-08-16 Phase 4 calibration candidate 기준 full suite `544 tests passed`, Ops Agent suite `187 tests passed`입니다. compileall, k6 arrival-rate inspect, 349 bundle/1,396 raw hash audit, changed-file secret scan, git diff check를 통과했습니다. OpenAI API, recovery evaluator/state, remediation은 이 작업에서 사용하거나 구현하지 않았습니다.
+- 2026-08-17 Phase 4.2 RECOVERED candidate 기준 full suite `585 passed`, Ops Agent suite `228 passed`입니다. 신규 E4~E6 219 bundles/876 raw, combined E1~E6 438 bundles/1,752 raw hash consistency와 workload attainment를 검증했습니다. OpenAI API 및 runtime control-plane write는 없었습니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
 - 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
@@ -127,7 +132,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - `docs/ARCHITECTURE.md`: Kafka-centered architecture, ordering boundary, autoscaling design.
 - `docs/RELIABILITY_POLICY.md`: degraded / critical interpretation.
 - `docs/OBSERVABILITY.md`: Grafana / Prometheus operating signals.
-- `docs/OPS_AGENT.md`: Phase 1 evidence, Phase 2 condition, Phase 3 grounded diagnosis contract.
+- `docs/OPS_AGENT.md`: Phase 1 evidence, Phase 2 condition, Phase 3 grounded diagnosis, Phase 4 recovery calibration contract.
 - `ops_agent/README.md`: collector/evaluator local execution and security boundary.
 - `docs/RUNBOOK.md`: incident response and operational checks.
 - `docs/SERVICE_REQUIREMENTS.md`: service assumptions, SLO guardrails, operational purpose.
@@ -178,6 +183,24 @@ Evaluate an ordered Evidence Bundle sequence:
 ```powershell
 $inputs = Get-ChildItem results\ops-agent\calibration\20260816T032411Z\run-01\bundles\sample-*.json | Sort-Object Name | ForEach-Object FullName
 .venv\Scripts\python.exe -m ops_agent evaluate-sequence --input $inputs --output results\ops-agent\conditions-v2.json
+```
+
+Run Phase 4 recovery calibration without changing KEDA/Worker settings:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovery_calibration.py --mode calibrate --context kind-messaging-ha --low-rate 30 --medium-rate 75 --high-rate 110 --overload-rate 330 --overload-seconds 90 --recovery-phase-seconds 900 --e-repeats 3
+```
+
+Run the supplemental continuous-ingress RECOVERED calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovered_calibration.py --context kind-messaging-ha
+```
+
+Replay a recovery sequence with the explicit recovered policy:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery --policy-version v2 --activation <conditions.v2.json> --input <ordered-bundle.json> --output <recovery.json>
 ```
 
 Run the controlled multi-stream Worker backlog calibration:

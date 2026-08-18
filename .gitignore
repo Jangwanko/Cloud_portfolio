@@ -102,6 +102,44 @@ results/ops-agent/sequence-validation/*
 !results/ops-agent/sequence-validation/20260816T044352Z/
 results/ops-agent/sequence-validation/20260816T044352Z/*
 !results/ops-agent/sequence-validation/20260816T044352Z/summary.json
+# Keep only compact Phase 4 recovery calibration outputs; bundles/raw/conditions/logs stay local.
+!results/ops-agent/recovery-calibration/
+results/ops-agent/recovery-calibration/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/
+results/ops-agent/recovery-calibration/20260816T100600Z/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/manifest.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/analysis.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/analysis.md
+!results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/
+!results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/
+results/ops-agent/recovery-calibration/20260816T100600Z/*/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/summary.compact.json
+# Keep only compact continuous-ingress RECOVERED calibration outputs.
+!results/ops-agent/recovered-calibration/
+results/ops-agent/recovered-calibration/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/
+results/ops-agent/recovered-calibration/20260816T194023Z/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/manifest.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/analysis.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/analysis.md
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-04/
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-05/
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-06/
+results/ops-agent/recovered-calibration/20260816T194023Z/*/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-04/summary.compact.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-05/summary.compact.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-06/summary.compact.json
 # Keep the sanitized offline Phase 3 eval summary; live LLM runs stay local.
 !results/ops-agent/diagnosis/
 results/ops-agent/diagnosis/*

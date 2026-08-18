@@ -1,0 +1,228 @@
+{
+  "schema_version": "ops.recovery-calibration-manifest.v1",
+  "experiment_id": "20260816T100600Z",
+  "started_at": "2026-08-16T10:06:00.455505Z",
+  "status": "COMPLETE",
+  "mode": "calibrate",
+  "context": "kind-messaging-ha",
+  "k6": {
+    "path": "C:\\Program Files\\k6\\k6.EXE",
+    "version": "k6.EXE v1.7.1 (commit/9f82e6f1fc, go1.26.1, windows/amd64)",
+    "executor": "constant-arrival-rate"
+  },
+  "streams": 64,
+  "rates": {
+    "IDLE": 0,
+    "LOW": 30,
+    "MEDIUM": 75,
+    "HIGH_SUSTAINABLE": 110,
+    "OVERLOAD": 330
+  },
+  "rate_provenance": {
+    "observed_sustainable_rate_records_per_second": 123.73333333333333,
+    "observed_overload_rate_records_per_second": 334.1166666666667,
+    "observed_committed_capacity_records_per_second": 134.66111111111113,
+    "method": "25/60/90 percent of the lower sustainable/capacity reference; overload preserves the measured overload floor",
+    "production_capacity_constant": false,
+    "source_paths": [
+      "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/summary.json",
+      "results/ops-agent/calibration/20260816T032411Z/run-01/summary.json",
+      "results/ops-agent/calibration/20260816T032411Z/run-02/summary.json",
+      "results/ops-agent/calibration/20260816T032411Z/run-03/summary.json"
+    ],
+    "source_sha256": {
+      "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/summary.json": "ce0629923b8a0e53d880ee48a4b4fecb5dd0f52591208b1a39e1b87ad53b6cad",
+      "results/ops-agent/calibration/20260816T032411Z/run-01/summary.json": "36923b9e76eb05aba65abedbfd6a4753417794102bcfcd0122ada85aae6a4b8d",
+      "results/ops-agent/calibration/20260816T032411Z/run-02/summary.json": "196817f7d2dc62bb70a0f88b2c3ffa0383804c0287e657b42a2418c25a634e2f",
+      "results/ops-agent/calibration/20260816T032411Z/run-03/summary.json": "2395963463d10a59094e7c9b1bedf4f3cf9de1a305184f18a4e427bd8e757679"
+    }
+  },
+  "phase_duration_seconds": {
+    "normal": 90,
+    "idle": 90,
+    "overload": 90,
+    "recovery_observation": 900
+  },
+  "recovery_observation_selection": {
+    "role": "calibration observation horizon; not a recovery policy threshold",
+    "basis": "live E attempts retained negative lag slope after shorter observation windows; the explicit manifest duration is selected to capture a later envelope re-entry candidate"
+  },
+  "overload_duration_selection": {
+    "role": "workload backlog size control; not a condition or recovery threshold",
+    "basis": "30 seconds nearly reached the existing three-capture activation boundary while 120 seconds produced backlog beyond the selected recovery horizon; the actual duration remains explicit in this manifest"
+  },
+  "calibration_order": [
+    "A-run-01",
+    "B-run-01",
+    "C-run-01",
+    "E-run-01",
+    "F-run-01",
+    "initial-recovery-gate",
+    "additional-E-repetitions"
+  ],
+  "requested_e_repetitions": 3,
+  "capture_interval_seconds": 15,
+  "rate_window_seconds": 60,
+  "openai_api_called": false,
+  "ops_agent_read_only": true,
+  "calibration_workload_writes_events": true,
+  "manual_keda_changes": false,
+  "manual_replica_changes": false,
+  "kubernetes_workload_objects_created": false,
+  "source": {
+    "source_sha": "c4cdea3ae0280d27d665e901bb6b951ffab11b67",
+    "source_dirty": true,
+    "live_execution_tree_hash_recorded": false,
+    "limitation": "live execution recorded HEAD and dirty state before source-tree hashing was added; no tree hash is reconstructed or claimed"
+  },
+  "runs": [
+    {
+      "run_name": "A-run-01",
+      "scenario": "A",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/summary.json"
+    },
+    {
+      "run_name": "B-run-01",
+      "scenario": "B",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/summary.json"
+    },
+    {
+      "run_name": "C-run-01",
+      "scenario": "C",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/summary.json"
+    },
+    {
+      "run_name": "E-run-01",
+      "scenario": "E",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/summary.json"
+    },
+    {
+      "run_name": "F-run-01",
+      "scenario": "F",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/summary.json"
+    },
+    {
+      "run_name": "E-run-02",
+      "scenario": "E",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/summary.json"
+    },
+    {
+      "run_name": "E-run-03",
+      "scenario": "E",
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/summary.compact.json",
+      "detailed_summary_path_local_only": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/summary.json"
+    }
+  ],
+  "initial_recovery_gate": {
+    "schema_version": "ops.recovery-repetition-gate.v1",
+    "eligible_for_additional_e_repetitions": true,
+    "policy_applied": false,
+    "stable_capture_count_selected": false,
+    "checks": {
+      "E-run-01": {
+        "workload_targets_attained": true,
+        "core_backlog_pressure_present": true,
+        "activation_window_required_evidence_usable": true,
+        "unusable_sample_indexes_outside_candidate_windows": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          49,
+          50,
+          51,
+          52,
+          67,
+          68,
+          69,
+          70,
+          71,
+          72
+        ],
+        "all_postgresql_readiness_ready": true,
+        "negative_lag_slope_observed": true,
+        "operating_envelope_reentry_candidate_observed": true,
+        "candidate_summary": {
+          "peak_lag_records": 20806.0,
+          "first_negative_lag_slope_index": 16,
+          "negative_lag_slope_run_candidates": [
+            {
+              "start_index": 16,
+              "end_index": 48,
+              "capture_count": 33
+            },
+            {
+              "start_index": 53,
+              "end_index": 63,
+              "capture_count": 11
+            }
+          ],
+          "stable_reentry_window_candidates": [
+            {
+              "start_index": 61,
+              "end_index": 63,
+              "capture_count": 3
+            }
+          ]
+        },
+        "eligible": true
+      },
+      "F-run-01": {
+        "workload_targets_attained": true,
+        "core_backlog_pressure_present": true,
+        "activation_window_required_evidence_usable": true,
+        "unusable_sample_indexes_outside_candidate_windows": [],
+        "all_postgresql_readiness_ready": true,
+        "negative_lag_slope_observed": true,
+        "operating_envelope_reentry_candidate_observed": true,
+        "candidate_summary": {
+          "peak_lag_records": 20998.0,
+          "first_negative_lag_slope_index": 15,
+          "negative_lag_slope_run_candidates": [
+            {
+              "start_index": 15,
+              "end_index": 29,
+              "capture_count": 15
+            }
+          ],
+          "stable_reentry_window_candidates": [
+            {
+              "start_index": 26,
+              "end_index": 72,
+              "capture_count": 47
+            }
+          ]
+        },
+        "eligible": true
+      }
+    }
+  },
+  "completed_at": "2026-08-16T11:37:30.163364Z",
+  "post_run_analysis_source": {
+    "source_sha": "c4cdea3ae0280d27d665e901bb6b951ffab11b67",
+    "source_dirty": true,
+    "source_files_sha256": {
+      "ops_agent/calibration.py": "848c385515cb559b7b0a47bde6bd9beb5b9e16925262b99d2059ca4367cb70a6",
+      "ops_agent/recovery_calibration.py": "aadac12cd985dc3d1066acb614f75cafb10c6936c613c48c49efb93e65ad5de7",
+      "ops_agent/sequence_evaluator.py": "d8586584f1716a64a8ac43f84e5e207603344fde85190cae71f3cd4d876d5242",
+      "scripts/recovery_arrival_rate_k6.js": "af5f3dc2fe31aaaaf3c4c5c2d0074c57a3d61bc9e4b11e0014bf09c40bf76c92",
+      "scripts/worker_recovery_calibration.py": "19903e2484dd5d7e74faa688d0d9f35553059f836f805df8e6513a119fcc6a4b"
+    },
+    "source_tree_sha256": "574ee71fb3cc1dc5ec930b1aec134a4ddecdb80a0cadacefb4133174def8536e"
+  }
+}

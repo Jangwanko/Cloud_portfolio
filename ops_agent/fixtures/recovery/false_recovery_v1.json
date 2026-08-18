@@ -1,0 +1,68 @@
+{
+  "schema_version": "ops.recovery.false-recovery-fixtures.v1",
+  "purpose": "Adversarial metadata for the deterministic Phase 4.1 recovery evaluator; Phase 4 calibration itself emits no recovery state.",
+  "fixtures": [
+    {
+      "name": "decreasing_then_regrowing",
+      "total_lag_records": [20000, 15000, 10000, 13000, 17000],
+      "expected_semantic": "MUST_NOT_DECLARE_RECOVERED",
+      "reason": "negative slope is followed by renewed sustained growth"
+    },
+    {
+      "name": "brief_envelope_entry_then_regrowing",
+      "envelope_relation": ["ABOVE", "WITHIN", "WITHIN", "ABOVE"],
+      "expected_semantic": "MUST_NOT_DECLARE_RECOVERED",
+      "reason": "brief envelope entry lacks a stable post-entry window"
+    },
+    {
+      "name": "stale_recovery_window",
+      "freshness": ["FRESH", "STALE", "FRESH"],
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "required Kafka evidence is stale inside the candidate window"
+    },
+    {
+      "name": "partition_coverage_7_of_8",
+      "observed_partitions": ["0", "1", "2", "3", "4", "5", "6"],
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "recovery cannot be established with partial partition coverage"
+    },
+    {
+      "name": "offset_decrease_or_reset",
+      "offset_decrease": true,
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "offset reset invalidates rate and slope continuity"
+    },
+    {
+      "name": "identity_change_mid_sequence",
+      "consumer_groups": ["message-worker", "other-worker"],
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "ordered recovery evidence must preserve source identity"
+    },
+    {
+      "name": "db_degraded_while_lag_drains",
+      "total_lag_records": [12000, 8000, 4000],
+      "postgres_readiness": ["ready", "degraded", "degraded"],
+      "expected_semantic": "BACKLOG_DRAINING_WITH_DB_GUARDRAIL_FAILURE",
+      "reason": "Worker backlog scope and global system health must remain distinct"
+    },
+    {
+      "name": "zero_ingress_backlog_not_draining",
+      "produce_rate_records_per_second": [0, 0, 0],
+      "total_lag_records": [5000, 5000, 5200],
+      "expected_semantic": "NOT_RECOVERING",
+      "reason": "zero ingress with flat or growing backlog is not recovery"
+    },
+    {
+      "name": "negative_exporter_lag_invalid",
+      "exporter_lag_records": [-1, -2],
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "negative exporter lag is preserved as invalid and is never clamped or replaced"
+    },
+    {
+      "name": "timestamp_skew_beyond_coherence_window",
+      "source_time_skew_seconds": 30,
+      "expected_semantic": "INSUFFICIENT_EVIDENCE",
+      "reason": "range evaluation time cannot be bound to a source timestamp outside the versioned coherence window"
+    }
+  ]
+}

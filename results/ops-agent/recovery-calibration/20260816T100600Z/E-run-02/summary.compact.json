@@ -1,0 +1,493 @@
+{
+  "schema_version": "ops.recovery-calibration-run-compact.v1",
+  "run_name": "E-run-02",
+  "status": "COMPLETE",
+  "started_at": "2026-08-16T11:00:05.572339Z",
+  "completed_at": "2026-08-16T11:18:39.106295Z",
+  "plan": {
+    "schema_version": "ops.recovery-calibration.v1",
+    "scenario": "E",
+    "streams": 64,
+    "capture_interval_seconds": 15,
+    "pre_allocated_vus": 100,
+    "max_vus": 400,
+    "phases": [
+      {
+        "phase_index": 0,
+        "phase_id": "00_MEDIUM",
+        "profile": "MEDIUM",
+        "target_arrival_rate_records_per_second": 75,
+        "duration_seconds": 90,
+        "start_offset_seconds": 0,
+        "end_offset_seconds": 90
+      },
+      {
+        "phase_index": 1,
+        "phase_id": "01_OVERLOAD",
+        "profile": "OVERLOAD",
+        "target_arrival_rate_records_per_second": 330,
+        "duration_seconds": 90,
+        "start_offset_seconds": 90,
+        "end_offset_seconds": 180
+      },
+      {
+        "phase_index": 2,
+        "phase_id": "02_MEDIUM",
+        "profile": "MEDIUM",
+        "target_arrival_rate_records_per_second": 75,
+        "duration_seconds": 900,
+        "start_offset_seconds": 180,
+        "end_offset_seconds": 1080
+      }
+    ],
+    "plan_id": "217824aeafb041fadabd4cce223e73625d01f59224bfb2f490de5db61434693b",
+    "executor": "constant-arrival-rate",
+    "arrival_rate_is_primary_load_parameter": true,
+    "manual_keda_changes": false,
+    "manual_replica_changes": false,
+    "kubernetes_workload_objects_created": false,
+    "total_duration_seconds": 1080
+  },
+  "workload_attainment": {
+    "all_targets_attained": true,
+    "dropped_iterations": 0,
+    "phases": [
+      {
+        "phase_id": "00_MEDIUM",
+        "profile": "MEDIUM",
+        "target_rate": 75,
+        "duration_seconds": 90,
+        "accepted_202": 6750,
+        "failed": 0,
+        "http_accepted_rate_per_second": 75,
+        "attainment_ratio": 1.0,
+        "attained": true
+      },
+      {
+        "phase_id": "01_OVERLOAD",
+        "profile": "OVERLOAD",
+        "target_rate": 330,
+        "duration_seconds": 90,
+        "accepted_202": 29692,
+        "failed": 0,
+        "http_accepted_rate_per_second": 329.9111111111111,
+        "attainment_ratio": 0.9997306397306397,
+        "attained": true
+      },
+      {
+        "phase_id": "02_MEDIUM",
+        "profile": "MEDIUM",
+        "target_rate": 75,
+        "duration_seconds": 900,
+        "accepted_202": 67500,
+        "failed": 0,
+        "http_accepted_rate_per_second": 75,
+        "attainment_ratio": 1.0,
+        "attained": true
+      }
+    ]
+  },
+  "condition_evaluation": {
+    "schema_version": "ops.conditions.v2",
+    "evaluation_id": "1a828a73dae30365fccd9492e99e0efa0d2a1a1016c2f74d3d25b3ce6ac0a7d6",
+    "core_backlog_pressure": "PRESENT",
+    "matched_activation_windows": [
+      [
+        8,
+        9,
+        10
+      ],
+      [
+        9,
+        10,
+        11
+      ],
+      [
+        10,
+        11,
+        12
+      ]
+    ],
+    "activation_path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/conditions.v2.activation.json",
+    "full_sequence": {
+      "evaluation_id": "604eb437bf5bcb9b586ccb3d9593ae25cfb40c01214da2f3ff9ef3b063b7a416",
+      "evaluation_status": "PARTIAL",
+      "core_backlog_pressure": "UNKNOWN",
+      "reason_codes": [
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+      ],
+      "path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/conditions.v2.full.json"
+    }
+  },
+  "sample_count": 73,
+  "quality_excluded_sample_count": 15,
+  "quality_excluded_samples": [
+    {
+      "sequence_index": 53,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_6_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 54,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_4_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 55,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_4_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 56,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_4_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 57,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_4_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 58,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_2_negative_lag",
+        "partition_3_negative_lag",
+        "partition_4_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 64,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_0_negative_lag",
+        "partition_2_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 65,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_0_negative_lag",
+        "partition_2_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 66,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_0_negative_lag",
+        "partition_2_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 67,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_0_negative_lag",
+        "partition_2_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 68,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_3_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 69,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_3_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 70,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_3_negative_lag",
+        "partition_5_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 71,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_3_negative_lag",
+        "partition_5_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    },
+    {
+      "sequence_index": 72,
+      "phase": "MEDIUM",
+      "anomalies": [
+        "partition_1_negative_lag",
+        "partition_3_negative_lag",
+        "partition_5_negative_lag",
+        "partition_6_negative_lag",
+        "partition_7_negative_lag"
+      ]
+    }
+  ],
+  "phase_summaries": [
+    {
+      "phase": {
+        "phase_index": 0,
+        "phase_id": "00_MEDIUM",
+        "profile": "MEDIUM",
+        "target_arrival_rate_records_per_second": 75,
+        "duration_seconds": 90,
+        "start_offset_seconds": 0,
+        "end_offset_seconds": 90
+      },
+      "sample_count": 6,
+      "usable_sample_count": 6,
+      "produce_rate_records_per_second": {
+        "count": 6,
+        "min": 0.2,
+        "median": 47.075,
+        "max": 75.0
+      },
+      "committed_offset_rate_records_per_second": {
+        "count": 6,
+        "min": 0.0,
+        "median": 45.516666666666666,
+        "max": 75.2
+      },
+      "total_lag_records": {
+        "count": 6,
+        "min": 0.0,
+        "median": 22.0,
+        "max": 187.0
+      },
+      "lag_slope_records_per_second": {
+        "count": 6,
+        "min": -0.2,
+        "median": 0.1,
+        "max": 3.1166666666666667
+      },
+      "worker_desired_replicas": [
+        2
+      ],
+      "keda_active_values": [
+        "True"
+      ],
+      "postgres_readiness_values": [
+        "ready"
+      ]
+    },
+    {
+      "phase": {
+        "phase_index": 1,
+        "phase_id": "01_OVERLOAD",
+        "profile": "OVERLOAD",
+        "target_arrival_rate_records_per_second": 330,
+        "duration_seconds": 90,
+        "start_offset_seconds": 90,
+        "end_offset_seconds": 180
+      },
+      "sample_count": 6,
+      "usable_sample_count": 6,
+      "produce_rate_records_per_second": {
+        "count": 6,
+        "min": 75.93333333333334,
+        "median": 235.02499999999998,
+        "max": 329.9166666666667
+      },
+      "committed_offset_rate_records_per_second": {
+        "count": 6,
+        "min": 70.58333333333333,
+        "median": 76.28333333333333,
+        "max": 92.13333333333334
+      },
+      "total_lag_records": {
+        "count": 6,
+        "min": 47.0,
+        "median": 9677.5,
+        "max": 18354.0
+      },
+      "lag_slope_records_per_second": {
+        "count": 6,
+        "min": 0.7833333333333333,
+        "median": 161.02499999999998,
+        "max": 247.86666666666667
+      },
+      "worker_desired_replicas": [
+        2,
+        4
+      ],
+      "keda_active_values": [
+        "True"
+      ],
+      "postgres_readiness_values": [
+        "ready"
+      ]
+    },
+    {
+      "phase": {
+        "phase_index": 2,
+        "phase_id": "02_MEDIUM",
+        "profile": "MEDIUM",
+        "target_arrival_rate_records_per_second": 75,
+        "duration_seconds": 900,
+        "start_offset_seconds": 180,
+        "end_offset_seconds": 1080
+      },
+      "sample_count": 61,
+      "usable_sample_count": 46,
+      "produce_rate_records_per_second": {
+        "count": 46,
+        "min": 74.75,
+        "median": 75.0,
+        "max": 329.35
+      },
+      "committed_offset_rate_records_per_second": {
+        "count": 46,
+        "min": 69.4,
+        "median": 111.94166666666666,
+        "max": 114.66666666666667
+      },
+      "total_lag_records": {
+        "count": 46,
+        "min": 13.0,
+        "median": 9163.0,
+        "max": 21834.0
+      },
+      "lag_slope_records_per_second": {
+        "count": 46,
+        "min": -39.68333333333333,
+        "median": -37.0,
+        "max": 231.33333333333334
+      },
+      "worker_desired_replicas": [
+        2,
+        4
+      ],
+      "keda_active_values": [
+        "True"
+      ],
+      "postgres_readiness_values": [
+        "ready"
+      ]
+    }
+  ],
+  "recovery_candidate": {
+    "status": "ANALYZED",
+    "matched_activation_windows": [
+      [
+        8,
+        9,
+        10
+      ],
+      [
+        9,
+        10,
+        11
+      ],
+      [
+        10,
+        11,
+        12
+      ]
+    ],
+    "peak_lag_records": 21834.0,
+    "peak_lag_index": 12,
+    "first_negative_lag_slope_index": 16,
+    "negative_lag_slope_run_candidates": [
+      {
+        "start_index": 16,
+        "end_index": 52,
+        "capture_count": 37
+      },
+      {
+        "start_index": 63,
+        "end_index": 63,
+        "capture_count": 1
+      }
+    ],
+    "produce_committed_balance_reversal_index": 16,
+    "stable_reentry_window_candidates": [
+      {
+        "start_index": 52,
+        "end_index": 52,
+        "capture_count": 1
+      }
+    ],
+    "scale_timing_context": [
+      {
+        "sequence_index": 0,
+        "desired_replicas": 2
+      },
+      {
+        "sequence_index": 7,
+        "desired_replicas": 4
+      },
+      {
+        "sequence_index": 59,
+        "desired_replicas": 2
+      },
+      {
+        "sequence_index": 62,
+        "desired_replicas": 4
+      },
+      {
+        "sequence_index": 70,
+        "desired_replicas": 2
+      }
+    ]
+  },
+  "first_source_bundle_sha256": "bbb67c30e658fef12e2534cf85af62543548dbd6ee2bef81a0094ed98b84b5d2",
+  "last_source_bundle_sha256": "312b0b666a1e59756a74033b1157bf767eced948ea9cd4a6cf22e6cf6e8e0c2b",
+  "raw_artifact_count": 292,
+  "detailed_summary_local_only": true,
+  "detailed_summary_sha256": "54ceac84d764fd194f34c48647fd11894c82ebe8ef237859993fcbdb4377c25a"
+}

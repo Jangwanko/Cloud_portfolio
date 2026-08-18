@@ -205,12 +205,28 @@ def summarize_bundle(bundle: EvidenceBundle | Mapping[str, Any]) -> dict[str, An
         end_delta = end_values[-1] - end_values[0]
         current_delta = committed_values[-1] - committed_values[0]
         lag_delta = lag_values[-1] - lag_values[0]
-        if end_delta < 0:
+        if any(later < earlier for earlier, later in zip(end_values, end_values[1:])):
             anomalies.append(f"partition_{partition}_end_offset_decrease")
-        if current_delta < 0:
+        if any(
+            later < earlier
+            for earlier, later in zip(committed_values, committed_values[1:])
+        ):
             anomalies.append(f"partition_{partition}_committed_offset_decrease")
-        if committed_values[-1] == -1:
+        if any(value == -1 for value in committed_values):
             anomalies.append(f"partition_{partition}_committed_uninitialized")
+        if any(value < 0 for value in end_values):
+            anomalies.append(f"partition_{partition}_negative_end_offset")
+        if any(value < 0 for value in committed_values):
+            anomalies.append(f"partition_{partition}_negative_committed_offset")
+        if any(value < 0 for value in lag_values):
+            anomalies.append(f"partition_{partition}_negative_lag")
+        if any(
+            lag_value != end_value - committed_value
+            for end_value, committed_value, lag_value in zip(
+                end_values, committed_values, lag_values
+            )
+        ):
+            anomalies.append(f"partition_{partition}_offset_lag_arithmetic_mismatch")
         produce_delta += end_delta
         committed_delta += current_delta
         lag_first += lag_values[0]

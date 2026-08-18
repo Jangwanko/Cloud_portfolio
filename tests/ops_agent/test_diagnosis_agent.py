@@ -274,6 +274,37 @@ def test_rebalance_cannot_be_confirmed_or_excluded() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("supporting", "conflicting"),
+    [(["known"], []), ([], ["known"])],
+)
+def test_unavailable_rebalance_telemetry_cannot_be_cited(
+    supporting: list[str], conflicting: list[str]
+) -> None:
+    decision = AgentDecision(
+        hypotheses=[
+            HypothesisResult(
+                hypothesis=HypothesisName.CONSUMER_REBALANCE_SUSPECTED,
+                support_status=HypothesisSupportStatus.INSUFFICIENT,
+                reason_codes=["REBALANCE_UNAVAILABLE"],
+                supporting_evidence_ids=supporting,
+                conflicting_evidence_ids=conflicting,
+                evidence_gaps=["CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE"],
+            )
+        ],
+        stop_reason=DiagnosisStopReason.INSUFFICIENT_EVIDENCE,
+    )
+
+    with pytest.raises(DiagnosisValidationError, match="cannot be cited"):
+        DiagnosisOutputValidator().validate(
+            decision=decision,
+            policy=DiagnosisPolicy(model=DEFAULT_OPENAI_MODEL),
+            initial_evidence_ids=["known"],
+            additional_evidence=[],
+            steps=[],
+        )
+
+
 def test_forbidden_recovery_or_action_claim_is_rejected() -> None:
     decision = AgentDecision(
         hypotheses=[

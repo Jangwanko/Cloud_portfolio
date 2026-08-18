@@ -22,6 +22,7 @@
 - Phase 2.5 negative controls: short burst, 180초 sustainable high, single transient spike에서 고정 후보 모두 `NOT_PRESENT`
 - Phase 2 sequence evaluator v2: ordered bundle digest·timing·source identity gate, positive 3회 `PRESENT`, negative 3종 `PRESENT` 없음, adversarial sequence 차단
 - Phase 3.1 single Diagnosis Agent: `ops.diagnosis.v1`, normalized tool 9개, citation/stop validator, offline golden 9개와 bounded output repair fixture 5개; positive run-01 live VALID
+- Phase 4/4.1/4.2 recovery: arrival-rate A/B/C/E/F로 drain과 MEDIUM envelope 재진입을 실측하고 deterministic `ACTIVE / RECOVERING / UNKNOWN / RECOVERED` 구현; clearing과 post-recovery regression handling은 대기
 - API `2.1.0` 단순화 image build·non-root smoke·local cluster 동일 image rollout
 - generic v2 contract, PostgreSQL read, `/ops/summary`, ordering·DB outage suite 재검증
 - notification Worker 독립 KEDA 추가, core `2→4`·notification `1→2` 상한 적용
@@ -41,10 +42,11 @@
 | Phase 2 Condition Evaluation | required/optional dependency, deterministic tri-state, evidence trace, baseline/sequence regression | v1 no-backlog와 v2 backlog activation 완료; concentration·replica grace 대기 |
 | Phase 2.5/2.6 Controlled Calibration | 실제 multi-stream backlog 반복, fixed autoscaling policy, 15초 evidence timeline, positive/negative policy 보정 | positive 3회와 negative 3종 완료; v2 replay 통과 |
 | Phase 3 Guided Investigation | v2 `PRESENT` 뒤 추가 normalized read-only evidence 선택과 grounded hypothesis | 구현 완료; Luna live dry-run과 tool-free output repair 검증 |
+| Phase 4 Recovery Evaluation | varying traffic calibration, continuous/zero-ingress drain, false-recovery 차단, deterministic lifecycle state | recovery v1 ACTIVE/RECOVERING/UNKNOWN 및 versioned v2 MEDIUM 3-capture RECOVERED 완료; clearing 대기 |
 
 Phase 2는 bundle 전체가 `PARTIAL`이라는 이유로 모든 condition을 `UNKNOWN`으로 만들지 않습니다. 각 condition의 required evidence가 complete/fresh하면 optional evidence 누락과 독립적으로 판정합니다. Kafka partition coverage 누락, required committed offset `-1`, required freshness `STALE/UNKNOWN`은 해당 condition을 `UNKNOWN`으로 만듭니다.
 
-현재 v1은 60초 전체 lag `0`과 fully available Worker를 `ABSENT`로 확정합니다. 양수 lag는 single bundle에서 계속 `UNKNOWN`이며 replica shortfall 한 snapshot도 2분 grace를 증명하지 못해 `UNKNOWN`입니다. V2는 positive/negative calibration으로 검증한 `lag >= 7,000`, slope `>=100/s`, 세 capture와 두 번의 lag 증가만 activation rule로 사용합니다. Immutable bundle의 순서·scope·source identity·timing과 각 capture의 v1 Kafka gate를 검증하며 recovery/clearing hysteresis는 구현하지 않습니다.
+현재 condition v1은 60초 전체 lag `0`과 fully available Worker를 `ABSENT`로 확정합니다. 양수 lag는 single bundle에서 계속 `UNKNOWN`이며 replica shortfall 한 snapshot도 2분 grace를 증명하지 못해 `UNKNOWN`입니다. Conditions v2는 positive/negative calibration으로 검증한 `lag >= 7,000`, slope `>=100/s`, 세 capture와 두 번의 lag 증가만 activation rule로 사용합니다. Recovery v1은 activation을 재판정하지 않고 drain만 평가하며, recovery v2는 local-ha MEDIUM envelope 재진입을 별도 completion rule로 평가합니다. Clearing은 구현하지 않습니다.
 
 첫 baseline acceptance 결과:
 

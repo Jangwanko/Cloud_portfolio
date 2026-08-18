@@ -20,6 +20,8 @@
 - `ops-agent/negative-control/20260816T040746Z/`: frozen pressure candidate negative-control manifest, analysis, sanitized summary 3개
 - `ops-agent/sequence-validation/20260816T044352Z/summary.json`: actual positive/negative bundle sequence의 v2 replay ID, activation window, local output hash 요약
 - `ops-agent/diagnosis/golden-eval-v1.json`: scripted offline Phase 3 grounding/tool/stop evaluation 요약
+- `ops-agent/recovery-calibration/20260816T100600Z/`: Phase 4 A/B/C/E/F load-aware calibration manifest, analysis, compact summaries
+- `ops-agent/recovered-calibration/20260816T194023Z/`: Phase 4.2 E-04~06 supplemental manifest, combined E-01~06 analysis, compact summaries
 - 그 밖의 날짜별·중간 산출물: 로컬 보관, 기본 Git 추적 제외
 
 fixed Worker/KEDA A/B처럼 두 원본을 함께 보존해야 하는 실행은 `run_kafka_performance_suite.ps1 -ResultFileName <name>.txt`를 사용합니다. 각 파일에 `k6_stream_count`, `worker_scaling_mode`, `fixed_worker_replicas`, source revision과 dirty 여부를 남기고, 조건이 다른 파일을 하나의 baseline으로 합치지 않습니다.
@@ -80,6 +82,46 @@ Runtime bundle/raw 약 62 MB는 local-only로 유지합니다. Git은 sanitized 
 - tracked: [sanitized replay summary](ops-agent/sequence-validation/20260816T044352Z/summary.json)
 
 이 replay는 activation만 검증합니다. Recovery/clearing hysteresis는 구현하지 않았습니다. Phase 3 diagnosis는 이 결과를 입력으로 사용하는 별도 단계입니다.
+
+## Ops Agent Phase 4 Recovery Calibration - 2026-08-16
+
+- tracked root: `ops-agent/recovery-calibration/20260816T100600Z/`
+- tracked files: manifest, analysis JSON/Markdown, A/B/C/E/F compact summaries 7개
+- local-only: 349 normalized bundles, 1,396 raw projections, conditions outputs, k6 logs, interrupted attempts
+- hash validation: bundle canonical digest `349/349`, raw SHA-256 `1,396/1,396`, errors `0`
+- workload: k6 `constant-arrival-rate`, 64 streams, rates `0/30/75/110/330 records/s`
+- actual runs: A/B/C 1회, E continuous-ingress 3회, F zero-ingress 1회
+- pressure: E peak lag `20,806 / 21,834 / 21,151`, F `20,998`; 모두 v2 activation `PRESENT`
+- boundary at capture time: recovery policy candidate only; 이후 Phase 4.1에서 immutable artifact replay용 `ops.recovery.v1` ACTIVE/RECOVERING/UNKNOWN을 구현했으며 원본 calibration artifact는 변경하지 않음
+
+Kafka exporter negative-lag capture는 원본과 compact quality exclusion 목록에 남깁니다.
+값을 `0`으로 치환하거나 healthy capture로 재분류하지 않습니다. rolling activation
+artifact는 valid 3-bundle window의 과거 incident fact이고, full-sequence `UNKNOWN`과
+후속 anomaly는 별도 보존합니다. tracked summary를 raw evidence 대체물로 해석하지
+않습니다. Phase 4.1 full recovery evaluation outputs는
+`results/ops-agent/recovery-evaluation/` 아래 local-only artifact이며, 기존
+calibration bundle/raw 또는 compact summary를 덮어쓰지 않습니다.
+
+## Ops Agent Phase 4.2 Recovered Calibration - 2026-08-17
+
+- tracked root: `ops-agent/recovered-calibration/20260816T194023Z/`
+- tracked files: manifest, combined analysis JSON/Markdown, E-04/E-05/E-06 compact summaries
+- local-only: 219 new bundles, 876 raw projections, k6 logs, full recovery replay outputs
+- combined audit: E-01~06 438 bundles와 1,752 raw projections canonical/SHA-256 `PASS`
+- workload: 기존 E와 동일한 64 streams, `75→330→75 records/s`, current KEDA `2→4`, 약 15초 cadence
+- new runs: peak lag `20,261 / 22,632 / 18,948`, failed/dropped iteration `0/0`
+- stable MEDIUM re-entry count: E-01~06 `3/1/3/4/5/14`
+- promoted policy: `worker-backlog-local-ha.recovery.v2`, consecutive usable capture `3`
+- actual replay: E-01/E-03/E-04/E-05/E-06 `RECOVERED`, E-02 `UNKNOWN`
+
+RECOVERED는 activation 뒤 RECOVERING을 관측한 동일 incident scope에서 measured
+MEDIUM ingress `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, fresh/usable Kafka
+evidence와 PostgreSQL ready/HA/primary가 세 capture 연속 유지된 경우만 뜻합니다.
+Lag `0`, Worker `2`, KEDA inactive, zero ingress는 요구하지 않습니다. Unknown이나
+quality anomaly는 count를 reset합니다. Full bundle/raw/replay는 runtime topology를
+포함하므로 local-only이며 tracked compact summary를 raw evidence 대체물로
+해석하지 않습니다. Clearing, 새 incident 분리, global health, remediation은 이
+artifact가 증명하지 않습니다.
 
 ## Phase 3 Diagnosis Evaluation - 2026-08-16
 

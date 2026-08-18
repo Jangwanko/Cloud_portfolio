@@ -1,0 +1,1036 @@
+{
+  "schema_version": "ops.recovered-calibration-combined.v1",
+  "experiment_id": "20260816T194023Z",
+  "generated_at": "2026-08-16T20:58:12.600178Z",
+  "medium_reentry_contract": {
+    "schema_version": "ops.recovered-envelope-candidate.v1",
+    "contract_version": "local-ha.medium-reentry-candidate.v1",
+    "promotion_status": "PROMOTED",
+    "profile": "local-ha",
+    "workload_phase": "MEDIUM",
+    "target_arrival_rate_records_per_second": 75,
+    "rate_window_seconds": 60,
+    "actual_produce_rate_records_per_second": {
+      "minimum": 74.98333333333333,
+      "maximum": 77.08333333333333,
+      "basis": "observed Phase 4 MEDIUM minimum and maximum"
+    },
+    "total_lag_records": {
+      "maximum": 22.0,
+      "basis": "observed Phase 4 MEDIUM maximum; local-ha candidate only"
+    },
+    "lag_slope_records_per_second": {
+      "maximum": 0.0,
+      "basis": "observed Phase 4 MEDIUM maximum"
+    },
+    "required_quality": {
+      "phase_rate_window_settled": true,
+      "required_kafka_evidence_usable": true,
+      "postgres_readiness_body_status": "ready",
+      "postgres_ha_mode": true,
+      "postgres_primary_reachable": true,
+      "negative_exporter_lag_policy": "INVALID_ONLY"
+    },
+    "capture_cadence": {
+      "configured_seconds": 15,
+      "minimum_seconds": 9.0,
+      "maximum_seconds": 21.0,
+      "basis": "existing worker-backlog-local-ha.recovery.v1 provenance gate"
+    },
+    "not_required": [
+      "lag_equals_zero",
+      "worker_replica_count",
+      "keda_inactive",
+      "zero_ingress"
+    ],
+    "baseline_provenance": {
+      "experiment_id": "20260816T100600Z",
+      "analysis_path": "results/ops-agent/recovery-calibration/20260816T100600Z/analysis.json",
+      "analysis_sha256": "2915350f9ca18f2d5cb588e9c1fa178afa58aee1424c3d709a1364feae03f4b6",
+      "medium_sample_count": 3
+    }
+  },
+  "run_facts": {
+    "E-run-01": {
+      "run_name": "E-run-01",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ],
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "peak_lag_records": 20806,
+      "peak_lag_index": 13,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 61,
+        "source_bundle_id": "98143e00-df5f-47bc-ad1d-aa7b4a82a92e",
+        "collection_timestamp": "2026-08-16T10:37:11.366273+00:00",
+        "capture_interval_seconds": 14.897111,
+        "produce_rate_records_per_second": 74.98333333333333,
+        "committed_offset_rate_records_per_second": 90.06666666666666,
+        "total_lag_records": 0.0,
+        "lag_slope_records_per_second": -15.083333333333334,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 61,
+          "end_index": 63,
+          "capture_count": 3
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 3,
+      "unknown_capture_count": 12,
+      "negative_exporter_lag_invalid_capture_count": 10,
+      "reexit_after_first_reentry_indexes": [
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 47,
+        "minimum": 74.53333333333333,
+        "maximum": 88.48333333333333
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29696,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.9555555555556,
+            "attainment_ratio": 0.9998653198653199,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_UNKNOWN"
+    },
+    "E-run-02": {
+      "run_name": "E-run-02",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "peak_lag_records": 21834,
+      "peak_lag_index": 12,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 52,
+        "source_bundle_id": "1a98afbd-214a-4a58-a78e-2d2b12135142",
+        "collection_timestamp": "2026-08-16T11:13:07.930260+00:00",
+        "capture_interval_seconds": 14.914512,
+        "produce_rate_records_per_second": 74.98333333333333,
+        "committed_offset_rate_records_per_second": 104.06666666666666,
+        "total_lag_records": 13.0,
+        "lag_slope_records_per_second": -29.083333333333332,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 52,
+          "end_index": 52,
+          "capture_count": 1
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 1,
+      "unknown_capture_count": 17,
+      "negative_exporter_lag_invalid_capture_count": 15,
+      "reexit_after_first_reentry_indexes": [
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 44,
+        "minimum": 74.75,
+        "maximum": 75.25
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29692,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.9111111111111,
+            "attainment_ratio": 0.9997306397306397,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_UNKNOWN"
+    },
+    "E-run-03": {
+      "run_name": "E-run-03",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "peak_lag_records": 21151,
+      "peak_lag_index": 12,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 55,
+        "source_bundle_id": "73466b11-ef07-45ad-9b77-461a71554d2e",
+        "collection_timestamp": "2026-08-16T11:32:44.050073+00:00",
+        "capture_interval_seconds": 15.045372,
+        "produce_rate_records_per_second": 75.0,
+        "committed_offset_rate_records_per_second": 89.8,
+        "total_lag_records": 21.0,
+        "lag_slope_records_per_second": -14.8,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 55,
+          "end_index": 56,
+          "capture_count": 2
+        },
+        {
+          "start_index": 70,
+          "end_index": 72,
+          "capture_count": 3
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 3,
+      "unknown_capture_count": 12,
+      "negative_exporter_lag_invalid_capture_count": 8,
+      "reexit_after_first_reentry_indexes": [
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 51,
+        "minimum": 73.83333333333333,
+        "maximum": 79.01666666666667
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29694,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.93333333333334,
+            "attainment_ratio": 0.9997979797979798,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_ACTIVE"
+    },
+    "E-run-04": {
+      "run_name": "E-run-04",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ],
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "peak_lag_records": 20261,
+      "peak_lag_index": 13,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 51,
+        "source_bundle_id": "5f074e2a-1f6b-4be0-a921-358cb7d5810b",
+        "collection_timestamp": "2026-08-16T19:53:11.911584+00:00",
+        "capture_interval_seconds": 15.182488,
+        "produce_rate_records_per_second": 75.0,
+        "committed_offset_rate_records_per_second": 81.8,
+        "total_lag_records": 0.0,
+        "lag_slope_records_per_second": -6.8,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 51,
+          "end_index": 53,
+          "capture_count": 3
+        },
+        {
+          "start_index": 55,
+          "end_index": 55,
+          "capture_count": 1
+        },
+        {
+          "start_index": 60,
+          "end_index": 63,
+          "capture_count": 4
+        },
+        {
+          "start_index": 66,
+          "end_index": 67,
+          "capture_count": 2
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 4,
+      "unknown_capture_count": 15,
+      "negative_exporter_lag_invalid_capture_count": 11,
+      "reexit_after_first_reentry_indexes": [
+        54,
+        56,
+        57,
+        58,
+        59,
+        64,
+        65,
+        68,
+        69,
+        70,
+        71,
+        72
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 46,
+        "minimum": 74.41666666666667,
+        "maximum": 91.0
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29687,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.85555555555555,
+            "attainment_ratio": 0.9995622895622895,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_UNKNOWN"
+    },
+    "E-run-05": {
+      "run_name": "E-run-05",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ],
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "peak_lag_records": 22632,
+      "peak_lag_index": 13,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 43,
+        "source_bundle_id": "4c15d5c2-9945-4a0c-bdd9-25eba36754f6",
+        "collection_timestamp": "2026-08-16T20:10:36.774995+00:00",
+        "capture_interval_seconds": 14.827418,
+        "produce_rate_records_per_second": 74.98333333333333,
+        "committed_offset_rate_records_per_second": 110.61666666666666,
+        "total_lag_records": 0.0,
+        "lag_slope_records_per_second": -35.63333333333333,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 43,
+          "end_index": 44,
+          "capture_count": 2
+        },
+        {
+          "start_index": 51,
+          "end_index": 51,
+          "capture_count": 1
+        },
+        {
+          "start_index": 54,
+          "end_index": 57,
+          "capture_count": 4
+        },
+        {
+          "start_index": 59,
+          "end_index": 62,
+          "capture_count": 4
+        },
+        {
+          "start_index": 64,
+          "end_index": 68,
+          "capture_count": 5
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 5,
+      "unknown_capture_count": 10,
+      "negative_exporter_lag_invalid_capture_count": 8,
+      "reexit_after_first_reentry_indexes": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        52,
+        53,
+        58,
+        63,
+        69,
+        70,
+        71,
+        72
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 49,
+        "minimum": 74.98333333333333,
+        "maximum": 92.1
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29697,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.96666666666664,
+            "attainment_ratio": 0.9998989898989898,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_UNKNOWN"
+    },
+    "E-run-06": {
+      "run_name": "E-run-06",
+      "status": "COMPLETE",
+      "activation_matched_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ],
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "peak_lag_records": 18948,
+      "peak_lag_index": 13,
+      "first_recovering_sample_index": 18,
+      "first_usable_envelope_reentry": {
+        "sequence_index": 43,
+        "source_bundle_id": "c0b36ed7-eb33-4c69-9e3e-d96a22743cad",
+        "collection_timestamp": "2026-08-16T20:29:11.595529+00:00",
+        "capture_interval_seconds": 15.184978,
+        "produce_rate_records_per_second": 75.0,
+        "committed_offset_rate_records_per_second": 98.53333333333333,
+        "total_lag_records": 1.0,
+        "lag_slope_records_per_second": -23.533333333333335,
+        "stable_reentry_candidate": true,
+        "checks": {
+          "after_recovering_observed": true,
+          "medium_recovery_phase": true,
+          "target_rate_matches": true,
+          "rate_window_settled": true,
+          "actual_produce_within_medium_envelope": true,
+          "lag_within_medium_envelope": true,
+          "no_growth_above_medium_envelope": true,
+          "processing_direction_consistent": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_acceptable": true,
+          "capture_cadence_acceptable": true
+        }
+      },
+      "stable_reentry_windows": [
+        {
+          "start_index": 43,
+          "end_index": 47,
+          "capture_count": 5
+        },
+        {
+          "start_index": 55,
+          "end_index": 68,
+          "capture_count": 14
+        }
+      ],
+      "maximum_consecutive_usable_reentry_count": 14,
+      "unknown_capture_count": 18,
+      "negative_exporter_lag_invalid_capture_count": 14,
+      "reexit_after_first_reentry_indexes": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        69,
+        70,
+        71,
+        72
+      ],
+      "medium_actual_produce_rate_records_per_second": {
+        "settled_capture_count": 59,
+        "usable_rate_count": 45,
+        "minimum": 70.41666666666667,
+        "maximum": 90.53333333333333
+      },
+      "postgres_all_acceptable": true,
+      "workload_attainment": {
+        "all_targets_attained": true,
+        "dropped_iterations": 0,
+        "phases": [
+          {
+            "phase_id": "00_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 90,
+            "accepted_202": 6750,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          },
+          {
+            "phase_id": "01_OVERLOAD",
+            "profile": "OVERLOAD",
+            "target_rate": 330,
+            "duration_seconds": 90,
+            "accepted_202": 29696,
+            "failed": 0,
+            "http_accepted_rate_per_second": 329.9555555555556,
+            "attainment_ratio": 0.9998653198653199,
+            "attained": true
+          },
+          {
+            "phase_id": "02_MEDIUM",
+            "profile": "MEDIUM",
+            "target_rate": 75,
+            "duration_seconds": 900,
+            "accepted_202": 67500,
+            "failed": 0,
+            "http_accepted_rate_per_second": 75,
+            "attainment_ratio": 1.0,
+            "attained": true
+          }
+        ]
+      },
+      "final_recovery_state": "WORKER_BACKLOG_UNKNOWN"
+    }
+  },
+  "stable_count_distribution": {
+    "per_run_maximum_consecutive_usable_reentry_count": {
+      "E-run-01": 3,
+      "E-run-02": 1,
+      "E-run-03": 3,
+      "E-run-04": 4,
+      "E-run-05": 5,
+      "E-run-06": 14
+    },
+    "candidate_supporting_runs": {
+      "1": [
+        "E-run-01",
+        "E-run-02",
+        "E-run-03",
+        "E-run-04",
+        "E-run-05",
+        "E-run-06"
+      ],
+      "2": [
+        "E-run-01",
+        "E-run-03",
+        "E-run-04",
+        "E-run-05",
+        "E-run-06"
+      ],
+      "3": [
+        "E-run-01",
+        "E-run-03",
+        "E-run-04",
+        "E-run-05",
+        "E-run-06"
+      ],
+      "4": [
+        "E-run-04",
+        "E-run-05",
+        "E-run-06"
+      ],
+      "5": [
+        "E-run-05",
+        "E-run-06"
+      ],
+      "6": [
+        "E-run-06"
+      ],
+      "7": [
+        "E-run-06"
+      ],
+      "8": [
+        "E-run-06"
+      ],
+      "9": [
+        "E-run-06"
+      ],
+      "10": [
+        "E-run-06"
+      ],
+      "11": [
+        "E-run-06"
+      ],
+      "12": [
+        "E-run-06"
+      ],
+      "13": [
+        "E-run-06"
+      ],
+      "14": [
+        "E-run-06"
+      ]
+    },
+    "candidate_selected": 3,
+    "selection_status": "PROMOTED",
+    "supporting_runs": [
+      "E-run-01",
+      "E-run-03",
+      "E-run-04",
+      "E-run-05",
+      "E-run-06"
+    ],
+    "non_supporting_runs": [
+      "E-run-02"
+    ],
+    "rejected_alternatives": {
+      "1": "brief envelope entry is insufficient and fails false-recovery control",
+      "2": "two-entry then regrowth control would be a false recovery",
+      "4": "supported by only three of six continuous-ingress runs"
+    }
+  },
+  "artifact_validation": {
+    "new": {
+      "status": "PASS",
+      "sample_count": 219,
+      "verified_bundle_count": 219,
+      "verified_raw_artifact_count": 876,
+      "errors": []
+    },
+    "combined_e_runs": {
+      "status": "PASS",
+      "sample_count": 438,
+      "verified_bundle_count": 438,
+      "verified_raw_artifact_count": 1752,
+      "errors": []
+    }
+  },
+  "decision": {
+    "status": "RECOVERED_POLICY_PROMOTED",
+    "policy_version": "worker-backlog-local-ha.recovery.v2",
+    "ruleset_version": "ops.recovery.rules.v2",
+    "evaluator_version": "ops.recovery.evaluator.v2",
+    "stable_capture_count": 3,
+    "approximate_span_seconds": 30,
+    "cadence_tolerance_seconds": [
+      9.0,
+      21.0
+    ],
+    "measured_ingress_profile": "MEDIUM",
+    "reason": "N=3 is supported by five of six continuous-ingress runs and all three supplemental runs; N=1/2 fail false-recovery controls and N=4 lacks majority support"
+  },
+  "phase2_changed": false,
+  "phase3_changed": false,
+  "recovered_state_emitted": true,
+  "false_recovery_controls": {
+    "decreasing_then_regrowing": "NOT_RECOVERED_ACTIVE",
+    "brief_envelope_entry_then_regrowing": "NOT_RECOVERED_ACTIVE",
+    "usable_unknown_usable": "CONSECUTIVE_COUNT_RESET",
+    "stale_recovery_window": "UNKNOWN",
+    "partition_coverage_7_of_8": "UNKNOWN",
+    "offset_decrease_or_reset": "UNKNOWN",
+    "identity_change_mid_sequence": "UNKNOWN",
+    "db_degraded_while_lag_drains": "UNKNOWN",
+    "negative_exporter_lag_invalid": "UNKNOWN_INVALID_ONLY",
+    "zero_ingress_backlog_not_draining": "NOT_RECOVERED_ACTIVE",
+    "result": "PASS"
+  },
+  "promoted_replays": {
+    "E-run-01": {
+      "state": "WORKER_BACKLOG_RECOVERED",
+      "evaluation_status": "COMPLETE",
+      "recovery_evaluation_id": "850f6ef8187402226986270e2ca79d536f28814442c73dc103289cb635ec7868",
+      "selected_stable_window": {
+        "start_index": 61,
+        "end_index": 63,
+        "capture_count": 3
+      },
+      "selected_prefix_end_index": 63,
+      "source_bundle_count": 52,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-01.recovery.v2.json",
+      "artifact_sha256": "d9958c1de00c4699673d286d5852845fd83b10dfa921dce16db6fd6d5c7c2423"
+    },
+    "E-run-02": {
+      "state": "WORKER_BACKLOG_UNKNOWN",
+      "evaluation_status": "PARTIAL",
+      "recovery_evaluation_id": "4567f5db928a9c6cb2823b12735d29605f4886a44fb217c8b0109de65f97df0e",
+      "selected_stable_window": null,
+      "selected_prefix_end_index": 72,
+      "source_bundle_count": 62,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-02.recovery.v2.json",
+      "artifact_sha256": "62b01a6fa9033fc51365cc01729e454ad771338a862092b165095833d0941db3"
+    },
+    "E-run-03": {
+      "state": "WORKER_BACKLOG_RECOVERED",
+      "evaluation_status": "COMPLETE",
+      "recovery_evaluation_id": "dc6cd6d57d7b3dd7bf3f421c366d7958a8477fbfe10b9613bf20f424443ea8e4",
+      "selected_stable_window": {
+        "start_index": 70,
+        "end_index": 72,
+        "capture_count": 3
+      },
+      "selected_prefix_end_index": 72,
+      "source_bundle_count": 62,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-03.recovery.v2.json",
+      "artifact_sha256": "5d9980be4a172366f5661c21f2b6008b24b8e824fab83c9c00b87209aae7ceaf"
+    },
+    "E-run-04": {
+      "state": "WORKER_BACKLOG_RECOVERED",
+      "evaluation_status": "COMPLETE",
+      "recovery_evaluation_id": "faa4cccd4ee07be66b8cb5f00b6f901a6194f392233b28545a24db78f7ab8de8",
+      "selected_stable_window": {
+        "start_index": 51,
+        "end_index": 53,
+        "capture_count": 3
+      },
+      "selected_prefix_end_index": 53,
+      "source_bundle_count": 42,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-04.recovery.v2.json",
+      "artifact_sha256": "216fd0698fdc14170c2b79887d3c7951ab2a371c49e684914ca001363529d4d1"
+    },
+    "E-run-05": {
+      "state": "WORKER_BACKLOG_RECOVERED",
+      "evaluation_status": "COMPLETE",
+      "recovery_evaluation_id": "b333c82887dae673010bc498a3c645a3090e0ca893273bc8cb294140b8ab25be",
+      "selected_stable_window": {
+        "start_index": 54,
+        "end_index": 57,
+        "capture_count": 4
+      },
+      "selected_prefix_end_index": 56,
+      "source_bundle_count": 45,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-05.recovery.v2.json",
+      "artifact_sha256": "09c7e168a3f7503e2365d8c956a36afbfbc34c41ad103d9bfefb4cc28b3bb9db"
+    },
+    "E-run-06": {
+      "state": "WORKER_BACKLOG_RECOVERED",
+      "evaluation_status": "COMPLETE",
+      "recovery_evaluation_id": "bef6dad629d54c0903c7c3636a1e6a048dd2fcb663a0fdfbba81d189351d2b25",
+      "selected_stable_window": {
+        "start_index": 43,
+        "end_index": 47,
+        "capture_count": 5
+      },
+      "selected_prefix_end_index": 45,
+      "source_bundle_count": 34,
+      "artifact_path": "results/ops-agent/recovered-calibration/20260816T194023Z/promoted-replays/E-run-06.recovery.v2.json",
+      "artifact_sha256": "4630990cb41e466eae3283878b130314227c6148e3efe722a20924d384d4f475"
+    }
+  }
+}

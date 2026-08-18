@@ -19,8 +19,16 @@ from ops_agent.diagnosis_agent import (
 )
 from ops_agent.diagnosis_models import DiagnosisPolicy
 from ops_agent.evaluator import evaluate_bundle
+from ops_agent.incident_lifecycle import (
+    attach_diagnosis,
+    attach_recovery_evaluation,
+    create_incident,
+)
+from ops_agent.incident_models import IncidentProvenance, IncidentRecord
 from ops_agent.models import EvidenceBundle
 from ops_agent.policies import load_policy
+from ops_agent.recovery_evaluator import evaluate_recovery
+from ops_agent.recovery_policies import load_recovery_policy
 from ops_agent.sequence_evaluator import evaluate_bundle_sequence
 from ops_agent.sequence_models import SequenceConditionEvaluation
 
@@ -59,6 +67,38 @@ def _parser() -> argparse.ArgumentParser:
         help="ordered ops.evidence.v1 bundle paths",
     )
     evaluate_sequence.add_argument("--output", type=Path)
+    evaluate_recovery_parser = subparsers.add_parser(
+        "evaluate-recovery",
+        help="evaluate deterministic Worker backlog recovery from frozen evidence",
+    )
+    evaluate_recovery_parser.add_argument(
+        "--activation",
+        type=Path,
+        required=True,
+        help="CORE_BACKLOG_PRESSURE=PRESENT ops.conditions.v2 artifact",
+    )
+    evaluate_recovery_parser.add_argument(
+        "--input",
+        type=Path,
+        nargs="+",
+        required=True,
+        help="ordered post-activation ops.evidence.v1 bundle paths",
+    )
+    evaluate_recovery_parser.add_argument(
+        "--source-digest",
+        nargs="+",
+        required=True,
+        help="ordered canonical SHA-256 values matching --input",
+    )
+    evaluate_recovery_parser.add_argument("--incident-id", required=True)
+    evaluate_recovery_parser.add_argument("--profile", default="local-ha")
+    evaluate_recovery_parser.add_argument(
+        "--policy-version",
+        choices=("v1", "v2"),
+        default="v1",
+        help="versioned recovery policy; v1 remains the compatibility default",
+    )
+    evaluate_recovery_parser.add_argument("--output", type=Path)
     diagnose = subparsers.add_parser(
         "diagnose",
         help="run the bounded Evidence-grounded Diagnosis Agent",
@@ -82,6 +122,29 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="explicitly opt in to one bounded OpenAI Responses API diagnosis",
     )
+    build_incident = subparsers.add_parser(
+        "build-incident",
+        help="build an ops.incident.v1 artifact from a frozen PRESENT activation",
+    )
+    build_incident.add_argument("--activation", type=Path, required=True)
+    build_incident.add_argument("--source-sha", required=True)
+    build_incident.add_argument("--source-tree-sha256", required=True)
+    build_incident.add_argument("--runtime-image", required=True)
+    build_incident.add_argument("--argocd-revision", required=True)
+    build_incident.add_argument("--output", type=Path, required=True)
+    update_incident = subparsers.add_parser(
+        "update-incident",
+        help="attach immutable diagnosis/recovery artifacts to an incident",
+    )
+    update_incident.add_argument("--input", type=Path, required=True)
+    update_incident.add_argument("--diagnosis", type=Path)
+    update_incident.add_argument(
+        "--recovery",
+        type=Path,
+        action="append",
+        default=[],
+    )
+    update_incident.add_argument("--output", type=Path, required=True)
     return parser
 
 
@@ -213,6 +276,49 @@ def run_evaluate_sequence(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_evaluate_recovery(args: argparse.Namespace) -> int:
+    if len(args.input) > 256:
+        raise ValueError("recovery evaluation accepts at most 256 inputs")
+    if len(args.source_digest) != len(args.input):
+        raise ValueError("one --source-digest is required per --input")
+    if args.output is not None:
+        output = args.output.resolve()
+        if args.activation.resolve() == output or any(
+            path.resolve() == output for path in args.input
+        ):
+            raise ValueError("recovery output must not overwrite an input")
+    activation_payload = _read_evidence_input(args.activation)
+    payloads: list[bytes] = []
+    total_bytes = len(activation_payload)
+    for path in args.input:
+        payload = _read_evidence_input(path)
+        total_bytes += len(payload)
+        if total_bytes > _MAX_SEQUENCE_INPUT_BYTES:
+            raise ValueError("recovery inputs exceed the 64 MiB local CLI limit")
+        payloads.append(payload)
+    evaluation = evaluate_recovery(
+        incident_id=args.incident_id,
+        activation_evaluation=activation_payload,
+        bundles=payloads,
+        source_bundle_digests=args.source_digest,
+        policy=load_recovery_policy(args.profile, args.policy_version),
+    )
+    payload = (
+        json.dumps(
+            evaluation.model_dump(mode="json"),
+            indent=2,
+            ensure_ascii=True,
+        )
+        + "\n"
+    )
+    if args.output is not None:
+        _atomic_write(args.output, payload)
+        sys.stdout.write(f"{args.output.as_posix()}\n")
+    else:
+        sys.stdout.write(payload)
+    return 0
+
+
 def run_diagnose(args: argparse.Namespace) -> int:
     if not args.live:
         raise ValueError("diagnose requires explicit --live API opt-in")
@@ -268,6 +374,69 @@ def run_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def _repository_relative_reference(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError("incident artifact inputs must remain inside the repository") from exc
+
+
+def _incident_payload(record: IncidentRecord) -> str:
+    return json.dumps(
+        record.model_dump(mode="json"),
+        indent=2,
+        ensure_ascii=True,
+    ) + "\n"
+
+
+def run_build_incident(args: argparse.Namespace) -> int:
+    if args.activation.resolve() == args.output.resolve():
+        raise ValueError("incident output must not overwrite its activation input")
+    activation_payload = _read_evidence_input(args.activation)
+    provenance = IncidentProvenance(
+        source_sha=args.source_sha,
+        source_tree_sha256=args.source_tree_sha256,
+        runtime_image=args.runtime_image,
+        argocd_revision=args.argocd_revision,
+    )
+    incident = create_incident(
+        activation=activation_payload,
+        provenance=provenance,
+        activation_artifact_ref=_repository_relative_reference(args.activation),
+    )
+    _atomic_write(args.output, _incident_payload(incident))
+    sys.stdout.write(f"{args.output.as_posix()}\n")
+    return 0
+
+
+def run_update_incident(args: argparse.Namespace) -> int:
+    if args.diagnosis is None and not args.recovery:
+        raise ValueError("incident update requires diagnosis or recovery input")
+    output = args.output.resolve()
+    inputs = [args.input]
+    if args.diagnosis is not None:
+        inputs.append(args.diagnosis)
+    inputs.extend(args.recovery)
+    if any(path.resolve() == output for path in inputs):
+        raise ValueError("incident output must not overwrite an input artifact")
+    incident = IncidentRecord.model_validate_json(_read_evidence_input(args.input))
+    if args.diagnosis is not None:
+        incident = attach_diagnosis(
+            incident,
+            _read_evidence_input(args.diagnosis),
+            artifact_ref=_repository_relative_reference(args.diagnosis),
+        )
+    for recovery_path in args.recovery:
+        incident = attach_recovery_evaluation(
+            incident,
+            _read_evidence_input(recovery_path),
+            artifact_ref=_repository_relative_reference(recovery_path),
+        )
+    _atomic_write(args.output, _incident_payload(incident))
+    sys.stdout.write(f"{args.output.as_posix()}\n")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "collect":
@@ -276,6 +445,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_evaluate(args)
     if args.command == "evaluate-sequence":
         return run_evaluate_sequence(args)
+    if args.command == "evaluate-recovery":
+        return run_evaluate_recovery(args)
     if args.command == "diagnose":
         return run_diagnose(args)
+    if args.command == "build-incident":
+        return run_build_incident(args)
+    if args.command == "update-incident":
+        return run_update_incident(args)
     raise AssertionError(f"unsupported command: {args.command}")

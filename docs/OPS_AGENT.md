@@ -1,6 +1,6 @@
 # Read-only Operations Evidence Agent
 
-`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 고정 read-only tool을 선택하고 `ops.diagnosis.v1`을 생성합니다. 복구 판정과 실행은 구현하지 않습니다.
+`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 고정 read-only tool을 선택하고 `ops.diagnosis.v1`을 생성합니다. Recovery v1은 frozen post-activation sequence에서 ACTIVE/RECOVERING/UNKNOWN을 판정하고, 별도 policy v2는 calibrated MEDIUM envelope 3-capture 재진입에서만 incident-scope RECOVERED를 추가합니다.
 
 ## Phase 경계
 
@@ -10,6 +10,7 @@
 | Phase 2: Deterministic Condition Evaluation | versioned rule로 condition의 `PRESENT` / `ABSENT` / `UNKNOWN` 판정 | v1 single-bundle baseline과 v2 sequence activation 구현 완료 |
 | Phase 2.5/2.6: Controlled Calibration | 실제 multi-stream backlog와 negative control로 positive rule 보정 | positive 3회와 negative control 3종 완료; v2 replay 통과 |
 | Phase 3: Evidence-guided Investigation | 확정된 backlog에 필요한 추가 read-only 조사와 grounded hypothesis | 구현 완료; positive run-01 live VALID와 bounded output repair 검증 |
+| Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현; clearing 대기 |
 
 Phase 2는 LLM이나 runtime source를 호출하지 않습니다. Phase 3도 Phase 2의 판정을 덮어쓰지 않으며, 증거가 부족한 원인을 확정하지 않습니다. write, restart, scale, rollout, reset, restore는 세 Phase의 권한에 포함하지 않습니다.
 
@@ -210,7 +211,7 @@ assessment:
   NO_BACKLOG_PRESSURE_DETECTED: PRESENT
 ```
 
-이 결과는 [no-backlog-20260812.conditions.json](../results/ops-agent/live-baseline/no-backlog-20260812.conditions.json)에 보존했습니다. source collection은 `PARTIAL`이지만 evaluation은 `COMPLETE`입니다. `WORKER_BACKLOG_RECOVERING`과 `WORKER_BACKLOG_RECOVERED`에 필요한 slope window와 recovery floor는 아직 구현하지 않았습니다.
+이 결과는 [no-backlog-20260812.conditions.json](../results/ops-agent/live-baseline/no-backlog-20260812.conditions.json)에 보존했습니다. source collection은 `PARTIAL`이지만 evaluation은 `COMPLETE`입니다. 이 no-backlog bundle은 incident activation이 아니므로 recovery evaluator 입력으로 사용하지 않습니다. Recovery policy v1은 계속 `CALIBRATION_PENDING`이고, 아래 Phase 4.2의 v2만 calibrated RECOVERED를 명시적으로 허용합니다.
 
 ### 구현 범위와 검증
 
@@ -289,6 +290,154 @@ $inputs = Get-ChildItem results/ops-agent/calibration/20260816T032411Z/run-01/bu
 
 실제 replay에서 positive run 3개는 모두 capture index `[1,2,3]`에서 `PRESENT`였습니다. Short burst, sustainable high, single transient spike는 activation window가 없고 `PRESENT`가 발생하지 않았습니다. Decreasing lag, qualifying capture 2개, stale middle bundle, partial partition coverage, changed consumer group, reordered timestamps fixture도 모두 `UNKNOWN`으로 차단합니다. 상세 ID와 output hash는 [sequence validation summary](../results/ops-agent/sequence-validation/20260816T044352Z/summary.json)에 기록했습니다.
 
+## Phase 4 Recovery Calibration - 2026-08-16
+
+Phase 4 calibration은 varying/continuous traffic에서 load-aware operating
+envelope와 recovery 후보를 측정하는 harness입니다. 상태 판정은 이 원본을
+변경하지 않는 별도 Phase 4.1 evaluator로 분리합니다.
+host-local k6 `constant-arrival-rate`가 64 streams에 generic v2 event를 생성하고,
+기존 KEDA `2→4`와 Worker 설정을 그대로 사용했습니다. Ops Agent는 모든 runtime
+source를 read-only로 수집했으며 kubectl scale/patch, KEDA 변경, Argo sync, Kafka
+offset reset, Pod delete, DLQ replay를 수행하지 않았습니다.
+
+최종 experiment `20260816T100600Z`의 rate는 IDLE/LOW/MEDIUM/
+HIGH_SUSTAINABLE/OVERLOAD `0/30/75/110/330 records/s`입니다. A/B/C의 usable,
+60초-window-settled capture로 계산한 lag max는 각각 IDLE `0`, LOW `3`,
+MEDIUM `22`, HIGH_SUSTAINABLE `246`입니다. 이 값은 이번 local-ha capture의
+operating-envelope 후보이며 production capacity 상수가 아닙니다.
+
+Live 시작 provenance는 HEAD `c4cdea3`와 dirty state까지 기록했습니다. 당시
+orchestrator에는 source-tree hash가 없어 이를 사후 live hash로 재구성하지 않습니다.
+post-run analysis/compact 코드의 파일별 SHA와 tree hash는 별도 provenance로 남기고,
+후속 run부터는 시작 시 source tree를 자동 기록합니다.
+
+E 3회와 F 1회는 기존 `local-ha.conditions.v2` activation을 모두 실제로
+재현했습니다. E peak lag는 `20,806 / 21,834 / 21,151`, F는 `20,998`입니다.
+E에서는 MEDIUM ingress `75/s`를 유지한 채 committed-offset rate가 produce rate를
+넘고 lag slope가 음수로 바뀌어 backlog가 envelope로 복귀했습니다. F에서는
+ingress `0/s` 뒤 lag가 `0`으로 drain됐습니다. re-entry 시점에도 Worker/KEDA가
+`4 / Active`일 수 있었으므로 replica scale-in은 recovery 필수조건 후보에서
+제외합니다.
+
+Kafka exporter는 small-lag 구간에서 일부 partition lag를 음수로 보고했습니다.
+이를 `0`으로 치환하지 않았고 baseline envelope의 18 capture를 quality-excluded로
+보존했습니다. 전체 A/B/C/E/F audit에서는 57 capture, 191 sample point가 음수였고
+최솟값은 `-2`였습니다. 모든 음수 point는 `exporter_lag=end-committed` 산술과
+일치했고 family range grid와 최신 `timestamp()` source timestamp도 capture 안에서
+같았습니다.
+
+원인은 `kafka_exporter v1.7.0`의 한 scrape 내부 수집 순서입니다. exporter는
+[topic end offset을 먼저 저장](https://github.com/danielqsj/kafka_exporter/blob/v1.7.0/kafka_exporter.go#L403-L411)하고
+[consumer committed offset을 나중에 읽어 저장된 end와 뺍니다](https://github.com/danielqsj/kafka_exporter/blob/v1.7.0/kafka_exporter.go#L560-L603).
+그 사이 commit이 진행되면 Prometheus scrape timestamp는 같아도 coherent Kafka
+snapshot이 아니므로 `end < committed`가 가능합니다. Query-range step은 evaluation
+timestamp만 보존하고 내부 두 Kafka read의 시각은 보존하지 않습니다. 따라서 v1
+low-lag policy는 `INVALID_ONLY`입니다. Raw negative lag는 invalid로 남기고 derived
+lag를 생성하거나 clamp하지 않습니다.
+
+Phase 4.1은 검증된 RECOVERING 후보만 승격합니다. 기존 activation 이후 fresh
+usable capture 3개 연속으로 slope `<0`,
+committed-offset rate `>=` produce rate, PostgreSQL ready를 요구합니다. 네 recovery
+run 모두 이 3-capture 계약보다 긴 negative run을 보였습니다. RECOVERED 후보는
+current ingress profile의 observed lag/slope envelope 재진입, 처리 균형, Kafka
+quality, PostgreSQL readiness의 연속 관측입니다. E2는 exporter-negative 제외 뒤
+usable re-entry가 1 capture만 남아 3-capture 안정화 후보를 전체 E run에서
+검증하지 못했습니다. RECOVERED fixed lag floor와 stable count는 정책으로
+승격하지 않았습니다. Cadence는 recovery 판정의 provenance gate로만 configured
+`15s`, local observed range를 감싸는 `9~21s`를 versioned local-ha policy에 둡니다.
+
+configured cadence는 15초이고 recovery run의 실제 interval은 median `14.998s`,
+range `9.985~19.977s`였습니다. capture count 정책은 이 jitter를 고려한 별도
+false-recovery 검증이 필요합니다. 결과는 [tracked analysis](../results/ops-agent/recovery-calibration/20260816T100600Z/analysis.md)에 있고,
+349 bundles와 1,396 raw projection의 hash 검증은 `PASS`입니다.
+
+### Phase 4.1 deterministic `ops.recovery.v1`
+
+Recovery evaluator는 incident ID, integrity-valid `ops.conditions.v2` activation,
+ordered post-activation bundle, 각 bundle의 expected canonical digest와
+`worker-backlog-local-ha.recovery.v1` policy를 입력으로 받습니다. Runtime source,
+OpenAI API, kubectl, arbitrary URL/PromQL을 호출하지 않습니다.
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery `
+  --activation results\ops-agent\recovery-calibration\20260816T100600Z\E-run-01\conditions.v2.activation.json `
+  --input $postActivationBundles `
+  --source-digest $orderedCanonicalDigests `
+  --incident-id phase4-E-run-01 `
+  --profile local-ha `
+  --output results\ops-agent\recovery-evaluation\E-run-01.recovery.json
+```
+
+상태 계약:
+
+- `WORKER_BACKLOG_ACTIVE`: v2 activation은 유효하지만 usable drain capture가 아직
+  3개 미만이거나 최신 valid window가 drain을 지속하지 않습니다.
+- `WORKER_BACKLOG_RECOVERING`: 최신 3 capture가 fresh/8-of-8/no-`-1`/no-reset/
+  arithmetic/timestamp/source identity gate를 통과하고 각 slope가 `<0`, committed
+  rate가 produce rate 이상이며 PostgreSQL readiness가 acceptable입니다.
+- `WORKER_BACKLOG_UNKNOWN`: required Kafka/DB evidence 또는 digest/scope/identity/
+  timing provenance가 불완전합니다. Incident 지속이나 recovery 완료를 뜻하지 않습니다.
+- `WORKER_BACKLOG_RECOVERED`: enum만 예약하며 이 policy에서는 schema validator가
+  출력을 거부합니다. `recovery_completion.status=CALIBRATION_PENDING`, reason
+  `INSUFFICIENT_VALID_REENTRY_WINDOWS`를 유지합니다.
+
+`produce-committed`와 lag slope는 같은 offset delta에서 파생되므로 독립 vote가
+아닙니다. 전자는 slope direction/arithmetic guardrail입니다. Produce `0/s`도
+committed `>0`, slope `<0`이면 정상 RECOVERING 입력입니다. Worker/KEDA replica와
+stage latency는 optional context이며 gate가 아닙니다. PostgreSQL readiness는
+Worker persistence path guardrail일 뿐 global system health 판정으로 확대하지
+않습니다. RECOVERING 뒤 valid regrowth/flat window는 incident가 clear되지 않았으므로
+ACTIVE로 돌아가고, evidence defect window는 UNKNOWN입니다.
+
+Actual replay는 E-01/E-02/E-03/F-01 모두 ACTIVE에서 시작해 sustained drain에서
+RECOVERING을 관측했습니다. E는 continuous `75/s`, F는 최종 `0/s` ingress를 모두
+지원합니다. Exporter-negative tail 때문에 E-01/E-02 final은 UNKNOWN, E-03/F-01은
+RECOVERED 정책이 없어 ACTIVE입니다. 어떤 run도 RECOVERED를 출력하지 않습니다.
+Phase 3 Diagnosis Agent와 Phase 2 v1/v2 threshold는 변경하지 않았고 Recovery LLM,
+clearing hysteresis, remediation도 구현하지 않았습니다.
+
+### Phase 4.2 continuous-ingress RECOVERED calibration
+
+Phase 4.2는 기존 E-01~03을 수정하지 않고 같은 `75→330→75 records/s`, 64 streams,
+KEDA `2→4`, 15초 capture 계약으로 E-04~06을 추가했습니다. 세 신규 run은 모두
+target attainment를 통과했고 dropped iteration과 HTTP failure는 `0`입니다.
+
+Versioned `local-ha.medium-reentry-candidate.v1`은 기존 Phase 4 MEDIUM profile의
+실측 범위만 사용합니다: actual produce `74.9833~77.0833/s`, total lag `<=22`,
+lag slope `<=0`. 여기에 rate window settled, fresh complete Kafka evidence,
+PostgreSQL `ready`/HA/primary, 기존 cadence tolerance `9~21s`를 요구합니다.
+`lag==0`, Worker `2/2`, KEDA inactive, zero ingress는 요구하지 않습니다.
+
+| Run | Peak lag | First RECOVERING | First re-entry | Max stable | UNKNOWN | Negative invalid |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| E-01 | 20,806 | 18 | 61 | 3 | 12 | 10 |
+| E-02 | 21,834 | 18 | 52 | 1 | 17 | 15 |
+| E-03 | 21,151 | 18 | 55 | 3 | 12 | 8 |
+| E-04 | 20,261 | 18 | 51 | 4 | 15 | 11 |
+| E-05 | 22,632 | 18 | 43 | 5 | 10 | 8 |
+| E-06 | 18,948 | 18 | 43 | 14 | 18 | 14 |
+
+Stable count `N=3`은 E-01·03·04·05·06의 5/6과 신규 3/3에서 재현됐습니다.
+`N=1/2`는 brief envelope entry 뒤 regrowth control을 통과하지 못하고, `N=4`는
+3/6만 지지해 제외했습니다. 따라서 `worker-backlog-local-ha.recovery.v2`,
+`ops.recovery.evaluator.v2`, `ops.recovery.rules.v2`로 승격했습니다. CLI default는
+호환성을 위해 v1이며 v2는 `--policy-version v2`로 명시합니다.
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery `
+  --activation <conditions.v2.activation.json> `
+  --input <ordered post-activation bundles> `
+  --source-digest <ordered canonical digests> `
+  --incident-id <incident> --profile local-ha --policy-version v2
+```
+
+V2는 prior RECOVERING이 관측되고 최신 3개 capture가 위 envelope를 연속 만족할 때만
+`WORKER_BACKLOG_RECOVERED`와 `recovery_completion.status=COMPLETE`를 반환합니다.
+Full sequence에 regrowth나 UNKNOWN이 뒤따르면 최종 상태를 RECOVERED로 유지하지
+않습니다. RECOVERED는 Worker backlog incident completion이지 global health가
+아닙니다. 새 incident 분리, post-recovery regression manager, clearing hysteresis,
+Recovery LLM, remediation은 후속 과제입니다.
+
 ## Phase 3 Evidence-grounded Diagnosis Agent
 
 Phase 3 진입 조건은 동일 ordered bundle로 재계산한
@@ -351,6 +500,11 @@ error와 기존 result만 전달하고 tool이 없는 repair turn을 한 번 허
 새 evidence와 fabricated citation은 금지되며 두 번째 결과도 invalid이면
 `validation_failure`로 종료하고 completed artifact를 쓰지 않습니다.
 
+Rebalance telemetry가 `UNAVAILABLE`이면 `CONSUMER_REBALANCE_SUSPECTED`는
+`INSUFFICIENT`, supporting/conflicting evidence ID는 모두 빈 목록,
+gap은 `CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE`이어야 합니다. unavailable
+evidence를 causal support나 conflict로 인용하면 validator가 거부합니다.
+
 9개 golden fixture와 5개 output repair fixture의 scripted offline evaluation은
 schema/citation/abstention/tool selection/step/stop과 repair budget을 통과했으며
 API 비용이 없습니다. 2026-08-16 actual positive run-01 Luna live dry-run은
@@ -366,10 +520,10 @@ artifact는 `results/ops-agent/diagnosis/20260816-positive-run-01-luna.json`입�
 baseline: lag 0, Worker 2
   -> local-ha.conditions.v2에서 CORE_BACKLOG_PRESSURE=PRESENT activation 관측
   -> committed가 end offset을 추격, lag slope 음수
-  -> WORKER_BACKLOG_RECOVERING
-  -> lag가 recovery floor 이하
-  -> WORKER_BACKLOG_RECOVERED
+  -> ops.recovery.v1에서 WORKER_BACKLOG_RECOVERING
+  -> MEDIUM envelope fresh usable capture 3개 연속 재진입
+  -> recovery policy v2에서 WORKER_BACKLOG_RECOVERED
 ```
 
 실험은 baseline, incident, recovery 세 capture를 분리하고 같은 topic/group/partition policy와 source provenance를 기록해야 합니다.
-위 흐름에서 activation까지만 구현했습니다. `WORKER_BACKLOG_RECOVERING`과 `WORKER_BACKLOG_RECOVERED`, clearing hysteresis는 별도 calibration 전까지 미구현입니다.
+위 흐름에서 RECOVERED까지 결정론적으로 구현했습니다. Clearing hysteresis와 post-recovery incident management는 구현하지 않았습니다.

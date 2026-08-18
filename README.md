@@ -115,7 +115,9 @@ Phase 1 read-only Ops Agent는 Application·Prometheus·Kubernetes·Argo CD 신�
 
 Phase 2 v1 evaluator는 이 `PARTIAL` bundle을 condition별 dependency로 평가해 backlog·partition concentration·DB degradation·Worker replica unavailable을 모두 `ABSENT`로, `NO_BACKLOG_PRESSURE_DETECTED`를 `PRESENT`로 기록했습니다. 별도 v2 sequence evaluator는 실제 positive backlog 세 run을 모두 `PRESENT`로 재생했고 short burst·sustainable high·transient spike에서는 `PRESENT`를 만들지 않았습니다. Phase 3 single Diagnosis Agent는 확정된 `PRESENT` 뒤에서만 allowlisted read-only 조사를 선택하고 evidence ID 기반 hypothesis를 출력하며 condition, recovery, remediation은 결정하지 않습니다.
 
-English: The Ops Agent captures normalized read-only evidence, evaluates deterministic single-bundle and calibrated sequence conditions, and runs one bounded evidence-grounded diagnosis step after backlog is `PRESENT`. Recovery decisions and remediation remain outside the implemented boundary.
+Phase 4 calibration harness는 actual `local-ha`에서 arrival-rate A/B/C/E/F를 실행해 load-aware operating envelope와 continuous/zero-ingress drain을 측정했습니다. Phase 4.1 deterministic recovery v1은 연속 drain에서 `WORKER_BACKLOG_RECOVERING`을 반환합니다. Phase 4.2 recovery policy v2는 continuous `75/s` E run 6회 중 5회와 신규 3/3에서 검증한 MEDIUM envelope 3-capture 재진입만 incident-scope `WORKER_BACKLOG_RECOVERED`로 판정합니다. Clearing hysteresis, Recovery LLM, remediation은 구현하지 않았습니다.
+
+English: The Ops Agent captures normalized read-only evidence, evaluates deterministic single-bundle and calibrated sequence conditions, and runs one bounded evidence-grounded diagnosis step after backlog is `PRESENT`. Recovery policy v2 adds a calibrated, incident-scoped recovered decision after three fresh MEDIUM-envelope observations; clearing hysteresis, post-recovery incident management, and remediation remain outside the implemented boundary.
 
 지표 정의·evidence 계약·대응 연결: [Observability](docs/OBSERVABILITY.md) · [Ops Agent](docs/OPS_AGENT.md) · [Metrics Reference](docs/METRICS_REFERENCE.md) · [Runbook](docs/RUNBOOK.md)
 

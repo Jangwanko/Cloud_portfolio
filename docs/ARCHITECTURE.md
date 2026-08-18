@@ -249,6 +249,10 @@ Phase 1 `ops_agent`는 workload data path 밖에서 Application, Prometheus, Kub
 
 Phase 2 evaluator는 data path와 source에 다시 접근하지 않고 고정된 bundle의 condition별 required evidence를 deterministic tri-state로 평가합니다. V1은 single bundle의 no-backlog와 현재 상태를 판정하고, v2는 ordered bundle digest와 timing/source identity를 검증해 calibrated three-capture backlog activation을 판정합니다. Phase 3 single Diagnosis Agent는 v2 `PRESENT`를 고정 입력으로 받아 normalized read-only evidence tool만 선택하고 grounded hypothesis를 구조화합니다. Condition 재판정, recovery, write/remediation은 이 layer에 없습니다. 상세 계약은 [OPS_AGENT.md](OPS_AGENT.md)에 있습니다.
 
+Phase 4 calibration harness는 data path 밖의 host-local k6가 64-stream arrival-rate traffic을 만들고 Ops Agent가 약 15초 간격으로 immutable evidence를 수집하는 별도 실험 계층입니다. A/B/C에서 load-aware operating envelope를 만들고 E/F에서 continuous/zero-ingress drain을 비교합니다. 이 harness는 기존 KEDA 정책을 관찰할 뿐 replica/KEDA/Argo/Kafka 상태를 변경하지 않습니다.
+
+Phase 4.1 recovery evaluator도 data path 밖에서 frozen activation artifact와 post-activation Evidence Bundle만 읽습니다. 기존 `CORE_BACKLOG_PRESSURE=PRESENT`를 lifecycle 시작점으로 고정하고, required Kafka evidence와 PostgreSQL readiness가 유효한 3개 capture에서 drain 방향이 연속될 때만 `WORKER_BACKLOG_RECOVERING`을 출력합니다. Negative exporter lag, stale/partial evidence, identity·digest·timestamp 불일치는 `UNKNOWN`입니다. 별도 policy v2는 RECOVERING 뒤 calibrated MEDIUM envelope에 fresh usable capture 3개가 연속 재진입한 sequence 끝에서만 incident-scope `WORKER_BACKLOG_RECOVERED`를 출력합니다. 이는 global health나 remediation 승인이 아니며, post-recovery regrowth의 새 incident 분리는 후속 과제입니다.
+
 ## 백업과 복구
 현재 PostgreSQL 운영 보강은 아래처럼 구성되어 있습니다.
 

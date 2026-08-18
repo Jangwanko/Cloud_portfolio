@@ -157,6 +157,15 @@ class DiagnosisOutputValidator:
                         "rebalance telemetry cannot support or exclude the hypothesis",
                         details={"hypothesis_index": hypothesis_index},
                     )
+                if (
+                    hypothesis.supporting_evidence_ids
+                    or hypothesis.conflicting_evidence_ids
+                ):
+                    raise DiagnosisValidationError(
+                        "REBALANCE_CITATIONS_FORBIDDEN",
+                        "unavailable rebalance telemetry cannot be cited as supporting or conflicting evidence",
+                        details={"hypothesis_index": hypothesis_index},
+                    )
                 if "CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE" not in hypothesis.evidence_gaps:
                     raise DiagnosisValidationError(
                         "REBALANCE_GAP_REQUIRED",

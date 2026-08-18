@@ -123,6 +123,92 @@ KEDA, HPA, or Deployment replicas. Every run starts from lag zero and Worker
 `2/2`, samples complete Evidence Bundles through pressure and drain, and stops
 only after KEDA and Worker return to the starting replica count. The 2026-08-16
 three-run result and its negative controls calibrate the v2 activation policy.
+
+## Phase 4 recovery calibration and evaluation boundary
+
+The Phase 4 measurement harness and Phase 4.1 Recovery Evaluator are separate.
+The host-local k6 workload uses `constant-arrival-rate`, 64 streams, and the
+generic v2 event contract. It does not create Kubernetes workload objects or
+patch KEDA, HPA, Deployments, Argo CD, Kafka offsets, or DLQ state. The
+evaluator performs no runtime I/O; it reads only frozen activation/evidence
+artifacts. Only the calibration workload writes test events through the public
+API.
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovery_calibration.py `
+  --mode calibrate `
+  --context kind-messaging-ha `
+  --low-rate 30 --medium-rate 75 --high-rate 110 --overload-rate 330 `
+  --overload-seconds 90 --recovery-phase-seconds 900 --e-repeats 3
+```
+
+The runner executes A/B/C, then E and F once. Additional E repetitions are
+allowed only after the initial pair has a real v2 activation, negative-lag
+slope, acceptable PostgreSQL readiness, and a usable load-aware envelope
+re-entry candidate. Each capture remains an immutable `ops.evidence.v1`
+bundle. Phase 4 replays the original v2 evaluator on each ordered three-capture
+window so a later exporter anomaly cannot erase an earlier valid activation;
+the full-sequence result and every excluded anomaly are preserved separately.
+
+The tracked result contains only the compact manifest, run summaries, and
+analysis. The 349 bundles, 1,396 raw projections, condition outputs, and k6
+logs remain Git-ignored. Their canonical bundle and raw SHA-256 checks passed.
+
+`ops.recovery.v1` consumes an integrity-valid
+`CORE_BACKLOG_PRESSURE=PRESENT` `ops.conditions.v2` artifact, ordered
+post-activation bundles, their expected canonical SHA-256 values, and the
+versioned `worker-backlog-local-ha.recovery.v1` policy:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery `
+  --activation <conditions.v2.activation.json> `
+  --input <ordered post-activation bundle paths> `
+  --source-digest <one ordered digest per input> `
+  --incident-id <logical incident prefix> `
+  --profile local-ha `
+  --output results\ops-agent\recovery-evaluation\recovery.json
+```
+
+It emits only `WORKER_BACKLOG_ACTIVE`, `WORKER_BACKLOG_RECOVERING`, or
+`WORKER_BACKLOG_UNKNOWN`. RECOVERING requires three consecutive fresh,
+complete Kafka captures with negative 60-second lag slope, committed rate at
+least produce rate as the same-offset arithmetic guard, and acceptable
+PostgreSQL readiness. Produce rate zero is valid when committed progress drains
+the backlog. KEDA/Worker replicas and stage latency remain optional context.
+
+Kafka exporter v1.7.0 reads topic end offsets before it fetches group committed
+offsets in the same scrape. A commit between those operations can yield a
+negative exporter lag under one Prometheus scrape timestamp. The policy is
+`INVALID_ONLY`: raw negative values remain invalid, no value is clamped to
+zero, and no derived replacement is created because query-range steps do not
+retain the two Kafka read timestamps.
+
+`WORKER_BACKLOG_RECOVERED` is reserved but rejected by the v1 output contract.
+Every output records `recovery_completion.status=CALIBRATION_PENDING`. Clearing
+hysteresis, a Recovery LLM, and remediation commands are not implemented.
+
+Recovery policy v2 is an explicit opt-in and leaves v1 as the CLI default. It
+uses the calibrated local-ha MEDIUM profile only: measured produce rate
+`74.98333333333333..77.08333333333333 records/s`, total lag at most `22`, and
+lag slope at most `0`. After RECOVERING has been observed, the latest three
+fresh usable captures must remain in that envelope with acceptable PostgreSQL
+readiness and the existing 9-to-21-second cadence provenance gate.
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery `
+  --activation <conditions.v2.activation.json> `
+  --input <ordered post-activation bundles> `
+  --source-digest <ordered canonical digests> `
+  --incident-id <incident> --policy-version v2
+```
+
+V2 can emit `WORKER_BACKLOG_RECOVERED` with completion `COMPLETE`. It does not
+require lag zero, Worker replica count two, KEDA inactivity, or zero ingress.
+An UNKNOWN capture resets the stable count. Negative exporter lag remains
+`INVALID_ONLY`. RECOVERED is Worker-backlog incident completion, not global
+health. Clearing and post-recovery regression incident management remain out
+of scope.
+
 ## Phase 3 diagnosis boundary
 
 `diagnose` requires explicit `--live`; normal pytest and GitHub Actions paths do
@@ -153,6 +239,8 @@ diagnosis evidence ID. They do not expose raw bodies, arbitrary arguments,
 PromQL, URLs, shell, or kubectl. Exact PostgreSQL commit/insert rate,
 transaction commit latency, consumer rebalance events, and CPU throttling remain
 unavailable. Rebalance therefore cannot be confirmed or excluded.
+`CONSUMER_REBALANCE_SUSPECTED` must remain `INSUFFICIENT` with empty supporting
+and conflicting citation lists and the telemetry-unavailable evidence gap.
 
 The deterministic output validator rejects fabricated evidence IDs, repeated or
 unknown tools, step overruns, unsupported rebalance confirmation, condition
@@ -172,10 +260,11 @@ The negative-control runner applies that frozen candidate to a short burst, a
 180-second sustainable high load, and a single transient lag spike. It treats
 lag slope as the only growth signal; produce minus committed is an arithmetic
 consistency check. The 2026-08-16 controls all returned `NOT_PRESENT`.
-Replaying the captured sequences with v2 returns `PRESENT` for all three
+Replaying the captured condition sequences with v2 returns `PRESENT` for all three
 positive runs and no `PRESENT` for short burst, sustainable high load, or
-transient spike. The v1 single-bundle policy is unchanged. Recovery and
-clearing hysteresis are not implemented.
+transient spike. The v1 single-bundle policy is unchanged. Recovery v1 handles
+ACTIVE/RECOVERING/UNKNOWN under the compatibility policy. Recovery policy v2
+adds calibrated RECOVERED; clearing hysteresis is not implemented.
 
 The 2026-08-12 captured no-backlog reference is intentionally `PARTIAL`: two
 label-on-use Worker series were absent after process restart. Kafka partition

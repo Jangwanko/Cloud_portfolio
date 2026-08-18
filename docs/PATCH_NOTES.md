@@ -2,6 +2,45 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-17 continuous-ingress RECOVERED calibration and recovery policy v2
+
+- 기존 Phase 4 E-01~03 artifact를 변경하지 않고 동일한 `75→330→75 records/s`, 64-stream continuous-ingress E-04~06을 current KEDA `2→4`로 추가 실행
+- 신규 219 bundle/876 raw projection과 결합 E-01~06 438 bundle/1,752 raw projection canonical/hash 검증 통과; failed/dropped iteration 모두 `0`
+- MEDIUM measured ingress `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, fresh usable evidence, PostgreSQL ready/HA/primary, `INVALID_ONLY` 품질 계약으로 stable re-entry 분석
+- E-01~06 consecutive stable count `3/1/3/4/5/14`; count `3`은 전체 `5/6`, 신규 `3/3`에서 지지되고 brief re-entry false control을 차단
+- `worker-backlog-local-ha.recovery.v2`와 evaluator/ruleset v2 추가; RECOVERING 뒤 MEDIUM envelope capture 3개가 연속될 때만 incident-scope `WORKER_BACKLOG_RECOVERED`와 completion `COMPLETE` 반환
+- v1 policy와 CLI default 유지; v2는 explicit `--policy-version v2`로만 선택
+- lag `0`, Worker `2`, KEDA inactive, traffic `0`을 RECOVERED 필수조건으로 사용하지 않음; unknown/anomaly/envelope 이탈은 consecutive count reset
+- decreasing/regrowing, brief re-entry, unknown/stale, partial coverage, offset reset, identity/DB/negative-lag/zero-ingress flat backlog false control에서 RECOVERED 미발생
+- clearing hysteresis, post-recovery incident manager, Recovery LLM, remediation은 미구현; Phase 2 activation과 Phase 3 Diagnosis Agent 미변경
+- local validation: Ops Agent `228 passed`, full suite `585 passed`; compileall, artifact/hash audit, changed-file secret scan, diff check 통과
+
+## 2026-08-17 deterministic Worker backlog recovery evaluation
+
+- 기존 Phase 4 calibration artifact를 변경하지 않고 integrity-valid v2 activation과 ordered post-activation Evidence Bundle을 평가하는 `ops.recovery.v1` 추가
+- `worker-backlog-local-ha.recovery.v1`, `ops.recovery.evaluator.v1`, `ops.recovery.rules.v1`로 policy/evaluator/ruleset provenance와 deterministic evaluation ID 고정
+- `WORKER_BACKLOG_ACTIVE / RECOVERING / UNKNOWN` 구현; `WORKER_BACKLOG_RECOVERED`는 schema enum만 예약하고 v1 output에서 거부, completion은 `CALIBRATION_PENDING`
+- RECOVERING은 fresh usable 3 capture, Kafka 8/8·no `-1`·no reset·arithmetic/timestamp/source identity, slope `<0`, committed `>=` produce, PostgreSQL ready만 사용
+- Produce `0/s` recovery 지원; Worker/KEDA replica와 Worker stage latency는 optional context 유지
+- kafka_exporter v1.7.0의 비원자적 end/committed 수집으로 확인된 negative lag는 `INVALID_ONLY`; `-1/-2` raw 보존, zero clamp와 derived replacement 금지
+- actual E-01/E-02/E-03/F-01 replay 모두 ACTIVE 뒤 RECOVERING 관측; exporter defect window는 UNKNOWN, regrowth/flat tail은 RECOVERED 대신 ACTIVE
+- stale/partial/reset/identity/DB/timestamp/digest/negative-lag adversarial regression과 offline `evaluate-recovery` CLI 추가
+- Phase 2 activation threshold, Phase 3 Diagnosis Agent, Phase 4 raw/compact artifact, runtime autoscaling 설정은 변경하지 않음; OpenAI API와 runtime write 미사용
+- local validation: Ops Agent `208 passed`, full suite `565 passed`; compileall, diff check, artifact/hash/tracking, secret scan 통과
+
+## 2026-08-16 Phase 4 load-aware recovery calibration
+
+- host-local k6 `constant-arrival-rate`, 64 streams, generic v2 workload와 A/B/C/E/F recovery calibration orchestrator 추가
+- rates `0/30/75/110/330 records/s`, current KEDA `2→4` 유지, 15초 cadence로 기존 `ops.evidence.v1` 수집
+- A/B/C operating envelope, E continuous-ingress 3회, F zero-ingress 1회 실측; E/F 모두 기존 `local-ha.conditions.v2` activation 재현
+- E peak lag `20,806 / 21,834 / 21,151`, F `20,998`; E는 MEDIUM `75/s` 유지 중 drain, F는 ingress `0/s`에서 drain 확인
+- Kafka exporter negative-lag capture를 `0`으로 치환하지 않고 quality-excluded; rolling 3-bundle replay로 과거 valid activation과 full-sequence anomaly를 분리
+- recovery candidate, estimated drain, KEDA/replica timing, PostgreSQL guardrail, cadence와 false-recovery fixture 기록
+- 349 bundle canonical digest와 1,396 raw projection SHA-256 검증 `PASS`; Git에는 compact manifest/analysis/run summary만 포함
+- Phase 3 rebalance `UNAVAILABLE` citation semantic guardrail 보강; 과거 live artifact는 변경하지 않음
+- `ops.recovery.v1`, recovery state/clearing, Recovery LLM, remediation은 미구현; OpenAI API 호출 없음
+- local validation: Ops Agent `187 tests passed`, full suite `544 tests passed`; compileall, k6 inspect, artifact hash, secret scan 통과
+
 ## 2026-08-16 Evidence-grounded Diagnosis Agent
 
 - `CORE_BACKLOG_PRESSURE=PRESENT`와 ordered bundle digest 재검증 뒤에만 진입하는 single Phase 3 Agent와 `ops.diagnosis.v1` 추가
