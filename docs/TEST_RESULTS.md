@@ -86,8 +86,9 @@ diagnosis·recovery·canonical promotion을 진행했습니다.
 | Artifact validation | Evidence Bundle `133/133`, raw projection `532/532`, `PASS` |
 
 Phase 5.3 documentation checkpoint local regression은 focused lifecycle/workload gate
-`19 passed`, Ops Agent `247 passed`, full repository `604 passed`입니다. 이는 local
-pytest 결과이며 GitHub Actions run success로 재표현하지 않습니다.
+`19 passed`, Ops Agent `250 passed`, full repository `607 passed`입니다. Full suite는
+Windows와 CI-equivalent Linux/Python 3.11.15에서 모두 통과했으며, GitHub Actions run
+success는 새 push 뒤 별도로 확인합니다.
 
 Diagnosis tool call은 partition lag → Worker stage latency → Worker replica → PostgreSQL
 health 순서였습니다. `WORKER_PATH_PRESSURE_SUSPECTED`만 `SUPPORTED`이며 supporting

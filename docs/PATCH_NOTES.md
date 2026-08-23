@@ -15,7 +15,9 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - workload generator는 k6 `dropped_iterations`, per-phase attainment와 failure를 summary/gate에 보존하고 iteration duration 기준 VU sizing으로 zero-drop Gate 2 통과
 - source checkpoint `ee5db64`; application/recovery threshold/KEDA/Kafka offset 변경 없음
 - Phase 5.2 public Verified Incident Replay는 연기; demo-lite route/deployment 미변경
-- Phase 5.3 docs checkpoint local regression: lifecycle/workload focused `19 passed`, Ops Agent `247 passed`, full suite `604 passed`
+- Phase 5.3 docs checkpoint regression: lifecycle/workload focused `19 passed`, Ops Agent `250 passed`, full suite `607 passed`
+- Linux CI에서 `collect_bundle` unit test가 실제 Git dirty-state subprocess에 의존하던 비격리 경계를 재현; source revision/dirty를 모두 fixture로 고정하고 `_source_dirty` clean/dirty/unavailable 3-case contract test 추가
+- Windows와 CI-equivalent Linux/Python 3.11.15 full suite 각각 `607 passed`; production collector 동작과 deployment policy는 변경하지 않음
 
 ## 2026-08-17 continuous-ingress RECOVERED calibration and recovery policy v2
 

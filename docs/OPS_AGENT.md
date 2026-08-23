@@ -577,8 +577,8 @@ core·notification lag `0`, Worker `2/2`, 기존 KEDA `2→4`를 확인한 뒤�
 | Integrity | normalized bundle `133/133`, raw projection `532/532` verified; incident record SHA-256 `9b39518a...d16f` |
 
 Phase 5.3 문서 checkpoint에서 lifecycle/workload focused `19 passed`, Ops Agent
-`247 passed`, full repository `604 passed`를 local로 재실행했습니다. GitHub Actions
-통과 수치가 아닙니다.
+`250 passed`, full repository `607 passed`를 Windows와 CI-equivalent
+Linux/Python 3.11.15에서 재실행했습니다. GitHub Actions run 결과는 별도로 확인합니다.
 
 Diagnosis의 나머지 hypothesis는 telemetry gap 또는 conflicting evidence를 보존한
 `INSUFFICIENT`입니다. Rebalance telemetry가 없으므로 rebalance absence를 주장하지

@@ -62,6 +62,7 @@ def test_collect_bundle_connects_all_read_only_collectors(monkeypatch, tmp_path)
         lambda **kwargs: (calls.append(("argocd", kwargs["context"])) or deepcopy(results["argocd"])),
     )
     monkeypatch.setattr(controller, "_source_revision", lambda: "source-sha")
+    monkeypatch.setattr(controller, "_source_dirty", lambda: False)
 
     bundle = controller.collect_bundle(
         policy=load_policy("local-ha"),
@@ -174,6 +175,39 @@ def test_source_revision_is_resolved_from_the_collector_repository(monkeypatch) 
     command, kwargs = calls[0]
     assert command[:3] == ["git", "-C", str(controller._REPO_ROOT)]
     assert command[3:] == ["rev-parse", "HEAD"]
+    assert kwargs["shell"] is False
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stdout", "expected"),
+    [
+        (0, "", False),
+        (0, " M README.md\n", True),
+        (1, "", None),
+    ],
+)
+def test_source_dirty_is_resolved_from_the_collector_repository(
+    monkeypatch, returncode, stdout, expected
+) -> None:
+    calls = []
+
+    class Result:
+        pass
+
+    result = Result()
+    result.returncode = returncode
+    result.stdout = stdout
+
+    def run(command, **kwargs):
+        calls.append((command, kwargs))
+        return result
+
+    monkeypatch.setattr(controller.subprocess, "run", run)
+
+    assert controller._source_dirty() is expected
+    command, kwargs = calls[0]
+    assert command[:3] == ["git", "-C", str(controller._REPO_ROOT)]
+    assert command[3:] == ["status", "--porcelain=v1", "--untracked-files=all"]
     assert kwargs["shell"] is False
 
 
