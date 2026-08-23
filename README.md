@@ -19,11 +19,11 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 
 | 대상 | 확인된 버전·상태 | 증거 경계 |
 | --- | --- | --- |
-| `dev-kafka` source candidate | UI `2.3.1`, API `2.1.0`, tests `354 passed` | notification batch persistence와 Worker DB roundtrip 축소; clean fixed/KEDA 각 3회 검증 |
+| `dev-kafka` source candidate | UI `2.4.0`, API `2.1.0`, tests `608 passed` | sanitized Phase 5.1 Investigation replay와 evidence-grounded hypothesis trace 포함 |
 | local candidate validation | image `messaging-portfolio:notification-batch`, API `2.1.0` | API·core Worker·notification Worker 동일 image; ordering `100/100`, 오류 `0%`, 최종 lag `0/0` |
 | local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validate·publish를 통과한 GHCR image; local candidate는 아직 publication 전 |
 | public demo-lite runtime | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | 2026-08-09 신규 서버에서 Argo `Synced / Healthy`, generic v2·`202`, Worker KEDA `1→2` |
-| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `358 passed` | Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`, 운영 부산물 7일 retention |
+| `demo-dev` candidate | UI `2.4.0`, API `2.1.0`, tests `359 passed` | static local-ha incident replay만 이식; Kafka `1`, PostgreSQL `1`, API·core Worker `1→2` 유지 |
 
 ## Kubernetes 설계 / Kubernetes Architecture
 
@@ -223,11 +223,11 @@ Pre-simplification generic v2 recovery candidate는 cache·snapshot 경로가 �
 
 | Target | Observed / expected version | Contract state |
 | --- | --- | --- |
-| `dev-kafka` source | UI `2.3.1`, API `2.1.0` | generic v2 + `202`; Worker 운영 조회를 `/ops/summary`로 분리, PostgreSQL read model 사용 |
+| `dev-kafka` source | UI `2.4.0`, API `2.1.0` | generic v2 + recorded AI Investigation replay; runtime write와 OpenAI 재호출 없음 |
 | local candidate validation, 2026-08-10 | API `2.1.0`, image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, ordering·final lag·오류율 검증; registry publication 전 |
 | local GitOps release | UI `2.3.1`, API `2.1.0`, image `66e9cc995dca` | CI validation 뒤 게시된 `dev-kafka` GHCR image |
 | public demo-lite, 2026-08-09 | UI `2.3.1`, API `2.1.0`, image `207d7b90813a` | 신규 서버 Argo `Synced / Healthy`, generic v2 + `202`, KEDA `1→2` |
-| `demo-dev` profile | UI `2.3.1`, API `2.1.0` | 저사양 topology와 7일 storage retention 유지 |
+| `demo-dev` profile | UI `2.4.0`, API `2.1.0` | sanitized static replay만 추가하고 저사양 topology와 7일 storage retention 유지 |
 
 ### Local Quick Start
 

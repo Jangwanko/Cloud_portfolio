@@ -1,0 +1,374 @@
+{
+  "schema_version": "demo.verified-incident-replay.v1",
+  "classification": "SANITIZED_RECORDED_REPLAY",
+  "source": {
+    "incident_id": "inc-88a1eeaa17897f6a8a929bba",
+    "logical_diagnosis_incident_id": "phase5-20260823T152359Z-sample-008",
+    "condition": {
+      "name": "CORE_BACKLOG_PRESSURE",
+      "state": "PRESENT",
+      "evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+      "policy_version": "local-ha.conditions.v2"
+    },
+    "diagnosis_id": "ed0013faacc76108de3692c926a2d6eb77bc44cf6970360258d8ef4b1d58d7b6",
+    "diagnosis_artifact_sha256": "d3ccefbcb48db3c2aa63a30b4efd0f39294f63a5ad636bb197af6641e53fc5e8",
+    "recorded_at": "2026-08-23T15:27:26.388483Z",
+    "profile": "local-ha",
+    "model": "gpt-5.6-luna",
+    "tool_registry_version": "ops.diagnosis.tools.v1"
+  },
+  "investigation": {
+    "steps_used": 4,
+    "max_steps": 4,
+    "tool_calls": [
+      {
+        "step": 1,
+        "tool_id": "get_partition_lag",
+        "reason_code": "CHECK_PARTITION_LAG_DISTRIBUTION",
+        "requested_at": "2026-08-23T15:27:11.652569Z",
+        "evidence": {
+          "evidence_id": "diagnosis.get_partition_lag.d4978ddd616fd12c6399d30a",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08.006214Z",
+          "freshness": {
+            "status": "FRESH",
+            "oldest_source_timestamp": "2026-08-23T15:26:36.819000Z",
+            "newest_source_timestamp": "2026-08-23T15:27:06.816000Z",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_partition_lag_observation",
+          "summary": {
+            "activation_window": [
+              0,
+              1,
+              2
+            ],
+            "captures": [
+              {
+                "sequence_index": 0,
+                "total_lag_records": 7205,
+                "lag_slope_60s_records_per_second": 120.06666666666666,
+                "maximum_partition_share": 0.2022206800832755,
+                "per_partition_latest_lag": {
+                  "0": 1392,
+                  "1": 1457,
+                  "2": 520,
+                  "3": 489,
+                  "4": 979,
+                  "5": 625,
+                  "6": 936,
+                  "7": 807
+                }
+              },
+              {
+                "sequence_index": 1,
+                "total_lag_records": 10497,
+                "lag_slope_60s_records_per_second": 174.46666666666667,
+                "maximum_partition_share": 0.207106792416881,
+                "per_partition_latest_lag": {
+                  "0": 1994,
+                  "1": 2174,
+                  "2": 683,
+                  "3": 776,
+                  "4": 1451,
+                  "5": 843,
+                  "6": 1308,
+                  "7": 1268
+                }
+              },
+              {
+                "sequence_index": 2,
+                "total_lag_records": 13936,
+                "lag_slope_60s_records_per_second": 230.76666666666668,
+                "maximum_partition_share": 0.20421928817451204,
+                "per_partition_latest_lag": {
+                  "0": 2846,
+                  "1": 2689,
+                  "2": 935,
+                  "3": 1008,
+                  "4": 1810,
+                  "5": 1203,
+                  "6": 1683,
+                  "7": 1762
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": 2,
+        "tool_id": "get_worker_stage_latency",
+        "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+        "requested_at": "2026-08-23T15:27:13.877164Z",
+        "evidence": {
+          "evidence_id": "diagnosis.get_worker_stage_latency.486e119c4b545991417726db",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08.006214Z",
+          "freshness": {
+            "status": "FRESH",
+            "oldest_source_timestamp": "2026-08-23T15:26:32.447000Z",
+            "newest_source_timestamp": "2026-08-23T15:27:02.445000Z",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_stage_latency_observation",
+          "summary": {
+            "commit_latency": "UNAVAILABLE",
+            "stage_semantic": "_persist_message_with_cursor stage; commit excluded",
+            "captures": [
+              {
+                "sequence_index": 0,
+                "context": {
+                  "status": "OK",
+                  "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+                  "observation_count_delta": 4195,
+                  "sum_seconds_delta": 38.86405157199168,
+                  "mean_seconds": 0.009264374629795395,
+                  "p95_finite_bucket_upper_bound_seconds": 0.1,
+                  "counter_decrease": false
+                }
+              },
+              {
+                "sequence_index": 1,
+                "context": {
+                  "status": "OK",
+                  "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+                  "observation_count_delta": 4652,
+                  "sum_seconds_delta": 56.32078392999846,
+                  "mean_seconds": 0.012106789322871552,
+                  "p95_finite_bucket_upper_bound_seconds": 0.1,
+                  "counter_decrease": false
+                }
+              },
+              {
+                "sequence_index": 2,
+                "context": {
+                  "status": "OK",
+                  "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+                  "observation_count_delta": 5134,
+                  "sum_seconds_delta": 73.77171785400061,
+                  "mean_seconds": 0.01436924773159342,
+                  "p95_finite_bucket_upper_bound_seconds": 0.1,
+                  "counter_decrease": false
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": 3,
+        "tool_id": "get_worker_replica_status",
+        "reason_code": "CHECK_WORKER_REPLICA_PATH",
+        "requested_at": "2026-08-23T15:27:15.637498Z",
+        "evidence": {
+          "evidence_id": "diagnosis.get_worker_replica_status.08890a514f00c647d1c24978",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08.006214Z",
+          "freshness": {
+            "status": "FRESH",
+            "oldest_source_timestamp": "2026-08-23T15:26:37.201315Z",
+            "newest_source_timestamp": "2026-08-23T15:27:07.176581Z",
+            "max_age_seconds": 30.0
+          },
+          "semantic_type": "normalized_get_worker_replica_status_observation",
+          "summary": {
+            "captures": [
+              {
+                "sequence_index": 0,
+                "context": {
+                  "desired_replicas": 4,
+                  "current_replicas": 4,
+                  "ready_replicas": 4,
+                  "available_replicas": 4,
+                  "observed_generation": 414
+                }
+              },
+              {
+                "sequence_index": 1,
+                "context": {
+                  "desired_replicas": 4,
+                  "current_replicas": 4,
+                  "ready_replicas": 4,
+                  "available_replicas": 4,
+                  "observed_generation": 414
+                }
+              },
+              {
+                "sequence_index": 2,
+                "context": {
+                  "desired_replicas": 4,
+                  "current_replicas": 4,
+                  "ready_replicas": 4,
+                  "available_replicas": 4,
+                  "observed_generation": 414
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "step": 4,
+        "tool_id": "get_postgres_health",
+        "reason_code": "CHECK_POSTGRES_HEALTH",
+        "requested_at": "2026-08-23T15:27:17.498089Z",
+        "evidence": {
+          "evidence_id": "diagnosis.get_postgres_health.54b68cda3e777adedd55efd0",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08.006214Z",
+          "freshness": {
+            "status": "FRESH",
+            "oldest_source_timestamp": "2026-08-23T15:26:36.889099Z",
+            "newest_source_timestamp": "2026-08-23T15:27:06.890558Z",
+            "max_age_seconds": 10.0
+          },
+          "semantic_type": "normalized_get_postgres_health_observation",
+          "summary": {
+            "observations": [
+              {
+                "status": "OK",
+                "freshness": "FRESH",
+                "source_timestamp": "2026-08-23T15:26:36.889099+00:00",
+                "value": {
+                  "ha_mode": true,
+                  "primary_reachable": true,
+                  "standby_count": 2,
+                  "sync_standby_count": 2,
+                  "max_replication_delay_bytes": 0
+                }
+              },
+              {
+                "status": "OK",
+                "freshness": "FRESH",
+                "source_timestamp": "2026-08-23T15:26:51.843053+00:00",
+                "value": {
+                  "ha_mode": true,
+                  "primary_reachable": true,
+                  "standby_count": 2,
+                  "sync_standby_count": 2,
+                  "max_replication_delay_bytes": 4032
+                }
+              },
+              {
+                "status": "OK",
+                "freshness": "FRESH",
+                "source_timestamp": "2026-08-23T15:27:06.890558+00:00",
+                "value": {
+                  "ha_mode": true,
+                  "primary_reachable": true,
+                  "standby_count": 2,
+                  "sync_standby_count": 2,
+                  "max_replication_delay_bytes": 4920
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "hypotheses": [
+    {
+      "hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+      "support_status": "SUPPORTED",
+      "reason_codes": [
+        "PERSIST_STAGE_LATENCY_INCREASED_ACROSS_CAPTURE_WINDOW",
+        "BACKLOG_AND_LAG_SLOPE_INCREASED"
+      ],
+      "supporting_evidence_ids": [
+        "diagnosis.get_worker_stage_latency.486e119c4b545991417726db",
+        "diagnosis.get_partition_lag.d4978ddd616fd12c6399d30a"
+      ],
+      "conflicting_evidence_ids": [],
+      "evidence_gaps": [
+        "COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY"
+      ]
+    },
+    {
+      "hypothesis": "HOT_KEY_SUSPECTED",
+      "support_status": "INSUFFICIENT",
+      "reason_codes": [
+        "PARTITION_LAG_DISTRIBUTION_BALANCED"
+      ],
+      "supporting_evidence_ids": [],
+      "conflicting_evidence_ids": [
+        "diagnosis.get_partition_lag.d4978ddd616fd12c6399d30a"
+      ],
+      "evidence_gaps": [
+        "NO_DIRECT_HOT_KEY_SUPPORTING_EVIDENCE"
+      ]
+    },
+    {
+      "hypothesis": "POISON_RECORD_RETRY_SUSPECTED",
+      "support_status": "INSUFFICIENT",
+      "reason_codes": [
+        "NO_RETRY_OR_FAILURE_TELEMETRY"
+      ],
+      "supporting_evidence_ids": [],
+      "conflicting_evidence_ids": [],
+      "evidence_gaps": [
+        "RETRY_AND_FAILURE_TELEMETRY_UNAVAILABLE"
+      ]
+    },
+    {
+      "hypothesis": "SEQUENCE_CONTENTION_SUSPECTED",
+      "support_status": "INSUFFICIENT",
+      "reason_codes": [
+        "NO_SEQUENCE_CONTENTION_SPECIFIC_TELEMETRY"
+      ],
+      "supporting_evidence_ids": [],
+      "conflicting_evidence_ids": [],
+      "evidence_gaps": [
+        "SEQUENCE_CONTENTION_TELEMETRY_UNAVAILABLE"
+      ]
+    },
+    {
+      "hypothesis": "CONSUMER_REBALANCE_SUSPECTED",
+      "support_status": "INSUFFICIENT",
+      "reason_codes": [
+        "CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE"
+      ],
+      "supporting_evidence_ids": [],
+      "conflicting_evidence_ids": [],
+      "evidence_gaps": [
+        "CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE"
+      ]
+    }
+  ],
+  "validation": {
+    "result": "VALID",
+    "checks": {
+      "schema_valid": true,
+      "citations_valid": true,
+      "tool_calls_valid": true,
+      "step_budget_valid": true,
+      "stop_valid": true,
+      "forbidden_claims_absent": true
+    },
+    "output_repairs_used": 1,
+    "attempts": [
+      {
+        "attempt": 1,
+        "phase": "initial",
+        "result": "INVALID",
+        "error_code": "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES"
+      },
+      {
+        "attempt": 2,
+        "phase": "repair",
+        "result": "VALID",
+        "error_code": null
+      }
+    ],
+    "scope": "schema, citation, tool, budget, stop, and forbidden-claim contract",
+    "causal_truth_validated": false
+  },
+  "stop_reason": "sufficient_evidence",
+  "usage": {
+    "api_requests": 6,
+    "input_tokens": 29494,
+    "output_tokens": 1170,
+    "total_tokens": 30664
+  }
+}

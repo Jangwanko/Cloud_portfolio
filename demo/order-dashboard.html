@@ -133,9 +133,16 @@
 
     .grid {
       display: grid;
-      grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1fr) minmax(300px, 0.78fr) minmax(300px, 0.78fr);
+      grid-template-columns: 320px 520px 320px 340px 1040px;
       gap: 16px;
       align-items: start;
+      width: max-content;
+    }
+
+    .workspace-scroll {
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-gutter: stable;
     }
 
     label {
@@ -303,10 +310,6 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       padding: 10px;
-    }
-
-    .proof.envelope-proof {
-      grid-column: 1 / -1;
     }
 
     .proof strong,
@@ -482,10 +485,307 @@
       opacity: 0.72;
     }
 
-    @media (max-width: 1420px) {
-      .grid {
-        grid-template-columns: minmax(320px, 0.85fr) minmax(420px, 1.15fr);
-      }
+    .investigation-section {
+      border-top: 4px solid #235347;
+      box-shadow: none;
+      gap: 20px;
+    }
+
+    .investigation-head,
+    .trace-head,
+    .hypothesis-head,
+    .validator-head {
+      align-items: flex-start;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .status-badge {
+      border: 1px solid #b9c6d3;
+      border-radius: 999px;
+      color: #405064;
+      display: inline-flex;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      text-transform: uppercase;
+    }
+
+    .status-badge.ok {
+      background: #eaf7ef;
+      border-color: #9dceb0;
+      color: #126436;
+    }
+
+    .status-badge.read-only {
+      background: #fff4dc;
+      border-color: #e7c36e;
+      color: #704b00;
+    }
+
+    .investigation-meta {
+      border-bottom: 1px solid var(--line);
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .investigation-meta > div {
+      min-width: 0;
+      padding: 12px;
+    }
+
+    .investigation-meta > div + div {
+      border-left: 1px solid var(--line);
+    }
+
+    .investigation-meta strong {
+      color: var(--muted);
+      display: block;
+      font-size: 11px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .investigation-meta span,
+    .investigation-meta code {
+      display: block;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .investigation-layout {
+      display: grid;
+      gap: 28px;
+      grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+    }
+
+    .trace-list {
+      border-left: 2px solid #b9c6d3;
+      margin-left: 17px;
+      margin-top: 12px;
+    }
+
+    .trace-step {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: minmax(0, 1fr);
+      padding: 0 0 22px 28px;
+      position: relative;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .trace-step:last-child {
+      padding-bottom: 0;
+    }
+
+    .trace-marker {
+      align-items: center;
+      background: #fff;
+      border: 2px solid #6f8092;
+      border-radius: 50%;
+      display: flex;
+      font-size: 12px;
+      font-weight: 700;
+      height: 34px;
+      justify-content: center;
+      left: -18px;
+      position: absolute;
+      top: 0;
+      width: 34px;
+    }
+
+    .trace-step.replay-muted {
+      opacity: 0.36;
+    }
+
+    .trace-step.replay-active {
+      transform: translateX(4px);
+    }
+
+    .trace-step.replay-active .trace-marker,
+    .trace-step.replay-complete .trace-marker {
+      background: #235347;
+      border-color: #235347;
+      color: #fff;
+    }
+
+    .trace-tool {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 34px;
+    }
+
+    .trace-tool code,
+    .evidence-reference code {
+      background: #edf2f7;
+      border-radius: 4px;
+      color: #26384d;
+      font-size: 12px;
+      padding: 3px 6px;
+    }
+
+    .trace-purpose,
+    .trace-summary,
+    .contract-note,
+    .boundary-note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .trace-summary {
+      color: var(--ink);
+    }
+
+    .evidence-reference {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    details.evidence-detail {
+      border-top: 1px solid var(--line);
+      margin-top: 4px;
+      padding-top: 8px;
+    }
+
+    details.evidence-detail summary {
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .evidence-table {
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    .evidence-table th,
+    .evidence-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 7px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .evidence-table th {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .hypothesis-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .hypothesis {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .hypothesis.supported {
+      border-left: 4px solid var(--ok);
+    }
+
+    .hypothesis.insufficient {
+      border-left: 4px solid #8996a5;
+    }
+
+    .hypothesis-name {
+      font-size: 12px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .hypothesis-status {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .hypothesis-status.supported {
+      color: var(--ok);
+    }
+
+    .hypothesis-status.insufficient {
+      color: #586777;
+    }
+
+    .hypothesis-line {
+      font-size: 12px;
+      margin-top: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .hypothesis-line strong {
+      color: var(--muted);
+      display: block;
+      font-size: 11px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .validator-boundary {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 24px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      padding-top: 18px;
+    }
+
+    .validator-flow {
+      align-items: center;
+      display: grid;
+      gap: 6px;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      margin: 12px 0;
+    }
+
+    .validator-flow span {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .validator-flow b {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .boundary-columns {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 10px;
+    }
+
+    .boundary-columns ul {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    .investigation-error {
+      color: var(--danger);
+      font-size: 13px;
     }
 
     @media (max-width: 860px) {
@@ -494,7 +794,6 @@
         flex-direction: column;
       }
 
-      .grid,
       .row,
       .sample-actions,
       .queue-metrics,
@@ -516,7 +815,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.3.1 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.4.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -533,6 +832,7 @@
       <div class="status"><strong data-i18n="operatorCategory">Producer 분류(metadata)</strong><span id="category-status">-</span></div>
     </div>
 
+    <div class="workspace-scroll" tabindex="0" aria-label="Operations workspace">
     <div class="grid">
       <section class="stack">
         <div>
@@ -676,9 +976,16 @@
             </div>
           </div>
         </div>
-        <div class="proof envelope-proof">
-          <strong data-i18n="envelopeVerification">DB 저장 컬럼 · schema_version / event_type / payload / metadata</strong>
-          <span id="envelope-verification">전송 전</span>
+        <div>
+          <h3 data-i18n="dbColumnsTitle">DB 저장 컬럼</h3>
+          <p class="field-help" data-i18n="dbColumnsSubtitle">Worker가 호환 storage에 함께 저장하는 범용 event envelope입니다.</p>
+          <div class="proof-grid">
+            <div class="proof"><strong>stream_id / stream_seq</strong><span data-i18n="dbStreamColumns">partition key와 같은 stream 안의 영속화 순서</span></div>
+            <div class="proof"><strong>schema_version / event_type</strong><span data-i18n="dbEventColumns">event envelope version과 producer-defined type</span></div>
+            <div class="proof"><strong>payload / metadata</strong><span data-i18n="dbPaymentColumn">도메인 데이터와 추적·분류용 확장 정보</span></div>
+            <div class="proof"><strong>request_id / created_at</strong><span data-i18n="dbTraceColumns">요청 추적 식별자와 DB row 생성 시각</span></div>
+            <div class="proof"><strong data-i18n="envelopeVerification">Envelope 샘플 검증</strong><span id="envelope-verification">전송 전</span></div>
+          </div>
         </div>
       </section>
 
@@ -752,12 +1059,98 @@
         </div>
       </section>
 
+    <section class="stack investigation-section" id="ai-investigation" aria-labelledby="ai-investigation-title">
+      <div class="investigation-head">
+        <div>
+          <div class="badge-row">
+            <span class="status-badge" data-i18n="investigationRecorded">Recorded replay</span>
+            <span class="status-badge read-only">Read-only</span>
+            <span class="status-badge ok" id="investigation-validation-badge">Validator -</span>
+          </div>
+          <h2 id="ai-investigation-title" data-i18n="investigationTitle">AI Investigation</h2>
+          <p class="subtitle" data-i18n="investigationSubtitle">실제 Phase 5.1 local-ha 기록을 재생하며 현재 demo-lite runtime을 다시 진단하지 않습니다.</p>
+        </div>
+      </div>
+
+      <div class="investigation-meta" id="investigation-meta" aria-live="polite">
+        <div><strong>Condition</strong><span>-</span></div>
+        <div><strong>Recorded profile</strong><span>-</span></div>
+        <div><strong>Model</strong><span>-</span></div>
+        <div><strong>Tool budget</strong><span>-</span></div>
+        <div><strong>Stop reason</strong><span>-</span></div>
+        <div><strong>Diagnosis ID</strong><span>-</span></div>
+      </div>
+
+      <div class="investigation-layout">
+        <div>
+          <div class="trace-head">
+            <div>
+              <h3 data-i18n="traceTitle">Investigation Trace</h3>
+              <p class="field-help" data-i18n="traceHelp">표시 순서는 기록된 tool-call 순서이며 새 API 호출을 만들지 않습니다.</p>
+            </div>
+            <button class="secondary compact-button" id="replay-investigation" type="button" data-i18n="replayInvestigation">기록 재생</button>
+          </div>
+          <div class="trace-list" id="investigation-trace">
+            <p class="field-help" data-i18n="investigationLoading">기록된 investigation artifact를 불러오는 중입니다.</p>
+          </div>
+        </div>
+
+        <div>
+          <div class="hypothesis-head">
+            <div>
+              <h3 data-i18n="hypothesisTitle">Hypothesis Results</h3>
+              <p class="field-help" data-i18n="hypothesisHelp">SUPPORTED는 available evidence의 지지이며 확정 root cause가 아닙니다.</p>
+            </div>
+          </div>
+          <div class="hypothesis-list" id="investigation-hypotheses"></div>
+        </div>
+      </div>
+
+      <div class="validator-boundary">
+        <div>
+          <div class="validator-head">
+            <div>
+              <h3 data-i18n="validatorTitle">Deterministic Validator</h3>
+              <p class="field-help" data-i18n="validatorHelp">Schema와 evidence grounding 계약을 검사하며 causal truth를 확인하지 않습니다.</p>
+            </div>
+          </div>
+          <div class="validator-flow" aria-label="Diagnosis validation flow">
+            <span>AI Diagnosis</span><b>→</b><span>Structured Output</span><b>→</b><span id="validator-result">Validator -</span>
+          </div>
+          <p class="contract-note" id="validator-detail">-</p>
+        </div>
+
+        <div>
+          <h3><span class="status-badge read-only">Read-only</span> <span data-i18n="boundaryTitle">Agent Boundary</span></h3>
+          <p class="boundary-note" data-i18n="boundaryHelp">Agent는 bounded operational evidence만 조사하며 runtime write 권한이 없습니다.</p>
+          <div class="boundary-columns">
+            <div>
+              <strong data-i18n="agentCan">The Agent can</strong>
+              <ul>
+                <li data-i18n="canInspect">bounded operational evidence 조사</li>
+                <li data-i18n="canChoose">allowlisted tool 선택</li>
+                <li data-i18n="canHypothesize">evidence-grounded hypothesis 생성</li>
+              </ul>
+            </div>
+            <div>
+              <strong data-i18n="agentCannot">The Agent cannot</strong>
+              <ul>
+                <li data-i18n="cannotRestart">Pod 재시작 또는 Worker scale</li>
+                <li data-i18n="cannotModify">Kubernetes 수정 또는 Kafka offset reset</li>
+                <li data-i18n="cannotRecover">recovery 선언 또는 remediation 수행</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
     </div>
   </main>
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.3.1";
+    const DEMO_UI_VERSION = "2.4.0";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -880,7 +1273,48 @@
         savedPrefix: "DB 저장됨",
         checkingDlq: "DLQ summary 조회 전",
         resetNeedsConfirm: "RESET DEMO DB를 입력해야 초기화합니다.",
-        envelopeVerification: "DB 저장 컬럼 · schema_version / event_type / payload / metadata"
+        dbColumnsTitle: "DB 저장 컬럼",
+        dbColumnsSubtitle: "Worker가 호환 storage에 함께 저장하는 범용 event envelope입니다.",
+        dbStreamColumns: "partition key와 같은 stream 안의 영속화 순서",
+        dbEventColumns: "event envelope version과 producer-defined type",
+        dbPaymentColumn: "도메인 데이터와 추적·분류용 확장 정보",
+        dbTraceColumns: "요청 추적 식별자와 DB row 생성 시각",
+        envelopeVerification: "Envelope 샘플 검증",
+        investigationRecorded: "Recorded replay",
+        investigationTitle: "AI Investigation",
+        investigationSubtitle: "실제 Phase 5.1 local-ha 기록을 재생하며 현재 demo-lite runtime을 다시 진단하지 않습니다.",
+        traceTitle: "Investigation Trace",
+        traceHelp: "표시 순서는 기록된 tool-call 순서이며 새 API 호출을 만들지 않습니다.",
+        replayInvestigation: "기록 재생",
+        investigationLoading: "기록된 investigation artifact를 불러오는 중입니다.",
+        hypothesisTitle: "Hypothesis Results",
+        hypothesisHelp: "SUPPORTED는 available evidence의 지지이며 확정 root cause가 아닙니다.",
+        validatorTitle: "Deterministic Validator",
+        validatorHelp: "Schema와 evidence grounding 계약을 검사하며 causal truth를 확인하지 않습니다.",
+        boundaryTitle: "Agent Boundary",
+        boundaryHelp: "Agent는 bounded operational evidence만 조사하며 runtime write 권한이 없습니다.",
+        agentCan: "The Agent can",
+        agentCannot: "The Agent cannot",
+        canInspect: "bounded operational evidence 조사",
+        canChoose: "allowlisted tool 선택",
+        canHypothesize: "evidence-grounded hypothesis 생성",
+        cannotRestart: "Pod 재시작 또는 Worker scale",
+        cannotModify: "Kubernetes 수정 또는 Kafka offset reset",
+        cannotRecover: "recovery 선언 또는 remediation 수행",
+        viewEvidence: "Evidence 상세 보기",
+        purpose_CHECK_PARTITION_LAG_DISTRIBUTION: "activation capture의 total lag와 partition 분포를 비교합니다.",
+        purpose_CHECK_WORKER_PERSIST_STAGE: "Worker DB persist stage의 관측 latency를 확인합니다. commit은 제외됩니다.",
+        purpose_CHECK_WORKER_REPLICA_PATH: "Worker desired/current/ready/available replica 상태를 확인합니다.",
+        purpose_CHECK_POSTGRES_HEALTH: "PostgreSQL HA, primary, standby, sync와 replication delay를 확인합니다.",
+        supportingEvidence: "Supporting evidence",
+        conflictingEvidence: "Conflicting evidence",
+        evidenceGaps: "Evidence gaps",
+        noEvidence: "없음",
+        supportedMeaning: "Supported by available evidence",
+        insufficientMeaning: "Insufficient evidence",
+        validatorPass: "VALID",
+        validatorContract: "계약 검증 PASS · repair {repair} · stop {stop} · causal truth 검증 아님",
+        investigationLoadFailed: "검증된 investigation replay를 불러오지 못했습니다."
       },
       en: {
         pageSubtitle: "Inspect Kafka acceptance, ordered persistence, failure isolation, and replay for domain events.",
@@ -1003,7 +1437,48 @@
         savedPrefix: "DB persisted",
         checkingDlq: "DLQ summary not checked yet",
         resetNeedsConfirm: "Type RESET DEMO DB before resetting demo event data.",
-        envelopeVerification: "Stored DB Columns · schema_version / event_type / payload / metadata"
+        dbColumnsTitle: "Stored DB Columns",
+        dbColumnsSubtitle: "Generic event envelope persisted by the Worker in compatibility storage.",
+        dbStreamColumns: "Partition key and persistence order within the same stream",
+        dbEventColumns: "Event-envelope version and producer-defined type",
+        dbPaymentColumn: "Domain payload plus extensible tracing and classification metadata",
+        dbTraceColumns: "Request trace identifier and DB row creation time",
+        envelopeVerification: "Envelope Sample Verification",
+        investigationRecorded: "Recorded replay",
+        investigationTitle: "AI Investigation",
+        investigationSubtitle: "Replays the actual Phase 5.1 local-ha record without re-diagnosing the current demo-lite runtime.",
+        traceTitle: "Investigation Trace",
+        traceHelp: "Steps follow the recorded tool-call order and do not make a new API request.",
+        replayInvestigation: "Replay trace",
+        investigationLoading: "Loading the recorded investigation artifact.",
+        hypothesisTitle: "Hypothesis Results",
+        hypothesisHelp: "SUPPORTED means supported by available evidence, not a confirmed root cause.",
+        validatorTitle: "Deterministic Validator",
+        validatorHelp: "Checks schema and evidence-grounding contracts, not causal truth.",
+        boundaryTitle: "Agent Boundary",
+        boundaryHelp: "The Agent inspects bounded evidence and has no runtime write permission.",
+        agentCan: "The Agent can",
+        agentCannot: "The Agent cannot",
+        canInspect: "inspect bounded operational evidence",
+        canChoose: "choose allowlisted tools",
+        canHypothesize: "form evidence-grounded hypotheses",
+        cannotRestart: "restart Pods or scale Workers",
+        cannotModify: "modify Kubernetes or reset Kafka offsets",
+        cannotRecover: "declare recovery or perform remediation",
+        viewEvidence: "View evidence",
+        purpose_CHECK_PARTITION_LAG_DISTRIBUTION: "Compare total lag and partition distribution across activation captures.",
+        purpose_CHECK_WORKER_PERSIST_STAGE: "Inspect observed Worker DB persist-stage latency. Commit is excluded.",
+        purpose_CHECK_WORKER_REPLICA_PATH: "Inspect Worker desired, current, ready, and available replicas.",
+        purpose_CHECK_POSTGRES_HEALTH: "Inspect PostgreSQL HA, primary, standby, sync, and replication delay.",
+        supportingEvidence: "Supporting evidence",
+        conflictingEvidence: "Conflicting evidence",
+        evidenceGaps: "Evidence gaps",
+        noEvidence: "None",
+        supportedMeaning: "Supported by available evidence",
+        insufficientMeaning: "Insufficient evidence",
+        validatorPass: "VALID",
+        validatorContract: "Contract validation PASS · repair {repair} · stop {stop} · causal truth not validated",
+        investigationLoadFailed: "The verified investigation replay could not be loaded."
       }
     };
 
@@ -1027,6 +1502,8 @@
     const PERSISTENCE_ATTEMPTS_AFTER_SEND = 120;
     let latestReadiness = null;
     let latestDlqSummary = null;
+    let verifiedIncidentReplay = null;
+    let investigationReplayTimer = null;
     const queueStats = {
       queued: 0,
       kafkaAppended: 0,
@@ -1064,6 +1541,297 @@
         "\"": "&quot;",
         "'": "&#39;"
       })[character]);
+    }
+
+    function shortEvidenceId(evidenceId) {
+      const suffix = String(evidenceId || "").split(".").at(-1) || "-";
+      return suffix.length > 15
+        ? `${suffix.slice(0, 7)}…${suffix.slice(-6)}`
+        : suffix;
+    }
+
+    function evidenceLabel(evidenceId) {
+      if (!verifiedIncidentReplay) {
+        return shortEvidenceId(evidenceId);
+      }
+      const call = verifiedIncidentReplay.investigation.tool_calls.find(
+        (item) => item.evidence.evidence_id === evidenceId
+      );
+      return call
+        ? `${call.tool_id} · ${shortEvidenceId(evidenceId)}`
+        : shortEvidenceId(evidenceId);
+    }
+
+    function investigationLabels() {
+      return currentLanguage === "en"
+        ? {
+            capture: "Capture",
+            totalLag: "Total lag",
+            slope: "60s slope",
+            partitionLag: "Partition lag",
+            count: "Observations",
+            mean: "Mean",
+            p95Bound: "p95 finite bound",
+            replicas: "desired / current / ready / available",
+            generation: "Generation",
+            haPrimary: "HA / primary",
+            standby: "standby / sync",
+            delay: "Max delay",
+          }
+        : {
+            capture: "Capture",
+            totalLag: "Total lag",
+            slope: "60초 slope",
+            partitionLag: "Partition lag",
+            count: "관측 수",
+            mean: "평균",
+            p95Bound: "p95 finite bound",
+            replicas: "desired / current / ready / available",
+            generation: "Generation",
+            haPrimary: "HA / primary",
+            standby: "standby / sync",
+            delay: "최대 delay",
+          };
+    }
+
+    function evidenceDetailRows(toolCall) {
+      const labels = investigationLabels();
+      const summary = toolCall.evidence.summary;
+      if (toolCall.tool_id === "get_partition_lag") {
+        return {
+          headers: [labels.capture, labels.totalLag, labels.slope, labels.partitionLag],
+          rows: summary.captures.map((capture) => [
+            capture.sequence_index + 1,
+            capture.total_lag_records.toLocaleString(),
+            `${capture.lag_slope_60s_records_per_second.toFixed(3)} records/s`,
+            Object.entries(capture.per_partition_latest_lag)
+              .map(([partition, lag]) => `p${partition} ${Number(lag).toLocaleString()}`)
+              .join(" · "),
+          ]),
+        };
+      }
+      if (toolCall.tool_id === "get_worker_stage_latency") {
+        return {
+          headers: [labels.capture, labels.count, labels.mean, labels.p95Bound],
+          rows: summary.captures.map((capture) => [
+            capture.sequence_index + 1,
+            capture.context.observation_count_delta.toLocaleString(),
+            `${(capture.context.mean_seconds * 1000).toFixed(3)}ms`,
+            `${(capture.context.p95_finite_bucket_upper_bound_seconds * 1000).toFixed(0)}ms`,
+          ]),
+        };
+      }
+      if (toolCall.tool_id === "get_worker_replica_status") {
+        return {
+          headers: [labels.capture, labels.replicas, labels.generation],
+          rows: summary.captures.map((capture) => [
+            capture.sequence_index + 1,
+            [
+              capture.context.desired_replicas,
+              capture.context.current_replicas,
+              capture.context.ready_replicas,
+              capture.context.available_replicas,
+            ].join(" / "),
+            capture.context.observed_generation,
+          ]),
+        };
+      }
+      return {
+        headers: [labels.capture, labels.haPrimary, labels.standby, labels.delay],
+        rows: summary.observations.map((observation, index) => [
+          index + 1,
+          `${observation.value.ha_mode} / ${observation.value.primary_reachable}`,
+          `${observation.value.standby_count} / ${observation.value.sync_standby_count}`,
+          `${observation.value.max_replication_delay_bytes.toLocaleString()} bytes`,
+        ]),
+      };
+    }
+
+    function evidenceSummary(toolCall) {
+      const summary = toolCall.evidence.summary;
+      if (toolCall.tool_id === "get_partition_lag") {
+        const captures = summary.captures;
+        return `total lag ${captures.map((item) => item.total_lag_records.toLocaleString()).join(" → ")}; slope ${captures.map((item) => item.lag_slope_60s_records_per_second.toFixed(3)).join(" → ")} records/s`;
+      }
+      if (toolCall.tool_id === "get_worker_stage_latency") {
+        const captures = summary.captures;
+        return `mean ${captures.map((item) => (item.context.mean_seconds * 1000).toFixed(3)).join(" → ")}ms; commit latency ${summary.commit_latency}`;
+      }
+      if (toolCall.tool_id === "get_worker_replica_status") {
+        const latest = summary.captures.at(-1).context;
+        return `desired / current / ready / available ${latest.desired_replicas} / ${latest.current_replicas} / ${latest.ready_replicas} / ${latest.available_replicas}`;
+      }
+      const observations = summary.observations;
+      const latest = observations.at(-1).value;
+      return `HA ${latest.ha_mode}; primary ${latest.primary_reachable}; standby / sync ${latest.standby_count} / ${latest.sync_standby_count}; delay ${observations.map((item) => item.value.max_replication_delay_bytes.toLocaleString()).join(" → ")} bytes`;
+    }
+
+    function renderEvidenceDetails(toolCall) {
+      const table = evidenceDetailRows(toolCall);
+      const headers = table.headers
+        .map((value) => `<th>${escapeHtml(value)}</th>`)
+        .join("");
+      const rows = table.rows
+        .map((row) => `<tr>${row.map((value) => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`)
+        .join("");
+      return `
+        <details class="evidence-detail">
+          <summary>${escapeHtml(t("viewEvidence"))}</summary>
+          <table class="evidence-table">
+            <thead><tr>${headers}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </details>
+      `;
+    }
+
+    function renderInvestigationTrace() {
+      const trace = document.querySelector("#investigation-trace");
+      if (!verifiedIncidentReplay) {
+        return;
+      }
+      trace.innerHTML = verifiedIncidentReplay.investigation.tool_calls
+        .map((toolCall) => {
+          const freshness = toolCall.evidence.freshness;
+          return `
+            <article class="trace-step" data-investigation-step="${toolCall.step}">
+              <span class="trace-marker">${toolCall.step}</span>
+              <div class="trace-tool">
+                <code>${escapeHtml(toolCall.tool_id)}</code>
+                <span class="status-badge ok">${escapeHtml(toolCall.evidence.status)}</span>
+                <span class="status-badge">${escapeHtml(freshness.status)}</span>
+              </div>
+              <p class="trace-purpose">${escapeHtml(t(`purpose_${toolCall.reason_code}`))}</p>
+              <p class="trace-summary">${escapeHtml(evidenceSummary(toolCall))}</p>
+              <div class="evidence-reference">
+                <span>Evidence</span>
+                <code title="${escapeHtml(toolCall.evidence.evidence_id)}">${escapeHtml(shortEvidenceId(toolCall.evidence.evidence_id))}</code>
+                <span class="field-help">max age ${escapeHtml(freshness.max_age_seconds)}s</span>
+              </div>
+              ${renderEvidenceDetails(toolCall)}
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    function renderInvestigationHypotheses() {
+      const container = document.querySelector("#investigation-hypotheses");
+      if (!verifiedIncidentReplay) {
+        return;
+      }
+      container.innerHTML = verifiedIncidentReplay.hypotheses
+        .map((item) => {
+          const statusClass = item.support_status === "SUPPORTED" ? "supported" : "insufficient";
+          const statusText = item.support_status === "SUPPORTED"
+            ? t("supportedMeaning")
+            : t("insufficientMeaning");
+          const listEvidence = (values) => values.length
+            ? values.map(evidenceLabel).join(" · ")
+            : t("noEvidence");
+          return `
+            <article class="hypothesis ${statusClass}">
+              <div class="hypothesis-head">
+                <strong class="hypothesis-name">${escapeHtml(item.hypothesis)}</strong>
+                <span class="hypothesis-status ${statusClass}">${escapeHtml(item.support_status)}</span>
+              </div>
+              <p class="field-help">${escapeHtml(statusText)}</p>
+              <div class="hypothesis-line"><strong>${escapeHtml(t("supportingEvidence"))}</strong>${escapeHtml(listEvidence(item.supporting_evidence_ids))}</div>
+              <div class="hypothesis-line"><strong>${escapeHtml(t("conflictingEvidence"))}</strong>${escapeHtml(listEvidence(item.conflicting_evidence_ids))}</div>
+              <div class="hypothesis-line"><strong>${escapeHtml(t("evidenceGaps"))}</strong>${escapeHtml(item.evidence_gaps.length ? item.evidence_gaps.join(" · ") : t("noEvidence"))}</div>
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    function renderVerifiedIncidentReplay() {
+      if (!verifiedIncidentReplay) {
+        return;
+      }
+      const source = verifiedIncidentReplay.source;
+      const investigation = verifiedIncidentReplay.investigation;
+      document.querySelector("#investigation-meta").innerHTML = `
+        <div><strong>Condition</strong><span>${escapeHtml(source.condition.name)} = ${escapeHtml(source.condition.state)}</span></div>
+        <div><strong>Recorded profile</strong><span>${escapeHtml(source.profile)}</span></div>
+        <div><strong>Model</strong><span>${escapeHtml(source.model)}</span></div>
+        <div><strong>Tool budget</strong><span>${investigation.steps_used} / ${investigation.max_steps}</span></div>
+        <div><strong>Stop reason</strong><span>${escapeHtml(verifiedIncidentReplay.stop_reason)}</span></div>
+        <div><strong>Diagnosis ID</strong><code title="${escapeHtml(source.diagnosis_id)}">${escapeHtml(source.diagnosis_id.slice(0, 12))}…</code></div>
+      `;
+      document.querySelector("#investigation-validation-badge").textContent = `Validator ${verifiedIncidentReplay.validation.result}`;
+      document.querySelector("#validator-result").textContent = `Validator ${verifiedIncidentReplay.validation.result}`;
+      document.querySelector("#validator-detail").textContent = formatText(
+        "validatorContract",
+        {
+          repair: verifiedIncidentReplay.validation.output_repairs_used,
+          stop: verifiedIncidentReplay.stop_reason,
+        }
+      );
+      renderInvestigationTrace();
+      renderInvestigationHypotheses();
+    }
+
+    function replayInvestigationTrace() {
+      if (!verifiedIncidentReplay) {
+        return;
+      }
+      if (investigationReplayTimer) {
+        window.clearInterval(investigationReplayTimer);
+      }
+      const steps = Array.from(document.querySelectorAll("[data-investigation-step]"));
+      const button = document.querySelector("#replay-investigation");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      steps.forEach((step) => {
+        step.classList.remove("replay-active", "replay-complete");
+        step.classList.toggle("replay-muted", !reduceMotion);
+      });
+      if (reduceMotion) {
+        steps.forEach((step) => step.classList.add("replay-complete"));
+        return;
+      }
+      button.disabled = true;
+      let index = 0;
+      const revealNext = () => {
+        steps.forEach((step, stepIndex) => {
+          step.classList.toggle("replay-active", stepIndex === index);
+          if (stepIndex <= index) {
+            step.classList.remove("replay-muted");
+          }
+          if (stepIndex < index) {
+            step.classList.add("replay-complete");
+          }
+        });
+        index += 1;
+        if (index > steps.length) {
+          window.clearInterval(investigationReplayTimer);
+          investigationReplayTimer = null;
+          steps.forEach((step) => {
+            step.classList.remove("replay-active");
+            step.classList.add("replay-complete");
+          });
+          button.disabled = false;
+        }
+      };
+      revealNext();
+      investigationReplayTimer = window.setInterval(revealNext, 650);
+    }
+
+    async function loadVerifiedIncidentReplay() {
+      const response = await fetch("./verified-incident-replay.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`verified incident replay HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      if (
+        payload.schema_version !== "demo.verified-incident-replay.v1"
+        || payload.classification !== "SANITIZED_RECORDED_REPLAY"
+        || !Array.isArray(payload.investigation?.tool_calls)
+      ) {
+        throw new Error("verified incident replay contract mismatch");
+      }
+      verifiedIncidentReplay = payload;
+      renderVerifiedIncidentReplay();
     }
 
     function safeCssToken(value) {
@@ -1113,6 +1881,7 @@
         updateQueueMetrics();
       }
       renderEvents();
+      renderVerifiedIncidentReplay();
     }
 
     function categoryFor(eventType) {
@@ -2139,6 +2908,7 @@
     document.querySelector("#replay-all-dlq").addEventListener("click", () => {
       replayAllDlqItems().catch((error) => log(describeFetchFailure(error)));
     });
+    document.querySelector("#replay-investigation").addEventListener("click", replayInvestigationTrace);
     document.querySelector("#ops-refresh-interval").addEventListener("change", restartOpsAutoRefresh);
     document.querySelectorAll("[data-language]").forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.language));
@@ -2156,6 +2926,11 @@
     resetOpsStatusIfPending();
     refreshOpsStatus();
     restartOpsAutoRefresh();
+    loadVerifiedIncidentReplay().catch((error) => {
+      document.querySelector("#investigation-trace").innerHTML = `<p class="investigation-error">${escapeHtml(t("investigationLoadFailed"))}</p>`;
+      document.querySelector("#replay-investigation").disabled = true;
+      log(`verified incident replay unavailable: ${error.message}`);
+    });
   </script>
 </body>
 </html>

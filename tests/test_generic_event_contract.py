@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -958,8 +959,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.3.1"',
-        "ver. 2.3.1 / api -",
+        'const DEMO_UI_VERSION = "2.4.0"',
+        "ver. 2.4.0 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",
@@ -1105,3 +1106,46 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert 'data-ops-link="/docs"' in links
     assert "http://localhost/docs" not in links
     assert "http://localhost/grafana" not in links
+
+
+def test_demo_replays_sanitized_local_ha_investigation_without_runtime_ai():
+    demo = (ROOT / "demo/order-dashboard.html").read_text(encoding="utf-8")
+    replay = json.loads(
+        (ROOT / "demo/verified-incident-replay.json").read_text(encoding="utf-8")
+    )
+
+    assert replay["schema_version"] == "demo.verified-incident-replay.v1"
+    assert replay["classification"] == "SANITIZED_RECORDED_REPLAY"
+    assert replay["source"]["profile"] == "local-ha"
+    assert replay["validation"]["result"] == "VALID"
+    assert replay["validation"]["output_repairs_used"] == 1
+    assert [item["tool_id"] for item in replay["investigation"]["tool_calls"]] == [
+        "get_partition_lag",
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+    ]
+
+    serialized = json.dumps(replay)
+    for forbidden in (
+        "source_evidence_ids",
+        "source_bundle_digests",
+        "raw_ref",
+        "raw_sha256",
+        "response_id",
+        "OPENAI_API_KEY",
+        "sk-proj-",
+    ):
+        assert forbidden not in serialized
+
+    assert 'fetch("./verified-incident-replay.json"' in demo
+    assert "Recorded profile" in demo
+    assert "source.profile" in demo
+    assert "current demo-lite runtime" in demo
+    assert 'class="workspace-scroll"' in demo
+    assert "overflow-x: auto" in demo
+    assert "grid-template-columns: 320px 520px 320px 340px 1040px" in demo
+    replay_function = demo.split("function replayInvestigationTrace()", 1)[1].split(
+        "async function loadVerifiedIncidentReplay", 1
+    )[0]
+    assert "fetch(" not in replay_function
