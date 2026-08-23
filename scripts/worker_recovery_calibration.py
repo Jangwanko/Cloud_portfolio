@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import gzip
 import hashlib
 import json
 import os
@@ -35,6 +36,11 @@ from ops_agent.sequence_evaluator import evaluate_bundle_sequence  # noqa: E402
 
 SETUP_MARKER = re.compile(r"PHASE4_SETUP_COMPLETE=(\d+)")
 SUMMARY_MARKER = re.compile(r"PHASE4_K6_SUMMARY=(\{.*\})")
+LOADGEN_SAMPLE_MARKER = re.compile(
+    r"PHASE4_LOADGEN_SAMPLE\|(\d+)\|([0-9.]+)\|([^|\s]+)\|([^|\s]+)\|"
+    r"(\d+)\|(\d+)\|(\d+)\|(\d+)"
+)
+WORKLOAD_QUALITY_SCHEMA = "ops.workload-quality.v1"
 HISTORICAL_SUSTAINABLE = (
     ROOT
     / "results"
@@ -54,6 +60,13 @@ CALIBRATION_SOURCE_PATHS = (
     Path("scripts/recovery_arrival_rate_k6.js"),
     Path("scripts/worker_recovery_calibration.py"),
 )
+
+
+class WorkloadQualityError(RuntimeError):
+    def __init__(self, result: dict[str, Any]) -> None:
+        self.result = result
+        reasons = ", ".join(result["reason_codes"])
+        super().__init__(f"arrival-rate workload quality failed: {reasons}")
 
 
 def utc_now() -> str:
@@ -293,6 +306,7 @@ def start_k6(
     executable: str,
     plan: dict[str, Any],
     log_path: Path,
+    metrics_path: Path,
 ) -> tuple[subprocess.Popen[str], Any]:
     env = os.environ.copy()
     env.update(
@@ -308,12 +322,15 @@ def start_k6(
         }
     )
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
     log_handle = log_path.open("w", encoding="utf-8", newline="\n")
     process = subprocess.Popen(
         [
             executable,
             "run",
             "--quiet",
+            "--out",
+            f"json={metrics_path.resolve().as_posix()}",
             str(ROOT / "scripts" / "recovery_arrival_rate_k6.js"),
         ],
         cwd=ROOT,
@@ -354,9 +371,137 @@ def parse_k6_summary(log_path: Path) -> dict[str, Any]:
     return json.loads(matches[-1])
 
 
-def validate_workload_attainment(summary: dict[str, Any]) -> dict[str, Any]:
+def parse_load_generator_samples(log_path: Path) -> list[dict[str, Any]]:
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    return [
+        {
+            "timestamp": datetime.fromtimestamp(
+                int(epoch_ms) / 1000.0,
+                timezone.utc,
+            ).isoformat(),
+            "elapsed_seconds": float(elapsed),
+            "phase_id": phase_id,
+            "profile": profile,
+            "vus_active": int(active),
+            "vus_initialized": int(initialized),
+            "iterations_completed": int(completed),
+            "iterations_interrupted": int(interrupted),
+        }
+        for (
+            epoch_ms,
+            elapsed,
+            phase_id,
+            profile,
+            active,
+            initialized,
+            completed,
+            interrupted,
+        ) in LOADGEN_SAMPLE_MARKER.findall(text)
+    ]
+
+
+def analyze_k6_granular_metrics(
+    metrics_path: Path,
+    *,
+    plan: dict[str, Any],
+    load_generator_samples: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    phase_by_scenario = {
+        "arrival_" + re.sub(r"[^a-z0-9_]", "_", item["phase_id"].lower()): item
+        for item in plan["phases"]
+    }
+    vus_by_timestamp: dict[str, dict[str, Any]] = {}
+    dropped_points: list[dict[str, Any]] = []
+    metric_points = 0
+    opener = gzip.open if metrics_path.suffix == ".gz" else open
+    with opener(metrics_path, "rt", encoding="utf-8", errors="replace") as source:
+        for line in source:
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if item.get("type") != "Point":
+                continue
+            metric = item.get("metric")
+            data = item.get("data")
+            if not isinstance(data, dict):
+                continue
+            metric_points += 1
+            timestamp = data.get("time")
+            value = data.get("value")
+            tags = data.get("tags") if isinstance(data.get("tags"), dict) else {}
+            scenario = tags.get("scenario")
+            phase = phase_by_scenario.get(str(scenario))
+            if metric in {"vus", "vus_max"} and isinstance(timestamp, str):
+                observation = vus_by_timestamp.setdefault(
+                    timestamp,
+                    {
+                        "timestamp": timestamp,
+                        "vus_active": None,
+                        "vus_max": None,
+                    },
+                )
+                key = "vus_active" if metric == "vus" else "vus_max"
+                numeric = float(value)
+                previous = observation[key]
+                observation[key] = numeric if previous is None else max(previous, numeric)
+            elif metric == "dropped_iterations" and float(value) > 0:
+                dropped_points.append(
+                    {
+                        "timestamp": timestamp,
+                        "value": int(float(value)),
+                        "scenario_name": scenario,
+                        "phase_id": phase.get("phase_id") if phase else None,
+                        "profile": phase.get("profile") if phase else None,
+                    }
+                )
+    json_timeline = sorted(vus_by_timestamp.values(), key=lambda item: item["timestamp"])
+    timeline = load_generator_samples if load_generator_samples else json_timeline
+    active_values = [
+        float(item["vus_active"])
+        for item in timeline
+        if item["vus_active"] is not None
+    ]
+    initialized_values = [
+        float(item["vus_initialized"])
+        for item in timeline
+        if item.get("vus_initialized") is not None
+    ]
+    configured_max_values = [
+        float(item["vus_max"])
+        for item in json_timeline
+        if item["vus_max"] is not None
+    ]
+    return {
+        "schema_version": "ops.k6-granular-audit.v1",
+        "path": metrics_path.relative_to(ROOT).as_posix(),
+        "sha256": hashlib.sha256(metrics_path.read_bytes()).hexdigest(),
+        "size_bytes": metrics_path.stat().st_size,
+        "metric_point_count": metric_points,
+        "vus_observation_count": len(timeline),
+        "max_vus_active": max(active_values) if active_values else None,
+        "max_vus_initialized": (
+            max(initialized_values) if initialized_values else None
+        ),
+        "configured_vus_max_observed": (
+            max(configured_max_values) if configured_max_values else None
+        ),
+        "vus_over_time": timeline,
+        "dropped_iteration_points": dropped_points,
+        "dropped_iterations_observed": sum(
+            int(item["value"]) for item in dropped_points
+        ),
+    }
+
+
+def validate_workload_quality(
+    summary: dict[str, Any],
+    *,
+    granular: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     phases = []
-    all_attained = True
+    all_phase_targets_attained = True
+    telemetry_complete = True
     for phase in summary["phases"]:
         target = float(phase["target_rate"])
         actual = float(phase["http_accepted_rate_per_second"])
@@ -365,15 +510,75 @@ def validate_workload_attainment(summary: dict[str, Any]) -> dict[str, Any]:
             (target == 0 and actual == 0)
             or (target > 0 and ratio >= 0.90 and phase["failed"] == 0)
         )
-        all_attained = all_attained and attained
+        all_phase_targets_attained = all_phase_targets_attained and attained
+        if target > 0:
+            telemetry_complete = telemetry_complete and all(
+                phase.get(field) is not None
+                for field in (
+                    "iterations",
+                    "dropped_iterations",
+                    "iteration_duration_ms",
+                    "http_req_duration_ms",
+                    "http_req_failed_rate",
+                )
+            )
         phases.append({**phase, "attainment_ratio": ratio, "attained": attained})
     dropped = int(summary.get("dropped_iterations", 0))
-    all_attained = all_attained and dropped == 0
+    application_failures = sum(
+        int(phase.get("failed", 0)) for phase in summary["phases"]
+    )
+    standard_http_failures = sum(
+        int(phase["http_req_failed_count"])
+        if phase.get("http_req_failed_count") is not None
+        else int(float(phase.get("http_req_failed_rate") or 0) > 0)
+        for phase in summary["phases"]
+    )
+    http_failures = max(application_failures, standard_http_failures)
+    reasons: list[str] = []
+    if not telemetry_complete:
+        reasons.append("LOAD_GENERATOR_TELEMETRY_INCOMPLETE")
+    if not all_phase_targets_attained:
+        reasons.append("PHASE_TARGET_ATTAINMENT_FAILED")
+    if http_failures > 0:
+        reasons.append("HTTP_FAILURES_OBSERVED")
+    if dropped > 0:
+        reasons.append("DROPPED_ITERATIONS_OBSERVED")
+    granular_drop_count = (
+        granular.get("dropped_iterations_observed")
+        if isinstance(granular, dict)
+        else None
+    )
+    if granular_drop_count is not None and int(granular_drop_count) != dropped:
+        reasons.append("DROPPED_ITERATION_TIMESERIES_MISMATCH")
+    status = "PASS" if not reasons else "FAIL"
     return {
-        "all_targets_attained": all_attained,
+        "schema_version": WORKLOAD_QUALITY_SCHEMA,
+        "status": status,
+        "executor": summary.get("executor"),
+        "time_unit": summary.get("time_unit"),
+        "allocation": {
+            "pre_allocated_vus": summary.get("pre_allocated_vus"),
+            "max_vus": summary.get("max_vus"),
+        },
+        "telemetry_complete": telemetry_complete,
+        "all_phase_targets_attained": all_phase_targets_attained,
+        "all_targets_attained": status == "PASS",
+        "application_failures": application_failures,
+        "standard_http_failures": standard_http_failures,
+        "http_failures": http_failures,
+        "http_failures_zero": http_failures == 0,
         "dropped_iterations": dropped,
+        "dropped_iterations_zero": dropped == 0,
+        "reason_codes": reasons,
+        "granular_metrics": granular,
         "phases": phases,
     }
+
+
+def validate_workload_attainment(summary: dict[str, Any]) -> dict[str, Any]:
+    """Compatibility wrapper retaining the strict zero-drop acceptance gate."""
+
+    return validate_workload_quality(summary)
 
 
 def evaluate_activation_windows(
@@ -413,10 +618,12 @@ def run_scenario(
         timeout_seconds=baseline_timeout_seconds,
     )
     log_path = run_directory / "k6.log"
+    metrics_path = run_directory / "k6-metrics.json.gz"
     process, log_handle = start_k6(
         executable=executable,
         plan=plan,
         log_path=log_path,
+        metrics_path=metrics_path,
     )
     samples: list[dict[str, Any]] = []
     bundle_paths: list[Path] = []
@@ -480,7 +687,12 @@ def run_scenario(
             process.wait(timeout=30)
         log_handle.close()
     workload = parse_k6_summary(log_path)
-    attainment = validate_workload_attainment(workload)
+    granular = analyze_k6_granular_metrics(
+        metrics_path,
+        plan=plan,
+        load_generator_samples=parse_load_generator_samples(log_path),
+    )
+    attainment = validate_workload_quality(workload, granular=granular)
     validate_ordered_capture_summaries(samples, plan=plan)
     bundle_payloads = [path.read_bytes() for path in bundle_paths]
     full_evaluation = evaluate_bundle_sequence(bundle_payloads)
@@ -499,8 +711,6 @@ def run_scenario(
         raise RuntimeError(f"baseline scenario {plan['scenario']} triggered pressure")
     if plan["scenario"] in {"E", "F"} and activation_evaluation is None:
         raise RuntimeError(f"recovery scenario {plan['scenario']} did not activate pressure")
-    if process.returncode != 0 or not attainment["all_targets_attained"]:
-        raise RuntimeError(f"arrival-rate workload did not attain its plan: {attainment}")
     result = {
         "schema_version": "ops.recovery-calibration-run.v1",
         "run_name": run_name,
@@ -510,6 +720,7 @@ def run_scenario(
         "plan": plan,
         "baseline": baseline,
         "workload": workload,
+        "workload_quality": attainment,
         "workload_attainment": attainment,
         "condition_evaluation": {
             "schema_version": full_evaluation.schema_version,
@@ -537,6 +748,16 @@ def run_scenario(
         },
         "samples": samples,
     }
+    if process.returncode != 0 or attainment["status"] != "PASS":
+        result["status"] = "FAILED"
+        result["completed_at"] = utc_now()
+        result["failure"] = {
+            "classification": "WORKLOAD_QUALITY_FAILURE",
+            "reason_codes": attainment["reason_codes"],
+            "k6_exit_code": process.returncode,
+        }
+        atomic_json(run_directory / "summary.json", result)
+        raise WorkloadQualityError(attainment)
     atomic_json(run_directory / "summary.json", result)
     return result
 
@@ -1114,7 +1335,14 @@ def main() -> int:
         "status": "RUNNING",
         "mode": args.mode,
         "context": args.context,
-        "k6": {"path": executable, "version": version, "executor": "constant-arrival-rate"},
+        "k6": {
+            "path": executable,
+            "version": version,
+            "executor": "constant-arrival-rate",
+            "time_unit": "1s",
+            "pre_allocated_vus": args.pre_allocated_vus,
+            "max_vus": args.max_vus,
+        },
         "streams": args.streams,
         "rates": rates,
         "rate_provenance": proposal["provenance"],
@@ -1186,6 +1414,7 @@ def main() -> int:
                     "run_name": run_name,
                     "scenario": scenario,
                     "status": result["status"],
+                    "workload_quality": result["workload_quality"],
                     "summary_path": (
                         experiment_directory / run_name / "summary.json"
                     ).relative_to(ROOT).as_posix(),
@@ -1221,6 +1450,7 @@ def main() -> int:
                         "run_name": run_name,
                         "scenario": scenario,
                         "status": result["status"],
+                        "workload_quality": result["workload_quality"],
                         "summary_path": (
                             experiment_directory / run_name / "summary.json"
                         ).relative_to(ROOT).as_posix(),
@@ -1259,6 +1489,17 @@ def main() -> int:
         manifest["status"] = "COMPLETE"
         manifest["completed_at"] = utc_now()
         atomic_json(experiment_directory / "manifest.json", manifest)
+    except WorkloadQualityError as exc:
+        manifest["status"] = "FAILED"
+        manifest["completed_at"] = utc_now()
+        manifest["workload_quality"] = exc.result
+        manifest["error"] = {
+            "type": type(exc).__name__,
+            "classification": "WORKLOAD_QUALITY_FAILURE",
+            "reason_codes": exc.result["reason_codes"],
+        }
+        atomic_json(experiment_directory / "manifest.json", manifest)
+        raise
     except Exception as exc:
         manifest["status"] = "FAILED"
         manifest["completed_at"] = utc_now()

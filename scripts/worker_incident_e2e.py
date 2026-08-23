@@ -49,6 +49,7 @@ from ops_agent.recovery_policies import load_recovery_policy  # noqa: E402
 from ops_agent.sequence_evaluator import evaluate_bundle_sequence  # noqa: E402
 from ops_agent.sequence_models import SequenceConditionEvaluation  # noqa: E402
 from scripts.worker_recovery_calibration import (  # noqa: E402
+    WorkloadQualityError,
     atomic_json,
     baseline_ready,
     collect_bundle,
@@ -60,6 +61,19 @@ from scripts.worker_recovery_calibration import (  # noqa: E402
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def require_workload_quality_before_recovery(
+    manifest: dict[str, Any],
+    quality: dict[str, Any],
+) -> None:
+    manifest["workload_quality"] = quality
+    if quality.get("status") != "PASS":
+        manifest["workload_quality_gate"] = "FAIL"
+        manifest["recovery_evaluator_started"] = False
+        manifest["incident_closed"] = False
+        raise WorkloadQualityError(quality)
+    manifest["workload_quality_gate"] = "PASS"
 
 
 def _git_text(arguments: list[str]) -> str:
@@ -609,7 +623,13 @@ def main() -> int:
         "status": "RUNNING",
         "context": args.context,
         "plan": plan,
-        "k6": {"version": k6_version(executable), "executor": "constant-arrival-rate"},
+        "k6": {
+            "version": k6_version(executable),
+            "executor": "constant-arrival-rate",
+            "time_unit": "1s",
+            "pre_allocated_vus": args.pre_allocated_vus,
+            "max_vus": args.max_vus,
+        },
         "source": provenance,
         "openai_diagnosis_runs_allowed": 1,
         "openai_diagnosis_runs_started": 0,
@@ -617,6 +637,8 @@ def main() -> int:
         "manual_replica_changes": False,
         "runtime_control_plane_writes": False,
         "workload_event_writes": True,
+        "recovery_evaluator_started": False,
+        "incident_closed": False,
     }
     atomic_json(experiment_directory / "manifest.json", manifest)
     state: dict[str, Any] = {}
@@ -699,6 +721,11 @@ def main() -> int:
             on_capture=on_capture,
             incident_id_factory=incident_id_factory,
         )
+        require_workload_quality_before_recovery(
+            manifest,
+            run_result["workload_quality"],
+        )
+        atomic_json(experiment_directory / "manifest.json", manifest)
         thread = state.get("diagnosis_thread")
         if thread is not None:
             thread.join()
@@ -715,6 +742,8 @@ def main() -> int:
         recovery_incident_id = incident.detection.source_incident_id
         if recovery_incident_id is None:
             raise RuntimeError("incident detection lacks logical source incident identity")
+        manifest["recovery_evaluator_started"] = True
+        atomic_json(experiment_directory / "manifest.json", manifest)
         recovery, final_recovery = _evaluate_recovery_prefixes(
             incident_id=recovery_incident_id,
             activation=activation,
@@ -763,6 +792,7 @@ def main() -> int:
                     for state, value in recovery.items()
                 },
                 "incident_record_sha256": incident.incident_record_sha256,
+                "incident_closed": True,
                 "canonical_directory": _relative(canonical_directory),
                 "artifact_validation": artifact_validation,
             }
@@ -770,6 +800,21 @@ def main() -> int:
         atomic_json(experiment_directory / "manifest.json", manifest)
         print(_relative(canonical_directory))
         return 0
+    except WorkloadQualityError as exc:
+        thread = state.get("diagnosis_thread")
+        if thread is not None:
+            thread.join()
+        manifest["completed_at"] = utc_now()
+        manifest["status"] = "FAILED"
+        manifest["failure"] = {
+            "classification": "WORKLOAD_QUALITY_FAILURE",
+            "reason_codes": exc.result["reason_codes"],
+        }
+        manifest["workload_quality"] = exc.result
+        manifest["recovery_evaluator_started"] = False
+        manifest["incident_closed"] = False
+        atomic_json(experiment_directory / "manifest.json", manifest)
+        raise
     except BaseException:
         manifest["completed_at"] = utc_now()
         manifest["status"] = "FAILED"
