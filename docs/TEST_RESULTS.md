@@ -7,10 +7,10 @@
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Master source | API `2.1.0`, Demo UI `2.3.1` | merge `cab7647`; local suite `345 passed`; image build·non-root 실행·live/root/OpenAPI smoke 통과 |
-| Source candidate | API `2.1.0`, Demo UI `2.3.1` | local suite `354 passed`; notification batch·DB roundtrip 최적화 포함 |
+| Source candidate | API `2.1.0`, Demo UI `2.4.0` | dev-kafka local suite `608 passed`; sanitized recorded Investigation replay 포함 |
 | Candidate runtime | image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, generic v2·ordering·final lag·오류율 검증; registry publication 전 |
 | Local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validation 뒤 게시된 GHCR image |
-| Demo-lite source candidate | API `2.1.0`, Demo UI `2.3.1` | notification batch 최적화와 7일 artifact retention 포함; demo-lite render contract 포함 local suite `358 passed` |
+| Demo-lite source candidate | API `2.1.0`, Demo UI `2.4.0` | static local-ha incident replay, 저사양 topology·7일 retention 유지; local suite `359 passed` |
 | Public demo-lite runtime | API `2.1.0`, Demo UI `2.3.1`, image `207d7b90813a` | 2026-08-09 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2`, backup PVC `Bound` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |

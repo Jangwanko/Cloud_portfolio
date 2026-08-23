@@ -2,6 +2,14 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-24 demo-lite recorded AI Investigation replay
+
+- UI `2.4.0`에 actual Phase 5.1 `local-ha` diagnosis의 sanitized four-step tool/evidence/hypothesis trace 이식
+- replay는 13KB static JSON만 읽으며 OpenAI API, Ops Agent runtime, Kubernetes/Kafka write를 사용하지 않음
+- recorded profile을 화면에 표시해 현재 demo-lite runtime 상태와 분리
+- Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`과 7일 retention 설정 변경 없음
+- local validation: generic event/UI contract `55 passed`, full suite `359 passed`, compileall·diff check 통과
+
 ## 2026-08-10 demo-lite 7일 보존 상한
 
 - PostgreSQL backup dump를 생성 시각 기준 7일 뒤 제거하고 completed backup Job TTL도 7일로 제한

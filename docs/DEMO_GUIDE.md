@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
+Dev-kafka / demo-dev source candidate: UI `2.4.0`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
 
@@ -35,7 +35,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source candidate: UI `2.3.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary` 사용
+- `dev-kafka` / `demo-dev` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`와 sanitized recorded Investigation replay 사용
 - local GitOps release: UI `2.3.1`, API `2.1.0`, image `66e9cc995dca`
 - public demo-lite 2026-08-09: title `Reliable Event Processing Console`, UI `2.3.1`, API `2.1.0`, image `207d7b90813a`, generic v2 event `202`, Argo `Synced / Healthy`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`, 운영 부산물 7일 retention
@@ -57,7 +57,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.3.1` source image build/load:
+- 현재 `2.4.0` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -83,8 +83,12 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - Readiness
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
+- 가로 스크롤 workspace의 오른쪽 끝 `AI Investigation` 열 확인:
+  - 실제 Phase 5.1 `local-ha` 기록의 four-step tool trace와 normalized evidence
+  - supporting/conflicting citation, evidence gap, Validator `VALID`, read-only boundary
+  - 현재 demo-lite runtime을 재진단하거나 OpenAI API를 호출하지 않는 static replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.3.1`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.4.0`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
