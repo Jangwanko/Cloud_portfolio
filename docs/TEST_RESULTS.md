@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-09`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-24`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
@@ -11,7 +11,7 @@
 | Candidate runtime | image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, generic v2·ordering·final lag·오류율 검증; registry publication 전 |
 | Local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validation 뒤 게시된 GHCR image |
 | Demo-lite source candidate | API `2.1.0`, Demo UI `2.4.0` | static local-ha incident replay, 저사양 topology·7일 retention 유지; local suite `359 passed` |
-| Public demo-lite runtime | API `2.1.0`, Demo UI `2.3.1`, image `207d7b90813a` | 2026-08-09 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2`, backup PVC `Bound` |
+| Public demo-lite runtime | API `2.1.0`, Demo UI `2.4.0`, image `7489ab270995` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
@@ -23,7 +23,7 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev-kafka commit `8d334b8` 게시; candidate image·master·demo publication 확인 대기 |
-| Public demo-lite | image `207d7b90813a`, UI `2.3.1`, API `2.1.0` | 2026-08-09 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
+| Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | 2026-08-24 recorded replay와 저사양 runtime boundary 확인 |
 
 원본 위치:
 
