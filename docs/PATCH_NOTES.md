@@ -12,8 +12,9 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - AI Investigation을 기존 운영 패널 다음의 다섯 번째 고정 폭 열로 배치하고 workspace 전체를 가로 스크롤하도록 구성
 - canonical diagnosis hash를 검증하는 allowlist exporter와 raw/source bundle/model response ID 제외 public projection 추가
 - Phase 3 tests가 Git-ignored Phase 2.5 live bundle을 직접 읽어 GitHub Actions에서 11건 실패하던 경계를 tracked baseline 기반 deterministic synthetic sequence helper로 격리
-- local validation: Ops Agent `250 passed`, full suite `608 passed`; replay contract와 desktop/mobile Edge headless render 확인, GitHub Actions 재검증은 push 뒤 대기
-- public demo-lite runtime은 기존 UI `2.3.1`이며 `2.4.0` source candidate 배포는 별도 대기
+- local validation: Ops Agent `250 passed`, full suite `608 passed`; replay contract와 desktop/mobile Edge headless render 확인
+- dev-kafka CI `#89` 성공, image `b7e4145bea6d`; demo-dev CI `#90` 성공, release `762da82`, image `7489ab270995`
+- public UI `2.4.0`, replay JSON `200`/Validator `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
 
 ## 2026-08-23 Phase 5 incident lifecycle and actual Gate 2
 

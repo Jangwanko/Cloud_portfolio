@@ -2,7 +2,7 @@
 
 Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`
 
-Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
+Public demo-lite last verified: UI `2.4.0`, API `2.1.0` (2026-08-24)
 
 ## Purpose
 
@@ -20,7 +20,7 @@ Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.3.1` generic v2 reference scenario 시연 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.4.0` generic v2와 recorded Investigation replay 시연 |
 | Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
 | Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
@@ -38,7 +38,7 @@ Version boundary:
 
 - `dev-kafka` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay 사용
 - `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f` (2026-08-12 local live)
-- public demo-lite 2026-08-10: title `Reliable Event Processing Console`, UI `2.3.1`, API `2.1.0`, image `8640ca010960`, generic v2 event `202`, Argo `Synced / Healthy`
+- public demo-lite 2026-08-24: UI `2.4.0`, API `2.1.0`, image `7489ab270995`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
@@ -97,7 +97,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
-- 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.3.1`; OpenAPI `2.1.0`, generic v2 event success `202`
+- 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.4.0`; replay schema `demo.verified-incident-replay.v1`, Validator `VALID`
 - Kafka append와 DB persistence의 동시 진행률, Worker `현재/최대`, Operations Advisor 확인
 
 ## English Demo Script

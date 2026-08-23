@@ -146,13 +146,13 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. 2026-08-12 `dev-kafka` local GitOps runtime은 UI `2.3.1`, API `2.1.0`, image `a2b157f1283f`, Argo revision `004f2e7791543de2d570c287cf8938410c61807c`를 확인했습니다. Public demo-lite는 2026-08-10 신규 서버에서 image `8640ca010960`, UI `2.3.1`, API `2.1.0`, generic event `202`, Argo `Synced / Healthy`를 확인했습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. 2026-08-12 `dev-kafka` local GitOps runtime은 UI `2.3.1`, API `2.1.0`, image `a2b157f1283f`, Argo revision `004f2e7791543de2d570c287cf8938410c61807c`를 확인했습니다. Public demo-lite는 2026-08-24 image `7489ab270995`, UI `2.4.0`, API `2.1.0`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다.
 
 ## Demo Access
 
 Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`; sanitized recorded AI Investigation replay 포함, runtime 배포 전
 
-Public demo-lite Demo UI: `2.3.1` / API `2.1.0` / image `8640ca010960` (2026-08-10 live)
+Public demo-lite Demo UI: `2.4.0` / API `2.1.0` / image `7489ab270995` (2026-08-24 live)
 
 Local surfaces:
 

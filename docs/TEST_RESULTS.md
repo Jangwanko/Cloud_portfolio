@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-10`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-24`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
@@ -23,7 +23,7 @@
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
 | Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
 | Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
-| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract·desktop/mobile render 확인; public demo-lite 배포 대기 |
+| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract와 public demo-lite live route 확인 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
@@ -31,7 +31,7 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, master image `7035cdab4050` 게시 확인 |
-| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 기존 runtime 기준; `2.4.0` replay source candidate는 아직 미배포 |
+| Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
 
@@ -116,7 +116,7 @@ Worker replica → PostgreSQL health 순서를 그대로 표시합니다. 네 ev
 `OK/FRESH`이며 raw/source bundle projection은 공개하지 않습니다. Supporting/conflicting
 citation과 evidence gap, validator `VALID`, repair `1`, stop `sufficient_evidence`,
 read-only 권한 경계를 함께 표시합니다. Replay는 static artifact만 읽고 OpenAI API를
-다시 호출하지 않습니다. Public demo-lite runtime 배포는 아직 대기 중입니다.
+다시 호출하지 않습니다. Public demo-lite는 동일 static replay를 image `7489ab270995`로 제공합니다.
 
 Source validation은 Ops Agent `250 passed`, full repository `608 passed`입니다.
 Edge headless `1440px` desktop과 `390px` mobile에서 static artifact fetch, 네 trace step,
@@ -1226,7 +1226,6 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 
 - local-ha condition/recovery threshold를 multi-node 또는 다른 profile에서 별도 재보정
 - closed incident 뒤 backlog regrowth의 automatic reopen/new incident correlation policy
-- sanitized Verified Incident Replay source candidate의 public demo-lite 배포와 live route 검증
 - Worker stage와 분리된 exact PostgreSQL transaction commit latency 계측
 - consumer rebalance event와 container CPU throttling telemetry
 - poll batch 중간 crash와 partition offset recovery
