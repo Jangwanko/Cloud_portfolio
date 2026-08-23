@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -958,8 +959,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.3.1"',
-        "ver. 2.3.1 / api -",
+        'const DEMO_UI_VERSION = "2.4.0"',
+        "ver. 2.4.0 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",
@@ -990,6 +991,165 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
     assert "safeCssToken(event.category)" in demo
     assert "escapeHtml(event.request_id)" in demo
     assert "escapeHtml(event.db_row || \"-\")" in demo
+
+
+def test_demo_verified_incident_replay_is_sanitized_and_artifact_grounded():
+    demo = (ROOT / "demo/order-dashboard.html").read_text(encoding="utf-8")
+    send_function = demo.split("async function sendQueuedEvent", 1)[1].split(
+        "async function processReservedEvents", 1
+    )[0]
+    replay = json.loads(
+        (ROOT / "demo/verified-incident-replay.json").read_text(encoding="utf-8")
+    )
+
+    assert replay["schema_version"] == "demo.verified-incident-replay.v1"
+    assert replay["classification"] == "SANITIZED_RECORDED_REPLAY"
+    assert replay["source"] == {
+        "incident_id": "inc-88a1eeaa17897f6a8a929bba",
+        "logical_diagnosis_incident_id": "phase5-20260823T152359Z-sample-008",
+        "condition": {
+            "name": "CORE_BACKLOG_PRESSURE",
+            "state": "PRESENT",
+            "evaluation_id": (
+                "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d"
+            ),
+            "policy_version": "local-ha.conditions.v2",
+        },
+        "diagnosis_id": (
+            "ed0013faacc76108de3692c926a2d6eb77bc44cf6970360258d8ef4b1d58d7b6"
+        ),
+        "diagnosis_artifact_sha256": (
+            "d3ccefbcb48db3c2aa63a30b4efd0f39294f63a5ad636bb197af6641e53fc5e8"
+        ),
+        "recorded_at": "2026-08-23T15:27:26.388483Z",
+        "profile": "local-ha",
+        "model": "gpt-5.6-luna",
+        "tool_registry_version": "ops.diagnosis.tools.v1",
+    }
+
+    calls = replay["investigation"]["tool_calls"]
+    assert replay["investigation"]["steps_used"] == 4
+    assert replay["investigation"]["max_steps"] == 4
+    assert [item["step"] for item in calls] == [1, 2, 3, 4]
+    assert [item["tool_id"] for item in calls] == [
+        "get_partition_lag",
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+    ]
+    assert all(item["evidence"]["status"] == "OK" for item in calls)
+    assert all(
+        item["evidence"]["freshness"]["status"] == "FRESH" for item in calls
+    )
+
+    partition = calls[0]["evidence"]["summary"]["captures"]
+    assert [item["total_lag_records"] for item in partition] == [7205, 10497, 13936]
+    assert [round(item["lag_slope_60s_records_per_second"], 3) for item in partition] == [
+        120.067,
+        174.467,
+        230.767,
+    ]
+    assert partition[-1]["per_partition_latest_lag"] == {
+        "0": 2846,
+        "1": 2689,
+        "2": 935,
+        "3": 1008,
+        "4": 1810,
+        "5": 1203,
+        "6": 1683,
+        "7": 1762,
+    }
+
+    stage = calls[1]["evidence"]["summary"]
+    assert stage["commit_latency"] == "UNAVAILABLE"
+    assert [
+        item["context"]["observation_count_delta"] for item in stage["captures"]
+    ] == [4195, 4652, 5134]
+    replicas = calls[2]["evidence"]["summary"]["captures"]
+    assert all(
+        [
+            item["context"]["desired_replicas"],
+            item["context"]["current_replicas"],
+            item["context"]["ready_replicas"],
+            item["context"]["available_replicas"],
+        ]
+        == [4, 4, 4, 4]
+        for item in replicas
+    )
+    postgres = calls[3]["evidence"]["summary"]["observations"]
+    assert [item["value"]["max_replication_delay_bytes"] for item in postgres] == [
+        0,
+        4032,
+        4920,
+    ]
+    assert all(item["value"]["ha_mode"] is True for item in postgres)
+    assert all(item["value"]["primary_reachable"] is True for item in postgres)
+    assert all(item["value"]["standby_count"] == 2 for item in postgres)
+    assert all(item["value"]["sync_standby_count"] == 2 for item in postgres)
+
+    hypotheses = {
+        item["hypothesis"]: item for item in replay["hypotheses"]
+    }
+    assert hypotheses["WORKER_PATH_PRESSURE_SUSPECTED"]["support_status"] == (
+        "SUPPORTED"
+    )
+    assert hypotheses["WORKER_PATH_PRESSURE_SUSPECTED"]["evidence_gaps"] == [
+        "COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY"
+    ]
+    assert hypotheses["CONSUMER_REBALANCE_SUSPECTED"]["support_status"] == (
+        "INSUFFICIENT"
+    )
+    assert hypotheses["CONSUMER_REBALANCE_SUSPECTED"]["evidence_gaps"] == [
+        "CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE"
+    ]
+    known_ids = {item["evidence"]["evidence_id"] for item in calls}
+    cited_ids = {
+        evidence_id
+        for item in replay["hypotheses"]
+        for field in ("supporting_evidence_ids", "conflicting_evidence_ids")
+        for evidence_id in item[field]
+    }
+    assert cited_ids <= known_ids
+
+    assert replay["validation"]["result"] == "VALID"
+    assert replay["validation"]["output_repairs_used"] == 1
+    assert replay["validation"]["causal_truth_validated"] is False
+    assert replay["stop_reason"] == "sufficient_evidence"
+    assert replay["usage"]["api_requests"] == 6
+
+    serialized = json.dumps(replay)
+    for forbidden in (
+        "source_evidence_ids",
+        "source_bundle_digests",
+        "raw_ref",
+        "raw_sha256",
+        "response_id",
+    ):
+        assert forbidden not in serialized
+
+    assert 'fetch("./verified-incident-replay.json"' in demo
+    assert "function replayInvestigationTrace()" in demo
+    assert 'class="workspace-scroll"' in demo
+    assert "overflow-x: auto" in demo
+    assert "grid-template-columns: 320px 520px 320px 340px 1040px" in demo
+    assert demo.index('class="grid"') < demo.index('id="ai-investigation"')
+    replay_function = demo.split("function replayInvestigationTrace()", 1)[1].split(
+        "async function loadVerifiedIncidentReplay", 1
+    )[0]
+    assert "fetch(" not in replay_function
+    assert "Confirmed Root Cause" not in demo
+    for text in (
+        "Supporting evidence",
+        "Conflicting evidence",
+        "Evidence gaps",
+        "Deterministic Validator",
+        "causal truth",
+        "Read-only",
+        "restart Pods or scale Workers",
+        "reset Kafka offsets",
+        "declare recovery or perform remediation",
+    ):
+        assert text in demo
 
     process_reserved = demo.split("async function processReservedEvents()", 1)[1].split(
         "async function sendEvent()", 1

@@ -11,7 +11,7 @@
 3. **지속 가능 처리량 확정**: 15분 이상 일정 입력률에서 lag가 증가하지 않는 최대 처리량, DB pool·lock·commit latency 동시 측정
 4. **복구 지점 자동화**: object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 5. **incident 연속성**: closed incident 뒤 regrowth의 automatic reopen/new incident correlation 정책과 false-correlation regression
-6. **public replay**: local runtime raw와 분리한 sanitized verified incident artifact, hash validator, static-only demo; Phase 5.2는 현재 연기
+6. **public replay**: local runtime raw와 분리한 sanitized verified incident artifact, hash validator, static-only recorded investigation UI; source candidate 완료, demo-lite 배포 대기
 
 2026-08-10 notification batch candidate의 clean 64-stream A/B는 fixed `2`와 KEDA `2→4`를 각각 3회 실행했습니다. KEDA backlog 처리율은 `13.38%` 증가했고 평균 drain은 `12.78%` 감소했습니다. KEDA p95 평균은 `6.49%` 증가했습니다. 반복 범위는 분리됐지만 dirty local image 조건이므로 stable release baseline은 유지하지 않습니다.
 
@@ -47,7 +47,7 @@
 | Phase 3 Guided Investigation | v2 `PRESENT` 뒤 추가 normalized read-only evidence 선택과 grounded hypothesis | 구현 완료; Luna live dry-run과 tool-free output repair 검증 |
 | Phase 4 Recovery Evaluation | varying traffic calibration, continuous/zero-ingress drain, false-recovery 차단, deterministic recovery state | recovery v1 ACTIVE/RECOVERING/UNKNOWN 및 versioned v2 MEDIUM 3-capture RECOVERED 완료; global clearing 의미는 부여하지 않음 |
 | Phase 5 Incident Lifecycle | condition·diagnosis·recovery identity, immutable timeline, strict workload gate, closure/current observation 분리 | actual local-ha Gate 2 완료; automatic reopen/correlation 대기 |
-| Phase 5.2 Public Replay | sanitized verified artifact, hash validator, static-only demo route | 연기; 현재 public route/deployment 없음 |
+| Phase 5.2 Public Replay | sanitized verified artifact, hash validator, recorded tool→evidence→hypothesis trace | UI `2.4.0` source candidate 완료; public demo-lite 배포 대기 |
 
 Phase 2는 bundle 전체가 `PARTIAL`이라는 이유로 모든 condition을 `UNKNOWN`으로 만들지 않습니다. 각 condition의 required evidence가 complete/fresh하면 optional evidence 누락과 독립적으로 판정합니다. Kafka partition coverage 누락, required committed offset `-1`, required freshness `STALE/UNKNOWN`은 해당 condition을 `UNKNOWN`으로 만듭니다.
 

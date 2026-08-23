@@ -32,10 +32,10 @@ from ops_agent.diagnosis_validator import (
 from ops_agent.models import EvidenceBundle
 from ops_agent.evaluation_models import ConditionName
 from ops_agent.sequence_evaluator import evaluate_bundle_sequence
+from tests.ops_agent.synthetic_evidence import build_positive_sequence
 
 
 ROOT = Path(__file__).resolve().parents[2]
-RUN = ROOT / "results" / "ops-agent" / "calibration" / "20260816T032411Z" / "run-01"
 GOLDEN = ROOT / "ops_agent" / "fixtures" / "diagnosis" / "golden_v1.json"
 OUTPUT_REPAIR = (
     ROOT / "ops_agent" / "fixtures" / "diagnosis" / "output_repair_v1.json"
@@ -43,8 +43,10 @@ OUTPUT_REPAIR = (
 
 
 def _positive_inputs() -> tuple[list[EvidenceBundle], Any]:
-    paths = [RUN / "bundles" / f"sample-{index:03}.json" for index in range(4)]
-    payloads = [path.read_bytes() for path in paths]
+    payloads = [
+        json.dumps(bundle, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        for bundle in build_positive_sequence()
+    ]
     return (
         [EvidenceBundle.model_validate_json(payload) for payload in payloads],
         evaluate_bundle_sequence(payloads),
@@ -355,8 +357,9 @@ def test_step_budget_exhaustion_is_structured() -> None:
 
 
 def test_non_present_sequence_is_rejected_before_model_call() -> None:
-    path = RUN / "bundles" / "sample-000.json"
-    payload = path.read_bytes()
+    payload = json.dumps(
+        build_positive_sequence()[0], sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
     bundle = EvidenceBundle.model_validate_json(payload)
     evaluation = evaluate_bundle_sequence([payload])
     client = ScriptedClient(tools=[], supported=[], stop_reason="insufficient_evidence")
@@ -481,6 +484,14 @@ def test_cli_does_not_write_completed_artifact_after_failed_repair(
     )
     conditions_path = tmp_path / "positive.conditions.json"
     conditions_path.write_text(evaluation.model_dump_json(), encoding="utf-8")
+    input_paths = []
+    for index, bundle in enumerate(build_positive_sequence()):
+        input_path = tmp_path / f"positive-{index:03}.json"
+        input_path.write_text(
+            json.dumps(bundle, sort_keys=True, separators=(",", ":")),
+            encoding="utf-8",
+        )
+        input_paths.append(input_path)
     output_path = tmp_path / "invalid-diagnosis.json"
     monkeypatch.setattr(
         cli,
@@ -494,9 +505,7 @@ def test_cli_does_not_write_completed_artifact_after_failed_repair(
             live=True,
             output=output_path,
             conditions=conditions_path,
-            input=[
-                RUN / "bundles" / f"sample-{index:03}.json" for index in range(4)
-            ],
+            input=input_paths,
         )
     )
 
@@ -518,8 +527,11 @@ def test_golden_fixture_agent_evaluation() -> None:
     scores = []
     for fixture in fixtures:
         if not fixture["entry_allowed"]:
-            path = RUN / "bundles" / "sample-000.json"
-            payload = path.read_bytes()
+            payload = json.dumps(
+                build_positive_sequence()[0],
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
             with pytest.raises(ValueError):
                 run_diagnosis(
                     bundles=[EvidenceBundle.model_validate_json(payload)],

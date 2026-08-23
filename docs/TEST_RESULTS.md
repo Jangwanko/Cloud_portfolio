@@ -6,7 +6,7 @@
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.3.1`, Ops Agent Phase 1~5.1 | source checkpoint `ee5db64`; latest local validation은 아래 Phase 5 Gate 2 기준 |
+| Source candidate | API `2.1.0`, Demo UI `2.4.0`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay candidate; runtime 배포 전 |
 | Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI validate·publish 통과 |
 | Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
@@ -23,6 +23,7 @@
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
 | Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
 | Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
+| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract·desktop/mobile render 확인; public demo-lite 배포 대기 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
@@ -30,7 +31,7 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, master image `7035cdab4050` 게시 확인 |
-| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 기존 order dashboard 기준; Phase 5 Verified Incident Replay는 연기되어 route/deployment 없음 |
+| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 기존 runtime 기준; `2.4.0` replay source candidate는 아직 미배포 |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
 
@@ -86,9 +87,12 @@ diagnosis·recovery·canonical promotion을 진행했습니다.
 | Artifact validation | Evidence Bundle `133/133`, raw projection `532/532`, `PASS` |
 
 Phase 5.3 documentation checkpoint local regression은 focused lifecycle/workload gate
-`19 passed`, Ops Agent `250 passed`, full repository `607 passed`입니다. Full suite는
-Windows와 CI-equivalent Linux/Python 3.11.15에서 모두 통과했으며, GitHub Actions run
-success는 새 push 뒤 별도로 확인합니다.
+`19 passed`, Ops Agent `250 passed`, full repository `607 passed`였습니다. 당시 local
+Linux container는 working tree의 Git-ignored calibration bundle을 함께 mount해 clean
+checkout을 정확히 재현하지 못했습니다. GitHub Actions #88은 해당 bundle 부재로
+diagnosis test 11건이 실패했고, Phase 5.2 candidate에서 tracked baseline 기반 synthetic
+sequence로 입력을 격리했습니다. 현재 full suite는 `608 passed`이며 GitHub Actions
+재검증은 새 push 뒤 별도로 확인합니다.
 
 Diagnosis tool call은 partition lag → Worker stage latency → Worker replica → PostgreSQL
 health 순서였습니다. `WORKER_PATH_PRESSURE_SUSPECTED`만 `SUPPORTED`이며 supporting
@@ -107,7 +111,19 @@ lag는 `0`으로 돌아왔지만 automatic reopen/correlation은 아직 없습�
 
 이 결과는 single-node kind `local-ha`의 verified incident입니다. Production SLA,
 autonomous recovery, remediation, exactly-once, blanket no-loss를 증명하지 않습니다.
-Public Verified Incident Replay는 Phase 5.2로 분리했으며 현재 연기 상태입니다.
+Phase 5.2 source candidate는 actual diagnosis의 partition lag → Worker stage latency →
+Worker replica → PostgreSQL health 순서를 그대로 표시합니다. 네 evidence는 모두
+`OK/FRESH`이며 raw/source bundle projection은 공개하지 않습니다. Supporting/conflicting
+citation과 evidence gap, validator `VALID`, repair `1`, stop `sufficient_evidence`,
+read-only 권한 경계를 함께 표시합니다. Replay는 static artifact만 읽고 OpenAI API를
+다시 호출하지 않습니다. Public demo-lite runtime 배포는 아직 대기 중입니다.
+
+Source validation은 Ops Agent `250 passed`, full repository `608 passed`입니다.
+Edge headless `1440px` desktop과 `390px` mobile에서 static artifact fetch, 네 trace step,
+hypothesis/gap, validator와 read-only boundary 렌더를 확인했습니다. Phase 3 test input은
+Git-ignored live calibration bundle 대신 tracked baseline에서 만든 deterministic synthetic
+sequence를 사용합니다. GitHub Actions와 public runtime 검증은 새 push/deployment 뒤
+별도로 확인해야 합니다.
 
 ## Ops Agent Phase 4 Recovery Calibration - 2026-08-16
 
@@ -1210,7 +1226,7 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 
 - local-ha condition/recovery threshold를 multi-node 또는 다른 profile에서 별도 재보정
 - closed incident 뒤 backlog regrowth의 automatic reopen/new incident correlation policy
-- sanitized Verified Incident Replay artifact와 public demo route; Phase 5.2는 현재 연기
+- sanitized Verified Incident Replay source candidate의 public demo-lite 배포와 live route 검증
 - Worker stage와 분리된 exact PostgreSQL transaction commit latency 계측
 - consumer rebalance event와 container CPU throttling telemetry
 - poll batch 중간 crash와 partition offset recovery

@@ -228,7 +228,7 @@ English: The Ops Agent captures normalized read-only evidence, evaluates calibra
 
 Demo는 `Reserved → Kafka Appended → DB Persisted`를 서로 독립적으로 갱신하고 Worker 현재/최대 replica를 표시합니다. DLQ summary는 최근 append-only 표본의 `by_reason`·`replayable`·`blocked`를 보여줍니다. demo-lite는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`의 저사양 profile입니다.
 
-Phase 5.2 Verified Incident Replay UI는 이번 변경 범위에서 연기했습니다. 현재 public demo-lite에는 위 incident artifact의 replay route나 deployment가 없으며, 공개 링크는 기존 order reference dashboard만 가리킵니다.
+Demo UI `2.4.0` source candidate는 actual Phase 5.1 diagnosis를 sanitized static artifact로 재생합니다. 기록된 tool-call 순서, normalized evidence 요약, supporting/conflicting citation, evidence gap, deterministic validator 경계와 read-only 권한을 표시하며 OpenAI API를 다시 호출하지 않습니다. Public demo-lite 배포는 아직 기존 `2.3.1`이므로 source candidate와 배포 상태를 구분합니다.
 
 시연 순서와 화면 의미: [Demo Guide](docs/DEMO_GUIDE.md)
 
@@ -244,7 +244,7 @@ Phase 5.2 Verified Incident Replay UI는 이번 변경 범위에서 연기했습
 | local-ha에서 보정한 condition·recovery threshold | 다른 cluster/profile의 재보정과 versioned policy |
 | closed incident 뒤 current observation 분리 | reopen·새 incident correlation policy |
 | rebalance·CPU throttling·exact DB commit latency 미계측 | 필요한 telemetry와 deterministic gate 추가 |
-| local-only verified incident artifact | sanitized public replay artifact와 별도 demo 배포; Phase 5.2 연기 |
+| local-only verified incident artifact | sanitized static replay 구현 완료; demo-lite `2.4.0` 별도 배포·검증 대기 |
 
 현재 검증은 single-node local cluster와 workload 수준 장애에 한정됩니다. autonomous operations, self-healing, production-ready AI, node·AZ 장애, production SLA를 증명하지 않습니다. Transactional outbox, cluster-loss restore, rebalance telemetry도 후속 과제입니다. 상세 완료 기준은 [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)에 있습니다.
 

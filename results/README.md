@@ -136,9 +136,11 @@ artifact가 증명하지 않습니다.
 - later observation: closed history는 유지하고 `WORKER_BACKLOG_ACTIVE`를 `current_observation`에 분리
 
 위 두 directory는 runtime topology, model result, local path provenance를 포함해
-기본 Git 추적 대상이 아닙니다. 현재 repository에는 sanitized public replay artifact가
-없으며 public demo-lite에도 Phase 5 replay route가 없습니다. `summary.json` 수치만으로
-raw evidence 또는 production SLA를 대체하지 않습니다. 실패한 `20260816T214911Z`
+기본 Git 추적 대상이 아닙니다. 공개용 allowlist projection은
+`demo/verified-incident-replay.json`에 별도 보존하며 canonical diagnosis hash,
+tool-generated evidence 요약, hypothesis citation/gap과 validator metadata만 포함합니다.
+raw Evidence Bundle 전체를 대신하거나 production SLA를 증명하지 않습니다. Public
+demo-lite runtime 배포는 아직 대기 중입니다. 실패한 `20260816T214911Z`
 identity mismatch와 `20260816T223837Z` dropped-iteration run도 local history로 보존하고
 성공 incident로 재분류하지 않습니다.
 

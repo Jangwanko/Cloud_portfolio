@@ -2,6 +2,19 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-08-24 Phase 5.2 recorded AI Investigation replay candidate
+
+- Demo UI `2.4.0`에 actual Phase 5.1 diagnosis의 four-step tool trace, normalized evidence status/freshness와 expandable safe summary 추가
+- artifact 실제 순서인 partition lag → Worker stage latency → Worker replica → PostgreSQL health를 보존하고 static replay에서 OpenAI API 재호출 금지
+- `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED` supporting citation과 commit-latency gap, 나머지 `INSUFFICIENT` hypothesis의 conflicting evidence/gap 표시
+- deterministic validator `VALID`, output repair `1`, stop `sufficient_evidence`를 causal truth 검증과 분리해 표시
+- Agent read-only capability와 Pod restart/scale, Kubernetes/Kafka write, recovery/remediation 금지 경계 표시
+- AI Investigation을 기존 운영 패널 다음의 다섯 번째 고정 폭 열로 배치하고 workspace 전체를 가로 스크롤하도록 구성
+- canonical diagnosis hash를 검증하는 allowlist exporter와 raw/source bundle/model response ID 제외 public projection 추가
+- Phase 3 tests가 Git-ignored Phase 2.5 live bundle을 직접 읽어 GitHub Actions에서 11건 실패하던 경계를 tracked baseline 기반 deterministic synthetic sequence helper로 격리
+- local validation: Ops Agent `250 passed`, full suite `608 passed`; replay contract와 desktop/mobile Edge headless render 확인, GitHub Actions 재검증은 push 뒤 대기
+- public demo-lite runtime은 기존 UI `2.3.1`이며 `2.4.0` source candidate 배포는 별도 대기
+
 ## 2026-08-23 Phase 5 incident lifecycle and actual Gate 2
 
 - `ops.incident.v1` deterministic identity, integrity-checked record, timeline, diagnosis/recovery attachment, closure와 post-closure `current_observation` 분리 구현
@@ -17,7 +30,7 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - Phase 5.2 public Verified Incident Replay는 연기; demo-lite route/deployment 미변경
 - Phase 5.3 docs checkpoint regression: lifecycle/workload focused `19 passed`, Ops Agent `250 passed`, full suite `607 passed`
 - Linux CI에서 `collect_bundle` unit test가 실제 Git dirty-state subprocess에 의존하던 비격리 경계를 재현; source revision/dirty를 모두 fixture로 고정하고 `_source_dirty` clean/dirty/unavailable 3-case contract test 추가
-- Windows와 CI-equivalent Linux/Python 3.11.15 full suite 각각 `607 passed`; production collector 동작과 deployment policy는 변경하지 않음
+- Windows full suite `607 passed`; 이후 GitHub Actions #88에서 Git-ignored Phase 2.5 bundle을 읽는 diagnosis test 11건이 실패해 Phase 5.2 작업에서 tracked synthetic input으로 교체
 
 ## 2026-08-17 continuous-ingress RECOVERED calibration and recovery policy v2
 

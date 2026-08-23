@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
+Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
 
@@ -13,7 +13,8 @@ Public demo-lite last verified: UI `2.3.1`, API `2.1.0` (2026-08-09)
   - Kafka append
   - Worker persistence
   - PostgreSQL storage
-  - DLQ / Operations Advisor 상태
+- DLQ / Operations Advisor 상태
+  - recorded AI Investigation tool → evidence → hypothesis trace
 
 ## Demo URLs
 
@@ -35,7 +36,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source candidate: UI `2.3.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary` 사용
+- `dev-kafka` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay 사용
 - `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f` (2026-08-12 local live)
 - public demo-lite 2026-08-10: title `Reliable Event Processing Console`, UI `2.3.1`, API `2.1.0`, image `8640ca010960`, generic v2 event `202`, Argo `Synced / Healthy`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
@@ -57,7 +58,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.3.1` source image build/load:
+- 현재 `2.4.0` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -83,8 +84,15 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - Readiness
   - user-filtered DLQ recent log sample
   - DLQ detail / manual replay
+- 가로 스크롤 workspace의 오른쪽 끝 `AI Investigation` 열 확인:
+  - actual recorded tool 순서와 normalized evidence short reference
+  - `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED`의 supporting evidence와 commit-latency gap
+  - 다른 hypothesis의 `INSUFFICIENT`와 telemetry gap
+  - Validator `VALID`, repair `1`, stop `sufficient_evidence`, read-only boundary
+- `기록 재생`은 static trace 강조이며 OpenAI API를 호출하지 않음
+- 좁은 화면에서도 기존 패널 아래로 재배치하지 않고, 같은 가로 흐름을 스크롤해 Investigation 열로 이동
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.3.1`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.4.0`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
