@@ -1,6 +1,21 @@
 # 패치 노트
 
-Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
+Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
+
+## 2026-08-23 Phase 5 incident lifecycle and actual Gate 2
+
+- `ops.incident.v1` deterministic identity, integrity-checked record, timeline, diagnosis/recovery attachment, closure와 post-closure `current_observation` 분리 구현
+- actual `local-ha` Phase 5.1 orchestrator에 phase target attainment, HTTP failure `0`, dropped iteration `0` strict workload quality gate 적용
+- 이전 `20260816T214911Z` identity mismatch와 `20260816T223837Z` dropped `19` 실행을 실패 증거로 보존하고 recovery/canonical promotion 차단
+- PostgreSQL HA degraded `standby/sync 0/0`을 기존 standby reclone retry와 documented sync procedure로 `ready`, standby/sync `2/2`까지 복구한 뒤에만 Gate 2 재실행
+- 성공 workload: 64 streams, `75→330→75 records/s`, accepted `6,750 / 29,697 / 135,000`, failed/dropped `0/0`, peak lag `20,574`, KEDA/Worker `4/4`
+- deterministic activation `687fb490...dd1d`, bounded Luna diagnosis `ed0013fa...d7b6`, recovery ACTIVE→RECOVERING→RECOVERED, incident `inc-88a1eeaa17897f6a8a929bba` CLOSED/RECOVERED 검증
+- normalized bundle `133/133`, raw projection `532/532` hash 검증 PASS; lifecycle closure `809.557s`
+- closure 뒤 later `WORKER_BACKLOG_ACTIVE`를 closed history에서 분리해 보존; automatic reopen/new incident correlation 미구현
+- workload generator는 k6 `dropped_iterations`, per-phase attainment와 failure를 summary/gate에 보존하고 iteration duration 기준 VU sizing으로 zero-drop Gate 2 통과
+- source checkpoint `ee5db64`; application/recovery threshold/KEDA/Kafka offset 변경 없음
+- Phase 5.2 public Verified Incident Replay는 연기; demo-lite route/deployment 미변경
+- Phase 5.3 docs checkpoint local regression: lifecycle/workload focused `19 passed`, Ops Agent `247 passed`, full suite `604 passed`
 
 ## 2026-08-17 continuous-ingress RECOVERED calibration and recovery policy v2
 

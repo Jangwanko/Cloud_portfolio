@@ -11,7 +11,7 @@
 ├─ infra/                     # AWS IaC(Terraform) 코드
 ├─ k8s/                       # Kubernetes 배포/검증 리소스
 ├─ monitoring/                # Prometheus/Grafana 설정
-├─ ops_agent/                 # evidence collector + deterministic evaluator + bounded diagnosis
+├─ ops_agent/                 # evidence + condition/diagnosis/recovery + incident lifecycle
 ├─ portfolio/                 # FastAPI 애플리케이션 본체
 ├─ results/                   # Git 추적 latest validation evidence
 ├─ scripts/                   # 운영/테스트 자동화 스크립트
@@ -28,7 +28,7 @@
 - `scripts/`: quick start, 장애 재현, 성능 측정, 백업/복구 스크립트
 - `infra/`: AWS migration blueprint용 Terraform 환경/모듈
 - `monitoring/`: Prometheus 규칙, Grafana 대시보드 설정
-- `ops_agent/`: Phase 1 collectors, Phase 2 evaluators, Phase 3 single grounded Diagnosis Agent, calibration summary, versioned policy와 fixtures
+- `ops_agent/`: Phase 1 collectors, Phase 2 evaluators, Phase 3 bounded Diagnosis Agent, Phase 4 recovery evaluator, Phase 5 incident lifecycle, versioned policy와 fixtures
 - `k8s/`: 배포/스케일링/검증 매니페스트
 - `docs/`: 실행 가이드, 아키텍처, 테스트 결과 문서
 - `alembic/`: schema version history
@@ -60,6 +60,10 @@
 - `ops_agent/diagnosis_agent.py`: explicit live opt-in Responses API loop와 bounded cost/step policy
 - `ops_agent/diagnosis_validator.py`: citation/tool/budget/rebalance/forbidden-claim validation
 - `ops_agent/diagnosis_evals.py`: scripted golden artifact 평가 metric
+- `ops_agent/recovery_evaluator.py`: frozen activation과 post-activation bundle의 deterministic ACTIVE/RECOVERING/RECOVERED 평가
+- `ops_agent/recovery_models.py`: versioned recovery policy, evidence trace, output integrity schema
+- `ops_agent/incident_lifecycle.py`: deterministic incident 생성, diagnosis/recovery attach, closure/current observation transition
+- `ops_agent/incident_models.py`: `ops.incident.v1`, timeline, identity/record hash schema
 - `ops_agent/evaluation_models.py`: strict `ops.conditions.v1` output, policy/profile, provenance 계약
 - `ops_agent/calibration.py`: Evidence Bundle에서 rate·lag·replica·KEDA·PostgreSQL·Worker stage 값을 threshold 없이 요약
 - `ops_agent/collectors/`: Application, Prometheus, Kubernetes, Argo CD fixed read-only collectors
@@ -67,9 +71,13 @@
 - `ops_agent/fixtures/`: synthetic unit-test input; live capture와 분리
 - `scripts/worker_backlog_calibration.py`: 기존 KEDA 정책을 유지한 multi-stream 3-run evidence timeline runner
 - `scripts/worker_backlog_negative_controls.py`: frozen pressure candidate의 short/sustainable/transient false-positive calibration runner
+- `scripts/worker_recovery_calibration.py`: Phase 4 arrival-rate operating envelope와 recovery evidence runner
+- `scripts/worker_recovered_calibration.py`: recovery v2 MEDIUM re-entry supplemental runner
+- `scripts/worker_incident_e2e.py`: strict workload gate를 적용한 actual local-ha Phase 5.1 incident orchestrator
 - `results/ops-agent/live-baseline/no-backlog-20260812.json`: 2026-08-12 captured no-backlog operations reference
 - `results/ops-agent/live-baseline/no-backlog-20260812.conditions.json`: captured bundle의 deterministic derived result
 - `results/ops-agent/diagnosis/golden-eval-v1.json`: Phase 3 offline golden evaluation summary
+- `results/ops-agent/incident-e2e/`, `results/ops-agent/incidents/`: Phase 5 live/canonical local artifacts; 기본 Git 추적 제외
 - `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
 - `demo/order-dashboard.html`: Reliable Event Processing System 흐름과 order reference payload를 보여주는 브라우저 데모; 파일명은 URL 호환을 위해 유지
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의

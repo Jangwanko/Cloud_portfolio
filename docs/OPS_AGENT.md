@@ -1,6 +1,6 @@
 # Read-only Operations Evidence Agent
 
-`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 고정 read-only tool을 선택하고 `ops.diagnosis.v1`을 생성합니다. Recovery v1은 frozen post-activation sequence에서 ACTIVE/RECOVERING/UNKNOWN을 판정하고, 별도 policy v2는 calibrated MEDIUM envelope 3-capture 재진입에서만 incident-scope RECOVERED를 추가합니다.
+`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 고정 read-only tool을 선택하고 `ops.diagnosis.v1`을 생성합니다. Recovery v1/v2의 deterministic output과 diagnosis를 Phase 5 `ops.incident.v1` lifecycle에 연결하되 runtime data path와 control plane은 변경하지 않습니다.
 
 ## Phase 경계
 
@@ -10,9 +10,13 @@
 | Phase 2: Deterministic Condition Evaluation | versioned rule로 condition의 `PRESENT` / `ABSENT` / `UNKNOWN` 판정 | v1 single-bundle baseline과 v2 sequence activation 구현 완료 |
 | Phase 2.5/2.6: Controlled Calibration | 실제 multi-stream backlog와 negative control로 positive rule 보정 | positive 3회와 negative control 3종 완료; v2 replay 통과 |
 | Phase 3: Evidence-guided Investigation | 확정된 backlog에 필요한 추가 read-only 조사와 grounded hypothesis | 구현 완료; positive run-01 live VALID와 bounded output repair 검증 |
-| Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현; clearing 대기 |
+| Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현 완료 |
+| Phase 5/5.1: Incident Lifecycle/E2E | condition·diagnosis·recovery identity 연결, timeline·closure·current observation 분리 | actual local-ha zero-drop Gate 2와 canonical local artifact 검증 완료 |
+| Phase 5.2: Public Replay | sanitized verified incident의 별도 demo-lite replay | 연기; route·배포 미구현 |
 
-Phase 2는 LLM이나 runtime source를 호출하지 않습니다. Phase 3도 Phase 2의 판정을 덮어쓰지 않으며, 증거가 부족한 원인을 확정하지 않습니다. write, restart, scale, rollout, reset, restore는 세 Phase의 권한에 포함하지 않습니다.
+목표는 source timestamp와 provenance가 있는 증거로 detection, investigation, recovery verification, lifecycle record를 재현하는 것입니다. Incident 존재와 recovery는 deterministic evaluator가 판정하고, LLM은 확정된 incident에 필요한 추가 read-only evidence 선택과 hypothesis 정리에만 사용합니다.
+
+비목표는 autonomous operations, self-healing, production-ready AI, remediation, arbitrary query/command 실행입니다. Phase 2는 LLM이나 runtime source를 호출하지 않습니다. Phase 3도 Phase 2의 판정을 덮어쓰지 않으며, write, restart, scale, rollout, reset, restore 권한을 갖지 않습니다.
 
 ## Phase 1 계약
 
@@ -514,7 +518,105 @@ repair 1회 뒤 VALID가 됐습니다. 최종 결과는 모든 causal hypothesis
 `INSUFFICIENT`로 유지하고 `insufficient_evidence`로 중단했습니다. local-only
 artifact는 `results/ops-agent/diagnosis/20260816-positive-run-01-luna.json`입니다.
 
-## 다음 calibration 흐름
+## Phase 5 Incident Lifecycle and Actual E2E - 2026-08-23
+
+Phase 5는 새 detector를 만들지 않습니다. Integrity-valid
+`CORE_BACKLOG_PRESSURE=PRESENT`의 condition evaluation ID, ordered source bundle
+digest, complete source identity, logical source incident ID를 canonicalize해 incident
+identity SHA-256을 만들고 앞 24자를 `inc-...` ID로 사용합니다. Diagnosis와 recovery는
+같은 identity와 artifact hash를 검증한 뒤에만 timeline에 연결됩니다.
+
+Lifecycle state와 artifact 책임:
+
+```text
+DETECTED -> ACTIVE -> RECOVERING -> RECOVERED -> CLOSED
+                    \-> ACTIVE/UNKNOWN observation
+
+deterministic condition  owns DETECTED/ACTIVE
+bounded diagnosis        attaches validated hypotheses only
+deterministic recovery   owns RECOVERING/RECOVERED
+incident lifecycle       preserves identity, timeline, closure and current observation
+```
+
+`CLOSED`는 해당 activation scope의 recovery v2 completion을 보존하는 terminal
+lifecycle state입니다. 폐쇄 뒤 recovery evaluation은 immutable history를 reopen하거나
+덮어쓰지 않고 `current_observation`과 `OBSERVATION_UPDATED` event로 기록됩니다. 새
+incident correlation과 automatic reopen policy는 구현하지 않았습니다.
+
+### Workload quality gate
+
+Phase 5.1 orchestrator는 `constant-arrival-rate` 각 phase의 target, accepted `202`,
+HTTP failure, iterations, dropped iterations를 구조화합니다. Strict gate는 모든 phase의
+attainment와 `failed=0`, `dropped_iterations=0`을 요구합니다. 이 gate가 실패하면
+condition이 `PRESENT`여도 recovery와 canonical incident 승격을 실행하지 않습니다.
+
+과거 두 실행은 고치거나 덮어쓰지 않았습니다.
+
+| Run | 관측 결과 | Gate 의미 |
+| --- | --- | --- |
+| `20260816T214911Z` | condition evaluation ID는 일치했지만 active incident `inc-e17f...`와 diagnosis의 logical incident ID가 달랐음 | identity mismatch를 드러낸 실패 표본 |
+| `20260816T223837Z` | accepted `6,749 / 29,686 / 134,981`, HTTP failure `0`, dropped `19`, peak lag `25,153`, final lag `0` | strict zero-drop gate 실패; recovery 미실행, exact drop root cause는 기존 artifact만으로 `INCONCLUSIVE` |
+
+### Gate 2 verified incident
+
+PostgreSQL HA가 `ready`, primary reachable, standby/sync standby `2/2`로 복구되고
+core·notification lag `0`, Worker `2/2`, 기존 KEDA `2→4`를 확인한 뒤에만 새 E2E를
+실행했습니다. KEDA·Worker를 수동 scale하거나 Kafka offset을 변경하지 않았습니다.
+
+| Evidence | Actual result |
+| --- | --- |
+| Source run | local-only `results/ops-agent/incident-e2e/20260823T152359Z/` |
+| Workload | 64 streams, `75→330→75 records/s`, accepted `6,750 / 29,697 / 135,000`, failure/drop `0/0` |
+| Detection | evaluation `687fb490...dd1d`; lag `7,205→10,497→13,936`, slope `120.067→174.467→230.767/s` |
+| Peak | lag `20,574`, Worker desired/available `4/4`, KEDA Active |
+| Diagnosis | `ed0013fa...d7b6`, `gpt-5.6-luna`; partition lag → Worker stage → replicas → PostgreSQL health |
+| Hypothesis | `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED`; supporting evidence 2개, isolated commit latency gap 보존 |
+| Recovery | ACTIVE `6af5615c...4c0f` → RECOVERING `cc943943...0768` → RECOVERED `7f64cd1c...8db3` |
+| Completion window | lag `0 / 7 / 0`, slope `0 / -2.9 / -10.7667/s`, produce `75 / 75 / 75/s`, committed `75 / 77.9 / 85.7667/s`, PostgreSQL ready |
+| Lifecycle | `inc-88a1eeaa17897f6a8a929bba`, `CLOSED / RECOVERED`, detection-to-closure `809.557s` |
+| Integrity | normalized bundle `133/133`, raw projection `532/532` verified; incident record SHA-256 `9b39518a...d16f` |
+
+Phase 5.3 문서 checkpoint에서 lifecycle/workload focused `19 passed`, Ops Agent
+`247 passed`, full repository `604 passed`를 local로 재실행했습니다. GitHub Actions
+통과 수치가 아닙니다.
+
+Diagnosis의 나머지 hypothesis는 telemetry gap 또는 conflicting evidence를 보존한
+`INSUFFICIENT`입니다. Rebalance telemetry가 없으므로 rebalance absence를 주장하지
+않습니다. Model은 incident와 recovery를 선언하지 않았고 Kubernetes/Kafka/Argo/DB
+control-plane write를 수행하지 않았습니다.
+
+Closure 뒤 `2026-08-23T15:57:38.030540Z`에 들어온 usable recovery observation은
+`WORKER_BACKLOG_ACTIVE`와
+`BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS`를 기록했습니다. Canonical incident는
+계속 `CLOSED`이고 이 값은 `current_observation`에만 있습니다. 후속 live 점검에서
+core·notification lag는 다시 `0`이었지만, 이것을 automatic reopen/clear 증거로
+재해석하지 않습니다.
+
+Canonical local directory는
+`results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`이며 `incident.json`,
+`timeline.json`, `summary.json`, `references.json`을 포함합니다. 현재
+`results/ops-agent/**`는 local-only이므로 repository에 공개된 replay artifact로
+표현하지 않습니다.
+
+### Public replay boundary
+
+Phase 5.2 Verified Incident Replay는 연기했습니다. 현재 public demo-lite에는 incident
+API, replay JSON, incident page, 해당 deployment가 없습니다. 향후 공개할 때는 raw
+source가 아닌 별도 sanitized artifact만 사용하고, artifact hash 검증과 static-only
+serving을 통과한 뒤 기존 demo branch에서 별도 배포해야 합니다.
+
+### 현재 제한
+
+- Threshold와 recovery envelope는 single-node kind `local-ha` 실측에 한정되며 다른 profile의 capacity/SLA가 아닙니다.
+- Recovery v2는 `RECOVERING` 뒤 produce `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, usable 3 capture, 8/8 Kafka freshness와 PostgreSQL ready를 요구합니다. `lag==0`만으로 recovery를 선언하지 않습니다.
+- Kafka exporter 음수 lag `-1/-2`는 별도 비동기 read에서 생긴 `INVALID_ONLY`로 raw 보존하고 clamp·derived replacement 없이 condition/recovery 입력에서 제외합니다.
+- Consumer rebalance event, CPU throttling, exact PostgreSQL transaction commit latency는 `UNAVAILABLE`입니다.
+- Lifecycle은 closed incident의 automatic reopen과 새 incident correlation을 구현하지 않아 post-closure `ACTIVE` observation이 존재할 수 있습니다.
+- Remediation, recovery LLM, multi-agent manager, production SLA, exactly-once, global ordering, blanket no-loss 보장은 범위 밖입니다.
+- PostgreSQL commit 뒤 notification publish gap을 닫는 transactional outbox는 후속 과제입니다.
+- Public Verified Incident Replay는 아직 배포하지 않았습니다.
+
+## Deterministic lifecycle 흐름
 
 ```text
 baseline: lag 0, Worker 2
@@ -523,7 +625,8 @@ baseline: lag 0, Worker 2
   -> ops.recovery.v1에서 WORKER_BACKLOG_RECOVERING
   -> MEDIUM envelope fresh usable capture 3개 연속 재진입
   -> recovery policy v2에서 WORKER_BACKLOG_RECOVERED
+  -> ops.incident.v1에서 CLOSED / RECOVERED 보존
 ```
 
 실험은 baseline, incident, recovery 세 capture를 분리하고 같은 topic/group/partition policy와 source provenance를 기록해야 합니다.
-위 흐름에서 RECOVERED까지 결정론적으로 구현했습니다. Clearing hysteresis와 post-recovery incident management는 구현하지 않았습니다.
+위 흐름은 actual Gate 2에서 결정론적으로 검증했습니다. Closure 뒤 current observation은 분리하지만 automatic reopen과 새 incident correlation은 구현하지 않았습니다.

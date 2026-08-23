@@ -1,15 +1,18 @@
 # Ops Agent
 
-Phase 1 collection, the Phase 2 deterministic evaluators, and the Phase 3
-Evidence-grounded Diagnosis Agent are implemented.
+Phase 1 collection, the Phase 2 deterministic evaluators, the Phase 3
+Evidence-grounded Diagnosis Agent, Phase 4 deterministic recovery, and the
+Phase 5 incident lifecycle are implemented.
 `ops_agent` collects normalized, read-only operational evidence for the Worker
 backlog scenario. The v1 evaluator reads one frozen bundle; the calibrated v2
 evaluator reads an ordered bundle sequence. The single Phase 3 Agent starts only
 from `CORE_BACKLOG_PRESSURE=PRESENT`, selects fixed read-only investigation
 tools, and emits `ops.diagnosis.v1`. It cannot change the condition, decide
-recovery, or execute remediation.
+recovery, or execute remediation. Phase 5 binds the validated condition,
+diagnosis, and recovery artifacts into `ops.incident.v1` without granting the
+Agent new authority.
 
-The complete contract, live baseline, and Phase 2 boundary are documented in
+The complete evidence, condition, diagnosis, recovery, and lifecycle contract is documented in
 [docs/OPS_AGENT.md](../docs/OPS_AGENT.md). Synthetic fixtures live under
 `ops_agent/fixtures/`; captured runtime evidence lives under
 `results/ops-agent/live-baseline/`. Controlled calibration summaries live under
@@ -73,6 +76,7 @@ $conditions = 'results/ops-agent/sequence-replay/20260816/positive-run-01.condit
 python -m ops_agent diagnose --conditions $conditions --input $inputs --output results/ops-agent/diagnosis/positive-run-01.json --live
 .venv\Scripts\python.exe scripts\worker_backlog_calibration.py --runs 3 --streams 64 --vus 100 --duration 30s --think-time 0.05 --sample-interval-seconds 15 --context kind-messaging-ha
 .venv\Scripts\python.exe scripts\worker_backlog_negative_controls.py --sample-interval-seconds 15 --context kind-messaging-ha
+.venv\Scripts\python.exe scripts\worker_incident_e2e.py --context kind-messaging-ha
 ```
 
 Without `--output`, the bundle is written to stdout. With `--output`, the JSON
@@ -271,3 +275,40 @@ label-on-use Worker series were absent after process restart. Kafka partition
 coverage, Application, Kubernetes, PostgreSQL HA, and Argo CD evidence were
 collected from the live runtime. Missing series remain `MISSING/UNKNOWN`; they
 are not converted to zero.
+
+## Phase 5 incident lifecycle boundary
+
+`scripts/worker_incident_e2e.py` runs one gated actual `local-ha` incident. It
+requires branch `dev-kafka`, current context `kind-messaging-ha`, a clean
+baseline, a usable OpenAI configuration for the bounded diagnosis step, and the
+existing KEDA `2 -> 4` policy. The script submits only workload events through
+the public API; it does not scale or patch workloads, change KEDA, reset Kafka
+offsets, or write to Kubernetes, Argo CD, or PostgreSQL control planes.
+
+Every workload phase must meet its target with HTTP failures and dropped
+iterations both equal to zero. A failed workload-quality gate stops before
+recovery and canonical promotion even when backlog activation is valid or final
+lag later reaches zero.
+
+The incident identity is the canonical SHA-256 of incident type, `local-ha`
+profile, condition evaluation ID, ordered source bundle digests, complete source
+identity, and logical source incident ID. The public ID is `inc-` plus the first
+24 hex characters. Diagnosis and recovery artifact hashes must match that
+identity before they are attached.
+
+Lifecycle transitions are `DETECTED -> ACTIVE -> RECOVERING -> RECOVERED ->
+CLOSED`. A closed record is immutable lifecycle history. A later recovery
+evaluation is stored as `current_observation`; it does not reopen or overwrite
+the incident. Automatic reopen and new-incident correlation are not
+implemented.
+
+The 2026-08-23 Gate 2 run used 64 streams and `75 -> 330 -> 75 records/s`.
+Accepted events were `6,750 / 29,697 / 135,000`, with zero HTTP failures and
+zero drops. It produced incident `inc-88a1eeaa17897f6a8a929bba`, closed as
+RECOVERED after `809.557s`; 133 bundles and 532 raw projections passed hash
+validation. The canonical directory is local-only under
+`results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`.
+
+The current public demo-lite deployment does not contain a Verified Incident
+Replay API, page, artifact, or deployment. Phase 5.2 is deferred. Local raw
+projections are not a public replay source.

@@ -1,12 +1,12 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 controlled operations calibration과 deterministic recovery 평가는 `2026-08-17`, 최신 no-backlog live reference는 `2026-08-12`, 최신 source·local candidate 성능 검증과 public runtime 확인은 `2026-08-10`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-10`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.3.1`, Ops Agent Phase 1/2/3.1 + Phase 4/4.1/4.2 recovery | current worktree; local validation은 아래 Phase 4.2 항목 기준 |
+| Source candidate | API `2.1.0`, Demo UI `2.3.1`, Ops Agent Phase 1~5.1 | source checkpoint `ee5db64`; latest local validation은 아래 Phase 5 Gate 2 기준 |
 | Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI validate·publish 통과 |
 | Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
@@ -21,6 +21,8 @@
 | Ops Agent Phase 4 calibration | arrival-rate A/B/C/E/F, E 3회와 F 1회 recovery | actual `local-ha` COMPLETE; 원본 artifact hash PASS |
 | Ops Agent Phase 4.1 recovery | deterministic recovery policy v1 ACTIVE/RECOVERING/UNKNOWN | actual E 3회/F 1회 replay에서 모두 RECOVERING 관측; v1 RECOVERED pending |
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
+| Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
+| Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
@@ -28,7 +30,83 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, master image `7035cdab4050` 게시 확인 |
-| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
+| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 기존 order dashboard 기준; Phase 5 Verified Incident Replay는 연기되어 route/deployment 없음 |
+
+## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
+
+Phase 5는 existing deterministic condition과 recovery policy를 변경하지 않고
+condition evaluation, diagnosis, recovery evaluation을 하나의
+`ops.incident.v1` identity와 timeline으로 결합합니다. LLM은 incident detection과
+recovery/closure를 판정하지 않습니다.
+
+### 보존한 실패 실행
+
+| Run | Workload result | Failure boundary | Interpretation |
+| --- | --- | --- | --- |
+| `20260816T214911Z` | `75/330/75/s`, accepted `6,750 / 29,693 / 67,500`, failure/drop `0/0` | active record `inc-e17f6188f088b5473134de67`와 diagnosis logical incident `phase5-20260816T214911Z-sample-008` 불일치 | condition ID `c6c0de4f...1640` 자체가 아니라 cross-artifact incident identity contract 결함을 드러낸 실패 |
+| `20260816T223837Z` | accepted `6,749 / 29,686 / 134,981`, HTTP failure `0`, dropped `19`, peak/final lag `25,153 / 0` | strict `dropped_iterations==0` gate 실패; recovery 미실행 | exact drop 시점·VU saturation·latency 상관을 기존 artifact가 충분히 보존하지 않아 root cause는 `INCONCLUSIVE` |
+
+두 실행의 bundle, condition, diagnosis, workload log는 덮어쓰지 않았습니다. 두 번째
+run은 final lag가 `0`이어도 workload quality gate가 실패했으므로 recovery 또는
+canonical verified incident로 승격하지 않았습니다.
+
+### PostgreSQL HA precondition recovery
+
+새 Gate 2 전에 `/health/ready`가 `degraded`, primary reachable `true`, standby/sync
+standby `0/0`인 상태를 확인했습니다. 기존 chart/operator retry와 문서화된
+`scripts/configure_postgres_sync.ps1`만 사용해 standby reclone과 sync setting을
+복구했습니다. Primary restart/PVC delete/cluster recreate, application code·KEDA·Kafka
+offset 변경은 없었습니다.
+
+- evidence: local-only `results/ops-agent/postgres-ha-recovery/20260823T151414Z/recovery-summary.json`
+- postcondition: `/health/ready=ready`, HA/primary 정상, standby/sync standby `2/2`, PostgreSQL `3/3`, Pgpool `2/2`, API `6/6`, Worker `2/2`, core/notification lag `0`
+- KEDA policy: core Worker `2→4` 유지
+
+### Successful Gate 2
+
+Source run은 local-only
+`results/ops-agent/incident-e2e/20260823T152359Z/`입니다. Strict workload quality
+gate가 모든 phase attainment, HTTP failure `0`, dropped iteration `0`을 확인한 뒤에만
+diagnosis·recovery·canonical promotion을 진행했습니다.
+
+| Signal | Actual value |
+| --- | --- |
+| Workload | 64 streams; target `75→330→75/s`; duration `90 / 90 / 1,800s` |
+| Accepted/failed/dropped | `6,750 / 29,697 / 135,000`; failed `0`; dropped `0` |
+| HTTP p95 | `11.725 / 18.210 / 12.213ms` |
+| Activation | condition `687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d` |
+| Activation lag | `7,205→10,497→13,936` records |
+| Activation slope | `120.067→174.467→230.767 records/s` |
+| Rate arithmetic | produce `204.267 / 268 / 330`, committed `84.2 / 93.533 / 99.233 records/s`; all consistent |
+| Peak | lag `20,574`, Worker desired/available `4/4`, KEDA Active |
+| Diagnosis | `ed0013faacc76108de3692c926a2d6eb77bc44cf6970360258d8ef4b1d58d7b6`, model `gpt-5.6-luna` |
+| Recovery IDs | ACTIVE `6af5615c...4c0f`; RECOVERING `cc943943...0768`; RECOVERED `7f64cd1c...8db3` |
+| Completion captures | lag `0 / 7 / 0`; slope `0 / -2.9 / -10.7667`; produce `75 / 75 / 75`; committed `75 / 77.9 / 85.7667`; PostgreSQL ready |
+| Lifecycle | `inc-88a1eeaa17897f6a8a929bba`, `CLOSED / RECOVERED`, detection-to-closure `809.557s` |
+| Artifact validation | Evidence Bundle `133/133`, raw projection `532/532`, `PASS` |
+
+Phase 5.3 documentation checkpoint local regression은 focused lifecycle/workload gate
+`19 passed`, Ops Agent `247 passed`, full repository `604 passed`입니다. 이는 local
+pytest 결과이며 GitHub Actions run success로 재표현하지 않습니다.
+
+Diagnosis tool call은 partition lag → Worker stage latency → Worker replica → PostgreSQL
+health 순서였습니다. `WORKER_PATH_PRESSURE_SUSPECTED`만 `SUPPORTED`이며 supporting
+evidence IDs는 tool-generated partition/stage evidence 2개입니다. Isolated DB commit
+latency는 stage metric에 포함되지 않는 gap으로 남겼습니다. `HOT_KEY_SUSPECTED`는
+balanced partition distribution과 충돌했고 poison retry, sequence contention,
+consumer rebalance는 필요한 telemetry가 없어 `INSUFFICIENT`입니다. Stop reason은
+`sufficient_evidence`, output repair `1`, API request `6`, total token `30,664`입니다.
+
+Canonical local record는
+`results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`에 있으며 lifecycle은
+`DETECTED→ACTIVE→RECOVERING→RECOVERED→CLOSED`입니다. Closure 뒤
+`2026-08-23T15:57:38.030540Z`의 `WORKER_BACKLOG_ACTIVE` observation은 history를
+reopen하지 않고 `current_observation`에 분리했습니다. 이후 live core·notification
+lag는 `0`으로 돌아왔지만 automatic reopen/correlation은 아직 없습니다.
+
+이 결과는 single-node kind `local-ha`의 verified incident입니다. Production SLA,
+autonomous recovery, remediation, exactly-once, blanket no-loss를 증명하지 않습니다.
+Public Verified Incident Replay는 Phase 5.2로 분리했으며 현재 연기 상태입니다.
 
 ## Ops Agent Phase 4 Recovery Calibration - 2026-08-16
 
@@ -1129,12 +1207,20 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 
 ## Known Gaps and Next Acceptance Criteria
 
-- 64-stream fixed/KEDA A/B 3회 반복과 notification-worker capacity 분리
-- Worker histogram 상단 bucket 확장 뒤 commit-observed p95 재측정
-- registry image 기준 hot-stream과 multi-stream 재검증
+- local-ha condition/recovery threshold를 multi-node 또는 다른 profile에서 별도 재보정
+- closed incident 뒤 backlog regrowth의 automatic reopen/new incident correlation policy
+- sanitized Verified Incident Replay artifact와 public demo route; Phase 5.2는 현재 연기
+- Worker stage와 분리된 exact PostgreSQL transaction commit latency 계측
+- consumer rebalance event와 container CPU throttling telemetry
 - poll batch 중간 crash와 partition offset recovery
 - transactional outbox 또는 동등한 post-commit publish recovery
 - unresolved DLQ 상태 모델
 - object storage/cluster-loss backup recovery와 multi-node disruption drill
+
+Kafka exporter의 negative lag `-1/-2`는 separate end/committed reads에서 생긴
+`INVALID_ONLY` observation으로 raw 보존합니다. `0` clamp나 derived replacement를
+만들지 않고 detection/recovery usable evidence에서 제외합니다. Current incident
+E2E와 public demo는 production SLA, self-healing, autonomous AI operations의 증거가
+아닙니다.
 
 우선순위, 이유, 측정 가능한 완료 조건은 [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)에 있습니다.

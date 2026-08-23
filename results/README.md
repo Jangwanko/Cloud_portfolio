@@ -22,6 +22,7 @@
 - `ops-agent/diagnosis/golden-eval-v1.json`: scripted offline Phase 3 grounding/tool/stop evaluation 요약
 - `ops-agent/recovery-calibration/20260816T100600Z/`: Phase 4 A/B/C/E/F load-aware calibration manifest, analysis, compact summaries
 - `ops-agent/recovered-calibration/20260816T194023Z/`: Phase 4.2 E-04~06 supplemental manifest, combined E-01~06 analysis, compact summaries
+- `ops-agent/incident-e2e/`와 `ops-agent/incidents/`: Phase 5 workload bundle/raw, diagnosis, recovery, canonical incident; 현재 local-only, Git 추적 제외
 - 그 밖의 날짜별·중간 산출물: 로컬 보관, 기본 Git 추적 제외
 
 fixed Worker/KEDA A/B처럼 두 원본을 함께 보존해야 하는 실행은 `run_kafka_performance_suite.ps1 -ResultFileName <name>.txt`를 사용합니다. 각 파일에 `k6_stream_count`, `worker_scaling_mode`, `fixed_worker_replicas`, source revision과 dirty 여부를 남기고, 조건이 다른 파일을 하나의 baseline으로 합치지 않습니다.
@@ -122,6 +123,24 @@ quality anomaly는 count를 reset합니다. Full bundle/raw/replay는 runtime to
 포함하므로 local-only이며 tracked compact summary를 raw evidence 대체물로
 해석하지 않습니다. Clearing, 새 incident 분리, global health, remediation은 이
 artifact가 증명하지 않습니다.
+
+## Ops Agent Phase 5 Verified Incident - 2026-08-23
+
+- local source run: `ops-agent/incident-e2e/20260823T152359Z/`
+- canonical local incident: `ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`
+- workload: 64 streams, `75→330→75 records/s`, accepted `6,750 / 29,697 / 135,000`, failed/dropped `0/0`
+- detection: `CORE_BACKLOG_PRESSURE=PRESENT`, lag `7,205→10,497→13,936`, slope `120.067→174.467→230.767/s`
+- diagnosis: `gpt-5.6-luna`, normalized tool 4개, `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED`
+- recovery/lifecycle: ACTIVE → RECOVERING → RECOVERED → CLOSED, detection-to-closure `809.557s`
+- validation: normalized bundle `133/133`, raw projection `532/532`, errors `0`
+- later observation: closed history는 유지하고 `WORKER_BACKLOG_ACTIVE`를 `current_observation`에 분리
+
+위 두 directory는 runtime topology, model result, local path provenance를 포함해
+기본 Git 추적 대상이 아닙니다. 현재 repository에는 sanitized public replay artifact가
+없으며 public demo-lite에도 Phase 5 replay route가 없습니다. `summary.json` 수치만으로
+raw evidence 또는 production SLA를 대체하지 않습니다. 실패한 `20260816T214911Z`
+identity mismatch와 `20260816T223837Z` dropped-iteration run도 local history로 보존하고
+성공 incident로 재분류하지 않습니다.
 
 ## Phase 3 Diagnosis Evaluation - 2026-08-16
 
