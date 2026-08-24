@@ -9,6 +9,7 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - recorded profile을 화면에 표시해 현재 demo-lite runtime 상태와 분리
 - Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker `1`과 7일 retention 설정 변경 없음
 - local validation: generic event/UI contract `55 passed`, full suite `359 passed`, compileall·diff check 통과
+- CI `#90` validate·image publish 성공, release commit `762da82`, image `7489ab270995`; public UI `2.4.0`, replay `200`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
 
 ## 2026-08-10 demo-lite 7일 보존 상한
 

@@ -1,12 +1,12 @@
 # Demo Lite
 
-## 현재 상태 — 2026-08-05
+## 현재 상태 — 2026-08-24
 
 | 대상 | 상태 |
 | --- | --- |
-| Public `demo-lite` runtime | UI `2.1.0`, API `2.0.0`, generic v2, event `202` |
+| Public `demo-lite` runtime | image `7489ab270995`, UI `2.4.0`, API `2.1.0`, readiness `ready` |
 | Public scaling evidence | `message-worker` lag peak `828`, HPA desired·actual replica `1→2` |
-| `demo-dev` candidate | UI `2.3.1`, API `2.1.0`, tests `349 passed`, 7일 retention source, public 반영 전 |
+| `demo-dev` candidate | UI `2.4.0`, API `2.1.0`, tests `359 passed`, static Investigation replay와 7일 retention |
 | `master` source | UI `2.3.1`, API `2.1.0`, merge `cab7647`, full local HA profile |
 | Fresh k3s bootstrap | image `207d7b90813a`, UI `2.3.1`, API `2.1.0`, Argo CD `Synced / Healthy`, 외부 domain 재연결 대기 |
 
@@ -50,7 +50,7 @@ Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니
 ## UI 버전 경계
 
 - Public UI `2.1.0`: generic v2 envelope와 `202`, Pipeline Evidence 내 저장 증거
-- Candidate UI `2.3.1`: Kafka append와 DB persistence 동시 진행률, Worker 현재/최대 replica 단일 표시, 진행 중 Advisor 판정
+- Current UI `2.4.0`: 기존 진행률·Worker panel과 actual `local-ha` recorded Investigation의 static replay
 - API `2.1.0`: `/v2/streams/{stream_id}/events`, PostgreSQL request status·event read, persistence summary, `/ops/summary`
 
 Candidate 기능은 `demo-dev` 검증과 release workflow를 거쳐 `demo-lite`에 게시된 뒤 public 기능으로 기록합니다.
