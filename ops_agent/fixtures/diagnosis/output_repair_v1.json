@@ -1,0 +1,153 @@
+{
+  "schema_version": "ops.diagnosis.output-repair-fixtures.v1",
+  "fixtures": [
+    {
+      "name": "conflicted_supporting_missing",
+      "initial": {
+        "hypotheses": [
+          {
+            "hypothesis": "HOT_KEY_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["MIXED_SIGNAL"],
+            "supporting_evidence_ids": [],
+            "conflicting_evidence_ids": ["$KNOWN_2"],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "repair": {
+        "hypotheses": [
+          {
+            "hypothesis": "HOT_KEY_SUSPECTED",
+            "support_status": "INSUFFICIENT",
+            "reason_codes": ["SUPPORT_NOT_OBSERVED"],
+            "supporting_evidence_ids": [],
+            "conflicting_evidence_ids": ["$KNOWN_2"],
+            "evidence_gaps": ["SUPPORTING_EVIDENCE_NOT_PRESENT"]
+          }
+        ],
+        "stop_reason": "insufficient_evidence"
+      },
+      "expected_success": true,
+      "expected_calls": 2,
+      "expected_final_status": "INSUFFICIENT"
+    },
+    {
+      "name": "conflicted_conflicting_missing",
+      "initial": {
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["MIXED_SIGNAL"],
+            "supporting_evidence_ids": ["$KNOWN_1"],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "repair": {
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "reason_codes": ["SUPPORT_PRESERVED"],
+            "supporting_evidence_ids": ["$KNOWN_1"],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "sufficient_evidence"
+      },
+      "expected_success": true,
+      "expected_calls": 2,
+      "expected_final_status": "SUPPORTED"
+    },
+    {
+      "name": "fabricated_citation_during_repair",
+      "initial": {
+        "hypotheses": [
+          {
+            "hypothesis": "SEQUENCE_CONTENTION_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["MIXED_SIGNAL"],
+            "supporting_evidence_ids": ["$KNOWN_1"],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "repair": {
+        "hypotheses": [
+          {
+            "hypothesis": "SEQUENCE_CONTENTION_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["FABRICATED_CONFLICT"],
+            "supporting_evidence_ids": ["$KNOWN_1"],
+            "conflicting_evidence_ids": ["fabricated-evidence-id"],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "expected_success": false,
+      "expected_calls": 2,
+      "expected_final_error": "UNKNOWN_EVIDENCE_CITATION"
+    },
+    {
+      "name": "valid_conflicted",
+      "initial": {
+        "hypotheses": [
+          {
+            "hypothesis": "POISON_RECORD_RETRY_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["BOTH_SIDES_OBSERVED"],
+            "supporting_evidence_ids": ["$KNOWN_1"],
+            "conflicting_evidence_ids": ["$KNOWN_2"],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "repair": null,
+      "expected_success": true,
+      "expected_calls": 1,
+      "expected_final_status": "CONFLICTED"
+    },
+    {
+      "name": "repair_remains_invalid",
+      "initial": {
+        "hypotheses": [
+          {
+            "hypothesis": "HOT_KEY_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["MIXED_SIGNAL"],
+            "supporting_evidence_ids": [],
+            "conflicting_evidence_ids": ["$KNOWN_2"],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "repair": {
+        "hypotheses": [
+          {
+            "hypothesis": "HOT_KEY_SUSPECTED",
+            "support_status": "CONFLICTED",
+            "reason_codes": ["STILL_MIXED"],
+            "supporting_evidence_ids": [],
+            "conflicting_evidence_ids": ["$KNOWN_2"],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "no_useful_tool_remaining"
+      },
+      "expected_success": false,
+      "expected_calls": 2,
+      "expected_final_error": "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES"
+    }
+  ]
+}

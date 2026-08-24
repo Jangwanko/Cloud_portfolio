@@ -1,0 +1,32 @@
+{
+  "collected_at": "2026-08-12T00:39:09.409379Z",
+  "data": {
+    "applicability": "APPLICABLE",
+    "application": {
+      "destination_namespace": "messaging-app",
+      "health_status": "Healthy",
+      "metadata": {
+        "generation": 6618,
+        "name": "messaging-portfolio-local-ha",
+        "namespace": "argocd",
+        "resource_version": "2017388",
+        "uid": "7f5203fe-c5d3-4d8d-a35d-19168e635cbe"
+      },
+      "reconciled_at": "2026-08-12T00:37:02Z",
+      "revision": "004f2e7791543de2d570c287cf8938410c61807c",
+      "revisions": [],
+      "source_path": "k8s/gitops/overlays/local-ha",
+      "sync_status": "Synced",
+      "target_revision": "dev-kafka"
+    }
+  },
+  "error": null,
+  "partial": false,
+  "semantic": {
+    "notes": "collection only; sync and health are not evaluated",
+    "type": "gitops_reconciliation_observation"
+  },
+  "source": "argocd_application_cr",
+  "source_timestamp": "2026-08-12T00:37:02Z",
+  "status": "OK"
+}

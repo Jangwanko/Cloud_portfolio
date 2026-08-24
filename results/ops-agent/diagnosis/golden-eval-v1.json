@@ -1,0 +1,23 @@
+{
+  "schema_version": "ops.diagnosis.golden-eval.v1",
+  "fixture_source": "ops_agent/fixtures/diagnosis/golden_v1.json",
+  "fixture_count": 9,
+  "model_transport": "scripted_offline_fake",
+  "live_api_called": false,
+  "metrics": {
+    "schema_compliance": 1.0,
+    "citation_accuracy": 1.0,
+    "unsupported_claim_rate": 0.0,
+    "tool_selection_precision": 1.0,
+    "required_abstention_accuracy": 1.0,
+    "step_budget_compliance": 1.0,
+    "stop_reason_compliance": 1.0,
+    "fabricated_evidence_id_count": 0,
+    "unnecessary_tool_call_count": 0,
+    "forbidden_tool_call_count": 0
+  },
+  "limitations": [
+    "Golden scores measure deterministic harness behavior with scripted outputs.",
+    "They are not a live-model quality or production accuracy claim."
+  ]
+}

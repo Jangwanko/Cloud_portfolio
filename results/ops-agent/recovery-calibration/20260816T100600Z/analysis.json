@@ -1,0 +1,3936 @@
+{
+  "schema_version": "ops.recovery-calibration-analysis.v1",
+  "experiment_id": "20260816T100600Z",
+  "generated_at": "2026-08-16T11:40:46.229288Z",
+  "operating_envelope": {
+    "schema_version": "ops.load-aware-operating-envelope.v1",
+    "policy_applied": false,
+    "source_scenarios": [
+      "A",
+      "B",
+      "C"
+    ],
+    "source_sample_quality": {
+      "input_sample_count": 57,
+      "usable_sample_count": 39,
+      "quality_excluded_sample_count": 18,
+      "quality_excluded_samples": [
+        {
+          "scenario": "A",
+          "sequence_index": 12,
+          "phase": "IDLE",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_2_negative_lag"
+          ]
+        },
+        {
+          "scenario": "A",
+          "sequence_index": 13,
+          "phase": "IDLE",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_2_negative_lag"
+          ]
+        },
+        {
+          "scenario": "A",
+          "sequence_index": 14,
+          "phase": "IDLE",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_2_negative_lag"
+          ]
+        },
+        {
+          "scenario": "A",
+          "sequence_index": 15,
+          "phase": "IDLE",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_2_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 5,
+          "phase": "LOW",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 6,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 7,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 8,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_2_negative_lag",
+            "partition_3_negative_lag",
+            "partition_4_negative_lag",
+            "partition_5_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 9,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_3_negative_lag",
+            "partition_4_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 10,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_3_negative_lag",
+            "partition_4_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 11,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_0_negative_lag",
+            "partition_3_negative_lag",
+            "partition_4_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 17,
+          "phase": "LOW",
+          "kafka_anomalies": [
+            "partition_1_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "B",
+          "sequence_index": 18,
+          "phase": "LOW",
+          "kafka_anomalies": [
+            "partition_1_negative_lag",
+            "partition_6_negative_lag"
+          ]
+        },
+        {
+          "scenario": "C",
+          "sequence_index": 1,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "C",
+          "sequence_index": 2,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "C",
+          "sequence_index": 3,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "C",
+          "sequence_index": 4,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_5_negative_lag"
+          ]
+        },
+        {
+          "scenario": "C",
+          "sequence_index": 18,
+          "phase": "MEDIUM",
+          "kafka_anomalies": [
+            "partition_2_negative_lag",
+            "partition_3_negative_lag"
+          ]
+        }
+      ],
+      "settling_samples_are_excluded_from_profile_statistics": true
+    },
+    "rate_window_seconds": 60,
+    "percentile_method": "nearest_rank",
+    "profiles": {
+      "IDLE": {
+        "status": "AVAILABLE",
+        "sample_count": 5,
+        "actual_produce_rate_records_per_second": {
+          "count": 5,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.6166666666666667,
+          "max": 0.6166666666666667
+        },
+        "committed_offset_rate_records_per_second": {
+          "count": 5,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.6166666666666667,
+          "max": 0.6166666666666667
+        },
+        "total_lag_records": {
+          "count": 5,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.0,
+          "max": 0.0
+        },
+        "lag_slope_records_per_second": {
+          "count": 5,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.0,
+          "max": 0.0
+        },
+        "maximum_partition_lag_share": {
+          "count": 5,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.0,
+          "max": 0.0
+        },
+        "worker_db_persist_stage_mean_seconds": {
+          "count": 1,
+          "min": 0.009019955789547368,
+          "median": 0.009019955789547368,
+          "p95_nearest_rank": 0.009019955789547368,
+          "max": 0.009019955789547368
+        },
+        "worker_db_persist_stage_p95_bucket_upper_bound_seconds": {
+          "count": 1,
+          "min": 0.05,
+          "median": 0.05,
+          "p95_nearest_rank": 0.05,
+          "max": 0.05
+        },
+        "worker_desired_replicas": [
+          2
+        ],
+        "worker_available_replicas": [
+          2
+        ],
+        "postgres_guardrail": {
+          "all_readiness_ready": true,
+          "all_primary_reachable": true,
+          "minimum_standby_count": 2,
+          "minimum_sync_standby_count": 2,
+          "maximum_replication_delay_bytes": 0
+        },
+        "evidence_quality": {
+          "usable_samples": 5,
+          "required_kafka_complete_and_fresh": true
+        }
+      },
+      "LOW": {
+        "status": "AVAILABLE",
+        "sample_count": 4,
+        "actual_produce_rate_records_per_second": {
+          "count": 4,
+          "min": 29.35,
+          "median": 29.691666666666666,
+          "p95_nearest_rank": 31.0,
+          "max": 31.0
+        },
+        "committed_offset_rate_records_per_second": {
+          "count": 4,
+          "min": 29.333333333333332,
+          "median": 29.65833333333333,
+          "p95_nearest_rank": 35.516666666666666,
+          "max": 35.516666666666666
+        },
+        "total_lag_records": {
+          "count": 4,
+          "min": 0.0,
+          "median": 1.0,
+          "p95_nearest_rank": 3.0,
+          "max": 3.0
+        },
+        "lag_slope_records_per_second": {
+          "count": 4,
+          "min": -4.516666666666667,
+          "median": 0.016666666666666666,
+          "p95_nearest_rank": 0.05,
+          "max": 0.05
+        },
+        "maximum_partition_lag_share": {
+          "count": 4,
+          "min": 0.0,
+          "median": 0.6666666666666666,
+          "p95_nearest_rank": 1.0,
+          "max": 1.0
+        },
+        "worker_db_persist_stage_mean_seconds": {
+          "count": 4,
+          "min": 0.005348801741641738,
+          "median": 0.005621491137883085,
+          "p95_nearest_rank": 0.006735414267569785,
+          "max": 0.006735414267569785
+        },
+        "worker_db_persist_stage_p95_bucket_upper_bound_seconds": {
+          "count": 4,
+          "min": 0.025,
+          "median": 0.037500000000000006,
+          "p95_nearest_rank": 0.05,
+          "max": 0.05
+        },
+        "worker_desired_replicas": [
+          2
+        ],
+        "worker_available_replicas": [
+          2
+        ],
+        "postgres_guardrail": {
+          "all_readiness_ready": true,
+          "all_primary_reachable": true,
+          "minimum_standby_count": 2,
+          "minimum_sync_standby_count": 2,
+          "maximum_replication_delay_bytes": 0
+        },
+        "evidence_quality": {
+          "usable_samples": 4,
+          "required_kafka_complete_and_fresh": true
+        }
+      },
+      "MEDIUM": {
+        "status": "AVAILABLE",
+        "sample_count": 3,
+        "actual_produce_rate_records_per_second": {
+          "count": 3,
+          "min": 74.98333333333333,
+          "median": 75.0,
+          "p95_nearest_rank": 77.08333333333333,
+          "max": 77.08333333333333
+        },
+        "committed_offset_rate_records_per_second": {
+          "count": 3,
+          "min": 74.98333333333333,
+          "median": 75.0,
+          "p95_nearest_rank": 80.13333333333334,
+          "max": 80.13333333333334
+        },
+        "total_lag_records": {
+          "count": 3,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 22.0,
+          "max": 22.0
+        },
+        "lag_slope_records_per_second": {
+          "count": 3,
+          "min": -3.05,
+          "median": 0.0,
+          "p95_nearest_rank": 0.0,
+          "max": 0.0
+        },
+        "maximum_partition_lag_share": {
+          "count": 3,
+          "min": 0.0,
+          "median": 0.0,
+          "p95_nearest_rank": 0.22727272727272727,
+          "max": 0.22727272727272727
+        },
+        "worker_db_persist_stage_mean_seconds": {
+          "count": 3,
+          "min": 0.006582183504466815,
+          "median": 0.010355191088494071,
+          "p95_nearest_rank": 0.010784060670924023,
+          "max": 0.010784060670924023
+        },
+        "worker_db_persist_stage_p95_bucket_upper_bound_seconds": {
+          "count": 3,
+          "min": 0.05,
+          "median": 0.1,
+          "p95_nearest_rank": 0.1,
+          "max": 0.1
+        },
+        "worker_desired_replicas": [
+          2,
+          4
+        ],
+        "worker_available_replicas": [
+          2,
+          4
+        ],
+        "postgres_guardrail": {
+          "all_readiness_ready": true,
+          "all_primary_reachable": true,
+          "minimum_standby_count": 2,
+          "minimum_sync_standby_count": 2,
+          "maximum_replication_delay_bytes": 7104
+        },
+        "evidence_quality": {
+          "usable_samples": 3,
+          "required_kafka_complete_and_fresh": true
+        }
+      },
+      "HIGH_SUSTAINABLE": {
+        "status": "AVAILABLE",
+        "sample_count": 2,
+        "actual_produce_rate_records_per_second": {
+          "count": 2,
+          "min": 107.9,
+          "median": 108.92500000000001,
+          "p95_nearest_rank": 109.95,
+          "max": 109.95
+        },
+        "committed_offset_rate_records_per_second": {
+          "count": 2,
+          "min": 104.83333333333333,
+          "median": 106.70833333333333,
+          "p95_nearest_rank": 108.58333333333333,
+          "max": 108.58333333333333
+        },
+        "total_lag_records": {
+          "count": 2,
+          "min": 216.0,
+          "median": 231.0,
+          "p95_nearest_rank": 246.0,
+          "max": 246.0
+        },
+        "lag_slope_records_per_second": {
+          "count": 2,
+          "min": 1.3666666666666667,
+          "median": 2.216666666666667,
+          "p95_nearest_rank": 3.066666666666667,
+          "max": 3.066666666666667
+        },
+        "maximum_partition_lag_share": {
+          "count": 2,
+          "min": 0.23983739837398374,
+          "median": 0.26806684733514,
+          "p95_nearest_rank": 0.2962962962962963,
+          "max": 0.2962962962962963
+        },
+        "worker_db_persist_stage_mean_seconds": {
+          "count": 2,
+          "min": 0.012141748820596482,
+          "median": 0.013124818198297309,
+          "p95_nearest_rank": 0.014107887575998134,
+          "max": 0.014107887575998134
+        },
+        "worker_db_persist_stage_p95_bucket_upper_bound_seconds": {
+          "count": 2,
+          "min": 0.1,
+          "median": 0.1,
+          "p95_nearest_rank": 0.1,
+          "max": 0.1
+        },
+        "worker_desired_replicas": [
+          4
+        ],
+        "worker_available_replicas": [
+          4
+        ],
+        "postgres_guardrail": {
+          "all_readiness_ready": true,
+          "all_primary_reachable": true,
+          "minimum_standby_count": 2,
+          "minimum_sync_standby_count": 2,
+          "maximum_replication_delay_bytes": 0
+        },
+        "evidence_quality": {
+          "usable_samples": 2,
+          "required_kafka_complete_and_fresh": true
+        }
+      }
+    },
+    "available_profiles": [
+      "IDLE",
+      "LOW",
+      "MEDIUM",
+      "HIGH_SUSTAINABLE"
+    ],
+    "complete": true
+  },
+  "recovery_runs": {
+    "E-run-01": {
+      "status": "ANALYZED",
+      "policy_applied": false,
+      "recovery_state_emitted": false,
+      "matched_activation_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ],
+        [
+          11,
+          12,
+          13
+        ]
+      ],
+      "activation_end_index": 11,
+      "peak_lag_records": 20806.0,
+      "peak_lag_index": 13,
+      "first_negative_lag_slope_index": 16,
+      "negative_lag_slope_run_candidates": [
+        {
+          "start_index": 16,
+          "end_index": 48,
+          "capture_count": 33
+        },
+        {
+          "start_index": 53,
+          "end_index": 63,
+          "capture_count": 11
+        }
+      ],
+      "produce_committed_balance_reversal_index": 16,
+      "operating_envelope_reentry_candidates": [
+        {
+          "sequence_index": 16,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 842.9160530191458,
+            "net_drain_rate_records_per_second": 22.633333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 17,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 513.168044077135,
+            "net_drain_rate_records_per_second": 36.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 18,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 497.85055350553506,
+            "net_drain_rate_records_per_second": 36.13333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 19,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 482.3204419889502,
+            "net_drain_rate_records_per_second": 36.2,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 20,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 459.83651226158037,
+            "net_drain_rate_records_per_second": 36.7,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 21,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 430.6409130816505,
+            "net_drain_rate_records_per_second": 37.96666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 22,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 411.32751091703057,
+            "net_drain_rate_records_per_second": 38.166666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 23,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 391.55172413793105,
+            "net_drain_rate_records_per_second": 38.666666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 24,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 367.60135135135135,
+            "net_drain_rate_records_per_second": 39.46666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 25,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 355.50190597204573,
+            "net_drain_rate_records_per_second": 39.35,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 26,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 342.36651003844514,
+            "net_drain_rate_records_per_second": 39.016666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 27,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 324.58933107535984,
+            "net_drain_rate_records_per_second": 39.36666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 28,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 398.87190300474435,
+            "net_drain_rate_records_per_second": 31.616666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 29,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 535.6990773598296,
+            "net_drain_rate_records_per_second": 23.483333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 30,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 504.4225352112676,
+            "net_drain_rate_records_per_second": 23.666666666666668,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 31,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 472.7866574009729,
+            "net_drain_rate_records_per_second": 23.983333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 32,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 335.53580763199164,
+            "net_drain_rate_records_per_second": 31.883333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 33,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 250.74516261836146,
+            "net_drain_rate_records_per_second": 40.483333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 34,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 243.76590330788807,
+            "net_drain_rate_records_per_second": 39.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 35,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 248.68421052631578,
+            "net_drain_rate_records_per_second": 36.733333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 36,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 328.54721549636804,
+            "net_drain_rate_records_per_second": 27.533333333333335,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 37,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 575.7620041753653,
+            "net_drain_rate_records_per_second": 15.966666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 38,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 780.3508771929825,
+            "net_drain_rate_records_per_second": 11.4,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 39,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 784.5300462249616,
+            "net_drain_rate_records_per_second": 10.816666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 40,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 445.834109972041,
+            "net_drain_rate_records_per_second": 17.883333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 41,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 270.08976660682225,
+            "net_drain_rate_records_per_second": 27.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 42,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 228.36304700162074,
+            "net_drain_rate_records_per_second": 30.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 43,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 207.41596638655463,
+            "net_drain_rate_records_per_second": 31.733333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 44,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 189.80678851174935,
+            "net_drain_rate_records_per_second": 31.916666666666668,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 45,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 178.5412262156448,
+            "net_drain_rate_records_per_second": 31.533333333333335,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 46,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 161.54088050314465,
+            "net_drain_rate_records_per_second": 31.8,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 47,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 148.07165437302424,
+            "net_drain_rate_records_per_second": 31.633333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 48,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 134.58244111349038,
+            "net_drain_rate_records_per_second": 31.133333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 53,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 93.19148936170212,
+            "net_drain_rate_records_per_second": 25.066666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 54,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 78.1367292225201,
+            "net_drain_rate_records_per_second": 24.866666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 55,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 65.06756756756756,
+            "net_drain_rate_records_per_second": 24.666666666666668,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 56,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 52.10306406685237,
+            "net_drain_rate_records_per_second": 23.933333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 57,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 37.94549266247379,
+            "net_drain_rate_records_per_second": 23.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 58,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 22.27240649258998,
+            "net_drain_rate_records_per_second": 23.616666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 59,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 9.330453563714903,
+            "net_drain_rate_records_per_second": 23.15,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 60,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 1.1274509803921569,
+            "net_drain_rate_records_per_second": 20.4,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 61,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 62,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 2.248520710059172,
+            "net_drain_rate_records_per_second": 8.45,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 63,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 0.27906976744186046,
+            "net_drain_rate_records_per_second": 3.5833333333333335,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 64,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 65,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 66,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        }
+      ],
+      "stable_reentry_window_candidates": [
+        {
+          "start_index": 61,
+          "end_index": 63,
+          "capture_count": 3
+        }
+      ],
+      "scale_timing_context": [
+        {
+          "sequence_index": 0,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 7,
+          "desired_replicas": 4
+        },
+        {
+          "sequence_index": 67,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 70,
+          "desired_replicas": 3
+        }
+      ],
+      "candidate_semantics": {
+        "recovering": "backlog remains above the load-aware envelope while lag decreases and committed processing keeps up with ingress",
+        "recovered": "backlog re-enters the observed load-aware envelope and remains stable with complete fresh Kafka evidence and acceptable PostgreSQL guardrail",
+        "keda_and_replica_role": "optional timing context only",
+        "thresholds_promoted": false
+      }
+    },
+    "F-run-01": {
+      "status": "ANALYZED",
+      "policy_applied": false,
+      "recovery_state_emitted": false,
+      "matched_activation_windows": [
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "activation_end_index": 11,
+      "peak_lag_records": 20998.0,
+      "peak_lag_index": 12,
+      "first_negative_lag_slope_index": 15,
+      "negative_lag_slope_run_candidates": [
+        {
+          "start_index": 15,
+          "end_index": 29,
+          "capture_count": 15
+        }
+      ],
+      "produce_committed_balance_reversal_index": 15,
+      "operating_envelope_reentry_candidates": [
+        {
+          "sequence_index": 16,
+          "matched_profile": "LOW",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 160.79915878023135,
+            "net_drain_rate_records_per_second": 95.1,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 17,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 114.80989399293286,
+            "net_drain_rate_records_per_second": 117.91666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 18,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 97.419624217119,
+            "net_drain_rate_records_per_second": 119.75,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 19,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 82.54479788859564,
+            "net_drain_rate_records_per_second": 119.98333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 20,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 67.13315782180962,
+            "net_drain_rate_records_per_second": 120.28333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 21,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 55.18893186551622,
+            "net_drain_rate_records_per_second": 112.03333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 22,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 53.62987012987013,
+            "net_drain_rate_records_per_second": 102.66666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 23,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 36.07760711398545,
+            "net_drain_rate_records_per_second": 103.08333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 24,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 18.895945285784077,
+            "net_drain_rate_records_per_second": 102.35,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 25,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 3.2622497151229037,
+            "net_drain_rate_records_per_second": 102.38333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 26,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 27,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 28,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 29,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 30,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 31,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 32,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 33,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 34,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 35,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 36,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 37,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 38,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 39,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 40,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 41,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 42,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 43,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 44,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 45,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 46,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 47,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 48,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 49,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 50,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 51,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 52,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 53,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 54,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 55,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 56,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 57,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 58,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 59,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 60,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 61,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 62,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 63,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 64,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 65,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 66,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 67,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 68,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 69,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 70,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 71,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 72,
+          "matched_profile": "IDLE",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        }
+      ],
+      "stable_reentry_window_candidates": [
+        {
+          "start_index": 26,
+          "end_index": 72,
+          "capture_count": 47
+        }
+      ],
+      "scale_timing_context": [
+        {
+          "sequence_index": 0,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 2,
+          "desired_replicas": 3
+        },
+        {
+          "sequence_index": 7,
+          "desired_replicas": 4
+        },
+        {
+          "sequence_index": 32,
+          "desired_replicas": 2
+        }
+      ],
+      "candidate_semantics": {
+        "recovering": "backlog remains above the load-aware envelope while lag decreases and committed processing keeps up with ingress",
+        "recovered": "backlog re-enters the observed load-aware envelope and remains stable with complete fresh Kafka evidence and acceptable PostgreSQL guardrail",
+        "keda_and_replica_role": "optional timing context only",
+        "thresholds_promoted": false
+      }
+    },
+    "E-run-02": {
+      "status": "ANALYZED",
+      "policy_applied": false,
+      "recovery_state_emitted": false,
+      "matched_activation_windows": [
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "activation_end_index": 10,
+      "peak_lag_records": 21834.0,
+      "peak_lag_index": 12,
+      "first_negative_lag_slope_index": 16,
+      "negative_lag_slope_run_candidates": [
+        {
+          "start_index": 16,
+          "end_index": 52,
+          "capture_count": 37
+        },
+        {
+          "start_index": 63,
+          "end_index": 63,
+          "capture_count": 1
+        }
+      ],
+      "produce_committed_balance_reversal_index": 16,
+      "operating_envelope_reentry_candidates": [
+        {
+          "sequence_index": 16,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 541.4876033057851,
+            "net_drain_rate_records_per_second": 36.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 17,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 521.3029612756264,
+            "net_drain_rate_records_per_second": 36.583333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 18,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 494.8665480427046,
+            "net_drain_rate_records_per_second": 37.46666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 19,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 478.5593597154291,
+            "net_drain_rate_records_per_second": 37.483333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 20,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 470.2877697841726,
+            "net_drain_rate_records_per_second": 37.06666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 21,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 454.27415730337077,
+            "net_drain_rate_records_per_second": 37.083333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 22,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 439.98202247191006,
+            "net_drain_rate_records_per_second": 37.083333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 23,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 430.1092896174863,
+            "net_drain_rate_records_per_second": 36.6,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 24,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 407.9731543624161,
+            "net_drain_rate_records_per_second": 37.25,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 25,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 397.1506105834464,
+            "net_drain_rate_records_per_second": 36.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 26,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 381.7689530685921,
+            "net_drain_rate_records_per_second": 36.93333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 27,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 360.5342831700802,
+            "net_drain_rate_records_per_second": 37.43333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 28,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 338.174672489083,
+            "net_drain_rate_records_per_second": 38.166666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 29,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 313.02463891248937,
+            "net_drain_rate_records_per_second": 39.233333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 30,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 298.93084429359357,
+            "net_drain_rate_records_per_second": 39.28333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 31,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 283.99320305862364,
+            "net_drain_rate_records_per_second": 39.233333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 32,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 273.80172413793105,
+            "net_drain_rate_records_per_second": 38.666666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 33,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 257.61206896551727,
+            "net_drain_rate_records_per_second": 38.666666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 34,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 246.47237929534577,
+            "net_drain_rate_records_per_second": 38.31666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 35,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 235.8053097345133,
+            "net_drain_rate_records_per_second": 37.666666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 36,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 225.49213483146065,
+            "net_drain_rate_records_per_second": 37.083333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 37,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 210.92475067996375,
+            "net_drain_rate_records_per_second": 36.766666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 38,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 198.2680036463081,
+            "net_drain_rate_records_per_second": 36.56666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 39,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 177.06405693950177,
+            "net_drain_rate_records_per_second": 37.46666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 40,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 157.19480519480518,
+            "net_drain_rate_records_per_second": 38.5,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 41,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 140.3013344812742,
+            "net_drain_rate_records_per_second": 38.71666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 42,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 122.69634607307854,
+            "net_drain_rate_records_per_second": 39.68333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 43,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 109.59522795057521,
+            "net_drain_rate_records_per_second": 39.11666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 44,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 97.33102253032928,
+            "net_drain_rate_records_per_second": 38.46666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 45,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 86.28366247755835,
+            "net_drain_rate_records_per_second": 37.13333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 46,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 79.77990430622009,
+            "net_drain_rate_records_per_second": 34.833333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 47,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 66.58464566929133,
+            "net_drain_rate_records_per_second": 33.86666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 48,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 53.111782477341386,
+            "net_drain_rate_records_per_second": 33.1,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 49,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 35.880299251870326,
+            "net_drain_rate_records_per_second": 33.416666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 50,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 24.127144298688194,
+            "net_drain_rate_records_per_second": 33.03333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 51,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 13.095623987034035,
+            "net_drain_rate_records_per_second": 30.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 52,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 0.4469914040114613,
+            "net_drain_rate_records_per_second": 29.083333333333332,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 59,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 60,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 61,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 62,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 63,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 27.058823529411764,
+            "net_drain_rate_records_per_second": 0.85,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        }
+      ],
+      "stable_reentry_window_candidates": [
+        {
+          "start_index": 52,
+          "end_index": 52,
+          "capture_count": 1
+        }
+      ],
+      "scale_timing_context": [
+        {
+          "sequence_index": 0,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 7,
+          "desired_replicas": 4
+        },
+        {
+          "sequence_index": 59,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 62,
+          "desired_replicas": 4
+        },
+        {
+          "sequence_index": 70,
+          "desired_replicas": 2
+        }
+      ],
+      "candidate_semantics": {
+        "recovering": "backlog remains above the load-aware envelope while lag decreases and committed processing keeps up with ingress",
+        "recovered": "backlog re-enters the observed load-aware envelope and remains stable with complete fresh Kafka evidence and acceptable PostgreSQL guardrail",
+        "keda_and_replica_role": "optional timing context only",
+        "thresholds_promoted": false
+      }
+    },
+    "E-run-03": {
+      "status": "ANALYZED",
+      "policy_applied": false,
+      "recovery_state_emitted": false,
+      "matched_activation_windows": [
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11,
+          12
+        ]
+      ],
+      "activation_end_index": 10,
+      "peak_lag_records": 21151.0,
+      "peak_lag_index": 12,
+      "first_negative_lag_slope_index": 16,
+      "negative_lag_slope_run_candidates": [
+        {
+          "start_index": 16,
+          "end_index": 56,
+          "capture_count": 41
+        },
+        {
+          "start_index": 61,
+          "end_index": 61,
+          "capture_count": 1
+        },
+        {
+          "start_index": 69,
+          "end_index": 69,
+          "capture_count": 1
+        },
+        {
+          "start_index": 71,
+          "end_index": 72,
+          "capture_count": 2
+        }
+      ],
+      "produce_committed_balance_reversal_index": 16,
+      "operating_envelope_reentry_candidates": [
+        {
+          "sequence_index": 16,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 581.587462082912,
+            "net_drain_rate_records_per_second": 32.96666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 17,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 492.33421750663126,
+            "net_drain_rate_records_per_second": 37.7,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 18,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 485.55006735518634,
+            "net_drain_rate_records_per_second": 37.11666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 19,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 477.75854214123,
+            "net_drain_rate_records_per_second": 36.583333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 20,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 456.0969044414536,
+            "net_drain_rate_records_per_second": 37.15,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 21,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 455.10638297872345,
+            "net_drain_rate_records_per_second": 36.03333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 22,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 432.18024578971324,
+            "net_drain_rate_records_per_second": 36.61666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 23,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 400.75571177504395,
+            "net_drain_rate_records_per_second": 37.93333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 24,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 371.69426751592357,
+            "net_drain_rate_records_per_second": 39.25,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 25,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 344.74701768819415,
+            "net_drain_rate_records_per_second": 40.516666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 26,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 324.10194174757277,
+            "net_drain_rate_records_per_second": 41.2,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 27,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 309.2793522267207,
+            "net_drain_rate_records_per_second": 41.166666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 28,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 300.370522848909,
+            "net_drain_rate_records_per_second": 40.483333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 29,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 282.6328699918234,
+            "net_drain_rate_records_per_second": 40.766666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 30,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 270.6562113082955,
+            "net_drain_rate_records_per_second": 40.38333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 31,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 253.72484599589322,
+            "net_drain_rate_records_per_second": 40.583333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 32,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 240.12340600575897,
+            "net_drain_rate_records_per_second": 40.516666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 33,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 226.49813510153336,
+            "net_drain_rate_records_per_second": 40.21666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 34,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 216.94256756756755,
+            "net_drain_rate_records_per_second": 39.46666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 35,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 204.251497005988,
+            "net_drain_rate_records_per_second": 38.96666666666667,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 36,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 194.02088772845954,
+            "net_drain_rate_records_per_second": 38.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 37,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 188.42727272727274,
+            "net_drain_rate_records_per_second": 36.666666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 38,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 179.4965034965035,
+            "net_drain_rate_records_per_second": 35.75,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 39,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 165.4674220963173,
+            "net_drain_rate_records_per_second": 35.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 40,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 151.10795454545453,
+            "net_drain_rate_records_per_second": 35.2,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 41,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 135.5377358490566,
+            "net_drain_rate_records_per_second": 35.333333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 42,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 121.18588235294118,
+            "net_drain_rate_records_per_second": 35.416666666666664,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 43,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 107.36389684813754,
+            "net_drain_rate_records_per_second": 34.9,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 44,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 93.80240963855421,
+            "net_drain_rate_records_per_second": 34.583333333333336,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 45,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 87.88471435923829,
+            "net_drain_rate_records_per_second": 32.38333333333333,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 46,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 81.96251378169791,
+            "net_drain_rate_records_per_second": 30.233333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 47,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 74.30107526881721,
+            "net_drain_rate_records_per_second": 27.9,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 48,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 90.41731066460588,
+            "net_drain_rate_records_per_second": 21.566666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 49,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 88.35794960903561,
+            "net_drain_rate_records_per_second": 19.183333333333334,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 50,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 68.39378238341969,
+            "net_drain_rate_records_per_second": 19.3,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 51,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 46.855670103092784,
+            "net_drain_rate_records_per_second": 19.4,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 52,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 40.77519379844961,
+            "net_drain_rate_records_per_second": 19.35,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 53,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 29.445910290237467,
+            "net_drain_rate_records_per_second": 18.95,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 54,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 9.656992084432718,
+            "net_drain_rate_records_per_second": 18.95,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 55,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 1.4189189189189189,
+            "net_drain_rate_records_per_second": 14.8,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 56,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 61,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 1080.0,
+            "net_drain_rate_records_per_second": 0.016666666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 62,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 67,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 68,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": false,
+          "processing_keeps_up_with_ingress": false,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NOT_DRAINING",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 69,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": false,
+          "within_observed_p95_lag": false,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 19.223300970873787,
+            "net_drain_rate_records_per_second": 1.7166666666666666,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 70,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        },
+        {
+          "sequence_index": 71,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "AVAILABLE",
+            "estimated_drain_seconds": 440.0,
+            "net_drain_rate_records_per_second": 0.05,
+            "semantic": "diagnostic context from observed negative lag slope; not a recovery threshold"
+          }
+        },
+        {
+          "sequence_index": 72,
+          "matched_profile": "MEDIUM",
+          "within_observed_max_lag": true,
+          "within_observed_p95_lag": true,
+          "no_growth_above_observed_slope_max": true,
+          "processing_keeps_up_with_ingress": true,
+          "required_evidence_usable": true,
+          "postgres_guardrail_candidate_acceptable": true,
+          "estimated_drain": {
+            "status": "NO_BACKLOG",
+            "estimated_drain_seconds": null
+          }
+        }
+      ],
+      "stable_reentry_window_candidates": [
+        {
+          "start_index": 55,
+          "end_index": 62,
+          "capture_count": 4
+        },
+        {
+          "start_index": 70,
+          "end_index": 72,
+          "capture_count": 3
+        }
+      ],
+      "scale_timing_context": [
+        {
+          "sequence_index": 0,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 7,
+          "desired_replicas": 4
+        },
+        {
+          "sequence_index": 62,
+          "desired_replicas": 2
+        },
+        {
+          "sequence_index": 65,
+          "desired_replicas": 3
+        }
+      ],
+      "candidate_semantics": {
+        "recovering": "backlog remains above the load-aware envelope while lag decreases and committed processing keeps up with ingress",
+        "recovered": "backlog re-enters the observed load-aware envelope and remains stable with complete fresh Kafka evidence and acceptable PostgreSQL guardrail",
+        "keda_and_replica_role": "optional timing context only",
+        "thresholds_promoted": false
+      }
+    }
+  },
+  "policy_candidates": {
+    "schema_version": "ops.recovery-policy-candidates.v1",
+    "promoted_to_evaluator": false,
+    "recovering_candidate": {
+      "predicate": [
+        "existing CORE_BACKLOG_PRESSURE activation is preserved",
+        "backlog remains above the matched load-aware envelope",
+        "lag slope is negative on consecutive fresh usable captures",
+        "committed-offset rate is greater than or equal to produce rate",
+        "PostgreSQL readiness remains acceptable"
+      ],
+      "observed_negative_run_capture_counts": {
+        "E-run-01": [
+          33,
+          11
+        ],
+        "E-run-02": [
+          37,
+          1
+        ],
+        "E-run-03": [
+          41,
+          1,
+          1,
+          2
+        ],
+        "F-run-01": [
+          15
+        ]
+      },
+      "three_capture_candidate": {
+        "capture_count": 3,
+        "approximate_transition_span_seconds": 30,
+        "validation_status": "SUPPORTED_BY_ALL_LIVE_RECOVERY_RUNS_NOT_PROMOTED"
+      }
+    },
+    "recovered_candidate": {
+      "predicate": [
+        "lag returns to the matched load-aware operating envelope",
+        "no growth exceeds the observed envelope slope maximum",
+        "current ingress is continuously processable",
+        "required Kafka evidence is fresh complete and usable",
+        "PostgreSQL readiness remains acceptable"
+      ],
+      "load_aware_envelope_profiles": {
+        "IDLE": {
+          "total_lag_records": {
+            "count": 5,
+            "min": 0.0,
+            "median": 0.0,
+            "p95_nearest_rank": 0.0,
+            "max": 0.0
+          },
+          "lag_slope_records_per_second": {
+            "count": 5,
+            "min": 0.0,
+            "median": 0.0,
+            "p95_nearest_rank": 0.0,
+            "max": 0.0
+          }
+        },
+        "LOW": {
+          "total_lag_records": {
+            "count": 4,
+            "min": 0.0,
+            "median": 1.0,
+            "p95_nearest_rank": 3.0,
+            "max": 3.0
+          },
+          "lag_slope_records_per_second": {
+            "count": 4,
+            "min": -4.516666666666667,
+            "median": 0.016666666666666666,
+            "p95_nearest_rank": 0.05,
+            "max": 0.05
+          }
+        },
+        "MEDIUM": {
+          "total_lag_records": {
+            "count": 3,
+            "min": 0.0,
+            "median": 0.0,
+            "p95_nearest_rank": 22.0,
+            "max": 22.0
+          },
+          "lag_slope_records_per_second": {
+            "count": 3,
+            "min": -3.05,
+            "median": 0.0,
+            "p95_nearest_rank": 0.0,
+            "max": 0.0
+          }
+        },
+        "HIGH_SUSTAINABLE": {
+          "total_lag_records": {
+            "count": 2,
+            "min": 216.0,
+            "median": 231.0,
+            "p95_nearest_rank": 246.0,
+            "max": 246.0
+          },
+          "lag_slope_records_per_second": {
+            "count": 2,
+            "min": 1.3666666666666667,
+            "median": 2.216666666666667,
+            "p95_nearest_rank": 3.066666666666667,
+            "max": 3.066666666666667
+          }
+        }
+      },
+      "observed_stable_reentry_capture_counts": {
+        "E-run-01": [
+          3
+        ],
+        "E-run-02": [
+          1
+        ],
+        "E-run-03": [
+          4,
+          3
+        ],
+        "F-run-01": [
+          47
+        ]
+      },
+      "three_capture_candidate": {
+        "capture_count": 3,
+        "approximate_transition_span_seconds": 30,
+        "validation_status": "NOT_UNIVERSALLY_VALIDATED",
+        "limitation": "E-run-02 retained only one usable re-entry candidate because later exporter-negative samples were excluded"
+      },
+      "fixed_lag_floor_selected": false
+    },
+    "capture_interval_candidate": {
+      "configured_seconds": 15,
+      "observed_interval_count": 288,
+      "observed_min_seconds": 9.985154,
+      "observed_median_seconds": 14.997561,
+      "observed_max_seconds": 19.976516,
+      "tolerance_not_promoted": true
+    }
+  },
+  "artifact_validation": {
+    "status": "PASS",
+    "sample_count": 349,
+    "verified_bundle_count": 349,
+    "verified_raw_artifact_count": 1396,
+    "errors": []
+  },
+  "policy_candidates_only": true,
+  "recovery_evaluator_implemented": false,
+  "phase3_changed": false
+}

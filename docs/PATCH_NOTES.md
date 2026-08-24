@@ -1,6 +1,157 @@
 # 패치 노트
 
-Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
+Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
+
+## 2026-08-24 Phase 5.2 recorded AI Investigation replay candidate
+
+- Demo UI `2.4.0`에 actual Phase 5.1 diagnosis의 four-step tool trace, normalized evidence status/freshness와 expandable safe summary 추가
+- artifact 실제 순서인 partition lag → Worker stage latency → Worker replica → PostgreSQL health를 보존하고 static replay에서 OpenAI API 재호출 금지
+- `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED` supporting citation과 commit-latency gap, 나머지 `INSUFFICIENT` hypothesis의 conflicting evidence/gap 표시
+- deterministic validator `VALID`, output repair `1`, stop `sufficient_evidence`를 causal truth 검증과 분리해 표시
+- Agent read-only capability와 Pod restart/scale, Kubernetes/Kafka write, recovery/remediation 금지 경계 표시
+- AI Investigation을 기존 운영 패널 다음의 다섯 번째 고정 폭 열로 배치하고 workspace 전체를 가로 스크롤하도록 구성
+- canonical diagnosis hash를 검증하는 allowlist exporter와 raw/source bundle/model response ID 제외 public projection 추가
+- Phase 3 tests가 Git-ignored Phase 2.5 live bundle을 직접 읽어 GitHub Actions에서 11건 실패하던 경계를 tracked baseline 기반 deterministic synthetic sequence helper로 격리
+- local validation: Ops Agent `250 passed`, full suite `608 passed`; replay contract와 desktop/mobile Edge headless render 확인
+- dev-kafka CI `#89` 성공, image `b7e4145bea6d`; demo-dev CI `#90` 성공, release `762da82`, image `7489ab270995`
+- public UI `2.4.0`, replay JSON `200`/Validator `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
+
+## 2026-08-23 Phase 5 incident lifecycle and actual Gate 2
+
+- `ops.incident.v1` deterministic identity, integrity-checked record, timeline, diagnosis/recovery attachment, closure와 post-closure `current_observation` 분리 구현
+- actual `local-ha` Phase 5.1 orchestrator에 phase target attainment, HTTP failure `0`, dropped iteration `0` strict workload quality gate 적용
+- 이전 `20260816T214911Z` identity mismatch와 `20260816T223837Z` dropped `19` 실행을 실패 증거로 보존하고 recovery/canonical promotion 차단
+- PostgreSQL HA degraded `standby/sync 0/0`을 기존 standby reclone retry와 documented sync procedure로 `ready`, standby/sync `2/2`까지 복구한 뒤에만 Gate 2 재실행
+- 성공 workload: 64 streams, `75→330→75 records/s`, accepted `6,750 / 29,697 / 135,000`, failed/dropped `0/0`, peak lag `20,574`, KEDA/Worker `4/4`
+- deterministic activation `687fb490...dd1d`, bounded Luna diagnosis `ed0013fa...d7b6`, recovery ACTIVE→RECOVERING→RECOVERED, incident `inc-88a1eeaa17897f6a8a929bba` CLOSED/RECOVERED 검증
+- normalized bundle `133/133`, raw projection `532/532` hash 검증 PASS; lifecycle closure `809.557s`
+- closure 뒤 later `WORKER_BACKLOG_ACTIVE`를 closed history에서 분리해 보존; automatic reopen/new incident correlation 미구현
+- workload generator는 k6 `dropped_iterations`, per-phase attainment와 failure를 summary/gate에 보존하고 iteration duration 기준 VU sizing으로 zero-drop Gate 2 통과
+- source checkpoint `ee5db64`; application/recovery threshold/KEDA/Kafka offset 변경 없음
+- Phase 5.2 public Verified Incident Replay는 연기; demo-lite route/deployment 미변경
+- Phase 5.3 docs checkpoint regression: lifecycle/workload focused `19 passed`, Ops Agent `250 passed`, full suite `607 passed`
+- Linux CI에서 `collect_bundle` unit test가 실제 Git dirty-state subprocess에 의존하던 비격리 경계를 재현; source revision/dirty를 모두 fixture로 고정하고 `_source_dirty` clean/dirty/unavailable 3-case contract test 추가
+- Windows full suite `607 passed`; 이후 GitHub Actions #88에서 Git-ignored Phase 2.5 bundle을 읽는 diagnosis test 11건이 실패해 Phase 5.2 작업에서 tracked synthetic input으로 교체
+
+## 2026-08-17 continuous-ingress RECOVERED calibration and recovery policy v2
+
+- 기존 Phase 4 E-01~03 artifact를 변경하지 않고 동일한 `75→330→75 records/s`, 64-stream continuous-ingress E-04~06을 current KEDA `2→4`로 추가 실행
+- 신규 219 bundle/876 raw projection과 결합 E-01~06 438 bundle/1,752 raw projection canonical/hash 검증 통과; failed/dropped iteration 모두 `0`
+- MEDIUM measured ingress `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, fresh usable evidence, PostgreSQL ready/HA/primary, `INVALID_ONLY` 품질 계약으로 stable re-entry 분석
+- E-01~06 consecutive stable count `3/1/3/4/5/14`; count `3`은 전체 `5/6`, 신규 `3/3`에서 지지되고 brief re-entry false control을 차단
+- `worker-backlog-local-ha.recovery.v2`와 evaluator/ruleset v2 추가; RECOVERING 뒤 MEDIUM envelope capture 3개가 연속될 때만 incident-scope `WORKER_BACKLOG_RECOVERED`와 completion `COMPLETE` 반환
+- v1 policy와 CLI default 유지; v2는 explicit `--policy-version v2`로만 선택
+- lag `0`, Worker `2`, KEDA inactive, traffic `0`을 RECOVERED 필수조건으로 사용하지 않음; unknown/anomaly/envelope 이탈은 consecutive count reset
+- decreasing/regrowing, brief re-entry, unknown/stale, partial coverage, offset reset, identity/DB/negative-lag/zero-ingress flat backlog false control에서 RECOVERED 미발생
+- clearing hysteresis, post-recovery incident manager, Recovery LLM, remediation은 미구현; Phase 2 activation과 Phase 3 Diagnosis Agent 미변경
+- local validation: Ops Agent `228 passed`, full suite `585 passed`; compileall, artifact/hash audit, changed-file secret scan, diff check 통과
+
+## 2026-08-17 deterministic Worker backlog recovery evaluation
+
+- 기존 Phase 4 calibration artifact를 변경하지 않고 integrity-valid v2 activation과 ordered post-activation Evidence Bundle을 평가하는 `ops.recovery.v1` 추가
+- `worker-backlog-local-ha.recovery.v1`, `ops.recovery.evaluator.v1`, `ops.recovery.rules.v1`로 policy/evaluator/ruleset provenance와 deterministic evaluation ID 고정
+- `WORKER_BACKLOG_ACTIVE / RECOVERING / UNKNOWN` 구현; `WORKER_BACKLOG_RECOVERED`는 schema enum만 예약하고 v1 output에서 거부, completion은 `CALIBRATION_PENDING`
+- RECOVERING은 fresh usable 3 capture, Kafka 8/8·no `-1`·no reset·arithmetic/timestamp/source identity, slope `<0`, committed `>=` produce, PostgreSQL ready만 사용
+- Produce `0/s` recovery 지원; Worker/KEDA replica와 Worker stage latency는 optional context 유지
+- kafka_exporter v1.7.0의 비원자적 end/committed 수집으로 확인된 negative lag는 `INVALID_ONLY`; `-1/-2` raw 보존, zero clamp와 derived replacement 금지
+- actual E-01/E-02/E-03/F-01 replay 모두 ACTIVE 뒤 RECOVERING 관측; exporter defect window는 UNKNOWN, regrowth/flat tail은 RECOVERED 대신 ACTIVE
+- stale/partial/reset/identity/DB/timestamp/digest/negative-lag adversarial regression과 offline `evaluate-recovery` CLI 추가
+- Phase 2 activation threshold, Phase 3 Diagnosis Agent, Phase 4 raw/compact artifact, runtime autoscaling 설정은 변경하지 않음; OpenAI API와 runtime write 미사용
+- local validation: Ops Agent `208 passed`, full suite `565 passed`; compileall, diff check, artifact/hash/tracking, secret scan 통과
+
+## 2026-08-16 Phase 4 load-aware recovery calibration
+
+- host-local k6 `constant-arrival-rate`, 64 streams, generic v2 workload와 A/B/C/E/F recovery calibration orchestrator 추가
+- rates `0/30/75/110/330 records/s`, current KEDA `2→4` 유지, 15초 cadence로 기존 `ops.evidence.v1` 수집
+- A/B/C operating envelope, E continuous-ingress 3회, F zero-ingress 1회 실측; E/F 모두 기존 `local-ha.conditions.v2` activation 재현
+- E peak lag `20,806 / 21,834 / 21,151`, F `20,998`; E는 MEDIUM `75/s` 유지 중 drain, F는 ingress `0/s`에서 drain 확인
+- Kafka exporter negative-lag capture를 `0`으로 치환하지 않고 quality-excluded; rolling 3-bundle replay로 과거 valid activation과 full-sequence anomaly를 분리
+- recovery candidate, estimated drain, KEDA/replica timing, PostgreSQL guardrail, cadence와 false-recovery fixture 기록
+- 349 bundle canonical digest와 1,396 raw projection SHA-256 검증 `PASS`; Git에는 compact manifest/analysis/run summary만 포함
+- Phase 3 rebalance `UNAVAILABLE` citation semantic guardrail 보강; 과거 live artifact는 변경하지 않음
+- `ops.recovery.v1`, recovery state/clearing, Recovery LLM, remediation은 미구현; OpenAI API 호출 없음
+- local validation: Ops Agent `187 tests passed`, full suite `544 tests passed`; compileall, k6 inspect, artifact hash, secret scan 통과
+
+## 2026-08-16 Evidence-grounded Diagnosis Agent
+
+- `CORE_BACKLOG_PRESSURE=PRESENT`와 ordered bundle digest 재검증 뒤에만 진입하는 single Phase 3 Agent와 `ops.diagnosis.v1` 추가
+- Responses API 기본 모델을 비용 민감형 `gpt-5.6-luna`로 설정하고 `OPENAI_MODEL` override, explicit `--live` opt-in 적용
+- partition lag, Worker stage/replica, KEDA, PostgreSQL, readiness, runtime image, pod restart, Argo CD의 fixed normalized tool 9개 구현
+- 새 diagnosis evidence ID, source evidence trace, supporting/conflicting citation, evidence gap, structured stop reason과 deterministic Diagnosis ID 보존
+- fabricated citation, forbidden/repeated tool, budget 초과, rebalance 확정, condition 재판정, recovery/remediation code를 deterministic validator로 거부
+- tool/step `4`, output `1,600` tokens, timeout `30s`, transport retry `1`, output repair `1`로 API와 loop budget 분리; normal pytest/CI에서는 live API call 없음
+- validator의 machine-readable error와 기존 structured result만 받는 tool-free repair turn 추가; fabricated citation 또는 두 번째 invalid 결과는 `validation_failure`로 중단하고 completed artifact 미생성
+- 9개 scripted golden fixture와 output-contract repair fixture 5개에서 schema/citation/tool selection/abstention/budget/stop/repair 계약 통과
+- actual Phase 2.5 positive run-01 Luna dry-run은 4 tool calls 뒤 최초 stop consistency INVALID, repair 1회 후 VALID; 최종 `insufficient_evidence`, API turns `6`, total tokens `44,264`
+- local validation: Ops Agent `158 passed`, full suite `515 passed`; commit·push·merge 미수행
+
+## 2026-08-16 `local-ha.conditions.v2` sequence-aware backlog activation
+
+- 기존 `local-ha.conditions.v1` single-bundle rule을 유지하고 ordered `ops.evidence.v1` sequence를 평가하는 `ops.conditions.v2` / `ops.evaluator.v2` / `ops.conditions.rules.v2` 추가
+- 인접 세 capture의 total lag `>=7,000`, 60초 lag slope `>=100/s`, 두 번의 total-lag 증가만 `CORE_BACKLOG_PRESSURE=PRESENT` activation 계약으로 사용
+- `produce_rate-committed_offset_rate`는 독립 vote가 아니라 lag-slope 산술 consistency gate로 고정
+- 모든 capture에 v1 freshness·coverage·`-1`·offset decrease·arithmetic·timestamp provenance gate 적용, scope·partition·source identity 혼합 시 `UNKNOWN`
+- KEDA replica, Worker replica, Worker stage latency는 optional context로 보존하고 activation predicate에서 제외
+- evaluation ID에 ordered canonical bundle digest, collection/Kafka source timing, policy/evaluator/ruleset과 결과 payload 결합
+- actual positive run 3개 replay는 모두 capture `[1,2,3]`에서 `PRESENT`; short burst·sustainable high·transient spike는 `PRESENT` 없음
+- decreasing lag, qualifying capture 2개, stale middle, partial partition, changed group, reordered timestamp adversarial fixture 추가
+- recovery/clearing hysteresis와 Phase 3 LLM은 미구현, commit·push·merge 미수행
+- local validation: Ops Agent `142 passed`, full suite `499 passed`; compileall·diff check 통과
+
+## 2026-08-16 CORE_BACKLOG_PRESSURE negative-control calibration
+
+- Phase 2.5 candidate를 코드 상수와 pure evaluator로 고정하고 기존 positive run 3개에서 `PRESENT` regression 확인
+- lag slope를 단일 growth signal로 사용하고 `produce_rate-committed_offset_rate`는 동일 offset 변화의 산술 일치 검증으로만 보존
+- 기존 KEDA `2→4`, Worker, PostgreSQL 설정을 변경하지 않고 short burst, sustainable high, single transient spike 실행
+- short burst: 64 streams, 100 VU, 5초, peak lag `3,997`, candidate `NOT_PRESENT`
+- sustainable high: 64 streams, 8 VU, 180초, event `22,256`, 약 `123.6/s`, peak lag `3,111`, candidate `NOT_PRESENT`
+- single transient: 64 streams, 100 VU, 10초, peak lag `8,854`, candidate sample 2개지만 rising window 0, `NOT_PRESENT`
+- 세 control 모두 error `0.00%`, final lag `0`, KEDA inactive, Worker `2/2`, scaling contract unchanged
+- 51 Evidence Bundle과 204 raw projection 전수 schema/hash 검증; Kafka required evidence 모두 `OK/FRESH`, 8/8
+- `local-ha.conditions.v2` ordered immutable bundle sequence 승격안 제안; v1 condition policy와 Phase 3는 미변경
+- local validation: Ops Agent `126 passed`, full suite `483 passed`; compileall·diff check 통과
+
+## 2026-08-16 Ops Agent Phase 2 final audit와 Phase 2.5 backlog calibration
+
+- Phase 2 final audit에서 freshness/time-grid, source/raw identity, local-ha PostgreSQL guardrail, Worker resource identity, deterministic ID·profile binding을 재검증하고 blocker 없이 종료
+- canonical source bundle digest와 evaluator/ruleset version을 evaluation ID에 결합하고 serialization 전 ID 재검증, bounded evidence schema와 고유 임시 파일 atomic write 적용
+- 64 streams, 100 VU, 30초 부하를 현재 KEDA `2→4` 정책 그대로 3회 실행하고 약 15초 간격으로 `ops.evidence.v1` 71개 수집
+- 세 run 모두 baseline lag `0`·Worker `2/2`에서 시작해 pressure, Worker desired/available `4/4`, drain, lag `0`, Worker `2/2` 복귀까지 `COMPLETE`
+- peak lag `17,537` / `25,256` / `24,096`, lag `0` 복귀 `196.781s` / `256.575s` / `256.543s`, k6 error 모두 `0.00%`
+- 세 run 비교 뒤 lag `>=7,000`, 60초 slope `>=100/s`, produce>commit, 세 capture/두 번의 lag 증가를 provisional activation 후보로 제안
+- 후보 rule은 evaluator에 반영하지 않음; 후속 negative controls와 ordered sequence 승격은 위 별도 항목으로 분리하고 v1 positive lag는 `UNKNOWN` 유지
+- runtime bundle/raw 약 88 MB는 local-only 보존, sanitized manifest·analysis·run summary 3개만 추적 대상으로 분리
+- Phase 3 LLM, 원인 추론, remediation은 시작하지 않음
+- 당시 local validation: Ops Agent `123 passed`, full suite `480 passed`
+
+## 2026-08-12 Ops Agent Phase 2 deterministic condition evaluation
+
+- immutable `ops.evidence.v1` 입력을 pure offline rule로 평가하는 `ops.conditions.v1` schema와 `evaluate` CLI 구현
+- `CORE_BACKLOG_PRESSURE`, `PARTITION_LAG_CONCENTRATION_OBSERVED`, `DB_DEGRADED`, `WORKER_REPLICA_UNAVAILABLE`의 `PRESENT` / `ABSENT` / `UNKNOWN` 판정 추가
+- condition별 required/optional dependency, evidence ID, freshness, coverage, semantic anomaly, reason code trace 보존
+- partition 누락, committed offset `-1`, stale/unknown freshness, end/committed/lag 산술 불일치를 해당 Kafka condition의 `UNKNOWN`으로 유지
+- captured `PARTIAL` no-backlog bundle에서 네 condition `ABSENT`, `NO_BACKLOG_PRESSURE_DETECTED=PRESENT`, evaluation `COMPLETE` 확인
+- positive lag는 pressure/concentration 지속 임계값 calibration 전 `UNKNOWN`, replica shortfall은 2분 grace를 증명하는 반복 capture 전 `UNKNOWN`으로 보수 처리
+- Kafka exact selector·8/8 coverage·13개 sample grid·모든 시점 end/committed/lag 산술 일치, Deployment observed generation 검증
+- Kafka range end/source/collector 시간축과 raw projection 일치 검증, freshness age/basis/bound 계약 추가
+- DB degradation은 고정 readiness reason과 versioned local-ha HA guardrail의 PostgreSQL component 일치로 판정
+- Worker label과 Deployment metadata identity 결합, canonical source bundle digest와 evaluator/ruleset version을 evaluation ID에 포함
+- 중첩 결과 변조 시 serialization 검증 실패, evidence 수·식별자 길이 제한, 선형 issue dedup, 고유 임시 파일 기반 atomic write 적용
+- 새 collection의 effective Application/Prometheus endpoint와 Host routing을 credential-free identity evidence로 보존
+- LLM, 원인 추론, runtime 재조회, restart/scale/remediation 제외; positive rule은 별도 controlled calibration 대상으로 분리
+- 당시 local validation: Ops Agent `120 passed`, full suite `477 passed`; compileall·diff check·captured artifact hash 검증 통과
+
+## 2026-08-12 Ops Agent Phase 1 evidence collection
+
+- Application `/health/ready`·`/ops/summary`, Prometheus fixed query, Kubernetes Worker/KEDA, Argo CD Application의 read-only collector 구현
+- strict `ops.evidence.v1` schema에 status, source timestamp, freshness, coverage, semantic, provenance, redacted raw artifact hash 보존
+- missing, 실제 `0`, Kafka offset `-1`, partition partial coverage, offset decrease 분리
+- Windows local ingress를 `127.0.0.1` + `Host: localhost`로 연결하고 redirect·ambient proxy 차단
+- `local-ha` live validation에서 Kafka partition `8/8`, lag 전부 `0`, Worker available `2/2`, PostgreSQL standby/sync standby `2/2`, Argo `Synced / Healthy` 확인
+- Worker 재시작 후 label-on-use terminal/stage series 2개 부재를 `MISSING/UNKNOWN`으로 유지; collection `PARTIAL`은 runtime degraded 판정에서 제외
+- normalized bundle과 참조 raw projection 4개를 captured no-backlog reference로 분리 보존
+- Phase 2 구현 전 Phase 1 collector/live baseline 변경 단위 고정
+- local full suite `420 passed`; compileall, diff check, bundle schema·raw hash 검증 통과
 
 ## 2026-08-10 runtime log·backup retention·README 최적화
 

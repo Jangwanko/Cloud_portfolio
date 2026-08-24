@@ -1,0 +1,1 @@
+{"labels":{"topic":"message-ingress","consumergroup":"message-worker","partition":"0"},"samples":[{"timestamp":1786496520,"value":"-1"}],"anomaly":{"type":"negative_value"},"expected_flag":"negative_value_preserved_not_zero"}

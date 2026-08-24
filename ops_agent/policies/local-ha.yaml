@@ -1,0 +1,42 @@
+{
+  "profile": "local-ha",
+  "version": "local-ha.evidence.v1",
+  "scope": {
+    "namespace": "messaging-app",
+    "topic": "message-ingress",
+    "consumer_group": "message-worker"
+  },
+  "application": {
+    "base_url": "http://127.0.0.1",
+    "host_header": "localhost",
+    "timeout_seconds": 10,
+    "readiness_max_age_seconds": 10,
+    "ops_summary_max_age_seconds": 30,
+    "ops_summary_cache_seconds": 15
+  },
+  "prometheus": {
+    "base_url": "http://127.0.0.1/prometheus",
+    "host_header": "localhost",
+    "timeout_seconds": 2,
+    "scrape_interval_seconds": 5,
+    "range_window_seconds": 60,
+    "range_step_seconds": 5,
+    "sample_max_age_seconds": 15,
+    "expected_partitions": 8
+  },
+  "kubernetes": {
+    "timeout_seconds": 10,
+    "observation_max_age_seconds": 30,
+    "worker_deployment": "worker",
+    "worker_label_selector": "app=worker",
+    "worker_scaled_object": "worker-keda"
+  },
+  "argocd": {
+    "enabled": true,
+    "timeout_seconds": 10,
+    "namespace": "argocd",
+    "application": "messaging-portfolio-local-ha",
+    "observation_max_age_seconds": 30,
+    "reconciliation_max_age_seconds": 300
+  }
+}

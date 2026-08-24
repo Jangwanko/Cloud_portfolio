@@ -1,0 +1,275 @@
+{
+  "collected_at": "2026-08-12T00:39:08.517716Z",
+  "context": {
+    "context": "kind-messaging-ha",
+    "error": null,
+    "source": "configured",
+    "status": "OK"
+  },
+  "data": {
+    "deployment": {
+      "collected_at": "2026-08-12T00:39:08.517716Z",
+      "data": {
+        "available_replicas": 2,
+        "conditions": [
+          {
+            "last_transition_time": "2026-07-20T17:58:36Z",
+            "last_update_time": "2026-08-10T15:44:45Z",
+            "reason": "NewReplicaSetAvailable",
+            "status": "True",
+            "type": "Progressing"
+          },
+          {
+            "last_transition_time": "2026-08-12T00:26:45Z",
+            "last_update_time": "2026-08-12T00:26:45Z",
+            "reason": "MinimumReplicasAvailable",
+            "status": "True",
+            "type": "Available"
+          }
+        ],
+        "current_replicas": 2,
+        "desired_containers": [
+          {
+            "image": "ghcr.io/jangwanko/cloud_portfolio:a2b157f1283f",
+            "name": "worker"
+          }
+        ],
+        "desired_replicas": 2,
+        "metadata": {
+          "creation_timestamp": "2026-07-20T17:58:36Z",
+          "deletion_timestamp": null,
+          "generation": 328,
+          "name": "worker",
+          "namespace": "messaging-app",
+          "resource_version": "2016020",
+          "uid": "4e421edd-1c84-4591-a6a3-edcf67cc1b41"
+        },
+        "observed_generation": 328,
+        "ready_replicas": 2,
+        "unavailable_replicas": null,
+        "updated_replicas": 2
+      },
+      "error": null,
+      "status": "OK"
+    },
+    "pods": {
+      "collected_at": "2026-08-12T00:39:08.517716Z",
+      "data": [
+        {
+          "conditions": [
+            {
+              "last_transition_time": "2026-08-12T00:26:06Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "PodReadyToStartContainers"
+            },
+            {
+              "last_transition_time": "2026-08-10T15:44:39Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "Initialized"
+            },
+            {
+              "last_transition_time": "2026-08-12T00:26:45Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "Ready"
+            },
+            {
+              "last_transition_time": "2026-08-12T00:26:45Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "ContainersReady"
+            },
+            {
+              "last_transition_time": "2026-08-10T15:44:39Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "PodScheduled"
+            }
+          ],
+          "containers": [
+            {
+              "image": "ghcr.io/jangwanko/cloud_portfolio:a2b157f1283f",
+              "image_id": "ghcr.io/jangwanko/cloud_portfolio@sha256:0522d734c43e5291f1297f2e766e9c8420a9217070bf48799c66ab794a8d97f7",
+              "last_termination": {
+                "exit_code": 255,
+                "finished_at": "2026-08-12T00:25:55Z",
+                "reason": "Unknown",
+                "signal": null,
+                "started_at": "2026-08-10T15:44:40Z"
+              },
+              "name": "worker",
+              "ready": true,
+              "restart_count": 1,
+              "started": true,
+              "state": {
+                "started_at": "2026-08-12T00:26:04Z",
+                "type": "running"
+              }
+            }
+          ],
+          "metadata": {
+            "creation_timestamp": "2026-08-10T15:44:39Z",
+            "deletion_timestamp": null,
+            "generation": null,
+            "name": "worker-5b4c6ff8b6-6vnq9",
+            "namespace": "messaging-app",
+            "resource_version": "2016015",
+            "uid": "3e52105e-7a25-489b-a0c5-7b9b6670a6a4"
+          },
+          "phase": "Running",
+          "ready_condition_status": "True",
+          "reason": null,
+          "start_time": "2026-08-10T15:44:39Z"
+        },
+        {
+          "conditions": [
+            {
+              "last_transition_time": "2026-08-12T00:26:06Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "PodReadyToStartContainers"
+            },
+            {
+              "last_transition_time": "2026-08-10T15:44:34Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "Initialized"
+            },
+            {
+              "last_transition_time": "2026-08-12T00:26:44Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "Ready"
+            },
+            {
+              "last_transition_time": "2026-08-12T00:26:44Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "ContainersReady"
+            },
+            {
+              "last_transition_time": "2026-08-10T15:44:34Z",
+              "last_update_time": null,
+              "reason": null,
+              "status": "True",
+              "type": "PodScheduled"
+            }
+          ],
+          "containers": [
+            {
+              "image": "ghcr.io/jangwanko/cloud_portfolio:a2b157f1283f",
+              "image_id": "ghcr.io/jangwanko/cloud_portfolio@sha256:0522d734c43e5291f1297f2e766e9c8420a9217070bf48799c66ab794a8d97f7",
+              "last_termination": {
+                "exit_code": 255,
+                "finished_at": "2026-08-12T00:25:55Z",
+                "reason": "Unknown",
+                "signal": null,
+                "started_at": "2026-08-10T15:44:34Z"
+              },
+              "name": "worker",
+              "ready": true,
+              "restart_count": 1,
+              "started": true,
+              "state": {
+                "started_at": "2026-08-12T00:26:04Z",
+                "type": "running"
+              }
+            }
+          ],
+          "metadata": {
+            "creation_timestamp": "2026-08-10T15:44:34Z",
+            "deletion_timestamp": null,
+            "generation": null,
+            "name": "worker-5b4c6ff8b6-zxpwl",
+            "namespace": "messaging-app",
+            "resource_version": "2015985",
+            "uid": "f942c0f3-2ddc-43ea-8373-d7014efdcebb"
+          },
+          "phase": "Running",
+          "ready_condition_status": "True",
+          "reason": null,
+          "start_time": "2026-08-10T15:44:34Z"
+        }
+      ],
+      "error": null,
+      "status": "OK"
+    },
+    "scaled_object": {
+      "collected_at": "2026-08-12T00:39:08.517716Z",
+      "data": {
+        "conditions": [
+          {
+            "last_transition_time": null,
+            "last_update_time": null,
+            "reason": "ScaledObjectReady",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "last_transition_time": null,
+            "last_update_time": null,
+            "reason": "ScalerNotActive",
+            "status": "False",
+            "type": "Active"
+          },
+          {
+            "last_transition_time": null,
+            "last_update_time": null,
+            "reason": "NoFallbackFound",
+            "status": "False",
+            "type": "Fallback"
+          },
+          {
+            "last_transition_time": null,
+            "last_update_time": null,
+            "reason": "ScaledObjectUnpaused",
+            "status": "False",
+            "type": "Paused"
+          }
+        ],
+        "cooldown_period_seconds": 120,
+        "health": {},
+        "hpa_name": "worker-keda-hpa",
+        "last_active_time": "2026-08-10T14:10:30Z",
+        "max_replicas": 4,
+        "metadata": {
+          "creation_timestamp": "2026-07-20T17:59:21Z",
+          "deletion_timestamp": null,
+          "generation": 7,
+          "name": "worker-keda",
+          "namespace": "messaging-app",
+          "resource_version": "2007466",
+          "uid": "c6506fbc-ec1c-46ef-9457-e39325e59315"
+        },
+        "min_replicas": 2,
+        "original_replica_count": 2,
+        "polling_interval_seconds": 5,
+        "scale_target_name": "worker",
+        "trigger_types": [
+          "kafka"
+        ]
+      },
+      "error": null,
+      "status": "OK"
+    }
+  },
+  "error": null,
+  "partial": false,
+  "semantic": {
+    "notes": "raw replica availability and KEDA state; no incident or grace-period evaluation",
+    "type": "worker_runtime_observation"
+  },
+  "source": "kubernetes_api_via_kubectl",
+  "status": "OK"
+}

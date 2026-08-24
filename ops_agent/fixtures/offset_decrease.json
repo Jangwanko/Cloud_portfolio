@@ -1,0 +1,1 @@
+{"labels":{"topic":"message-ingress","partition":"0"},"samples":[{"timestamp":1786496510,"value":"101"},{"timestamp":1786496520,"value":"99"}],"anomaly":{"type":"offset_decrease"}}

@@ -89,7 +89,7 @@ histogram_quantile(0.95, sum(rate(messaging_api_stage_latency_seconds_bucket[1m]
 
 ### `messaging_worker_processed_total`
 
-Worker event 처리 누적 건수.
+Worker record 처리 결과 누적 건수. PostgreSQL insert rate나 commit rate가 아닙니다.
 
 ```promql
 sum(rate(messaging_worker_processed_total{job="worker"}[1m])) by (result)
@@ -103,7 +103,9 @@ sum(rate(messaging_worker_processed_total{job="worker",result="failure"}[5m]))
 clamp_min(sum(rate(messaging_worker_processed_total{job="worker"}[5m])), 0.001)
 ```
 
-Core ingress 결과는 `success`, `rejected`, `dlq`, `failure`로 분리합니다. `notification-worker`는 `job="notification-worker"`로 별도 조회합니다.
+Core ingress 결과는 `success`, `rejected`, `dlq`, `failure`로 분리합니다. `success` / `rejected` / `dlq`는 해당 record의 Kafka offset commit 뒤 증가합니다. `failure`는 handler 또는 offset commit 예외 뒤 partition을 실패 record로 seek-back한 상태에서 증가하므로 terminal throughput에 포함하지 않습니다. `notification-worker`는 `job="notification-worker"`로 별도 조회합니다.
+
+첫 record가 해당 result를 만들기 전에는 label child series 자체가 없을 수 있습니다. absent series는 처리량 `0`과 구분합니다.
 
 ### `messaging_worker_last_success_timestamp`
 
@@ -123,7 +125,7 @@ Worker 내부 구간별 latency.
 
 주요 stage:
 
-- `db_persist`: PostgreSQL transaction으로 event 영속화
+- `db_persist`: `_persist_message_with_cursor` 호출 구간. request-status update와 enclosing `conn.commit()` 제외
 - `request_status_update`: request status 갱신
 - request status DB row: message persistence와 같은 PostgreSQL transaction
 - DB read: PostgreSQL source of truth 사용, read 장애 시 `503`
@@ -135,6 +137,8 @@ Worker 내부 구간별 latency.
 ```promql
 histogram_quantile(0.95, sum(rate(messaging_worker_stage_latency_seconds_bucket[1m])) by (le, stage))
 ```
+
+각 stage label은 첫 observation 뒤 생성될 수 있습니다. series가 없으면 latency `0`으로 해석하지 않습니다. `db_persist`는 isolated PostgreSQL transaction commit latency가 아닙니다.
 
 ### `messaging_notification_publish_failures_total`
 

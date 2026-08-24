@@ -1,0 +1,193 @@
+{
+  "application": {
+    "source": "application_http",
+    "status": "OK",
+    "partial": false,
+    "collected_at": "2026-08-12T01:02:03Z",
+    "data": {
+      "readiness": {
+        "status": "OK",
+        "path": "/health/ready",
+        "http_status": 200,
+        "body_status": "ready",
+        "body": {
+          "status": "ready",
+          "kafka": {"bootstrap_reachable": true},
+          "postgres": {
+            "ha_mode": true,
+            "primary_reachable": true,
+            "standby_count": 2,
+            "sync_standby_count": 1,
+            "max_replication_delay_bytes": 0
+          }
+        },
+        "collected_at": "2026-08-12T01:02:03Z",
+        "error": null
+      },
+      "ops_summary": {
+        "status": "OK",
+        "path": "/ops/summary",
+        "http_status": 200,
+        "body_status": null,
+        "body": {
+          "worker": {
+            "deployment": "worker",
+            "desired_replicas": 2,
+            "available_replicas": 2,
+            "hpa_desired_replicas": 2,
+            "max_replicas": 4,
+            "source": "prometheus",
+            "error": null
+          }
+        },
+        "collected_at": "2026-08-12T01:02:03Z",
+        "error": null
+      }
+    },
+    "error": null
+  },
+  "prometheus": {
+    "source": "prometheus",
+    "status": "OK",
+    "partial": false,
+    "collected_at": "2026-08-12T01:02:03Z",
+    "partition_coverage": {"partition_mismatch": false},
+    "queries": [
+      {
+        "query_id": "kafka_topic_partition_current_offset",
+        "metric_name": "kafka_topic_partition_current_offset",
+        "status": "OK",
+        "unit": "records",
+        "window": {"duration_seconds": 60},
+        "sample_count": 16,
+        "coverage": {
+          "expected_partition_ids": ["0", "1", "2", "3", "4", "5", "6", "7"],
+          "observed_partition_ids": ["0", "1", "2", "3", "4", "5", "6", "7"],
+          "missing_partition_ids": [],
+          "unexpected_partition_ids": [],
+          "complete": true
+        },
+        "semantic": {"type": "kafka_partition_end_offset_gauge", "notes": "all ingress appends"},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "0"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "1"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "2"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "3"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "4"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "5"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "6"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]},
+          {"labels": {"__name__": "kafka_topic_partition_current_offset", "topic": "message-ingress", "partition": "7"}, "samples": [{"timestamp": 1786496510, "value": "100"}, {"timestamp": 1786496520, "value": "101"}]}
+        ],
+        "error": null
+      },
+      {
+        "query_id": "kafka_consumergroup_current_offset",
+        "metric_name": "kafka_consumergroup_current_offset",
+        "status": "OK",
+        "unit": "records",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"expected_partition_ids": ["0"], "observed_partition_ids": ["0"], "missing_partition_ids": [], "unexpected_partition_ids": [], "complete": true},
+        "semantic": {"type": "kafka_consumer_committed_offset_gauge", "notes": "all terminal commits"},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "kafka_consumergroup_current_offset", "topic": "message-ingress", "consumergroup": "message-worker", "partition": "0"}, "samples": [{"timestamp": 1786496520, "value": "101"}]}],
+        "error": null
+      },
+      {
+        "query_id": "kafka_consumergroup_lag",
+        "metric_name": "kafka_consumergroup_lag",
+        "status": "OK",
+        "unit": "records",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"expected_partition_ids": ["0"], "observed_partition_ids": ["0"], "missing_partition_ids": [], "unexpected_partition_ids": [], "complete": true},
+        "semantic": {"type": "kafka_consumer_partition_lag_gauge", "notes": "raw lag"},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "kafka_consumergroup_lag", "topic": "message-ingress", "consumergroup": "message-worker", "partition": "0"}, "samples": [{"timestamp": 1786496520, "value": "0"}]}],
+        "error": null
+      },
+      {
+        "query_id": "messaging_worker_processed_total",
+        "metric_name": "messaging_worker_processed_total",
+        "status": "OK",
+        "unit": "records",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"observed_series": 1},
+        "semantic": {"type": "worker_terminal_processing_counter", "notes": "not DB commit rate", "is_db_commit_rate": false},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "messaging_worker_processed_total", "job": "worker", "result": "success"}, "samples": [{"timestamp": 1786496520, "value": "700"}]}],
+        "error": null
+      },
+      {
+        "query_id": "messaging_queue_wait_seconds",
+        "metric_name": "messaging_queue_wait_seconds",
+        "status": "OK",
+        "unit": "seconds",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"observed_series": 1},
+        "semantic": {"type": "queued_at_to_worker_handler_start_lag_histogram", "notes": "queue and Kafka wait"},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "messaging_queue_wait_seconds_count", "job": "worker"}, "samples": [{"timestamp": 1786496520, "value": "700"}]}],
+        "error": null
+      },
+      {
+        "query_id": "messaging_event_persist_lag_seconds",
+        "metric_name": "messaging_event_persist_lag_seconds",
+        "status": "OK",
+        "unit": "seconds",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"observed_series": 1},
+        "semantic": {"type": "api_queued_at_to_post_commit_observed_lag_histogram", "notes": "not isolated commit latency", "is_isolated_postgresql_commit_latency": false},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "messaging_event_persist_lag_seconds_count", "job": "worker"}, "samples": [{"timestamp": 1786496520, "value": "700"}]}],
+        "error": null
+      },
+      {
+        "query_id": "messaging_worker_db_persist_stage_latency_seconds",
+        "metric_name": "messaging_worker_stage_latency_seconds",
+        "status": "OK",
+        "unit": "seconds",
+        "window": {"duration_seconds": 60},
+        "sample_count": 1,
+        "coverage": {"observed_series": 1},
+        "semantic": {"type": "persist_stage_latency_histogram", "notes": "commit excluded", "includes_transaction_commit": false},
+        "anomalies": [],
+        "freshness": {"query_status": "OK", "status": "FRESH", "basis": "prometheus_timestamp_function", "source_timestamp": "2026-08-12T01:02:00Z", "age_seconds": 3, "max_age_seconds": 15, "coverage": {"labels_match_range": true}, "series": [], "error": null},
+        "series": [{"labels": {"__name__": "messaging_worker_stage_latency_seconds_count", "job": "worker", "stage": "db_persist"}, "samples": [{"timestamp": 1786496520, "value": "700"}]}],
+        "error": null
+      }
+    ]
+  },
+  "kubernetes": {
+    "source": "kubernetes_api_via_kubectl",
+    "status": "OK",
+    "partial": false,
+    "collected_at": "2026-08-12T01:02:03Z",
+    "context": {"status": "OK", "context": "kind-messaging-ha", "error": null},
+    "data": {
+      "deployment": {"status": "OK", "collected_at": "2026-08-12T01:02:03Z", "data": {"desired_replicas": 2, "current_replicas": 2, "ready_replicas": 2, "available_replicas": 2, "unavailable_replicas": null, "desired_containers": [{"name": "worker", "image": "ghcr.io/example/app:abc123"}]}, "error": null},
+      "pods": {"status": "OK", "collected_at": "2026-08-12T01:02:03Z", "data": [{"metadata": {"name": "worker-abc"}, "phase": "Running", "ready_condition_status": "True", "containers": [{"name": "worker", "restart_count": 0, "image": "ghcr.io/example/app:abc123", "image_id": "ghcr.io/example/app@sha256:deadbeef", "last_termination": null}]}], "error": null},
+      "scaled_object": {"status": "OK", "collected_at": "2026-08-12T01:02:03Z", "data": {"min_replicas": 2, "max_replicas": 4, "conditions": [{"type": "Ready", "status": "True"}]}, "error": null}
+    },
+    "error": null
+  },
+  "argocd": {
+    "source": "argocd_application_cr",
+    "status": "OK",
+    "partial": false,
+    "collected_at": "2026-08-12T01:02:03Z",
+    "source_timestamp": "2026-08-12T01:02:00Z",
+    "data": {"applicability": "APPLICABLE", "application": {"sync_status": "Synced", "health_status": "Healthy", "revision": "abc123", "reconciled_at": "2026-08-12T01:02:00Z"}},
+    "error": null
+  }
+}

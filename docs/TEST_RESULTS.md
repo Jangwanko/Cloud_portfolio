@@ -1,26 +1,419 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-09`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-24`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.3.1` | local suite `357 passed`; runtime log·backup retention·README 최적화 포함 |
-| Current source release | source `a2b157f`, image `a2b157f1283f` | CI `#83` validate·publish 통과, overlay commit `004f2e7` |
-| Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | `dev-kafka` overlay가 참조하는 immutable GHCR image |
+| Source candidate | API `2.1.0`, Demo UI `2.4.0`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay candidate; runtime 배포 전 |
+| Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI `#83` validate·publish 통과 |
+| Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
 | Operations summary | Worker desired·available·HPA desired·max | Prometheus 단일 query, 15초 결과 캐시; local candidate runtime 확인 |
+| Ops Agent Phase 1 | Application·Prometheus·Kubernetes·Argo CD read-only Evidence Bundle | actual `local-ha` 수집 완료; Kafka 8/8, lag 0, Worker 2/2, PostgreSQL HA, Argo 상태 확인 |
+| Ops Agent Phase 2 | immutable bundle의 deterministic condition evaluator | v1 no-backlog regression과 v2 sequence activation replay 완료 |
+| Ops Agent Phase 2.5 | 64-stream Worker backlog 3회, 15초 evidence timeline | 세 run `COMPLETE`; v2 replay에서 모두 `CORE_BACKLOG_PRESSURE=PRESENT` |
+| Ops Agent Phase 2.6 negative controls | short burst·sustainable high·single transient spike | 세 control `COMPLETE`; v2 replay에서 `PRESENT` 없음, v1 미변경 |
+| Ops Agent Phase 3.1 | single grounded Diagnosis Agent, 9 read-only tools, bounded output repair | offline golden 9개와 repair fixture 5개 통과; Luna live dry-run VALID |
+| Ops Agent Phase 4 calibration | arrival-rate A/B/C/E/F, E 3회와 F 1회 recovery | actual `local-ha` COMPLETE; 원본 artifact hash PASS |
+| Ops Agent Phase 4.1 recovery | deterministic recovery policy v1 ACTIVE/RECOVERING/UNKNOWN | actual E 3회/F 1회 replay에서 모두 RECOVERING 관측; v1 RECOVERED pending |
+| Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
+| Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
+| Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
+| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract와 public demo-lite live route 확인 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
-| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, master 직전 image `7035cdab4050` 게시 확인 |
-| Public demo-lite | image `8640ca010960`, UI `2.3.1`, API `2.1.0` | 2026-08-10 신규 서버 Argo `Synced / Healthy`, event `202`, Worker KEDA `1→2` |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, current master image `f38a8c0958e7` 게시 확인 |
+| Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+
+## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
+
+Phase 5는 existing deterministic condition과 recovery policy를 변경하지 않고
+condition evaluation, diagnosis, recovery evaluation을 하나의
+`ops.incident.v1` identity와 timeline으로 결합합니다. LLM은 incident detection과
+recovery/closure를 판정하지 않습니다.
+
+### 보존한 실패 실행
+
+| Run | Workload result | Failure boundary | Interpretation |
+| --- | --- | --- | --- |
+| `20260816T214911Z` | `75/330/75/s`, accepted `6,750 / 29,693 / 67,500`, failure/drop `0/0` | active record `inc-e17f6188f088b5473134de67`와 diagnosis logical incident `phase5-20260816T214911Z-sample-008` 불일치 | condition ID `c6c0de4f...1640` 자체가 아니라 cross-artifact incident identity contract 결함을 드러낸 실패 |
+| `20260816T223837Z` | accepted `6,749 / 29,686 / 134,981`, HTTP failure `0`, dropped `19`, peak/final lag `25,153 / 0` | strict `dropped_iterations==0` gate 실패; recovery 미실행 | exact drop 시점·VU saturation·latency 상관을 기존 artifact가 충분히 보존하지 않아 root cause는 `INCONCLUSIVE` |
+
+두 실행의 bundle, condition, diagnosis, workload log는 덮어쓰지 않았습니다. 두 번째
+run은 final lag가 `0`이어도 workload quality gate가 실패했으므로 recovery 또는
+canonical verified incident로 승격하지 않았습니다.
+
+### PostgreSQL HA precondition recovery
+
+새 Gate 2 전에 `/health/ready`가 `degraded`, primary reachable `true`, standby/sync
+standby `0/0`인 상태를 확인했습니다. 기존 chart/operator retry와 문서화된
+`scripts/configure_postgres_sync.ps1`만 사용해 standby reclone과 sync setting을
+복구했습니다. Primary restart/PVC delete/cluster recreate, application code·KEDA·Kafka
+offset 변경은 없었습니다.
+
+- evidence: local-only `results/ops-agent/postgres-ha-recovery/20260823T151414Z/recovery-summary.json`
+- postcondition: `/health/ready=ready`, HA/primary 정상, standby/sync standby `2/2`, PostgreSQL `3/3`, Pgpool `2/2`, API `6/6`, Worker `2/2`, core/notification lag `0`
+- KEDA policy: core Worker `2→4` 유지
+
+### Successful Gate 2
+
+Source run은 local-only
+`results/ops-agent/incident-e2e/20260823T152359Z/`입니다. Strict workload quality
+gate가 모든 phase attainment, HTTP failure `0`, dropped iteration `0`을 확인한 뒤에만
+diagnosis·recovery·canonical promotion을 진행했습니다.
+
+| Signal | Actual value |
+| --- | --- |
+| Workload | 64 streams; target `75→330→75/s`; duration `90 / 90 / 1,800s` |
+| Accepted/failed/dropped | `6,750 / 29,697 / 135,000`; failed `0`; dropped `0` |
+| HTTP p95 | `11.725 / 18.210 / 12.213ms` |
+| Activation | condition `687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d` |
+| Activation lag | `7,205→10,497→13,936` records |
+| Activation slope | `120.067→174.467→230.767 records/s` |
+| Rate arithmetic | produce `204.267 / 268 / 330`, committed `84.2 / 93.533 / 99.233 records/s`; all consistent |
+| Peak | lag `20,574`, Worker desired/available `4/4`, KEDA Active |
+| Diagnosis | `ed0013faacc76108de3692c926a2d6eb77bc44cf6970360258d8ef4b1d58d7b6`, model `gpt-5.6-luna` |
+| Recovery IDs | ACTIVE `6af5615c...4c0f`; RECOVERING `cc943943...0768`; RECOVERED `7f64cd1c...8db3` |
+| Completion captures | lag `0 / 7 / 0`; slope `0 / -2.9 / -10.7667`; produce `75 / 75 / 75`; committed `75 / 77.9 / 85.7667`; PostgreSQL ready |
+| Lifecycle | `inc-88a1eeaa17897f6a8a929bba`, `CLOSED / RECOVERED`, detection-to-closure `809.557s` |
+| Artifact validation | Evidence Bundle `133/133`, raw projection `532/532`, `PASS` |
+
+Phase 5.3 documentation checkpoint local regression은 focused lifecycle/workload gate
+`19 passed`, Ops Agent `250 passed`, full repository `607 passed`였습니다. 당시 local
+Linux container는 working tree의 Git-ignored calibration bundle을 함께 mount해 clean
+checkout을 정확히 재현하지 못했습니다. GitHub Actions #88은 해당 bundle 부재로
+diagnosis test 11건이 실패했고, Phase 5.2 candidate에서 tracked baseline 기반 synthetic
+sequence로 입력을 격리했습니다. 현재 full suite는 `608 passed`이며 GitHub Actions
+재검증은 새 push 뒤 별도로 확인합니다.
+
+Diagnosis tool call은 partition lag → Worker stage latency → Worker replica → PostgreSQL
+health 순서였습니다. `WORKER_PATH_PRESSURE_SUSPECTED`만 `SUPPORTED`이며 supporting
+evidence IDs는 tool-generated partition/stage evidence 2개입니다. Isolated DB commit
+latency는 stage metric에 포함되지 않는 gap으로 남겼습니다. `HOT_KEY_SUSPECTED`는
+balanced partition distribution과 충돌했고 poison retry, sequence contention,
+consumer rebalance는 필요한 telemetry가 없어 `INSUFFICIENT`입니다. Stop reason은
+`sufficient_evidence`, output repair `1`, API request `6`, total token `30,664`입니다.
+
+Canonical local record는
+`results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`에 있으며 lifecycle은
+`DETECTED→ACTIVE→RECOVERING→RECOVERED→CLOSED`입니다. Closure 뒤
+`2026-08-23T15:57:38.030540Z`의 `WORKER_BACKLOG_ACTIVE` observation은 history를
+reopen하지 않고 `current_observation`에 분리했습니다. 이후 live core·notification
+lag는 `0`으로 돌아왔지만 automatic reopen/correlation은 아직 없습니다.
+
+이 결과는 single-node kind `local-ha`의 verified incident입니다. Production SLA,
+autonomous recovery, remediation, exactly-once, blanket no-loss를 증명하지 않습니다.
+Phase 5.2 source candidate는 actual diagnosis의 partition lag → Worker stage latency →
+Worker replica → PostgreSQL health 순서를 그대로 표시합니다. 네 evidence는 모두
+`OK/FRESH`이며 raw/source bundle projection은 공개하지 않습니다. Supporting/conflicting
+citation과 evidence gap, validator `VALID`, repair `1`, stop `sufficient_evidence`,
+read-only 권한 경계를 함께 표시합니다. Replay는 static artifact만 읽고 OpenAI API를
+다시 호출하지 않습니다. Public demo-lite는 동일 static replay를 image `7489ab270995`로 제공합니다.
+
+Source validation은 Ops Agent `250 passed`, full repository `608 passed`입니다.
+Edge headless `1440px` desktop과 `390px` mobile에서 static artifact fetch, 네 trace step,
+hypothesis/gap, validator와 read-only boundary 렌더를 확인했습니다. Phase 3 test input은
+Git-ignored live calibration bundle 대신 tracked baseline에서 만든 deterministic synthetic
+sequence를 사용합니다. GitHub Actions와 public runtime 검증은 새 push/deployment 뒤
+별도로 확인해야 합니다.
+
+## Ops Agent Phase 4 Recovery Calibration - 2026-08-16
+
+- experiment: `20260816T100600Z`, source HEAD `c4cdea3`, dirty worktree
+- provenance limitation: live start는 HEAD/dirty만 기록했고 harness tree hash는 아직 없었음; 사후 hash를 live hash로 재구성하지 않고 final analysis source hash를 별도 기록
+- workload: host-local k6 `constant-arrival-rate`, generic v2, 64 streams, current KEDA `2→4`
+- target rates: IDLE/LOW/MEDIUM/HIGH_SUSTAINABLE/OVERLOAD `0/30/75/110/330 records/s`
+- durations: normal/idle/overload/recovery observation `90/90/90/900s`
+- cadence: configured `15s`; recovery samples median `14.998s`, observed `9.985~19.977s`
+- attainment: A/B/C, E 3회, F 1회의 모든 nonzero phase `>=99.97%`, failed `0`, dropped iteration `0`
+
+| Run | Mode after overload | Peak lag | First negative slope index | Re-entry candidate | Activation |
+| --- | --- | ---: | ---: | --- | --- |
+| E-01 | MEDIUM `75/s` | `20,806` | `16` | indexes `61~63`, 3 captures | `PRESENT` |
+| E-02 | MEDIUM `75/s` | `21,834` | `16` | index `52`, 1 usable capture | `PRESENT` |
+| E-03 | MEDIUM `75/s` | `21,151` | `16` | indexes `55~62` 중 usable 4, `70~72` 3 captures | `PRESENT` |
+| F-01 | IDLE `0/s` | `20,998` | `15` | indexes `26~72`, 47 captures | `PRESENT` |
+
+E 3회는 ingress `75/s`를 계속 유지한 채 committed-offset rate가 produce rate를
+넘고 lag slope가 음수로 전환된 뒤 observed MEDIUM envelope로 돌아왔습니다. F는
+produce `0/s`에서 lag `0`으로 drain했습니다. E-01의 re-entry 시 Worker/KEDA는
+`4/Active`, E-03 안정 구간 중에는 `4→2`가 관측돼 replica scale-in이 recovery
+필수조건이 아님을 확인했습니다.
+
+A/B/C의 usable 60초-window-settled capture에서 lag max는 IDLE `0`, LOW `3`,
+MEDIUM `22`, HIGH_SUSTAINABLE `246`입니다. PostgreSQL은 envelope 표본에서 모두
+ready/primary reachable, standby/sync standby 최소 `2/2`였고 최대 replication
+delay는 `7,104 bytes`였습니다. 이 수치는 이번 local-ha operating-envelope
+후보이며 production capacity/SLO가 아닙니다.
+
+Kafka exporter가 small-lag 구간에서 negative partition lag를 반환해 baseline
+57개 중 18개 capture를 quality-excluded했습니다. 값을 `0`으로 바꾸지 않았습니다.
+E-01/E-02/E-03도 각각 16/15/8개를 제외했으며 F는 73개 모두 usable했습니다.
+rolling 3-bundle replay는 기존 v2 rule을 그대로 사용해 valid activation을
+보존하고, full sequence의 후속 `UNKNOWN`과 anomaly를 별도 저장합니다.
+
+정책 후보는 승격하지 않았습니다. RECOVERING은 기존 activation 뒤 3개 fresh
+usable capture에서 slope `<0`, committed `>=` produce, PostgreSQL ready를 후보로
+제안할 수 있습니다. RECOVERED는 load-aware envelope 재진입과 연속 안정 관측이
+필요하지만 E-02가 usable re-entry 1개만 남겨 stable count `3`을 전체 run에서
+검증하지 못했습니다. fixed recovery floor, capture count, cadence tolerance는
+미확정입니다.
+
+- artifact validation: 349 bundles와 1,396 raw projections canonical/SHA-256 `PASS`
+- local regression: Ops Agent `187 tests passed`, full suite `544 tests passed`; compileall, k6 inspect, diff check 통과
+- tracked: manifest, analysis JSON/Markdown, compact run summaries 7개
+- local-only: bundles, raw projections, condition outputs, k6 logs
+- boundary at capture time: recovery evaluator 미구현; 아래 Phase 4.1이 frozen artifact를 수정하지 않고 후속 평가
+
+## Ops Agent Phase 4.1 Deterministic Recovery Evaluation - 2026-08-17
+
+Low-lag audit는 A/B/C/E/F에서 negative exporter lag가 있는 57 capture와 191
+sample point를 확인했습니다. 최솟값은 `-2`이며 모든 point는
+`lag=end-committed`와 정확히 일치했습니다. Capture 내부 세 family의 Prometheus
+range grid와 최신 `timestamp()` source timestamp도 일치했습니다. 다만 exporter
+v1.7.0이 topic end를 먼저 읽고 consumer committed offset을 나중에 읽으므로 두
+Kafka read는 atomic snapshot이 아닙니다. Query-range에는 내부 read timestamp가
+없어 coherent derived replacement를 증명할 수 없습니다. Policy는
+`INVALID_ONLY`; raw `-1/-2` 보존, clamp `0`, derived lag 생성 모두 금지입니다.
+
+`worker-backlog-local-ha.recovery.v1`은 기존 v2 activation을 lifecycle 시작점으로
+사용합니다. Latest 3 capture의 Kafka evidence가 fresh, 8/8, no `-1`, no offset
+decrease/reset, arithmetic/time/source identity coherent이고 PostgreSQL readiness가
+acceptable일 때, 세 slope `<0`과 committed rate `>=` produce rate를 하나의 drain
+direction 계약으로 평가합니다. Produce `0/s`는 유효합니다.
+
+| Run | First ACTIVE | First RECOVERING | UNKNOWN captures | Final state |
+| --- | --- | --- | ---: | --- |
+| E-01 | source sample `12`, `10:24:56Z` | sample `18`, `10:26:26Z`, lag `17,989`, slope `-36.13/s` | `12` | `UNKNOWN` |
+| E-02 | source sample `11`, `11:02:53Z` | sample `18`, `11:04:37Z`, lag `18,541`, slope `-37.47/s` | `17` | `UNKNOWN` |
+| E-03 | source sample `11`, `11:21:44Z` | sample `18`, `11:23:29Z`, lag `18,022`, slope `-37.12/s` | `12` | `ACTIVE` |
+| F-01 | source sample `12`, `10:44:36Z` | sample `17`, `10:45:51Z`, lag `13,538`, slope `-117.92/s` | `0` | `ACTIVE` |
+
+F-01은 source sample `19`에서 세 capture 모두 produce `0/s`, committed
+`117.92~119.98/s`, negative slope인 zero-ingress RECOVERING window도 통과했습니다.
+E-01/E-02 final UNKNOWN은 low-lag exporter-negative evidence 때문이고 E-03/F-01
+final ACTIVE는 latest valid window가 더 이상 drain하지 않지만 incident completion
+정책이 없기 때문입니다. 네 run 모두 중간 RECOVERING을 관측했고 RECOVERED는 한
+번도 출력하지 않았습니다.
+
+Adversarial regression은 decreasing-then-regrowing을 ACTIVE로 되돌리고 stale
+middle, 7/8 coverage, offset reset, identity change, DB degraded, negative lag,
+timestamp skew, reordered timestamps, digest mismatch를 UNKNOWN으로 유지합니다.
+Zero ingress에서 backlog가 flat/growing이면 ACTIVE이며 false RECOVERING/RECOVERED는
+없습니다. Full recovery outputs는 local-only
+`results/ops-agent/recovery-evaluation/phase4-20260817/`에 보존합니다.
+
+- local regression: Ops Agent `208 passed`, full suite `565 passed`
+- compileall / diff check / tracked-artifact and secret scan: `PASS`
+- runtime/API activity: existing frozen artifacts만 평가; OpenAI API와 Kubernetes/Kafka/Argo write 없음
+
+## Ops Agent Phase 4.2 Continuous-ingress Recovered Calibration - 2026-08-17
+
+기존 E-01~03 artifact는 그대로 두고 동일한 `75→330→75 records/s`, 64-stream
+workload를 E-04~06으로 세 번 추가했습니다. k6 `constant-arrival-rate`, Worker KEDA
+`2→4`, 약 15초 evidence cadence는 변경하지 않았으며 모든 run의 failed/dropped
+iteration은 `0`입니다. 신규 219 bundle과 876 raw projection, 결합 E-01~06의
+438 bundle과 1,752 raw projection canonical/hash 검증이 모두 통과했습니다.
+
+| Run | Peak lag | First RECOVERING | First MEDIUM re-entry | Longest stable count | Recovery v2 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| E-01 | `20,806` | `18` | `61` | `3` | `RECOVERED` |
+| E-02 | `21,834` | `18` | `52` | `1` | `UNKNOWN` |
+| E-03 | `21,151` | `18` | `55` | `3` | `RECOVERED` |
+| E-04 | `20,261` | `18` | `51` | `4` | `RECOVERED` |
+| E-05 | `22,632` | `18` | `43` | `5` | `RECOVERED` |
+| E-06 | `18,948` | `18` | `43` | `14` | `RECOVERED` |
+
+Measured MEDIUM re-entry contract는 produce rate `74.9833~77.0833/s`, total lag
+`<=22`, lag slope `<=0`, fresh/usable evidence, PostgreSQL ready/HA/primary와
+`INVALID_ONLY` negative-lag policy를 요구합니다. Unknown/anomaly 또는 envelope
+이탈은 consecutive count를 reset합니다. Stable count `3`은 전체 `5/6`, 신규
+`3/3` run에서 지지됐고, `1~2`는 brief re-entry false control을 막지 못하며 `4`는
+전체 `3/6`만 지지해 선택하지 않았습니다.
+
+따라서 `worker-backlog-local-ha.recovery.v2`는 activation 뒤 RECOVERING이 먼저
+관측되고 위 envelope의 usable capture 3개가 연속될 때 sequence 끝에서만
+`WORKER_BACKLOG_RECOVERED`와 completion `COMPLETE`를 반환합니다. E-06 첫 re-entry는
+lag `1`에서 시작했으므로 lag `0`은 필수가 아닙니다. Worker replica `2`, KEDA
+inactive, traffic `0`도 predicate가 아닙니다. CLI default v1은 유지하며 v2는
+`--policy-version v2`로 명시적으로 선택합니다.
+
+Decreasing/regrowing, brief re-entry, unknown/stale middle, 7/8 coverage, offset reset,
+identity change, PostgreSQL degraded, negative lag와 zero-ingress flat backlog control은
+RECOVERED를 만들지 않았습니다. 이 state는 해당 activation scope의 completion이며
+global health, incident clearing, 새 incident 분리 또는 remediation 승인이 아닙니다.
+
+- tracked: `results/ops-agent/recovered-calibration/20260816T194023Z/`의 manifest,
+  analysis JSON/Markdown, E-04~06 compact summaries
+- local-only: bundle/raw/k6 output과 promoted replay full artifact
+- local regression: Ops Agent `228 passed`, full suite `585 passed`; compileall,
+  artifact/hash validation, changed-file secret scan, diff check `PASS`
+- runtime boundary: workload API write만 사용; OpenAI API와 Kubernetes/KEDA/Worker/
+  Argo/Kafka offset/DB control-plane write 없음
+
+## Ops Agent Phase 3 Diagnosis Agent - 2026-08-16
+
+Phase 4 시작 전 semantic guardrail을 재확인했습니다. Rebalance telemetry가
+`UNAVAILABLE`이면 해당 hypothesis는 `INSUFFICIENT`, supporting/conflicting
+citations는 빈 목록, gap은 `CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE`이어야 하며
+validator regression test가 unavailable citation을 차단합니다. 기존 live artifact는
+수정하지 않았습니다.
+
+`CORE_BACKLOG_PRESSURE=PRESENT`인 ordered sequence만 받는 single Diagnosis
+Agent를 구현했습니다. Condition evaluation ID와 22개 ordered source bundle
+digest를 다시 계산해 일치시킨 뒤 fixed normalized Evidence tool만 모델에
+노출합니다. Condition 재판정, recovery, write/remediation, arbitrary PromQL,
+URL, shell, kubectl은 제공하지 않습니다.
+
+| Validation | Result |
+| --- | --- |
+| `ops.diagnosis.v1` schema / deterministic ID | pass |
+| Allowlisted normalized tools | `9/9` AVAILABLE |
+| Golden fixtures | `9` |
+| Output-contract repair fixtures | `5` |
+| Schema / citation / tool selection / abstention / budget / stop compliance | `1.0` |
+| Unsupported claim rate | `0.0` |
+| Fabricated evidence / unnecessary call / forbidden tool counts | `0 / 0 / 0` |
+| Ops Agent suite | `158 passed` |
+| Full repository suite | `515 passed` |
+
+Golden 평가는 scripted offline model output을 사용하며 OpenAI API를 호출하지
+않습니다. [golden-eval-v1.json](../results/ops-agent/diagnosis/golden-eval-v1.json)에
+grounding harness 결과만 보존했습니다. Live model 품질이나 production accuracy
+수치로 해석하지 않습니다.
+
+Actual Phase 2.5 positive run-01 evaluation
+`9f4bb6e2ee3c623076bdfb15c95a40df1e65bdcbff7fdf564ffa92f511935c32`
+와 22개 bundle로 `gpt-5.6-luna` dry-run을 한 번 수행했습니다. 도구는 Worker
+stage latency → PostgreSQL health → pod restart → partition lag 순서로 4개를
+호출했습니다. 최초 output은 `SUFFICIENT_STOP_REQUIRES_SUPPORTED_CAUSE`로
+INVALID였고, tool 없는 output repair 1회 뒤 모든 validator 항목이 VALID가
+됐습니다. 최종 stop은 `insufficient_evidence`, diagnosis ID는
+`c815fc9d2761e064f669565af3602179af9f27b0a4af0fbd82d544d3b1c0d8eb`입니다.
+API turn은 `6`, token usage는 input/output/total
+`42,677 / 1,587 / 44,264`입니다. Artifact는 local-only
+`results/ops-agent/diagnosis/20260816-positive-run-01-luna.json`이며
+`DiagnosisRun` schema와 deterministic ID integrity를 다시 검증했습니다.
+
+## Ops Agent Phase 2.5 Worker Backlog Calibration - 2026-08-16
+
+현재 autoscaling 정책을 유지한 GitOps `local-ha`에서 64 streams, 100 VU, 30초 부하를 세 번 실행했습니다. 매 run은 lag `0`, Worker desired/available `2/2`, KEDA inactive에서 시작했고, 약 15초 간격으로 baseline→pressure→scale-out→drain→baseline 복귀를 수집했습니다. KEDA·HPA·Deployment를 patch하거나 수동 scale하지 않았습니다.
+
+| Result | Run 1 | Run 2 | Run 3 |
+| --- | ---: | ---: | ---: |
+| Event `202` / error | `20,047` / `0.00%` | `28,862` / `0.00%` | `28,600` / `0.00%` |
+| Evidence bundle count | `22` | `24` | `25` |
+| Mean sample interval | `15.067s` | `15.057s` | `15.053s` |
+| First positive lag | `7,490` | `8,599` | `10,578` |
+| Peak lag | `17,537` | `25,256` | `24,096` |
+| Max 60s produce rate | `334.117/s` | `481.033/s` | `476.667/s` |
+| Max 60s committed rate | `127.017/s` | `139.467/s` | `137.500/s` |
+| Positive 60s lag slope | `104.383~292.283/s` | `143.317~420.933/s` | `156.517~401.600/s` |
+| Lag `0` 복귀 | `196.781s` | `256.575s` | `256.543s` |
+| Worker `2/2` 복귀 | `316.779s` | `346.609s` | `361.580s` |
+
+71개 bundle의 collection status는 `COMPLETE` 63개, `PARTIAL` 8개입니다. 첫 baseline은 label-on-use Worker stage series 1개가 `MISSING`이었습니다. Scale-out 직후 7개 capture는 60초 range에 남은 이전 Pod와 instant timestamp의 현재 Pod label coverage가 달라 Worker metric freshness를 `UNKNOWN`으로 유지했습니다. Kafka end/committed/lag required evidence는 전 bundle에서 `OK/FRESH`였고, stage summary는 `OK` 63, `MISSING` 1, `UNKNOWN` 7입니다. 세 run의 `COMPLETE`는 pressure부터 baseline 복귀까지 실험 lifecycle을 완주했다는 뜻입니다.
+
+세 실행 모두 Worker desired `4`와 available `4`를 관측했습니다. Runs 2·3의 첫 scale-out capture는 desired/available `4/2`였고 다음 capture에서 `4/4`가 됐습니다. KEDA contract는 min/max `2/4`, polling `5s`, cooldown `120s`로 유지됐습니다. PostgreSQL은 ready, HA, primary reachable, standby/sync standby `2/2`를 전 구간 유지했고 최대 replication delay는 `10,696` bytes였습니다.
+
+첫 positive capture의 최대 partition share는 `17.53%`, `15.77%`, `20.56%`, peak에서는 `18.90%`, `16.46%`, `20.90%`였습니다. 64 streams가 8개 partition에 분산됐습니다. recovery tail의 작은 lag에서 share `1.0`이 나타나므로 concentration은 total-lag floor와 함께 평가해야 합니다.
+
+세 run 비교 뒤 제안한 activation 후보는 `total_lag >= 7,000`, 60초 `lag_slope >= 100 records/s`, 약 15초 간격 세 capture 연속 충족과 두 번의 total-lag 증가입니다. `produce-committed`는 slope와 같은 offset 변화라 산술 검증으로만 사용합니다. 후속 negative controls를 통과한 계약은 `local-ha.conditions.v2` ordered sequence evaluator로 구현했습니다. Phase 2 v1의 single-bundle positive lag는 계속 `UNKNOWN`입니다.
+
+Worker db-persist stage mean은 관측 window에서 `2.565~15.917ms`, finite p95 bucket 상한은 `100ms`였습니다. 이 metric은 `_persist_message_with_cursor` 구간이며 transaction commit을 제외합니다. 원본 71 bundle과 284 raw projection은 local-only로 보존하고, [analysis](../results/ops-agent/calibration/20260816T032411Z/analysis.md), manifest, 세 run summary만 sanitized tracked evidence로 분리했습니다.
+
+### CORE_BACKLOG_PRESSURE Negative Controls
+
+기존 후보를 변경하지 않고 세 negative control에 적용했습니다. Growth signal은 `lag_slope` 하나이며 `produce-committed`는 같은 offset 변화의 산술 일치 검증으로만 사용했습니다.
+
+| Control | Event `202` / error | Peak lag | Max slope | Candidate samples/window | Result |
+| --- | --- | ---: | ---: | --- | --- |
+| Short burst, 100 VU/5s | `5,160` / `0.00%` | `3,997` | `66.617/s` | `0/0` | `NOT_PRESENT` |
+| Sustainable high, 8 VU/180s | `22,256` / `0.00%` | `3,111` | `32.050/s` | `0/0` | `NOT_PRESENT` |
+| Single transient, 100 VU/10s | `9,790` / `0.00%` | `8,854` | `147.567/s` | `2/0` | `NOT_PRESENT` |
+
+Single transient는 floor와 slope를 개별 capture 두 개에서 충족했지만 실제 lag가 `8,854→7,510→5,514→3,338→0`으로 감소해 3-capture rising window가 없었습니다. Sustainable high는 약 `123.6 events/s`를 180초 유지했고 lag slope가 `21.6→11.1→7.8→5.1→4.1/s`로 수렴한 뒤 load 중 `3,111→3,106`으로 감소했습니다.
+
+- evidence: 51 bundles, 40 `COMPLETE`, 11 `PARTIAL`; Kafka required evidence 전부 `OK/FRESH`, 8/8
+- raw: 204 source projection, path/hash 전수 일치
+- Worker stage: 40 `OK`, 11 `UNKNOWN`; transaction commit 제외
+- PostgreSQL: 모든 sample ready/HA, standby/sync `2/2`, max replication delay `13,496` bytes
+- scaling: 세 control 모두 KEDA/Worker contract unchanged, final lag `0`, Worker `2/2`
+
+Negative controls를 통과한 계약은 `local-ha.conditions.v2` ordered bundle sequence 평가로 구현했습니다. v1 evaluator와 policy에는 PRESENT rule을 추가하지 않았고 Phase 3도 시작하지 않았습니다. 상세 원본 요약은 [negative-control analysis](../results/ops-agent/negative-control/20260816T040746Z/analysis.md)에 있습니다.
+
+### `local-ha.conditions.v2` Actual Capture Replay
+
+| Sequence | Captures | v2 result | Matched window | Lag in matched window |
+| --- | ---: | --- | --- | --- |
+| Positive run 1 | `22` | `PRESENT` | `[1,2,3]` | `7,490 → 16,704 → 17,537` |
+| Positive run 2 | `24` | `PRESENT` | `[1,2,3]` | `8,599 → 21,914 → 25,256` |
+| Positive run 3 | `25` | `PRESENT` | `[1,2,3]` | `10,578 → 23,241 → 24,096` |
+| Short burst | `12` | `ABSENT` | none | peak `3,997` |
+| Sustainable high | `24` | `ABSENT` | none | peak `3,111` |
+| Single transient spike | `15` | `ABSENT` | none | `8,854 → 7,510 → 5,514` |
+
+세 positive window의 slope도 각 capture에서 `>=100/s`였고 rate-gap 산술 일치 검사를 통과했습니다. 모든 sequence evaluation은 `COMPLETE`였습니다. Decreasing lag, qualifying capture 2개, stale middle bundle, partial partition coverage, changed consumer group, reordered timestamps adversarial fixture는 `PRESENT`를 만들지 않고 `UNKNOWN`으로 종료합니다. Evaluation ID는 ordered canonical bundle digest, collection/Kafka source timing, v2 policy와 ruleset을 결합합니다. [sanitized replay summary](../results/ops-agent/sequence-validation/20260816T044352Z/summary.json)에 각 evaluation ID와 local output SHA-256을 기록했습니다.
+
+## Ops Agent Phase 1 Live Validation - 2026-08-12
+
+실제 `local-ha`의 Application, Prometheus/Kafka exporter, Kubernetes/KEDA, Argo CD source를 read-only로 수집했습니다. 첫 preflight의 동시 connection failure는 Docker Desktop Linux backend 중단이 원인이었습니다. 기존 kind control-plane 재개 뒤 endpoint/resource mapping 일치를 확인하고, Prometheus actual sample timestamp와 Argo `reconciledAt`/`300s` freshness 계약을 보정한 뒤 fallback 없이 다시 수집했습니다.
+
+| Signal | Live result |
+| --- | --- |
+| Kafka partition coverage | end/committed/lag 각각 `8/8`, partition `0..7` |
+| Kafka backlog | `message-worker` lag 전 partition `0`; missing, extra, `-1`, offset decrease 없음 |
+| Worker | Deployment desired/current/ready/available `2/2/2/2`; Pod `2/2` Running/Ready |
+| KEDA | `worker-keda` Ready `true`, Active `false`, min/max `2/4` |
+| PostgreSQL | HA `true`, primary reachable, standby/sync standby `2/2`, replication delay `0` bytes |
+| Argo CD | `Synced / Healthy`, revision `004f2e7791543de2d570c287cf8938410c61807c` |
+| Bundle | `ops.evidence.v1`, 114 evidence, `PARTIAL` |
+
+`PARTIAL`은 runtime degraded 판정이 아닙니다. Worker 재시작 후 60초 window에 실제 처리 event가 없어 label-on-use `messaging_worker_processed_total`과 `messaging_worker_stage_latency_seconds{stage="db_persist"}` series가 아직 생성되지 않은 상태입니다. 두 값은 `0` 대신 `MISSING/UNKNOWN`으로 보존했습니다. Kafka backlog 판단에 필요한 세 series와 coverage는 모두 `OK/FRESH`입니다.
+
+Queue wait와 API queued-at-to-commit histogram series는 fresh했지만 두 Worker instance의 observation count가 모두 `0`이므로 latency 실측값으로 사용하지 않습니다. exact PostgreSQL insert rate, isolated transaction commit latency, rebalance event, CPU throttling의 `UNAVAILABLE` 4건은 catalogued limitation이며 collection `PARTIAL`의 원인이 아닙니다.
+
+Captured bundle은 [no-backlog-20260812.json](../results/ops-agent/live-baseline/no-backlog-20260812.json)에 보존합니다. source worktree는 dirty이므로 stable release 또는 성능 baseline으로 승격하지 않으며, no-backlog runtime reference와 Phase 2 evaluator regression input으로만 사용합니다. 전체 계약과 partition별 값은 [OPS_AGENT.md](OPS_AGENT.md)에 있습니다.
+
+검증:
+
+- full suite `420 passed`
+- `ops.evidence.v1` Pydantic validation 통과
+- Application, Prometheus, Kubernetes, Argo CD raw projection 4개 SHA-256 일치
+- compileall, `git diff --check` 통과
+
+## Ops Agent Phase 2 No-backlog Evaluation - 2026-08-12
+
+[captured Phase 1 bundle](../results/ops-agent/live-baseline/no-backlog-20260812.json)을 source 재조회 없이 [condition result](../results/ops-agent/live-baseline/no-backlog-20260812.conditions.json)로 평가했습니다.
+
+| Result | State | Direct reason |
+| --- | --- | --- |
+| source collection | `PARTIAL` | label-on-use Worker series 2개 `MISSING`; required Kafka/DB/Kubernetes evidence는 사용 가능 |
+| condition evaluation | `COMPLETE` | 네 condition과 assessment에 `UNKNOWN` 없음 |
+| `CORE_BACKLOG_PRESSURE` | `ABSENT` | 60초·5초 step의 13개 sample 전체 lag `0` |
+| `PARTITION_LAG_CONCENTRATION_OBSERVED` | `ABSENT` | 전 구간에 concentration 대상 lag 없음 |
+| `DB_DEGRADED` | `ABSENT` | 같은 `/health/ready`의 PostgreSQL degradation reason 없음 |
+| `WORKER_REPLICA_UNAVAILABLE` | `ABSENT` | Deployment generation 관측 완료, desired/current/available `2/2/2` |
+| `NO_BACKLOG_PRESSURE_DETECTED` | `PRESENT` | 두 backlog condition이 모두 `ABSENT` |
+
+Evaluator는 Kafka source/tool/semantic/unit/window/label selector, partition `8/8`, 13개 sample grid, 모든 시점의 `lag=end-committed`, source timestamp/exporter/raw identity와 range 시간축을 required gate로 확인합니다. missing partition, committed `-1`, stale/unknown freshness, selector·grid·산술·시간축 불일치는 해당 condition `UNKNOWN`입니다. PostgreSQL은 고정된 readiness reason과 `local-ha` HA guardrail의 component 일치를 확인하고, Worker는 label과 Deployment metadata identity를 함께 확인합니다. Optional Worker terminal/stage metric 누락은 core condition을 막지 않습니다.
+
+양수 lag는 backlog observation으로 남지만 pressure floor·slope·sustain calibration이 없으므로 `CORE_BACKLOG_PRESSURE`와 concentration을 `UNKNOWN`으로 유지합니다. 단일 replica shortfall도 2분 grace를 증명할 수 없어 `UNKNOWN`입니다. 이 보수적 경계는 controlled incident/recovery capture 전의 의도된 상태입니다.
+
+- schema/evaluator/ruleset/policy: `ops.conditions.v1` / `ops.evaluator.v1` / `ops.conditions.rules.v1` / `local-ha.conditions.v1`
+- canonical source bundle SHA-256: `c0471fcee17ff3ba1ce98960f33da061a9b29c86313f2b704bf8ab051e4743ba`
+- evaluation ID: `b5477d8fc18bd7a6bda3e0edcb6627d734485c2d9c6643cb46b5adea1bdf3bdb`
+- derived file SHA-256: `3bfd839efbfb1019b2d7023f3a134a2f86c1c5e4c1d1fbeabae24ce9da0d20f8`
+- latest local validation: Ops Agent `142 passed`, full suite `499 passed`; compileall·diff check 통과
+- CI 상태: local worktree 검증만 완료, GitHub Actions 실행 전
 
 ## Runtime Log·Retry Optimization Candidate — 2026-08-10
 
@@ -492,6 +885,37 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1 -Ski
 
 GitOps profile에서는 Argo CD 설치와 application bootstrap을 확인한 뒤 `-SkipArgoCd`를 제거합니다.
 
+GitOps `local-ha` read-only Evidence Bundle:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent collect `
+  --profile local-ha `
+  --incident-id phase1-live-validation `
+  --context kind-messaging-ha `
+  --output results/ops-agent/evidence-live.json
+```
+
+Controlled multi-stream Worker backlog calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_calibration.py `
+  --runs 3 `
+  --streams 64 `
+  --vus 100 `
+  --duration 30s `
+  --think-time 0.05 `
+  --sample-interval-seconds 15 `
+  --context kind-messaging-ha
+```
+
+Frozen pressure-candidate negative controls:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_negative_controls.py `
+  --sample-interval-seconds 15 `
+  --context kind-messaging-ha
+```
+
 ## Measurement Validity
 
 2026-06-08 ordering / failure injection 실험에서 Windows / Docker Desktop의 Python `urllib`가 `http://localhost`를 호출할 때 request당 약 2초 client-side 연결 지연이 발생했습니다.
@@ -800,12 +1224,19 @@ powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1
 
 ## Known Gaps and Next Acceptance Criteria
 
-- 64-stream fixed/KEDA A/B 3회 반복과 notification-worker capacity 분리
-- Worker histogram 상단 bucket 확장 뒤 commit-observed p95 재측정
-- registry image 기준 hot-stream과 multi-stream 재검증
+- local-ha condition/recovery threshold를 multi-node 또는 다른 profile에서 별도 재보정
+- closed incident 뒤 backlog regrowth의 automatic reopen/new incident correlation policy
+- Worker stage와 분리된 exact PostgreSQL transaction commit latency 계측
+- consumer rebalance event와 container CPU throttling telemetry
 - poll batch 중간 crash와 partition offset recovery
 - transactional outbox 또는 동등한 post-commit publish recovery
 - unresolved DLQ 상태 모델
 - object storage/cluster-loss backup recovery와 multi-node disruption drill
+
+Kafka exporter의 negative lag `-1/-2`는 separate end/committed reads에서 생긴
+`INVALID_ONLY` observation으로 raw 보존합니다. `0` clamp나 derived replacement를
+만들지 않고 detection/recovery usable evidence에서 제외합니다. Current incident
+E2E와 public demo는 production SLA, self-healing, autonomous AI operations의 증거가
+아닙니다.
 
 우선순위, 이유, 측정 가능한 완료 조건은 [IMPROVEMENT_ROADMAP.md](IMPROVEMENT_ROADMAP.md)에 있습니다.

@@ -1,0 +1,88 @@
+{
+  "schema_version": "ops.sequence-validation.v1",
+  "validation_id": "20260816T044352Z",
+  "evaluator_schema_version": "ops.conditions.v2",
+  "evaluator_version": "ops.evaluator.v2",
+  "ruleset_version": "ops.conditions.rules.v2",
+  "policy_version": "local-ha.conditions.v2",
+  "activation_contract": {
+    "consecutive_capture_count": 3,
+    "total_lag_floor_records": 7000,
+    "lag_slope_60s_floor_records_per_second": 100.0,
+    "require_total_lag_increase_across_both_transitions": true,
+    "produce_minus_committed_role": "arithmetic_consistency_only"
+  },
+  "positive_replays": [
+    {
+      "name": "positive-run-01",
+      "capture_count": 22,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "PRESENT",
+      "matched_capture_indexes": [1, 2, 3],
+      "matched_total_lag_records": [7490, 16704, 17537],
+      "matched_lag_slope_60s_records_per_second": [124.83333333333333, 278.4, 292.28333333333336],
+      "evaluation_id": "9f4bb6e2ee3c623076bdfb15c95a40df1e65bdcbff7fdf564ffa92f511935c32",
+      "local_output_sha256": "2fda28ad1c732f70afefe33c584ea43836806ee0345b8d94f1e77750930372bd"
+    },
+    {
+      "name": "positive-run-02",
+      "capture_count": 24,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "PRESENT",
+      "matched_capture_indexes": [1, 2, 3],
+      "matched_total_lag_records": [8599, 21914, 25256],
+      "matched_lag_slope_60s_records_per_second": [143.31666666666666, 365.23333333333335, 420.93333333333334],
+      "evaluation_id": "744f01378680c53d020235597baceabb7fca5defc4ebeb005c07095b04b55b9c",
+      "local_output_sha256": "0bee51be332d24f2aa9f42850337d6d5819119313326a50ad37c8bc6ba145343"
+    },
+    {
+      "name": "positive-run-03",
+      "capture_count": 25,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "PRESENT",
+      "matched_capture_indexes": [1, 2, 3],
+      "matched_total_lag_records": [10578, 23241, 24096],
+      "matched_lag_slope_60s_records_per_second": [176.3, 387.35, 401.6],
+      "evaluation_id": "56d76f5cb982ee15d271548f43cd4961b04fe0a1385ea4d36b993105bd042405",
+      "local_output_sha256": "0a6e5a995f660ad04f4e45a0e520958b7fe94916c3c0cbbf5964a988fb607280"
+    }
+  ],
+  "negative_replays": [
+    {
+      "name": "short-burst",
+      "capture_count": 12,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "ABSENT",
+      "matched_capture_indexes": [],
+      "evaluation_id": "e5ab60025d251f16c2efaef22878810eea89f0622236a4179d803c5403d9a327",
+      "local_output_sha256": "a6cf07ba9ddea6595225c7f47120b382b96eda5875de34d19c8cc63a88afc276"
+    },
+    {
+      "name": "sustainable-high",
+      "capture_count": 24,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "ABSENT",
+      "matched_capture_indexes": [],
+      "evaluation_id": "6895963334ff5807034e7b5e1f69f4a27af4fda4218f6aa5eacd9d7e8e3fbe2c",
+      "local_output_sha256": "49c04c3fbd5f8ff31789324bdaee301b9e95ce59d7e6fccdd22a8a91eae1a85f"
+    },
+    {
+      "name": "single-transient-spike",
+      "capture_count": 15,
+      "evaluation_status": "COMPLETE",
+      "core_backlog_pressure": "ABSENT",
+      "matched_capture_indexes": [],
+      "evaluation_id": "eec9de238408b89dfc47bc7b4b7df62958d5cc65398ab1e2a042b3a86c342550",
+      "local_output_sha256": "34f6aa88ee3032e53b68846cf0caa3ec81e94fbcfd37df2504e0f2ec8366a375"
+    }
+  ],
+  "adversarial_fixtures": [
+    "decreasing_lag",
+    "only_two_qualifying_captures",
+    "stale_middle_bundle",
+    "partial_partition_coverage",
+    "changed_consumer_group",
+    "reordered_timestamps"
+  ],
+  "phase3_started": false
+}

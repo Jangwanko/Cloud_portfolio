@@ -15,7 +15,9 @@ env/
 
 # Environment
 .env
-*.env
+.env.local
+.env.*
+!.env.example
 
 # Alembic
 alembic/versions/*.pyc
@@ -54,6 +56,103 @@ results/postgres-restore/*
 !results/postgres-recovery/
 results/postgres-recovery/*
 !results/postgres-recovery/latest.json
+# Keep only the named, redacted Phase 1 live capture and its referenced raw projections.
+!results/ops-agent/
+results/ops-agent/*
+!results/ops-agent/live-baseline/
+results/ops-agent/live-baseline/*
+!results/ops-agent/live-baseline/README.md
+!results/ops-agent/live-baseline/no-backlog-20260812.json
+!results/ops-agent/live-baseline/no-backlog-20260812.conditions.json
+# Keep only the sanitized Phase 2.5 manifest, analysis, and per-run summaries.
+!results/ops-agent/calibration/
+results/ops-agent/calibration/*
+!results/ops-agent/calibration/20260816T032411Z/
+results/ops-agent/calibration/20260816T032411Z/*
+!results/ops-agent/calibration/20260816T032411Z/manifest.json
+!results/ops-agent/calibration/20260816T032411Z/analysis.md
+!results/ops-agent/calibration/20260816T032411Z/run-01/
+results/ops-agent/calibration/20260816T032411Z/run-01/*
+!results/ops-agent/calibration/20260816T032411Z/run-01/summary.json
+!results/ops-agent/calibration/20260816T032411Z/run-02/
+results/ops-agent/calibration/20260816T032411Z/run-02/*
+!results/ops-agent/calibration/20260816T032411Z/run-02/summary.json
+!results/ops-agent/calibration/20260816T032411Z/run-03/
+results/ops-agent/calibration/20260816T032411Z/run-03/*
+!results/ops-agent/calibration/20260816T032411Z/run-03/summary.json
+# Keep only the sanitized negative-control manifest, analysis, and summaries.
+!results/ops-agent/negative-control/
+results/ops-agent/negative-control/*
+!results/ops-agent/negative-control/20260816T040746Z/
+results/ops-agent/negative-control/20260816T040746Z/*
+!results/ops-agent/negative-control/20260816T040746Z/manifest.json
+!results/ops-agent/negative-control/20260816T040746Z/analysis.md
+!results/ops-agent/negative-control/20260816T040746Z/short-burst/
+results/ops-agent/negative-control/20260816T040746Z/short-burst/*
+!results/ops-agent/negative-control/20260816T040746Z/short-burst/summary.json
+!results/ops-agent/negative-control/20260816T040746Z/sustainable-high/
+results/ops-agent/negative-control/20260816T040746Z/sustainable-high/*
+!results/ops-agent/negative-control/20260816T040746Z/sustainable-high/summary.json
+!results/ops-agent/negative-control/20260816T040746Z/single-transient-spike/
+results/ops-agent/negative-control/20260816T040746Z/single-transient-spike/*
+!results/ops-agent/negative-control/20260816T040746Z/single-transient-spike/summary.json
+# Keep only the sanitized sequence-evaluator replay summary; full outputs stay local.
+!results/ops-agent/sequence-validation/
+results/ops-agent/sequence-validation/*
+!results/ops-agent/sequence-validation/20260816T044352Z/
+results/ops-agent/sequence-validation/20260816T044352Z/*
+!results/ops-agent/sequence-validation/20260816T044352Z/summary.json
+# Keep only compact Phase 4 recovery calibration outputs; bundles/raw/conditions/logs stay local.
+!results/ops-agent/recovery-calibration/
+results/ops-agent/recovery-calibration/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/
+results/ops-agent/recovery-calibration/20260816T100600Z/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/manifest.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/analysis.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/analysis.md
+!results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/
+!results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/
+results/ops-agent/recovery-calibration/20260816T100600Z/*/*
+!results/ops-agent/recovery-calibration/20260816T100600Z/A-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/B-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/C-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-01/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/E-run-03/summary.compact.json
+!results/ops-agent/recovery-calibration/20260816T100600Z/F-run-01/summary.compact.json
+# Keep only compact continuous-ingress RECOVERED calibration outputs.
+!results/ops-agent/recovered-calibration/
+results/ops-agent/recovered-calibration/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/
+results/ops-agent/recovered-calibration/20260816T194023Z/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/manifest.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/analysis.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/analysis.md
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-04/
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-05/
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-06/
+results/ops-agent/recovered-calibration/20260816T194023Z/*/*
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-04/summary.compact.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-05/summary.compact.json
+!results/ops-agent/recovered-calibration/20260816T194023Z/E-run-06/summary.compact.json
+# Keep the sanitized offline Phase 3 eval summary; live LLM runs stay local.
+!results/ops-agent/diagnosis/
+results/ops-agent/diagnosis/*
+!results/ops-agent/diagnosis/README.md
+!results/ops-agent/diagnosis/golden-eval-v1.json
+!results/ops-agent/raw/
+results/ops-agent/raw/*
+!results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/
+results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/*
+!results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/application.json
+!results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/prometheus.json
+!results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/kubernetes.json
+!results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/argocd.json
 k6/results/
 
 # Docker

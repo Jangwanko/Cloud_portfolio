@@ -1,0 +1,41 @@
+{
+  "schema_version": "ops.backlog-calibration.v1",
+  "experiment_id": "20260816T032411Z",
+  "started_at": "2026-08-16T03:24:11.019959Z",
+  "status": "COMPLETE",
+  "context": "kind-messaging-ha",
+  "workload": {
+    "runs": 3,
+    "streams": 64,
+    "vus": 100,
+    "duration": "30s",
+    "think_time_seconds": 0.05
+  },
+  "sampling": {
+    "interval_seconds": 15,
+    "policy_thresholds_preselected": false,
+    "consecutive_window_policy_preselected": false
+  },
+  "scaling": {
+    "manual_keda_changes": false,
+    "manual_replica_changes": false
+  },
+  "runs": [
+    {
+      "run": 1,
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/calibration/20260816T032411Z/run-01/summary.json"
+    },
+    {
+      "run": 2,
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/calibration/20260816T032411Z/run-02/summary.json"
+    },
+    {
+      "run": 3,
+      "status": "COMPLETE",
+      "summary_path": "results/ops-agent/calibration/20260816T032411Z/run-03/summary.json"
+    }
+  ],
+  "completed_at": "2026-08-16T03:41:19.101610Z"
+}

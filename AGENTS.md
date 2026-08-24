@@ -9,7 +9,7 @@
 - 주문·결제 lifecycle은 범용 처리 경계를 보여주는 reference scenario입니다. `/v1/orders/{order_id}/events`, `category`, `payment_id`, body-only stream route는 기존 client와 과거 증거를 위한 compatibility adapter/alias로 유지하며 핵심 정체성으로 설명하지 않습니다.
 - 데모는 주문 lifecycle을 reference scenario로 사용하되 Kafka append와 DB persistence를 서로 다른 운영 증거로 보여줍니다.
 - Kafka / Worker / DLQ / PostgreSQL read model / observability는 event domain과 무관하게 수락 이후 처리와 장애 대응을 담당합니다.
-- 마지막 승격 기준 브랜치는 `master`입니다. 직전 master 배포는 notification batch 최적화 merge `7035cda`, CI image `7035cdab4050`입니다. Runtime log·backup retention·README 최적화는 `dev-kafka` source `a2b157f`, CI image `a2b157f1283f`까지 검증했습니다.
+- 마지막 승격 기준 브랜치는 `master`입니다. 2026-08-10 notification batch 최적화는 `master` merge `7035cda`, CI image `7035cdab4050`으로 승격했습니다. Runtime log·backup retention·README 최적화는 `dev-kafka` source `a2b157f`, CI image `a2b157f1283f`까지 검증했습니다.
 - 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 일반 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 저사양 데모 관련 개발 작업은 `demo-dev`에서 진행합니다. 작업 시작 전 현재 브랜치를 확인하고, 대상 역할에 맞는 브랜치에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
@@ -90,6 +90,15 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - API readiness hard failures: schema startup 미완료, Kafka unreachable, non-local unsafe auth secret(기본값·known placeholder·빈 값·32-byte 미만). PostgreSQL primary/standby/sync/replication guardrail 이탈은 `degraded`; Worker 정보는 state 결정 제외.
 - HTTP request body는 기본 `1 MiB` transport 상한을 declared/chunked body 모두에 적용합니다. generic payload/metadata 상한은 각각 `65,536`/`16,384` UTF-8 JSON bytes이며 transport 상한과 구분합니다.
 - Pgpool SPOF is reduced, not fully eliminated: Pgpool has `2` replicas and PDB `minAvailable=1`, but local kind remains a single-node demo environment.
+- Ops Agent Phase 1은 Application, Prometheus, Kubernetes, Argo CD를 fixed read-only collector로 읽어 `ops.evidence.v1` bundle을 생성합니다. 2026-08-12 actual `local-ha`에서 Kafka partition `8/8`, lag `0`, Worker `2/2`, PostgreSQL HA, Argo `Synced / Healthy`를 확인했습니다.
+- Phase 2 deterministic evaluator는 immutable 단일 `ops.evidence.v1`을 `ops.conditions.v1`, ordered sequence를 `ops.conditions.v2`로 평가합니다. condition별 required/optional evidence를 분리하며 `PARTIAL` bundle을 공통 `UNKNOWN` gate로 사용하지 않습니다.
+- Phase 2 v1은 full 60초 Kafka lag `0`, PostgreSQL readiness reason 부재, observed generation의 Worker full availability만 `ABSENT`로 확정합니다. 양수 lag pressure/concentration과 단일 replica shortfall은 sustain/grace policy가 부족하므로 `UNKNOWN`입니다.
+- Phase 2.5는 2026-08-16 actual `local-ha`에서 64-stream, 100 VU, 30초 부하를 현재 KEDA `2→4` 정책 그대로 3회 실행하고 15초 간격 Evidence Bundle 71개를 보존했습니다. 세 run peak lag는 `17,537` / `25,256` / `24,096`, lag `0` 복귀는 `196.781s` / `256.575s` / `256.543s`입니다. lag `>=7,000`, 60초 slope `>=100/s`, 세 capture와 두 번의 lag 증가는 `local-ha.conditions.v2` activation rule로 구현했습니다. `produce-committed`는 산술 검증일 뿐 독립 vote가 아닙니다.
+- Phase 2.6 negative controls는 같은 candidate를 변경하지 않고 short burst, 180초 sustainable high, single transient spike에 적용했습니다. Peak lag `3,997` / `3,111` / `8,854`, candidate는 모두 `NOT_PRESENT`입니다. Actual v2 replay에서도 세 control은 `PRESENT`가 아니며 positive 세 run은 모두 `[1,2,3]` window에서 `PRESENT`입니다. V1과 recovery/clearing rule은 변경하지 않았습니다.
+- Phase 3 single Diagnosis Agent는 `CORE_BACKLOG_PRESSURE=PRESENT`와 ordered digest를 다시 검증한 뒤 fixed normalized read-only tool 9개만 선택합니다. 출력은 `ops.diagnosis.v1`이며 evidence ID citation, hypothesis gap, structured stop reason을 보존합니다. 기본 모델은 `gpt-5.6-luna`, live call은 `--live` opt-in이며 normal CI는 API를 호출하지 않습니다. Condition 재판정, recovery, remediation, arbitrary shell/kubectl/PromQL/URL은 금지됩니다. Phase 3.1은 validator semantic failure에 tool 없는 output repair를 최대 1회 허용하며 transport retry와 별도 budget으로 관리합니다.
+- Phase 4 recovery calibration은 host-local k6 arrival-rate workload와 measurement orchestrator입니다. 최종 `20260816T100600Z`는 rates `0/30/75/110/330 records/s`, 64 streams, A/B/C 각 1회, continuous-ingress E 3회, zero-ingress F 1회를 current KEDA `2→4` 그대로 실행했습니다. E peak lag `20,806 / 21,834 / 21,151`, F `20,998`이며 모두 기존 v2 activation을 재현했습니다. 349 bundle과 1,396 raw projection hash 검증은 PASS입니다.
+- Phase 4.1 deterministic recovery v1은 기존 `CORE_BACKLOG_PRESSURE=PRESENT` activation과 ordered post-activation bundle digest를 입력으로 ACTIVE/RECOVERING/UNKNOWN을 평가합니다. RECOVERING은 fresh usable 3 capture, 각 60초 slope `<0`, committed rate `>=` produce rate, PostgreSQL ready를 요구합니다. Kafka exporter negative lag는 `INVALID_ONLY`로 보존하며 clamp/derived replacement를 하지 않습니다.
+- Phase 4.2 `worker-backlog-local-ha.recovery.v2`는 기존 v1을 기본 호환 policy로 유지하면서 MEDIUM measured ingress `74.9833~77.0833/s`, lag `<=22`, slope `<=0`, fresh usable PostgreSQL-ready capture 3개가 RECOVERING 뒤 연속된 경우에만 incident-scope `WORKER_BACKLOG_RECOVERED`를 반환합니다. E1~E6 stable count는 `3/1/3/4/5/14`, v2 replay는 E1·E3·E4·E5·E6 RECOVERED, E2 UNKNOWN입니다. Worker replica/KEDA 상태/lag==0은 필수 조건이 아니며 clearing, post-recovery regression manager, Recovery LLM, remediation은 미구현입니다.
 - Unit / contract test count는 코드 변경에 따라 달라지므로 현재 작업에서 `.venv\Scripts\python.exe -m pytest -q`를 실행하고 실제 출력을 보고합니다. 과거 문서의 서로 다른 pass count를 현재 상태로 재사용하지 않습니다.
 - 2026-07-14 전체 정합성 감사의 identity refactor 이전 local suite는 `115 passed`입니다.
 - 2026-07-14 generic v2 전환 작업 중간 checkpoint의 local suite는 `195 passed`입니다. 같은 날 이후 reliability 보강 결과나 현재 pass count로 해석하지 않으며, 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.
@@ -98,19 +107,22 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
-- 현재 `dev-kafka` source는 Demo UI `2.3.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. CI validation을 통과한 GitOps target image는 `a2b157f1283f`입니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.0`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.0`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary를 포함하며 OpenAI API를 재호출하지 않습니다. CI validation을 통과한 GitOps target image는 아직 `a2b157f1283f`입니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
 - 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, master merge `cab7647`로 승격했습니다. dev-kafka CI `#76`, master CI `#77`의 validate·publish를 통과했습니다.
 - 2026-08-10 notification batch 최적화는 local suite `354 passed`, clean 64-stream fixed/KEDA 각 3회, source `8d334b8`, dev image `8d334b8abeaf`, master image `7035cdab4050`까지 게시했습니다.
 - 2026-08-11 runtime log·backup retention·README 최적화는 local suite `357 passed`, image `messaging-portfolio:runtime-log-opt` `59,777,816` bytes, user `10001:10001`, live·readiness·metric·logger smoke를 통과했습니다. 64-stream clean KEDA candidate 2회와 published image paired control 1회는 처리량·p95·drain이 엇갈려 throughput 개선 근거와 stable baseline에서 제외합니다. `dev-kafka` source `a2b157f`, CI `#83`, image `a2b157f1283f`, overlay commit `004f2e7`까지 게시했습니다.
+- 2026-08-16 Phase 3.1 candidate 기준 full suite `515 passed`, Ops Agent suite `158 passed`입니다. 9개 offline golden fixture와 5개 output repair fixture는 schema/citation/tool/abstention/budget/stop/repair 계약을 통과했습니다. Actual positive run-01 Luna dry-run은 4개 normalized tool 호출 뒤 최초 stop consistency INVALID, tool-free repair 1회 후 VALID로 완료됐습니다. 최종 stop은 `insufficient_evidence`, API turns `6`, total tokens `44,264`이며 artifact는 local-only입니다. Captured reference는 source/raw/canonical bundle provenance를 함께 기록합니다.
+- 2026-08-16 Phase 4 calibration candidate 기준 full suite `544 tests passed`, Ops Agent suite `187 tests passed`입니다. compileall, k6 arrival-rate inspect, 349 bundle/1,396 raw hash audit, changed-file secret scan, git diff check를 통과했습니다. OpenAI API, recovery evaluator/state, remediation은 이 작업에서 사용하거나 구현하지 않았습니다.
+- 2026-08-17 Phase 4.2 RECOVERED candidate 기준 full suite `585 passed`, Ops Agent suite `228 passed`입니다. 신규 E4~E6 219 bundles/876 raw, combined E1~E6 438 bundles/1,752 raw hash consistency와 workload attainment를 검증했습니다. OpenAI API 및 runtime control-plane write는 없었습니다.
 - 2026-07-21 local live: Argo CD `Synced / Healthy`, deployment-bearing image-tag revision `b84c379`, API/Worker image `9349ba9`, API `2.0.0`, generic v2 `202`, materialized cache `ready=true` / `hydrated=true`, core workload ready, normalized message/notification consumer lag `0` 확인. 이후 docs-only revision advance는 workload 변경으로 해석하지 않습니다.
 - 2026-07-21 master promotion: merge `8f5d78c`, GitHub Actions CI run `#55`의 validate/publish job success, GHCR image `8f5d78c6963a`, overlay bot commit `717e0ca`. Local Argo CD는 `dev-kafka`를 추적하므로 master image의 local runtime 배포 증거는 아닙니다.
 - 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
-- Public demo-lite는 2026-08-10 재생성 서버에서 image `8640ca010960`, UI `2.3.1`, API `2.1.0`, generic v2 event `202`, Argo `Synced / Healthy`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
+- Public demo-lite는 2026-08-24 image `7489ab270995`, UI `2.4.0`, API `2.1.0`, replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
 - `demo-dev`는 public demo-lite의 저사양 자원 경계를 관리합니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, migration → Worker → API gate를 포함합니다.
 
 ## Important Docs
@@ -120,6 +132,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - `docs/ARCHITECTURE.md`: Kafka-centered architecture, ordering boundary, autoscaling design.
 - `docs/RELIABILITY_POLICY.md`: degraded / critical interpretation.
 - `docs/OBSERVABILITY.md`: Grafana / Prometheus operating signals.
+- `docs/OPS_AGENT.md`: Phase 1 evidence, Phase 2 condition, Phase 3 grounded diagnosis, Phase 4 recovery calibration contract.
+- `ops_agent/README.md`: collector/evaluator local execution and security boundary.
 - `docs/RUNBOOK.md`: incident response and operational checks.
 - `docs/SERVICE_REQUIREMENTS.md`: service assumptions, SLO guardrails, operational purpose.
 - `docs/KAFKA_EXPERIMENT.md`: Kafka migration experiment notes.
@@ -150,6 +164,55 @@ Check portfolio status:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\check_portfolio_status.ps1 -SkipArgoCd
+```
+
+Collect GitOps local-ha read-only evidence:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent collect --profile local-ha --incident-id phase1-live-validation --context kind-messaging-ha --output results\ops-agent\evidence-live.json
+```
+
+Evaluate a frozen Evidence Bundle:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate --input results\ops-agent\live-baseline\no-backlog-20260812.json --output results\ops-agent\live-baseline\no-backlog-20260812.conditions.json
+```
+
+Evaluate an ordered Evidence Bundle sequence:
+
+```powershell
+$inputs = Get-ChildItem results\ops-agent\calibration\20260816T032411Z\run-01\bundles\sample-*.json | Sort-Object Name | ForEach-Object FullName
+.venv\Scripts\python.exe -m ops_agent evaluate-sequence --input $inputs --output results\ops-agent\conditions-v2.json
+```
+
+Run Phase 4 recovery calibration without changing KEDA/Worker settings:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovery_calibration.py --mode calibrate --context kind-messaging-ha --low-rate 30 --medium-rate 75 --high-rate 110 --overload-rate 330 --overload-seconds 90 --recovery-phase-seconds 900 --e-repeats 3
+```
+
+Run the supplemental continuous-ingress RECOVERED calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovered_calibration.py --context kind-messaging-ha
+```
+
+Replay a recovery sequence with the explicit recovered policy:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery --policy-version v2 --activation <conditions.v2.json> --input <ordered-bundle.json> --output <recovery.json>
+```
+
+Run the controlled multi-stream Worker backlog calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_calibration.py --runs 3 --streams 64 --vus 100 --duration 30s --think-time 0.05 --sample-interval-seconds 15 --context kind-messaging-ha
+```
+
+Run the frozen pressure-candidate negative controls:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_negative_controls.py --sample-interval-seconds 15 --context kind-messaging-ha
 ```
 
 Run Kafka performance suite:
@@ -193,6 +256,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - 2026-06 성능 결과의 event status `200`은 `202 Accepted` route contract 명시 전의 역사적 증거로 표시합니다. 현재 HTTP 계약과 성능은 새 build에서 다시 측정합니다.
 - DLQ API의 `recent_samples`, `by_reason`, `oldest_sample_age_seconds`는 조회한 append-only log 표본의 통계로 설명합니다. unresolved queue depth, 현재 backlog, 미해결 event SLO로 표현하지 않습니다.
 - `results/README.md`, `results/kafka-performance/latest.txt`, `results/ordering-failure/latest.json`, `results/postgres-restore/latest.json`, `results/postgres-recovery/latest.json`은 Git 추적 대상으로 유지합니다. 새 실행은 원본, 조건, stable baseline 채택 여부 또는 restore/recovery 검증 범위를 함께 기록합니다.
+- `ops_agent/fixtures/`는 synthetic test input, `results/ops-agent/live-baseline/`은 sanitized captured runtime evidence와 deterministic derived condition result로 분리합니다. live capture는 bundle/raw hash, source dirty state, collector tree hash, freshness/coverage, `raw_ref` 기준 경로를 함께 기록합니다.
 - `dev-kafka`를 현재 기본 배포 브랜치처럼 쓰지 않습니다. GitOps 기본 revision은 `master` 기준입니다.
 - 문서와 답변에서 대비를 앞세운 상투적인 문장 구성을 피합니다. 서술의 중요도를 비교형 도입으로 만들지 않고 주제와 판단 기준을 바로 선언합니다. "A까지 포함한다", "B로 이어진다", "A를 바탕으로 B를 처리한다"처럼 의미를 직접 씁니다.
 - 영어 문서와 답변도 상투적인 부정-대조 구문을 쓰지 않습니다. 같은 의미가 필요하면 짧고 직접적인 문장으로 나눕니다.
@@ -201,8 +265,8 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.3.1`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay가 기준입니다.
-- 문서에 등록된 public demo-lite deployment는 UI `2.1.0` / API `2.0.0` branch/deployment 전용 상태입니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.0`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay, sanitized recorded AI Investigation trace가 기준입니다.
+- 문서에 등록된 public demo-lite deployment는 UI `2.4.0`, API `2.1.0`, image `7489ab270995`입니다.
 - `demo-dev` candidate의 source Demo UI는 `2.3.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.

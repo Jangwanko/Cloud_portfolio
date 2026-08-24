@@ -1,0 +1,988 @@
+{
+  "schema_version": "ops.conditions.v1",
+  "evaluator_version": "ops.evaluator.v1",
+  "ruleset_version": "ops.conditions.rules.v1",
+  "evaluation_id": "b5477d8fc18bd7a6bda3e0edcb6627d734485c2d9c6643cb46b5adea1bdf3bdb",
+  "evaluation_status": "COMPLETE",
+  "policy": {
+    "cluster_profile": "local-ha",
+    "source_policy_version": "local-ha.evidence.v1",
+    "policy_version": "local-ha.conditions.v1",
+    "context": "kind-messaging-ha",
+    "namespace": "messaging-app",
+    "topic": "message-ingress",
+    "consumer_group": "message-worker",
+    "expected_partition_count": 8,
+    "kafka_range_window_seconds": 60,
+    "kafka_range_step_seconds": 5,
+    "kafka_expected_sample_count": 13,
+    "kafka_range_collection_skew_seconds": 1,
+    "kafka_source_to_range_end_max_seconds": 5,
+    "freshness_age_tolerance_seconds": 0.01,
+    "worker_deployment_name": "worker",
+    "worker_unavailable_grace_seconds": 120,
+    "local_ha_min_ready_standbys": 2,
+    "local_ha_min_sync_standbys": 1,
+    "local_ha_max_replication_delay_bytes": 1048576
+  },
+  "source_bundle": {
+    "schema_version": "ops.evidence.v1",
+    "bundle_id": "ac4d45ac-6280-4eb7-9d35-ea735243f00b",
+    "incident_id": "phase1-live-validation",
+    "cluster_profile": "local-ha",
+    "collection_status": "PARTIAL",
+    "source_bundle_sha256": "c0471fcee17ff3ba1ce98960f33da061a9b29c86313f2b704bf8ab051e4743ba"
+  },
+  "conditions": {
+    "CORE_BACKLOG_PRESSURE": {
+      "condition": "CORE_BACKLOG_PRESSURE",
+      "state": "ABSENT",
+      "reason_codes": [
+        "BACKLOG_ZERO_FOR_FULL_WINDOW"
+      ],
+      "evidence_ids": [
+        "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+        "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+        "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+        "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+        "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+        "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+        "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+        "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+        "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+        "prometheus.kafka_consumergroup_lag.47658d42fc91",
+        "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+        "prometheus.kafka_consumergroup_lag.74f886940446",
+        "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+        "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+        "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+        "prometheus.kafka_consumergroup_lag.f87e00287552",
+        "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+        "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+        "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+        "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+        "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+        "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+        "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+        "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+      ],
+      "required_evidence": [
+        {
+          "dependency": "topic_end_offsets",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "kafka_topic_partition_current_offset"
+          ],
+          "evidence_ids": [
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+          ],
+          "usable_evidence_ids": [
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+          ],
+          "evidence_statuses": {
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999": "OK",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb": "OK",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c": "OK",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8": "OK",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b": "OK",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b": "OK",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2": "OK",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        },
+        {
+          "dependency": "consumer_committed_offsets",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "kafka_consumergroup_current_offset"
+          ],
+          "evidence_ids": [
+            "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+            "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+            "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+            "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+            "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+            "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+            "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+            "prometheus.kafka_consumergroup_current_offset.df583ae85a83"
+          ],
+          "usable_evidence_ids": [
+            "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+            "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+            "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+            "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+            "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+            "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+            "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+            "prometheus.kafka_consumergroup_current_offset.df583ae85a83"
+          ],
+          "evidence_statuses": {
+            "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a": "OK",
+            "prometheus.kafka_consumergroup_current_offset.48771d947bee": "OK",
+            "prometheus.kafka_consumergroup_current_offset.58f0f78354f4": "OK",
+            "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed": "OK",
+            "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4": "OK",
+            "prometheus.kafka_consumergroup_current_offset.8e4605b24000": "OK",
+            "prometheus.kafka_consumergroup_current_offset.b6385eb9f572": "OK",
+            "prometheus.kafka_consumergroup_current_offset.df583ae85a83": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.48771d947bee": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.58f0f78354f4": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.8e4605b24000": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.b6385eb9f572": "FRESH",
+            "prometheus.kafka_consumergroup_current_offset.df583ae85a83": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        },
+        {
+          "dependency": "consumer_partition_lag",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "kafka_consumergroup_lag"
+          ],
+          "evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+            "prometheus.kafka_consumergroup_lag.74f886940446",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+            "prometheus.kafka_consumergroup_lag.f87e00287552"
+          ],
+          "usable_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+            "prometheus.kafka_consumergroup_lag.74f886940446",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+            "prometheus.kafka_consumergroup_lag.f87e00287552"
+          ],
+          "evidence_statuses": {
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa": "OK",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91": "OK",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc": "OK",
+            "prometheus.kafka_consumergroup_lag.74f886940446": "OK",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7": "OK",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003": "OK",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28": "OK",
+            "prometheus.kafka_consumergroup_lag.f87e00287552": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa": "FRESH",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91": "FRESH",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc": "FRESH",
+            "prometheus.kafka_consumergroup_lag.74f886940446": "FRESH",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7": "FRESH",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003": "FRESH",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28": "FRESH",
+            "prometheus.kafka_consumergroup_lag.f87e00287552": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        }
+      ],
+      "optional_evidence": [
+        {
+          "dependency": "worker_terminal_processing",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_worker_processed_total"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_worker_processed_total.f596dcfe9696": "MISSING"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_worker_processed_total.f596dcfe9696": "UNKNOWN"
+          },
+          "missing": true,
+          "missing_evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_EVIDENCE_FRESHNESS_UNKNOWN",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_EVIDENCE_STATUS_MISSING",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SEMANTIC_ANOMALY",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": "source_timestamp_missing"
+            },
+            {
+              "code": "OPTIONAL_SOURCE_TIMESTAMP_MISSING",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "queue_wait_samples",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_queue_wait_seconds_count",
+            "messaging_queue_wait_seconds"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_queue_wait_seconds_count.2147c5bac420",
+            "prometheus.messaging_queue_wait_seconds_count.f46b76955289"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_queue_wait_seconds_count.2147c5bac420": "OK",
+            "prometheus.messaging_queue_wait_seconds_count.f46b76955289": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_queue_wait_seconds_count.2147c5bac420": "FRESH",
+            "prometheus.messaging_queue_wait_seconds_count.f46b76955289": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_db_persist_stage_samples",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_worker_stage_latency_seconds_count",
+            "messaging_worker_stage_latency_seconds"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69": "MISSING"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69": "UNKNOWN"
+          },
+          "missing": true,
+          "missing_evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_EVIDENCE_FRESHNESS_UNKNOWN",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_EVIDENCE_STATUS_MISSING",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SEMANTIC_ANOMALY",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": "source_timestamp_missing"
+            },
+            {
+              "code": "OPTIONAL_SOURCE_TIMESTAMP_MISSING",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_deployment",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "kubernetes_worker_deployment_observation"
+          ],
+          "evidence_ids": [
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769": "OK"
+          },
+          "freshness_statuses": {
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        }
+      ],
+      "missing_required_dependencies": [],
+      "stale_required_evidence_ids": [],
+      "unknown_freshness_required_evidence_ids": [],
+      "facts": {
+        "end_offsets": {
+          "0": 4590,
+          "1": 15348,
+          "2": 4601,
+          "3": 4113,
+          "4": 2749,
+          "5": 2391,
+          "6": 4605,
+          "7": 2293
+        },
+        "committed_offsets": {
+          "0": 4590,
+          "1": 15348,
+          "2": 4601,
+          "3": 4113,
+          "4": 2749,
+          "5": 2391,
+          "6": 4605,
+          "7": 2293
+        },
+        "partition_lag": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0
+        },
+        "latest_total_lag_records": 0,
+        "maximum_total_lag_records": 0,
+        "window_all_zero": true
+      }
+    },
+    "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+      "condition": "PARTITION_LAG_CONCENTRATION_OBSERVED",
+      "state": "ABSENT",
+      "reason_codes": [
+        "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+      ],
+      "evidence_ids": [
+        "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+        "prometheus.kafka_consumergroup_lag.47658d42fc91",
+        "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+        "prometheus.kafka_consumergroup_lag.74f886940446",
+        "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+        "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+        "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+        "prometheus.kafka_consumergroup_lag.f87e00287552"
+      ],
+      "required_evidence": [
+        {
+          "dependency": "consumer_partition_lag",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "kafka_consumergroup_lag"
+          ],
+          "evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+            "prometheus.kafka_consumergroup_lag.74f886940446",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+            "prometheus.kafka_consumergroup_lag.f87e00287552"
+          ],
+          "usable_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+            "prometheus.kafka_consumergroup_lag.74f886940446",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+            "prometheus.kafka_consumergroup_lag.f87e00287552"
+          ],
+          "evidence_statuses": {
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa": "OK",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91": "OK",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc": "OK",
+            "prometheus.kafka_consumergroup_lag.74f886940446": "OK",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7": "OK",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003": "OK",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28": "OK",
+            "prometheus.kafka_consumergroup_lag.f87e00287552": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa": "FRESH",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91": "FRESH",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc": "FRESH",
+            "prometheus.kafka_consumergroup_lag.74f886940446": "FRESH",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7": "FRESH",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003": "FRESH",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28": "FRESH",
+            "prometheus.kafka_consumergroup_lag.f87e00287552": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        }
+      ],
+      "optional_evidence": [
+        {
+          "dependency": "partition_end_offset_slope",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "kafka_topic_partition_current_offset"
+          ],
+          "evidence_ids": [
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999": "OK",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb": "OK",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c": "OK",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8": "OK",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b": "OK",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b": "OK",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2": "OK",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2": "FRESH",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_terminal_processing",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_worker_processed_total"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_worker_processed_total.f596dcfe9696": "MISSING"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_worker_processed_total.f596dcfe9696": "UNKNOWN"
+          },
+          "missing": true,
+          "missing_evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [
+            "prometheus.messaging_worker_processed_total.f596dcfe9696"
+          ],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_EVIDENCE_FRESHNESS_UNKNOWN",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_EVIDENCE_STATUS_MISSING",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SEMANTIC_ANOMALY",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": "source_timestamp_missing"
+            },
+            {
+              "code": "OPTIONAL_SOURCE_TIMESTAMP_MISSING",
+              "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+              "detail": null
+            }
+          ]
+        }
+      ],
+      "missing_required_dependencies": [],
+      "stale_required_evidence_ids": [],
+      "unknown_freshness_required_evidence_ids": [],
+      "facts": {
+        "partition_lag": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0
+        },
+        "latest_total_lag_records": 0,
+        "maximum_total_lag_records": 0,
+        "maximum_partition_share": 0.0
+      }
+    },
+    "DB_DEGRADED": {
+      "condition": "DB_DEGRADED",
+      "state": "ABSENT",
+      "reason_codes": [
+        "NO_POSTGRES_DEGRADATION_REASON"
+      ],
+      "evidence_ids": [
+        "application.application_postgres_runtime_observation.5356beb4e470",
+        "application.application_readiness_observation.f8594cc0592b"
+      ],
+      "required_evidence": [
+        {
+          "dependency": "application_readiness",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "application_readiness_observation"
+          ],
+          "evidence_ids": [
+            "application.application_readiness_observation.f8594cc0592b"
+          ],
+          "usable_evidence_ids": [
+            "application.application_readiness_observation.f8594cc0592b"
+          ],
+          "evidence_statuses": {
+            "application.application_readiness_observation.f8594cc0592b": "OK"
+          },
+          "freshness_statuses": {
+            "application.application_readiness_observation.f8594cc0592b": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        },
+        {
+          "dependency": "postgres_runtime_readiness",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "application_postgres_runtime_observation"
+          ],
+          "evidence_ids": [
+            "application.application_postgres_runtime_observation.5356beb4e470"
+          ],
+          "usable_evidence_ids": [
+            "application.application_postgres_runtime_observation.5356beb4e470"
+          ],
+          "evidence_statuses": {
+            "application.application_postgres_runtime_observation.5356beb4e470": "OK"
+          },
+          "freshness_statuses": {
+            "application.application_postgres_runtime_observation.5356beb4e470": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        }
+      ],
+      "optional_evidence": [
+        {
+          "dependency": "event_persist_lag_samples",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_event_persist_lag_seconds_count",
+            "messaging_event_persist_lag_seconds"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_event_persist_lag_seconds_count.462d75f456f5",
+            "prometheus.messaging_event_persist_lag_seconds_count.8c9106b77332"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_event_persist_lag_seconds_count.462d75f456f5": "OK",
+            "prometheus.messaging_event_persist_lag_seconds_count.8c9106b77332": "OK"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_event_persist_lag_seconds_count.462d75f456f5": "FRESH",
+            "prometheus.messaging_event_persist_lag_seconds_count.8c9106b77332": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_db_persist_stage_samples",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "messaging_worker_stage_latency_seconds_count",
+            "messaging_worker_stage_latency_seconds"
+          ],
+          "evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69": "MISSING"
+          },
+          "freshness_statuses": {
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69": "UNKNOWN"
+          },
+          "missing": true,
+          "missing_evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69"
+          ],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_EVIDENCE_FRESHNESS_UNKNOWN",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_EVIDENCE_STATUS_MISSING",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            },
+            {
+              "code": "OPTIONAL_SEMANTIC_ANOMALY",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": "source_timestamp_missing"
+            },
+            {
+              "code": "OPTIONAL_SOURCE_TIMESTAMP_MISSING",
+              "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+              "detail": null
+            }
+          ]
+        }
+      ],
+      "missing_required_dependencies": [],
+      "stale_required_evidence_ids": [],
+      "unknown_freshness_required_evidence_ids": [],
+      "facts": {
+        "observed": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 2,
+          "sync_standby_count": 2,
+          "max_replication_delay_bytes": 0
+        },
+        "readiness_status": "ready",
+        "readiness_reasons": [],
+        "local_ha_guardrails": {
+          "ha_mode_required": true,
+          "min_ready_standbys": 2,
+          "min_sync_standbys": 1,
+          "max_replication_delay_bytes": 1048576
+        }
+      }
+    },
+    "WORKER_REPLICA_UNAVAILABLE": {
+      "condition": "WORKER_REPLICA_UNAVAILABLE",
+      "state": "ABSENT",
+      "reason_codes": [
+        "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+      ],
+      "evidence_ids": [
+        "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+      ],
+      "required_evidence": [
+        {
+          "dependency": "worker_deployment",
+          "requirement": "REQUIRED",
+          "accepted_metric_names": [
+            "kubernetes_worker_deployment_observation"
+          ],
+          "evidence_ids": [
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+          ],
+          "usable_evidence_ids": [
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+          ],
+          "evidence_statuses": {
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769": "OK"
+          },
+          "freshness_statuses": {
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": []
+        }
+      ],
+      "optional_evidence": [
+        {
+          "dependency": "application_worker_summary",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "application_ops_summary_observation"
+          ],
+          "evidence_ids": [
+            "application.application_ops_summary_observation.3eae3b64096f"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "application.application_ops_summary_observation.3eae3b64096f": "OK"
+          },
+          "freshness_statuses": {
+            "application.application_ops_summary_observation.3eae3b64096f": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_pods",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "kubernetes_worker_pod_observations"
+          ],
+          "evidence_ids": [
+            "kubernetes.kubernetes_worker_pod_observations.f284b13243bb"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "kubernetes.kubernetes_worker_pod_observations.f284b13243bb": "OK"
+          },
+          "freshness_statuses": {
+            "kubernetes.kubernetes_worker_pod_observations.f284b13243bb": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        },
+        {
+          "dependency": "worker_scaled_object",
+          "requirement": "OPTIONAL",
+          "accepted_metric_names": [
+            "kubernetes_worker_scaled_object_observation"
+          ],
+          "evidence_ids": [
+            "kubernetes.kubernetes_worker_scaled_object_observation.15913a9b7b2f"
+          ],
+          "usable_evidence_ids": [],
+          "evidence_statuses": {
+            "kubernetes.kubernetes_worker_scaled_object_observation.15913a9b7b2f": "OK"
+          },
+          "freshness_statuses": {
+            "kubernetes.kubernetes_worker_scaled_object_observation.15913a9b7b2f": "FRESH"
+          },
+          "missing": false,
+          "missing_evidence_ids": [],
+          "stale_evidence_ids": [],
+          "unknown_freshness_evidence_ids": [],
+          "coverage_incomplete_evidence_ids": [],
+          "semantic_anomaly_evidence_ids": [],
+          "issues": [
+            {
+              "code": "OPTIONAL_SELECTOR_UNBOUND",
+              "evidence_id": null,
+              "detail": null
+            }
+          ]
+        }
+      ],
+      "missing_required_dependencies": [],
+      "stale_required_evidence_ids": [],
+      "unknown_freshness_required_evidence_ids": [],
+      "facts": {
+        "generation": 328,
+        "observed_generation": 328,
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "available_replicas": 2,
+        "unavailable_grace_seconds": 120
+      }
+    }
+  },
+  "assessments": {
+    "NO_BACKLOG_PRESSURE_DETECTED": {
+      "assessment": "NO_BACKLOG_PRESSURE_DETECTED",
+      "state": "PRESENT",
+      "reason_codes": [
+        "BACKLOG_CONDITIONS_ABSENT"
+      ],
+      "condition_dependencies": [
+        {
+          "condition": "CORE_BACKLOG_PRESSURE",
+          "state": "ABSENT",
+          "reason_codes": [
+            "BACKLOG_ZERO_FOR_FULL_WINDOW"
+          ]
+        },
+        {
+          "condition": "PARTITION_LAG_CONCENTRATION_OBSERVED",
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+          ]
+        }
+      ]
+    }
+  }
+}

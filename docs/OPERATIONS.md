@@ -92,6 +92,34 @@ Argo CD bootstrap 완료 뒤:
 powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
 ```
 
+GitOps `local-ha`의 normalized read-only evidence 수집:
+
+```powershell
+.\tools\kubectl.exe config current-context
+.venv\Scripts\python.exe -m ops_agent collect `
+  --profile local-ha `
+  --incident-id phase1-live-validation `
+  --context kind-messaging-ha `
+  --output results/ops-agent/evidence-live.json
+```
+
+current context는 `kind-messaging-ha`여야 합니다. 이 profile은 Argo CD Application CR을 applicable source로 요구하므로 `-SkipArgoCd`를 사용하는 manual profile의 대체 명령이 아닙니다. Windows ingress는 `127.0.0.1`에 연결하고 `Host: localhost`를 사용합니다. 네 source가 동시에 connection refused이면 policy를 바꾸기 전에 Docker Desktop Linux backend와 기존 kind control-plane 상태를 확인합니다.
+
+Evidence status와 live baseline 해석: [OPS_AGENT.md](OPS_AGENT.md)
+
+고정된 bundle의 deterministic condition 평가:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate `
+  --input results/ops-agent/evidence-live.json `
+  --output results/ops-agent/conditions-live.json
+```
+
+Ordered sequence에서 `CORE_BACKLOG_PRESSURE=PRESENT`가 확정된 뒤의 추가
+조사는 [Ops Agent Phase 3 계약](OPS_AGENT.md#phase-3-evidence-grounded-diagnosis-agent)을
+따릅니다. `diagnose --live`만 OpenAI API를 호출하며 normal CI와 기본 pytest는
+live model을 실행하지 않습니다.
+
 확인 대상:
 
 - API readiness
@@ -118,13 +146,13 @@ Standby/sync standby count와 replication byte lag는 degraded reason에 반영�
 
 `grace_remaining_seconds`는 degraded 지속 시간을 읽기 위한 countdown context입니다. state는 첫 guardrail 이탈부터 즉시 `degraded`이며 이 값이 HTTP status를 지연시키지 않습니다.
 
-Response의 `app_version`은 실행 중인 API build version입니다. 현재 `dev-kafka` GitOps target은 UI `2.3.1`, API `2.1.0`, image `a2b157f1283f`입니다. Public demo-lite는 2026-08-10 신규 서버에서 image `8640ca010960`, UI `2.3.1`, API `2.1.0`, generic event `202`, Argo `Synced / Healthy`를 확인했습니다.
+Response의 `app_version`은 실행 중인 API build version입니다. 2026-08-12 `dev-kafka` local GitOps runtime은 UI `2.3.1`, API `2.1.0`, image `a2b157f1283f`, Argo revision `004f2e7791543de2d570c287cf8938410c61807c`를 확인했습니다. Public demo-lite는 2026-08-24 image `7489ab270995`, UI `2.4.0`, API `2.1.0`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다.
 
 ## Demo Access
 
-Dev-kafka source candidate: UI `2.3.1`, API `2.1.0`
+Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`; sanitized recorded AI Investigation replay 포함, runtime 배포 전
 
-Public demo-lite Demo UI: `2.3.1` / API `2.1.0` / image `8640ca010960` (2026-08-10 live)
+Public demo-lite Demo UI: `2.4.0` / API `2.1.0` / image `7489ab270995` (2026-08-24 live)
 
 Local surfaces:
 

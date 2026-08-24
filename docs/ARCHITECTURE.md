@@ -1,4 +1,4 @@
-# Reliable Event Processing System 아키텍처
+# Kubernetes 이벤트 처리 운영 플랫폼 아키텍처
 
 ## 서비스 문제
 
@@ -10,6 +10,7 @@
 - reference scenario: 주문·결제 lifecycle과 `/v1/orders/{order_id}/events` compatibility adapter
 - 운영자 관심: DB write 지연, 일시 장애, event 상태 분리 확인
 - 분리 대상: intake, persistence, metadata, notification job, DLQ, replay
+- 운영 의사결정: immutable evidence, deterministic condition/recovery, bounded read-only diagnosis, incident lifecycle
 
 설계 기준:
 
@@ -17,6 +18,7 @@
 - 같은 업무 stream ordering boundary 유지
 - PostgreSQL write path 장애 시 DLQ / replay 기반 복구
 - Prometheus / Grafana / Runbook으로 장애 위치를 설명할 수 있는 운영성
+- runtime 처리 경로와 Ops 판단 경로, AI trust boundary 분리
 
 서비스 요구와 SLO guardrail: [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md)
 
@@ -32,6 +34,7 @@
 - HPA·KEDA: API CPU 확장과 Worker consumer lag 확장
 - Argo CD·Migration Job: Secret → schema → Worker → API rollout 순서 적용
 - Backup CronJob·restore drill: logical backup 생성과 disposable DB 복원 검증
+- Ops Agent: normalized read-only evidence, deterministic detection/recovery, bounded diagnosis, incident lifecycle artifact
 
 Current source는 API pod별 Kafka snapshot replay를 사용하지 않습니다. 읽기와 request status는 PostgreSQL이 담당합니다.
 
@@ -242,6 +245,92 @@ KEDA 효과는 API request 수가 아니라 consumer lag, Worker replica, accept
 - unresolved DLQ state / depth / oldest unresolved age
 - accepted/commit clock source와 cluster 재측정 증거
 - post-commit publish backlog와 retry
+
+### Runtime path와 Ops decision path
+
+```mermaid
+flowchart LR
+    subgraph Runtime[Runtime data path]
+      Client --> API --> Kafka --> Worker --> Pgpool --> PostgreSQL
+      Worker --> Notification
+      Worker --> DLQ
+    end
+
+    subgraph Ops[Read-only decision path]
+      Sources[Application · Prometheus · Kubernetes · Argo CD]
+      Bundle[ops.evidence.v1]
+      Condition[ops.conditions.v1/v2]
+      Diagnosis[ops.diagnosis.v1]
+      Recovery[ops.recovery.v1]
+      Incident[ops.incident.v1]
+      Sources --> Bundle --> Condition
+      Condition --> Diagnosis
+      Condition --> Recovery
+      Diagnosis --> Incident
+      Recovery --> Incident
+    end
+
+    API -. readiness .-> Sources
+    Kafka -. offsets and lag .-> Sources
+    Worker -. replica and stage .-> Sources
+    PostgreSQL -. HA readiness .-> Sources
+```
+
+Runtime path는 event를 수락·처리·영속화합니다. Ops path는 runtime 밖에서 고정된
+read-only source만 관측하며 event 처리나 Kubernetes/Argo/Kafka/DB control plane을
+변경하지 않습니다. Host-local calibration의 workload API write는 incident 재현을
+위한 입력이고 Ops Agent 권한과 분리됩니다.
+
+Phase 1은 Application, Prometheus, Kubernetes, Argo CD의 safe projection을
+`ops.evidence.v1` bundle로 정규화합니다. Source timestamp, freshness, expected/observed
+partition coverage, missing/anomaly, source identity, runtime image, GitOps revision,
+raw artifact SHA-256을 보존합니다. Bundle `COMPLETE/PARTIAL/FAILED`는 수집 완전성이고
+system health가 아닙니다.
+
+Phase 2 v1은 single bundle의 condition별 required evidence만 사용합니다. V2 Worker
+backlog activation은 동일 profile/context/namespace/topic/group/8 partitions/source
+identity의 ordered capture 세 개에서 각각 lag `>=7,000`, 60초 slope `>=100/s`, 두
+transition의 lag 증가를 요구합니다. 모든 capture는 fresh source timestamp, 8/8
+coverage, no `-1`, no offset decrease, `lag=end-committed`, aligned range grid를
+통과해야 합니다. Produce-minus-committed rate는 slope와 같은 offset 변화의 산술
+검사이며 독립 vote가 아닙니다. 하나라도 불완전하면 `PRESENT` 대신 `UNKNOWN`입니다.
+
+Phase 3 single Diagnosis Agent는 integrity-valid v2 `PRESENT`를 변경할 수 없는 입력으로
+받습니다. LLM은 allowlisted normalized evidence tool만 고르고 evidence ID가 있는
+hypothesis와 gap을 출력합니다. Arbitrary PromQL, URL, shell, kubectl, raw credential,
+condition 재판정, recovery 선언, remediation은 허용하지 않습니다. Local validator가
+schema, citation, tool budget, stop semantics를 통과한 output만 completed diagnosis로
+승격합니다.
+
+Phase 4 calibration harness는 host-local k6가 current KEDA `2→4`를 유지한 채 64-stream
+arrival-rate traffic을 만들고 약 15초 간격으로 bundle을 수집합니다. Recovery v1은
+activation 뒤 fresh usable capture 세 개의 negative slope, committed rate `>=` produce
+rate, PostgreSQL readiness에서만 RECOVERING을 판정합니다. Recovery v2는 prior
+RECOVERING 뒤 actual local-ha MEDIUM envelope, produce `74.9833~77.0833/s`, lag `<=22`,
+slope `<=0`, fresh usable 8/8 Kafka와 PostgreSQL ready가 세 capture 연속일 때만 해당
+incident scope를 RECOVERED로 완료합니다. `lag==0`, Worker replica, KEDA inactive는
+필수 조건이 아닙니다.
+
+Kafka exporter `v1.7.0`은 topic end offset과 committed offset을 서로 다른 시점에
+읽으므로 small-lag scrape에서 `-1/-2`가 관측됐습니다. 이 값은 `INVALID_ONLY`로 raw
+보존하고 `0`으로 clamp하거나 derived replacement를 만들지 않습니다. Detection과
+recovery는 해당 capture를 usable evidence에서 제외합니다.
+
+Phase 5 lifecycle은 condition evaluation ID, ordered bundle digest, complete source
+identity로 deterministic incident ID를 만들고 diagnosis/recovery artifact hash를
+timeline에 연결합니다. State는 `DETECTED→ACTIVE→RECOVERING→RECOVERED→CLOSED`입니다.
+Closure 뒤 관측은 immutable history를 reopen하지 않고 `current_observation`으로
+분리합니다. 2026-08-23 actual Gate 2는 `75→330→75/s`, dropped `0`, peak lag `20,574`,
+133 bundles/532 raw projection 검증으로 이 흐름을 끝까지 재현했습니다. Later ACTIVE
+observation을 closed record와 분리했으며 automatic reopen/new incident correlation은
+아직 없습니다.
+
+이 계층은 self-healing이나 production-ready AI가 아닙니다. Threshold/envelope는
+single-node kind `local-ha` calibration이고, consumer rebalance·CPU throttling·exact
+transaction commit latency는 현재 instrumentation으로 `UNAVAILABLE`입니다. Public
+Verified Incident Replay는 sanitized static source candidate까지 구현했으며 demo-lite
+배포는 아직 진행하지 않았습니다. 상세 계약과 case study는
+[OPS_AGENT.md](OPS_AGENT.md), 실제 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)를 봅니다.
 
 ## 백업과 복구
 현재 PostgreSQL 운영 보강은 아래처럼 구성되어 있습니다.

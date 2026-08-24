@@ -1,0 +1,69 @@
+{
+  "schema_version": "ops.backlog-negative-control.v1",
+  "experiment_id": "20260816T040746Z",
+  "started_at": "2026-08-16T04:07:46.452890Z",
+  "status": "COMPLETE",
+  "context": "kind-messaging-ha",
+  "candidate": {
+    "version": "phase2.5.pressure-candidate.v1",
+    "total_lag_floor": 7000,
+    "lag_slope_floor_records_per_second": 100.0,
+    "consecutive_capture_count": 3,
+    "produce_minus_committed_role": "arithmetic_consistency_check",
+    "modified_before_negative_control": false
+  },
+  "sampling": {
+    "interval_seconds": 15
+  },
+  "scaling": {
+    "manual_keda_changes": false,
+    "manual_replica_changes": false
+  },
+  "scenarios": [
+    {
+      "name": "short-burst",
+      "purpose": "brief distributed burst below the calibrated persistence envelope",
+      "vus": 100,
+      "streams": 64,
+      "duration": "5s",
+      "think_time": 0.05
+    },
+    {
+      "name": "sustainable-high",
+      "purpose": "long distributed load near the observed two-Worker drain rate",
+      "vus": 8,
+      "streams": 64,
+      "duration": "180s",
+      "think_time": 0.05
+    },
+    {
+      "name": "single-transient-spike",
+      "purpose": "one distributed spike intended to cross the lag floor and then drain",
+      "vus": 100,
+      "streams": 64,
+      "duration": "10s",
+      "think_time": 0.05
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "short-burst",
+      "status": "COMPLETE",
+      "candidate_result": "NOT_PRESENT",
+      "summary_path": "results/ops-agent/negative-control/20260816T040746Z/short-burst/summary.json"
+    },
+    {
+      "scenario": "sustainable-high",
+      "status": "COMPLETE",
+      "candidate_result": "NOT_PRESENT",
+      "summary_path": "results/ops-agent/negative-control/20260816T040746Z/sustainable-high/summary.json"
+    },
+    {
+      "scenario": "single-transient-spike",
+      "status": "COMPLETE",
+      "candidate_result": "NOT_PRESENT",
+      "summary_path": "results/ops-agent/negative-control/20260816T040746Z/single-transient-spike/summary.json"
+    }
+  ],
+  "completed_at": "2026-08-16T04:19:53.894499Z"
+}
