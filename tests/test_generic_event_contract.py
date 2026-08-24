@@ -1149,3 +1149,26 @@ def test_demo_replays_sanitized_local_ha_investigation_without_runtime_ai():
         "async function loadVerifiedIncidentReplay", 1
     )[0]
     assert "fetch(" not in replay_function
+
+    for text in (
+        "과거 기록 재생",
+        "현재 서버 상태를 보여주는 화면이 아닙니다.",
+        "당시 실행한 조회 순서를 보여줍니다.",
+        "가설 검토 결과",
+        "수집된 증거가 이 가설과 일치합니다.",
+        "가설을 뒷받침한 증거",
+        "확인하지 못한 정보",
+        "에이전트 권한 범위",
+        "시스템을 변경할 권한은 없습니다.",
+        "특정 키에 부하가 집중됐다는 직접 증거가 없습니다.",
+    ):
+        assert text in demo
+
+    for awkward_text in (
+        "SUPPORTED는 available evidence의 지지이며",
+        "확정 root cause가 아닙니다",
+        "activation capture의 total lag",
+        "bounded operational evidence만 조사하며",
+        "계약 검증 PASS · repair",
+    ):
+        assert awkward_text not in demo

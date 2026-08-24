@@ -1063,43 +1063,43 @@
       <div class="investigation-head">
         <div>
           <div class="badge-row">
-            <span class="status-badge" data-i18n="investigationRecorded">Recorded replay</span>
-            <span class="status-badge read-only">Read-only</span>
+            <span class="status-badge" data-i18n="investigationRecorded">과거 기록 재생</span>
+            <span class="status-badge read-only" data-i18n="readOnly">읽기 전용</span>
             <span class="status-badge ok" id="investigation-validation-badge">Validator -</span>
           </div>
-          <h2 id="ai-investigation-title" data-i18n="investigationTitle">AI Investigation</h2>
-          <p class="subtitle" data-i18n="investigationSubtitle">실제 Phase 5.1 local-ha 기록을 재생하며 현재 demo-lite runtime을 다시 진단하지 않습니다.</p>
+          <h2 id="ai-investigation-title" data-i18n="investigationTitle">AI 장애 조사 기록</h2>
+          <p class="subtitle" data-i18n="investigationSubtitle">Phase 5.1 장애 실험에서 저장한 조사 기록입니다. 현재 서버 상태를 보여주는 화면이 아닙니다.</p>
         </div>
       </div>
 
       <div class="investigation-meta" id="investigation-meta" aria-live="polite">
-        <div><strong>Condition</strong><span>-</span></div>
-        <div><strong>Recorded profile</strong><span>-</span></div>
-        <div><strong>Model</strong><span>-</span></div>
-        <div><strong>Tool budget</strong><span>-</span></div>
-        <div><strong>Stop reason</strong><span>-</span></div>
-        <div><strong>Diagnosis ID</strong><span>-</span></div>
+        <div><strong>확정된 조건</strong><span>-</span></div>
+        <div><strong>기록 환경</strong><span>-</span></div>
+        <div><strong>사용 모델</strong><span>-</span></div>
+        <div><strong>조회 횟수</strong><span>-</span></div>
+        <div><strong>조사 종료 사유</strong><span>-</span></div>
+        <div><strong>진단 ID</strong><span>-</span></div>
       </div>
 
       <div class="investigation-layout">
         <div>
           <div class="trace-head">
             <div>
-              <h3 data-i18n="traceTitle">Investigation Trace</h3>
-              <p class="field-help" data-i18n="traceHelp">표시 순서는 기록된 tool-call 순서이며 새 API 호출을 만들지 않습니다.</p>
+              <h3 data-i18n="traceTitle">조사 과정</h3>
+              <p class="field-help" data-i18n="traceHelp">당시 실행한 조회 순서를 보여줍니다. 기록을 재생할 때 외부 API를 호출하지 않습니다.</p>
             </div>
             <button class="secondary compact-button" id="replay-investigation" type="button" data-i18n="replayInvestigation">기록 재생</button>
           </div>
           <div class="trace-list" id="investigation-trace">
-            <p class="field-help" data-i18n="investigationLoading">기록된 investigation artifact를 불러오는 중입니다.</p>
+            <p class="field-help" data-i18n="investigationLoading">저장된 장애 조사 기록을 불러오는 중입니다.</p>
           </div>
         </div>
 
         <div>
           <div class="hypothesis-head">
             <div>
-              <h3 data-i18n="hypothesisTitle">Hypothesis Results</h3>
-              <p class="field-help" data-i18n="hypothesisHelp">SUPPORTED는 available evidence의 지지이며 확정 root cause가 아닙니다.</p>
+              <h3 data-i18n="hypothesisTitle">가설 검토 결과</h3>
+              <p class="field-help" data-i18n="hypothesisHelp">SUPPORTED는 수집된 증거가 가설과 일치한다는 뜻입니다. 장애 원인을 확정한 판정은 아닙니다.</p>
             </div>
           </div>
           <div class="hypothesis-list" id="investigation-hypotheses"></div>
@@ -1110,34 +1110,34 @@
         <div>
           <div class="validator-head">
             <div>
-              <h3 data-i18n="validatorTitle">Deterministic Validator</h3>
-              <p class="field-help" data-i18n="validatorHelp">Schema와 evidence grounding 계약을 검사하며 causal truth를 확인하지 않습니다.</p>
+              <h3 data-i18n="validatorTitle">출력 검증</h3>
+              <p class="field-help" data-i18n="validatorHelp">출력 형식과 증거 인용이 계약에 맞는지 확인합니다. 장애 원인 자체를 검증하는 절차는 아닙니다.</p>
             </div>
           </div>
           <div class="validator-flow" aria-label="Diagnosis validation flow">
-            <span>AI Diagnosis</span><b>→</b><span>Structured Output</span><b>→</b><span id="validator-result">Validator -</span>
+            <span data-i18n="diagnosisFlowLabel">AI 진단</span><b>→</b><span data-i18n="structuredOutputLabel">구조화된 결과</span><b>→</b><span id="validator-result">검증 결과 -</span>
           </div>
           <p class="contract-note" id="validator-detail">-</p>
         </div>
 
         <div>
-          <h3><span class="status-badge read-only">Read-only</span> <span data-i18n="boundaryTitle">Agent Boundary</span></h3>
-          <p class="boundary-note" data-i18n="boundaryHelp">Agent는 bounded operational evidence만 조사하며 runtime write 권한이 없습니다.</p>
+          <h3><span class="status-badge read-only" data-i18n="readOnly">읽기 전용</span> <span data-i18n="boundaryTitle">에이전트 권한 범위</span></h3>
+          <p class="boundary-note" data-i18n="boundaryHelp">에이전트는 허용된 운영 증거만 조회할 수 있습니다. 시스템을 변경할 권한은 없습니다.</p>
           <div class="boundary-columns">
             <div>
-              <strong data-i18n="agentCan">The Agent can</strong>
+              <strong data-i18n="agentCan">허용된 작업</strong>
               <ul>
-                <li data-i18n="canInspect">bounded operational evidence 조사</li>
-                <li data-i18n="canChoose">allowlisted tool 선택</li>
-                <li data-i18n="canHypothesize">evidence-grounded hypothesis 생성</li>
+                <li data-i18n="canInspect">허용된 운영 증거 조회</li>
+                <li data-i18n="canChoose">등록된 조회 도구 선택</li>
+                <li data-i18n="canHypothesize">수집된 증거를 바탕으로 가설 작성</li>
               </ul>
             </div>
             <div>
-              <strong data-i18n="agentCannot">The Agent cannot</strong>
+              <strong data-i18n="agentCannot">금지된 작업</strong>
               <ul>
-                <li data-i18n="cannotRestart">Pod 재시작 또는 Worker scale</li>
-                <li data-i18n="cannotModify">Kubernetes 수정 또는 Kafka offset reset</li>
-                <li data-i18n="cannotRecover">recovery 선언 또는 remediation 수행</li>
+                <li data-i18n="cannotRestart">Pod 재시작 또는 Worker 수 변경</li>
+                <li data-i18n="cannotModify">Kubernetes 변경 또는 Kafka offset 초기화</li>
+                <li data-i18n="cannotRecover">복구 완료 선언 또는 복구 작업 수행</li>
               </ul>
             </div>
           </div>
@@ -1280,41 +1280,64 @@
         dbPaymentColumn: "도메인 데이터와 추적·분류용 확장 정보",
         dbTraceColumns: "요청 추적 식별자와 DB row 생성 시각",
         envelopeVerification: "Envelope 샘플 검증",
-        investigationRecorded: "Recorded replay",
-        investigationTitle: "AI Investigation",
-        investigationSubtitle: "실제 Phase 5.1 local-ha 기록을 재생하며 현재 demo-lite runtime을 다시 진단하지 않습니다.",
-        traceTitle: "Investigation Trace",
-        traceHelp: "표시 순서는 기록된 tool-call 순서이며 새 API 호출을 만들지 않습니다.",
+        investigationRecorded: "과거 기록 재생",
+        readOnly: "읽기 전용",
+        investigationTitle: "AI 장애 조사 기록",
+        investigationSubtitle: "Phase 5.1 장애 실험에서 저장한 조사 기록입니다. 현재 서버 상태를 보여주는 화면이 아닙니다.",
+        traceTitle: "조사 과정",
+        traceHelp: "당시 실행한 조회 순서를 보여줍니다. 기록을 재생할 때 외부 API를 호출하지 않습니다.",
         replayInvestigation: "기록 재생",
-        investigationLoading: "기록된 investigation artifact를 불러오는 중입니다.",
-        hypothesisTitle: "Hypothesis Results",
-        hypothesisHelp: "SUPPORTED는 available evidence의 지지이며 확정 root cause가 아닙니다.",
-        validatorTitle: "Deterministic Validator",
-        validatorHelp: "Schema와 evidence grounding 계약을 검사하며 causal truth를 확인하지 않습니다.",
-        boundaryTitle: "Agent Boundary",
-        boundaryHelp: "Agent는 bounded operational evidence만 조사하며 runtime write 권한이 없습니다.",
-        agentCan: "The Agent can",
-        agentCannot: "The Agent cannot",
-        canInspect: "bounded operational evidence 조사",
-        canChoose: "allowlisted tool 선택",
-        canHypothesize: "evidence-grounded hypothesis 생성",
-        cannotRestart: "Pod 재시작 또는 Worker scale",
-        cannotModify: "Kubernetes 수정 또는 Kafka offset reset",
-        cannotRecover: "recovery 선언 또는 remediation 수행",
-        viewEvidence: "Evidence 상세 보기",
-        purpose_CHECK_PARTITION_LAG_DISTRIBUTION: "activation capture의 total lag와 partition 분포를 비교합니다.",
-        purpose_CHECK_WORKER_PERSIST_STAGE: "Worker DB persist stage의 관측 latency를 확인합니다. commit은 제외됩니다.",
-        purpose_CHECK_WORKER_REPLICA_PATH: "Worker desired/current/ready/available replica 상태를 확인합니다.",
-        purpose_CHECK_POSTGRES_HEALTH: "PostgreSQL HA, primary, standby, sync와 replication delay를 확인합니다.",
-        supportingEvidence: "Supporting evidence",
-        conflictingEvidence: "Conflicting evidence",
-        evidenceGaps: "Evidence gaps",
+        investigationLoading: "저장된 장애 조사 기록을 불러오는 중입니다.",
+        hypothesisTitle: "가설 검토 결과",
+        hypothesisHelp: "SUPPORTED는 수집된 증거가 가설과 일치한다는 뜻입니다. 장애 원인을 확정한 판정은 아닙니다.",
+        validatorTitle: "출력 검증",
+        validatorHelp: "출력 형식과 증거 인용이 계약에 맞는지 확인합니다. 장애 원인 자체를 검증하는 절차는 아닙니다.",
+        boundaryTitle: "에이전트 권한 범위",
+        boundaryHelp: "에이전트는 허용된 운영 증거만 조회할 수 있습니다. 시스템을 변경할 권한은 없습니다.",
+        agentCan: "허용된 작업",
+        agentCannot: "금지된 작업",
+        canInspect: "허용된 운영 증거 조회",
+        canChoose: "등록된 조회 도구 선택",
+        canHypothesize: "수집된 증거를 바탕으로 가설 작성",
+        cannotRestart: "Pod 재시작 또는 Worker 수 변경",
+        cannotModify: "Kubernetes 변경 또는 Kafka offset 초기화",
+        cannotRecover: "복구 완료 선언 또는 복구 작업 수행",
+        viewEvidence: "수집된 값 자세히 보기",
+        purpose_CHECK_PARTITION_LAG_DISTRIBUTION: "Kafka에 쌓인 전체 대기 건수와 파티션별 분포를 확인했습니다.",
+        purpose_CHECK_WORKER_PERSIST_STAGE: "Worker가 DB 저장 단계에서 소비한 시간을 확인했습니다. 트랜잭션 확정 시간은 이 지표에 포함되지 않습니다.",
+        purpose_CHECK_WORKER_REPLICA_PATH: "Worker 인스턴스가 필요한 수만큼 실행되고 준비됐는지 확인했습니다.",
+        purpose_CHECK_POSTGRES_HEALTH: "PostgreSQL 주 서버와 대기 서버의 상태, 동기 복제 여부, 복제 지연을 확인했습니다.",
+        evidenceLabel: "증거",
+        maxAgeLabel: "허용 수집 지연 {seconds}초",
+        supportingEvidence: "가설을 뒷받침한 증거",
+        conflictingEvidence: "가설과 맞지 않는 증거",
+        evidenceGaps: "확인하지 못한 정보",
         noEvidence: "없음",
-        supportedMeaning: "Supported by available evidence",
-        insufficientMeaning: "Insufficient evidence",
+        supportedMeaning: "수집된 증거가 이 가설과 일치합니다.",
+        insufficientMeaning: "판단에 필요한 증거가 부족합니다.",
+        gap_COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY: "DB 트랜잭션 확정 시간은 현재 Worker 단계 지표에 포함되지 않습니다.",
+        gap_NO_DIRECT_HOT_KEY_SUPPORTING_EVIDENCE: "특정 키에 부하가 집중됐다는 직접 증거가 없습니다.",
+        gap_RETRY_AND_FAILURE_TELEMETRY_UNAVAILABLE: "재시도와 처리 실패를 직접 보여주는 지표가 없습니다.",
+        gap_SEQUENCE_CONTENTION_TELEMETRY_UNAVAILABLE: "같은 스트림의 순서 처리 경합을 직접 보여주는 지표가 없습니다.",
+        gap_CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE: "Kafka consumer 재할당을 직접 보여주는 지표가 없습니다.",
+        conditionLabel: "확정된 조건",
+        recordedProfileLabel: "기록 환경",
+        modelLabel: "사용 모델",
+        toolBudgetLabel: "조회 횟수",
+        stopReasonLabel: "조사 종료 사유",
+        diagnosisIdLabel: "진단 ID",
+        stop_sufficient_evidence: "필요한 증거를 확보함",
+        enabledLabel: "사용",
+        disabledLabel: "사용 안 함",
+        reachableLabel: "연결 성공",
+        unreachableLabel: "연결 실패",
+        unavailableMeasurement: "측정하지 않음",
+        diagnosisFlowLabel: "AI 진단",
+        structuredOutputLabel: "구조화된 결과",
+        validatorResultText: "검증 결과 {result}",
         validatorPass: "VALID",
-        validatorContract: "계약 검증 PASS · repair {repair} · stop {stop} · causal truth 검증 아님",
-        investigationLoadFailed: "검증된 investigation replay를 불러오지 못했습니다."
+        validatorContract: "출력 형식과 증거 인용을 검증했습니다. 수정 {repair}회 · 조사 종료 사유: {stop}. 이 검증은 실제 장애 원인을 확정하지 않습니다.",
+        investigationLoadFailed: "저장된 장애 조사 기록을 불러오지 못했습니다."
       },
       en: {
         pageSubtitle: "Inspect Kafka acceptance, ordered persistence, failure isolation, and replay for domain events.",
@@ -1445,6 +1468,7 @@
         dbTraceColumns: "Request trace identifier and DB row creation time",
         envelopeVerification: "Envelope Sample Verification",
         investigationRecorded: "Recorded replay",
+        readOnly: "Read-only",
         investigationTitle: "AI Investigation",
         investigationSubtitle: "Replays the actual Phase 5.1 local-ha record without re-diagnosing the current demo-lite runtime.",
         traceTitle: "Investigation Trace",
@@ -1470,12 +1494,34 @@
         purpose_CHECK_WORKER_PERSIST_STAGE: "Inspect observed Worker DB persist-stage latency. Commit is excluded.",
         purpose_CHECK_WORKER_REPLICA_PATH: "Inspect Worker desired, current, ready, and available replicas.",
         purpose_CHECK_POSTGRES_HEALTH: "Inspect PostgreSQL HA, primary, standby, sync, and replication delay.",
+        evidenceLabel: "Evidence",
+        maxAgeLabel: "maximum source age {seconds}s",
         supportingEvidence: "Supporting evidence",
         conflictingEvidence: "Conflicting evidence",
         evidenceGaps: "Evidence gaps",
         noEvidence: "None",
         supportedMeaning: "Supported by available evidence",
         insufficientMeaning: "Insufficient evidence",
+        gap_COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY: "Transaction commit latency is excluded from the current Worker stage metric.",
+        gap_NO_DIRECT_HOT_KEY_SUPPORTING_EVIDENCE: "No direct evidence shows load concentrated on a specific key.",
+        gap_RETRY_AND_FAILURE_TELEMETRY_UNAVAILABLE: "Retry and processing-failure telemetry is unavailable.",
+        gap_SEQUENCE_CONTENTION_TELEMETRY_UNAVAILABLE: "Sequence-contention telemetry is unavailable.",
+        gap_CONSUMER_REBALANCE_TELEMETRY_UNAVAILABLE: "Kafka consumer rebalance telemetry is unavailable.",
+        conditionLabel: "Confirmed condition",
+        recordedProfileLabel: "Recorded profile",
+        modelLabel: "Model",
+        toolBudgetLabel: "Tool calls",
+        stopReasonLabel: "Stop reason",
+        diagnosisIdLabel: "Diagnosis ID",
+        stop_sufficient_evidence: "sufficient evidence collected",
+        enabledLabel: "enabled",
+        disabledLabel: "disabled",
+        reachableLabel: "reachable",
+        unreachableLabel: "unreachable",
+        unavailableMeasurement: "unavailable",
+        diagnosisFlowLabel: "AI Diagnosis",
+        structuredOutputLabel: "Structured Output",
+        validatorResultText: "Validator {result}",
         validatorPass: "VALID",
         validatorContract: "Contract validation PASS · repair {repair} · stop {stop} · causal truth not validated",
         investigationLoadFailed: "The verified investigation replay could not be loaded."
@@ -1579,18 +1625,18 @@
             delay: "Max delay",
           }
         : {
-            capture: "Capture",
-            totalLag: "Total lag",
-            slope: "60초 slope",
-            partitionLag: "Partition lag",
+            capture: "수집 순서",
+            totalLag: "전체 대기 건수",
+            slope: "최근 60초 증가 속도",
+            partitionLag: "파티션별 대기 건수",
             count: "관측 수",
             mean: "평균",
-            p95Bound: "p95 finite bound",
-            replicas: "desired / current / ready / available",
-            generation: "Generation",
-            haPrimary: "HA / primary",
-            standby: "standby / sync",
-            delay: "최대 delay",
+            p95Bound: "p95 상한 구간",
+            replicas: "필요 / 실행 / 준비 / 사용 가능",
+            generation: "배포 세대",
+            haPrimary: "HA 구성 / 주 서버 연결",
+            standby: "대기 / 동기 대기 서버",
+            delay: "최대 복제 지연",
           };
     }
 
@@ -1651,19 +1697,42 @@
       const summary = toolCall.evidence.summary;
       if (toolCall.tool_id === "get_partition_lag") {
         const captures = summary.captures;
+        if (currentLanguage === "ko") {
+          return `전체 대기 건수: ${captures.map((item) => `${item.total_lag_records.toLocaleString()}건`).join(" → ")} · 최근 60초 증가 속도: ${captures.map((item) => `${item.lag_slope_60s_records_per_second.toFixed(3)}건/초`).join(" → ")}`;
+        }
         return `total lag ${captures.map((item) => item.total_lag_records.toLocaleString()).join(" → ")}; slope ${captures.map((item) => item.lag_slope_60s_records_per_second.toFixed(3)).join(" → ")} records/s`;
       }
       if (toolCall.tool_id === "get_worker_stage_latency") {
         const captures = summary.captures;
+        if (currentLanguage === "ko") {
+          return `DB 저장 단계 평균 처리 시간: ${captures.map((item) => `${(item.context.mean_seconds * 1000).toFixed(3)}ms`).join(" → ")} · 트랜잭션 확정 시간: ${t("unavailableMeasurement")}`;
+        }
         return `mean ${captures.map((item) => (item.context.mean_seconds * 1000).toFixed(3)).join(" → ")}ms; commit latency ${summary.commit_latency}`;
       }
       if (toolCall.tool_id === "get_worker_replica_status") {
         const latest = summary.captures.at(-1).context;
+        if (currentLanguage === "ko") {
+          return `필요 ${latest.desired_replicas}개 · 실행 ${latest.current_replicas}개 · 준비 ${latest.ready_replicas}개 · 사용 가능 ${latest.available_replicas}개`;
+        }
         return `desired / current / ready / available ${latest.desired_replicas} / ${latest.current_replicas} / ${latest.ready_replicas} / ${latest.available_replicas}`;
       }
       const observations = summary.observations;
       const latest = observations.at(-1).value;
+      if (currentLanguage === "ko") {
+        const haMode = latest.ha_mode ? t("enabledLabel") : t("disabledLabel");
+        const primary = latest.primary_reachable ? t("reachableLabel") : t("unreachableLabel");
+        return `HA 구성: ${haMode} · 주 서버: ${primary} · 대기/동기 대기 서버: ${latest.standby_count}/${latest.sync_standby_count}개 · 복제 지연: ${observations.map((item) => `${item.value.max_replication_delay_bytes.toLocaleString()}바이트`).join(" → ")}`;
+      }
       return `HA ${latest.ha_mode}; primary ${latest.primary_reachable}; standby / sync ${latest.standby_count} / ${latest.sync_standby_count}; delay ${observations.map((item) => item.value.max_replication_delay_bytes.toLocaleString()).join(" → ")} bytes`;
+    }
+
+    function evidenceGapLabel(value) {
+      return t(`gap_${value}`);
+    }
+
+    function stopReasonText(value) {
+      const translated = t(`stop_${value}`);
+      return translated === `stop_${value}` ? value : `${translated} (${value})`;
     }
 
     function renderEvidenceDetails(toolCall) {
@@ -1704,9 +1773,9 @@
               <p class="trace-purpose">${escapeHtml(t(`purpose_${toolCall.reason_code}`))}</p>
               <p class="trace-summary">${escapeHtml(evidenceSummary(toolCall))}</p>
               <div class="evidence-reference">
-                <span>Evidence</span>
+                <span>${escapeHtml(t("evidenceLabel"))}</span>
                 <code title="${escapeHtml(toolCall.evidence.evidence_id)}">${escapeHtml(shortEvidenceId(toolCall.evidence.evidence_id))}</code>
-                <span class="field-help">max age ${escapeHtml(freshness.max_age_seconds)}s</span>
+                <span class="field-help">${escapeHtml(formatText("maxAgeLabel", { seconds: freshness.max_age_seconds }))}</span>
               </div>
               ${renderEvidenceDetails(toolCall)}
             </article>
@@ -1738,7 +1807,7 @@
               <p class="field-help">${escapeHtml(statusText)}</p>
               <div class="hypothesis-line"><strong>${escapeHtml(t("supportingEvidence"))}</strong>${escapeHtml(listEvidence(item.supporting_evidence_ids))}</div>
               <div class="hypothesis-line"><strong>${escapeHtml(t("conflictingEvidence"))}</strong>${escapeHtml(listEvidence(item.conflicting_evidence_ids))}</div>
-              <div class="hypothesis-line"><strong>${escapeHtml(t("evidenceGaps"))}</strong>${escapeHtml(item.evidence_gaps.length ? item.evidence_gaps.join(" · ") : t("noEvidence"))}</div>
+              <div class="hypothesis-line"><strong>${escapeHtml(t("evidenceGaps"))}</strong>${escapeHtml(item.evidence_gaps.length ? item.evidence_gaps.map(evidenceGapLabel).join(" · ") : t("noEvidence"))}</div>
             </article>
           `;
         })
@@ -1752,20 +1821,24 @@
       const source = verifiedIncidentReplay.source;
       const investigation = verifiedIncidentReplay.investigation;
       document.querySelector("#investigation-meta").innerHTML = `
-        <div><strong>Condition</strong><span>${escapeHtml(source.condition.name)} = ${escapeHtml(source.condition.state)}</span></div>
-        <div><strong>Recorded profile</strong><span>${escapeHtml(source.profile)}</span></div>
-        <div><strong>Model</strong><span>${escapeHtml(source.model)}</span></div>
-        <div><strong>Tool budget</strong><span>${investigation.steps_used} / ${investigation.max_steps}</span></div>
-        <div><strong>Stop reason</strong><span>${escapeHtml(verifiedIncidentReplay.stop_reason)}</span></div>
-        <div><strong>Diagnosis ID</strong><code title="${escapeHtml(source.diagnosis_id)}">${escapeHtml(source.diagnosis_id.slice(0, 12))}…</code></div>
+        <div><strong>${escapeHtml(t("conditionLabel"))}</strong><span>${escapeHtml(source.condition.name)} = ${escapeHtml(source.condition.state)}</span></div>
+        <div><strong>${escapeHtml(t("recordedProfileLabel"))}</strong><span>${escapeHtml(source.profile)}</span></div>
+        <div><strong>${escapeHtml(t("modelLabel"))}</strong><span>${escapeHtml(source.model)}</span></div>
+        <div><strong>${escapeHtml(t("toolBudgetLabel"))}</strong><span>${investigation.steps_used} / ${investigation.max_steps}</span></div>
+        <div><strong>${escapeHtml(t("stopReasonLabel"))}</strong><span>${escapeHtml(stopReasonText(verifiedIncidentReplay.stop_reason))}</span></div>
+        <div><strong>${escapeHtml(t("diagnosisIdLabel"))}</strong><code title="${escapeHtml(source.diagnosis_id)}">${escapeHtml(source.diagnosis_id.slice(0, 12))}…</code></div>
       `;
-      document.querySelector("#investigation-validation-badge").textContent = `Validator ${verifiedIncidentReplay.validation.result}`;
-      document.querySelector("#validator-result").textContent = `Validator ${verifiedIncidentReplay.validation.result}`;
+      const validatorResult = formatText(
+        "validatorResultText",
+        { result: verifiedIncidentReplay.validation.result }
+      );
+      document.querySelector("#investigation-validation-badge").textContent = validatorResult;
+      document.querySelector("#validator-result").textContent = validatorResult;
       document.querySelector("#validator-detail").textContent = formatText(
         "validatorContract",
         {
           repair: verifiedIncidentReplay.validation.output_repairs_used,
-          stop: verifiedIncidentReplay.stop_reason,
+          stop: stopReasonText(verifiedIncidentReplay.stop_reason),
         }
       );
       renderInvestigationTrace();
