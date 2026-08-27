@@ -49,7 +49,7 @@ class TestOperationalDocumentation:
         assert "A hands-on Kubernetes operations project" in readme_en
         assert "## 30초 요약" in readme
         assert "AWS Migration Blueprint — 설계 및 정적 검증" in readme
-        assert "## 현재 한계와 다음 우선순위" in readme
+        assert "## 검증 범위" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in architecture
 
@@ -58,19 +58,20 @@ class TestOperationalDocumentation:
 
         for token in (
             "## 30초 요약",
-            "## 주요 검증 결과",
             "## 아키텍처",
-            "## 왜 이렇게 설계했는가",
-            "## 반드시 구분하는 계약",
+            "## 핵심 운영 판단",
             "## 대표 장애 재현",
             "## 이 프로젝트에서 보여주는 역량",
-            "## 현재 한계와 다음 우선순위",
+            "## 검증 범위",
+            "상세 검증 결과",
+            "설계 계약과 알려진 제약",
+            "Ops Agent — Incident diagnosis architecture",
             "p95 `80.65ms`",
             "API → Kafka → Worker → PostgreSQL",
             "Public Demo",
             "Kafka ingress append 성공",
             "schema startup을 완료한 뒤",
-            "Worker Kubernetes probe",
+            "Worker probe",
             "이미 고정된 Evidence Bundle",
             "transactional outbox",
             "Worker crash·rebalance",
@@ -78,21 +79,26 @@ class TestOperationalDocumentation:
             assert token in readme
 
         summary_index = readme.index("## 30초 요약")
-        results_index = readme.index("## 주요 검증 결과")
         architecture_index = readme.index("## 아키텍처")
-        decisions_index = readme.index("## 왜 이렇게 설계했는가")
-        contracts_index = readme.index("## 반드시 구분하는 계약")
+        decisions_index = readme.index("## 핵심 운영 판단")
         incident_index = readme.index("## 대표 장애 재현")
-        limits_index = readme.index("## 현재 한계와 다음 우선순위")
+        skills_index = readme.index("## 이 프로젝트에서 보여주는 역량")
+        scope_index = readme.index("## 검증 범위")
+        results_index = readme.index("상세 검증 결과")
+        contracts_index = readme.index("설계 계약과 알려진 제약")
+        agent_index = readme.index("Ops Agent — Incident diagnosis architecture")
         assert (
             summary_index
-            < results_index
             < architecture_index
             < decisions_index
-            < contracts_index
             < incident_index
-            < limits_index
+            < skills_index
+            < scope_index
+            < results_index
+            < contracts_index
+            < agent_index
         )
+        assert readme.index("Sources[Application") > scope_index
 
     def test_korean_and_english_readmes_keep_the_same_claim_boundaries(self):
         readme = read_text("README.md")
@@ -106,15 +112,15 @@ class TestOperationalDocumentation:
             "schema startup",
             "transactional outbox",
             "Exactly-once",
-            "deployed AWS",
+            "AWS stack has been deployed",
             "frozen Evidence Bundle",
         ):
             assert token.lower() in readme_en.lower()
 
-        assert "production-ready HA" in readme
+        assert "production-grade HA" in readme
         assert "autonomous remediation" in readme
-        assert "Production-grade or multi-AZ HA" in readme_en
-        assert "Autonomous remediation" in readme_en
+        assert "production-grade HA" in readme_en
+        assert "autonomous remediation" in readme_en.lower()
 
 
 
