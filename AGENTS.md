@@ -2,6 +2,13 @@
 
 이 파일은 새 Codex 세션이 프로젝트를 다시 처음부터 분석하지 않도록 현재 기준 사실을 고정하는 문서입니다. 작업을 시작하기 전에 이 파일을 먼저 읽고, 세부 수치가 필요할 때만 README와 docs를 확인합니다.
 
+## Collaboration Preferences
+
+- 사용자가 commit, push, merge, GitHub Actions 확인을 명시적으로 요청하면 해당 비파괴 작업은 단계마다 다시 묻지 않고 검증까지 완료합니다.
+- 승인된 Git·네트워크 명령 형식을 재사용하고 관련 확인을 가능한 범위에서 묶어 불필요한 sandbox 승인 창을 최소화합니다.
+- destructive operation, secret·데이터 손실 위험, 의미를 확정할 수 없는 merge conflict처럼 실제 사용자 판단이 필요한 경우에만 중단하고 보고합니다.
+- 원격 CI가 진행 중이면 별도 확인을 요청하지 않고 완료될 때까지 기다린 뒤 결과와 최종 bot commit을 확인합니다.
+
 ## Current Project Identity
 
 - 현재 최종 포트폴리오 정체성은 **이벤트 처리 워크로드를 위한 Kubernetes·GitOps 운영 플랫폼**입니다. 직접 만든 **Kafka 기반 고신뢰 이벤트 처리 시스템**(`Reliable Event Processing System`)은 배포, lag 기반 확장, 관측, 장애 복구, backup/restore를 검증하는 workload입니다.

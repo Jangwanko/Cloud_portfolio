@@ -4,11 +4,11 @@ Kubernetes & GitOps Operations Platform for Event Processing
 
 [한국어](README.md) | [English](README_EN.md)
 
-Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 장애 재현, 복구 검증**을 직접 실험한 Cloud·DevOps 포트폴리오입니다. 애플리케이션은 운영 설계를 검증하는 workload이고, AI는 확정된 장애의 증거를 분류하는 제한된 보조 수단으로만 사용합니다.
+Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 장애 재현, 복구 검증**을 직접 실험한 Cloud·DevOps 포트폴리오입니다. 장애 조사에는 수집된 운영 증거만 사용하는 bounded LLM Agent를 추가했습니다.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
-**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform
+**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
 
 ## 30초 요약
 
@@ -55,12 +55,10 @@ flowchart LR
 - `stream_id`를 Kafka key로 사용해 같은 stream을 같은 partition에 배치합니다.
 - Worker는 record 처리와 PostgreSQL commit이 끝난 뒤 offset을 명시적으로 commit합니다.
 - 처리 실패 시 해당 record로 seek-back하고 같은 partition의 후속 처리를 보류합니다.
-- inline retry는 ordering과 구현 단순성을 얻는 대신 다른 할당 partition의 처리를 지연시킬 수 있습니다.
-- DLQ summary는 append-only topic의 최근 표본이며 `by_reason`, `replayable`, `blocked`를 보여줍니다. 현재 unresolved backlog를 뜻하지 않습니다.
 
 ### GitOps release ordering
 
-- Secret wave `-3` → migration Job `-2` → Worker `-1` → API `0` 순서로 schema와 consumer 호환 경계를 보호합니다.
+- migration → Worker → API 순서로 배포해 schema와 consumer 호환 경계를 보호합니다.
 - CI는 테스트·render·정적 검증 뒤 commit SHA image를 게시하고 overlay tag를 갱신합니다.
 - Argo revision, desired image, Pod runtime imageID를 함께 확인해 source와 runtime을 연결합니다.
 
@@ -78,6 +76,25 @@ flowchart LR
 | 요청 실패 | HTTP failure `0`, dropped iteration `0` |
 
 [전체 incident evidence](docs/OPS_AGENT.md)
+
+## Ops Agent — Evidence-grounded Incident Diagnosis
+
+장애 판정 이후 수집된 운영 증거를 조사하는 bounded LLM Diagnosis Agent를 구현했습니다. Agent는 실시간 cluster를 임의 조회하지 않고 Application·Prometheus·Kubernetes·Argo CD에서 미리 수집한 Frozen Evidence Bundle 안에서 허용된 evidence만 선택합니다.
+
+```mermaid
+flowchart LR
+    Signals[Operational Signals] --> Evidence[Frozen Evidence Bundle]
+    Evidence --> Detection[Deterministic Detection]
+    Detection -->|PRESENT| Diagnosis[Bounded LLM Diagnosis]
+    Diagnosis --> Validation[Deterministic Validation]
+    Validation --> Incident[Incident Record]
+```
+
+- 필요한 evidence를 선택해 predefined hypothesis의 supporting·conflicting evidence와 gap을 분류합니다.
+- 존재하지 않는 evidence ID나 recovery·remediation 판단처럼 허용 범위를 벗어난 출력은 validator가 거부합니다.
+- incident 발생과 recovery 판정, runtime 변경 권한은 deterministic logic에 유지합니다.
+
+[Ops Agent 상세 설계 및 검증](docs/OPS_AGENT.md)
 
 ## 이 프로젝트에서 보여주는 역량
 
@@ -126,88 +143,6 @@ flowchart LR
 </details>
 
 <details>
-<summary><b>설계 계약과 알려진 제약</b></summary>
-
-### `202 Accepted`
-
-`202`는 **Kafka ingress append 성공**을 뜻하며 PostgreSQL persistence 완료를 보장하지 않습니다. JWT는 API에서 확인하지만 stream membership, idempotency, sequence는 Worker persistence 단계에서 검증합니다.
-
-Worker가 status row를 만들기 전에는 `GET /v1/event-requests/{request_id}`가 잠시 `404`를 반환할 수 있습니다. 최종 membership 검증을 Worker로 미뤄 인증된 잘못된 stream 요청도 Kafka·Worker 자원을 소비할 수 있으므로 운영 환경 전환에는 rate limit, per-user quota, authorization cache 또는 ACL snapshot이 필요합니다.
-
-### PostgreSQL 장애와 readiness
-
-API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서는 Kafka intake를 계속 받을 수 있습니다. DB가 없는 상태에서 새 API Pod가 기동하면 schema startup이 끝나지 않아 `/v1`·`/v2` 요청을 `503`으로 차단합니다.
-
-`/health/ready`는 Kafka intake 가능 여부를 중심으로 판정합니다. PostgreSQL HA guardrail 이탈은 `degraded`와 HTTP `200`, schema·Kafka·auth secret hard failure는 `503`으로 노출합니다. Worker probe는 프로세스와 metrics endpoint 생존만 확인합니다.
-
-### 알려진 제약
-
-| 현재 경계 | 다음 작업 |
-| --- | --- |
-| DB commit 뒤 notification publish 사이 crash gap | transactional outbox |
-| `202` 직후 짧은 status `404` 가능 | accepted-state 계약 또는 read model |
-| record commit 직전 Worker crash·rebalance 미검증 | kill/restart/rebalance 장애 주입 |
-| migration Job과 API startup이 모두 Alembic 실행 | Kubernetes migration owner를 Job으로 단일화 |
-| Worker probe가 metrics TCP 생존만 확인 | consumer 처리 상태용 health endpoint |
-| degraded grace 만료가 HTTP 동작을 바꾸지 않음 | grace 제거 또는 만료 행동 구현 |
-| backup이 같은 host/PVC에 존재 | object storage copy와 cluster-loss restore |
-
-exactly-once, global ordering, production-grade HA, autonomous remediation을 주장하지 않습니다.
-
-</details>
-
-<details>
-<summary><b>Ops Agent — Incident diagnosis architecture</b></summary>
-
-```mermaid
-flowchart LR
-    Sources[Application · Prometheus<br/>Kubernetes · Argo CD] --> Evidence[Frozen Evidence Bundle]
-    Evidence --> Detection[Rule-based Detection]
-    Detection --> Diagnosis[Bounded AI Diagnosis]
-    Detection --> Recovery[Rule-based Recovery]
-    Diagnosis --> Incident[Incident Record]
-    Recovery --> Incident
-```
-
-Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis Agent는 cluster를 새로 조회하지 않고 이미 고정된 Evidence Bundle에서 허용된 evidence를 선택·정규화합니다. LLM은 deterministic `PRESENT`를 입력으로 받으며 incident 발생, recovery, runtime 변경을 결정할 수 없습니다.
-
-Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
-
-[Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
-
-</details>
-
-<details>
-<summary><b>프로젝트 발전 과정</b></summary>
-
-| 단계 | 추가한 운영 능력 |
-| --- | --- |
-| Initial | API·Worker·PostgreSQL 비동기 처리 |
-| Kafka | append-first intake, partition ordering, explicit offset commit, retry·DLQ |
-| Kubernetes | StatefulSet·Deployment·HPA·KEDA·PDB·GitOps |
-| Ops Phase 1–2 | normalized evidence와 deterministic condition |
-| Ops Phase 3 | single bounded evidence-grounded diagnosis |
-| Ops Phase 4 | deterministic recovery calibration/evaluation |
-| Ops Phase 5 | incident identity, timeline, closure, current observation 분리 |
-
-</details>
-
-<details>
-<summary><b>주요 workload 구성</b></summary>
-
-| Workload | Full profile | 책임 |
-| --- | ---: | --- |
-| API | `6→8` | Kafka append, PostgreSQL read, CPU HPA |
-| core Worker | `2→4` | persistence, retry, DLQ, lag KEDA |
-| notification Worker | `1→2` | notification attempt 기록 |
-| Kafka | `3` | 8 partitions, RF `3`, `min.insync.replicas=2` |
-| PostgreSQL | `3` | durable source of truth, sync standby |
-| Pgpool | `2` | writable primary routing |
-| Prometheus·Grafana | 각 `1` | metrics, alert, dashboard |
-
-</details>
-
-<details>
 <summary><b>추가 트러블슈팅 사례</b></summary>
 
 - GitOps namespace prune로 PostgreSQL·Pgpool·PVC가 삭제된 뒤 DB stack과 sync guardrail을 복구하고 Namespace `Prune=false`를 적용했습니다.
@@ -237,15 +172,91 @@ Terraform은 EKS·ECR·MSK·RDS·ACM·Route 53·Secrets Manager skeleton을 제�
 </details>
 
 <details>
+<summary><b>주요 workload 구성</b></summary>
+
+| Workload | Full profile | 책임 |
+| --- | ---: | --- |
+| API | `6→8` | Kafka append, PostgreSQL read, CPU HPA |
+| core Worker | `2→4` | persistence, retry, DLQ, lag KEDA |
+| notification Worker | `1→2` | notification attempt 기록 |
+| Kafka | `3` | 8 partitions, RF `3`, `min.insync.replicas=2` |
+| PostgreSQL | `3` | durable source of truth, sync standby |
+| Pgpool | `2` | writable primary routing |
+| Prometheus·Grafana | 각 `1` | metrics, alert, dashboard |
+
+</details>
+
+<details>
+<summary><b>설계 계약과 알려진 제약</b></summary>
+
+### `202 Accepted`
+
+`202`는 **Kafka ingress append 성공**을 뜻하며 PostgreSQL persistence 완료를 보장하지 않습니다. JWT는 API에서 확인하지만 stream membership, idempotency, sequence는 Worker persistence 단계에서 검증합니다.
+
+Worker가 status row를 만들기 전에는 `GET /v1/event-requests/{request_id}`가 잠시 `404`를 반환할 수 있습니다. 최종 membership 검증을 Worker로 미뤄 인증된 잘못된 stream 요청도 Kafka·Worker 자원을 소비할 수 있으므로 운영 환경 전환에는 rate limit, per-user quota, authorization cache 또는 ACL snapshot이 필요합니다.
+
+### PostgreSQL 장애와 readiness
+
+API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서는 Kafka intake를 계속 받을 수 있습니다. DB가 없는 상태에서 새 API Pod가 기동하면 schema startup이 끝나지 않아 `/v1`·`/v2` 요청을 `503`으로 차단합니다.
+
+`/health/ready`는 Kafka intake 가능 여부를 중심으로 판정합니다. PostgreSQL HA guardrail 이탈은 `degraded`와 HTTP `200`, schema·Kafka·auth secret hard failure는 `503`으로 노출합니다. Worker probe는 프로세스와 metrics endpoint 생존만 확인합니다.
+
+### 처리·관측 계약
+
+- inline retry는 ordering과 구현 단순성을 얻는 대신 다른 할당 partition의 처리를 지연시킬 수 있습니다.
+- DLQ summary는 append-only topic의 최근 표본이며 `by_reason`, `replayable`, `blocked`를 보여줍니다. 현재 unresolved backlog를 뜻하지 않습니다.
+- Argo CD sync wave는 Secret `-3` → migration Job `-2` → Worker `-1` → API `0`으로 구성합니다.
+
+### 알려진 제약
+
+| 현재 경계 | 다음 작업 |
+| --- | --- |
+| DB commit 뒤 notification publish 사이 crash gap | transactional outbox |
+| `202` 직후 짧은 status `404` 가능 | accepted-state 계약 또는 read model |
+| record commit 직전 Worker crash·rebalance 미검증 | kill/restart/rebalance 장애 주입 |
+| migration Job과 API startup이 모두 Alembic 실행 | Kubernetes migration owner를 Job으로 단일화 |
+| Worker probe가 metrics TCP 생존만 확인 | consumer 처리 상태용 health endpoint |
+| degraded grace 만료가 HTTP 동작을 바꾸지 않음 | grace 제거 또는 만료 행동 구현 |
+| backup이 같은 host/PVC에 존재 | object storage copy와 cluster-loss restore |
+
+exactly-once, global ordering, production-grade HA, autonomous remediation을 주장하지 않습니다.
+
+</details>
+
+<details>
+<summary><b>Ops Agent 구현 경계와 recorded replay</b></summary>
+
+Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis Agent는 cluster를 새로 조회하지 않고 이미 고정된 Evidence Bundle에서 허용된 evidence를 선택·정규화합니다. LLM은 deterministic `PRESENT`를 입력으로 받으며 incident 발생, recovery, runtime 변경을 결정할 수 없습니다.
+
+Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
+
+[Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
+
+</details>
+
+<details>
+<summary><b>프로젝트 발전 과정</b></summary>
+
+| 단계 | 추가한 운영 능력 |
+| --- | --- |
+| Initial | API·Worker·PostgreSQL 비동기 처리 |
+| Kafka | append-first intake, partition ordering, explicit offset commit, retry·DLQ |
+| Kubernetes | StatefulSet·Deployment·HPA·KEDA·PDB·GitOps |
+| Ops Phase 1–2 | normalized evidence와 deterministic condition |
+| Ops Phase 3 | single bounded evidence-grounded diagnosis |
+| Ops Phase 4 | deterministic recovery calibration/evaluation |
+| Ops Phase 5 | incident identity, timeline, closure, current observation 분리 |
+
+</details>
+
+<details>
 <summary><b>로컬 실행</b></summary>
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-Windows에서는 Docker Desktop이 필요합니다. 스크립트가 pinned kind·kubectl·Helm을 `tools/`에 준비합니다.
-
-`quick_start_all.ps1`은 `scripts/bootstrap_tools.ps1`로 도구를 준비합니다. Windows에서는 Docker Desktop만 설치하고 실행하면 됩니다.
+Windows에서는 Docker Desktop만 설치하면 되며, `quick_start_all.ps1`이 `scripts/bootstrap_tools.ps1`을 호출해 pinned kind·kubectl·Helm을 `tools/`에 준비합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
