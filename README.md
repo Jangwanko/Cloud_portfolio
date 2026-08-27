@@ -14,25 +14,10 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 
 | 운영 문제 | 선택 | 검증 결과 |
 | --- | --- | --- |
-| DB 처리량보다 빠른 ingress | API 수락과 Worker persistence를 Kafka로 분리 | schema startup 완료 뒤 DB runtime outage 중 수락 경로 유지, 복구 후 lag `0` |
-| CPU만으로 Worker backlog 판단이 어려움 | `message-worker` consumer lag 기반 KEDA | Worker `2→4`, drain `222.49→194.05초` |
-| scale-out 뒤 DB 경합 증가 | DB roundtrip과 notification transaction 축소 | backlog 처리율 `121.42→137.67 events/s`, API p95 `6.49%` 증가 trade-off 기록 |
-| 장애 판단 기준이 모호함 | lag·slope를 positive/negative workload로 보정 | positive 3회 `PRESENT`, short burst·sustainable high·transient spike는 `NOT_PRESENT` |
-
-## 주요 검증 결과
-
-| Experiment | Result |
-| --- | ---: |
-| KEDA scale-out | core Worker `2 → 4` |
-| Backlog throughput | `121.42 → 137.67 events/s` |
-| Backlog drain | `222.49 → 194.05초` (`12.78%` 감소) |
-| Same-stream ordering | `100/100`, missing `0`, duplicate `0` |
-| Kafka intake | stable baseline `31,676`, error `0.00%`, p95 `80.65ms` |
-| DB outage recovery | final core·notification consumer lag `0/0` |
-| PostgreSQL recovery | `3/3 ready`, sync/quorum standby `2` |
-| Verified incident | `DETECTED → ACTIVE → RECOVERING → RECOVERED → CLOSED` |
-
-수치는 서로 다른 실험 조건을 섞지 않습니다. Redis queue-first 결과, historical Kafka baseline, current v2 candidate는 [검증 결과](docs/TEST_RESULTS.md)에서 조건과 함께 분리해 기록합니다.
+| Worker backlog 증가 | `message-worker` consumer lag 기반 KEDA | Worker `2→4`, drain `12.78%` 감소 |
+| 확장 후 DB 경합 | DB 왕복과 notification transaction 수 축소 | backlog 처리율 `13.38%` 증가, API p95 trade-off 확인 |
+| PostgreSQL runtime 장애 | API 수락과 Worker persistence를 Kafka로 분리 | 복구 후 core·notification lag `0/0` |
+| 같은 stream 순서 보장 | `stream_id` partition과 DB commit 이후 offset commit | ordering `100/100`, missing·duplicate `0` |
 
 ## 아키텍처
 
@@ -55,21 +40,9 @@ flowchart LR
     KEDA --> Worker
 ```
 
-```mermaid
-flowchart LR
-    Sources[Application · Prometheus<br/>Kubernetes · Argo CD] --> Evidence[Frozen Evidence Bundle]
-    Evidence --> Detection[Rule-based Detection]
-    Detection --> Diagnosis[Bounded AI Diagnosis]
-    Detection --> Recovery[Rule-based Recovery]
-    Diagnosis --> Incident[Incident Record]
-    Recovery --> Incident
-```
-
-Runtime data path와 운영 판단 path는 분리되어 있습니다. LLM은 Kafka 처리 경로 밖에서 deterministic `PRESENT`를 입력으로 받으며 incident 발생, recovery, runtime 변경을 결정할 수 없습니다.
-
 세부 구조: [Architecture](docs/ARCHITECTURE.md) · [GitOps](docs/GITOPS.md) · [Observability](docs/OBSERVABILITY.md)
 
-## 왜 이렇게 설계했는가
+## 핵심 운영 판단
 
 ### API와 Worker를 다른 신호로 확장
 
@@ -91,81 +64,118 @@ Runtime data path와 운영 판단 path는 분리되어 있습니다. LLM은 Kaf
 - CI는 테스트·render·정적 검증 뒤 commit SHA image를 게시하고 overlay tag를 갱신합니다.
 - Argo revision, desired image, Pod runtime imageID를 함께 확인해 source와 runtime을 연결합니다.
 
-## 반드시 구분하는 계약
-
-### `202 Accepted`
-
-`202`는 **Kafka ingress append 성공**을 뜻합니다. 업무 authorization과 PostgreSQL persistence 성공을 뜻하지 않습니다. JWT는 API에서 확인하지만 stream membership, idempotency, sequence는 Worker persistence 단계에서 검증합니다.
-
-Worker가 status row를 만들기 전에는 `GET /v1/event-requests/{request_id}`가 잠시 `404`를 반환할 수 있습니다. 현재 계약의 약점으로 공개하고 accepted-state read model을 후속 과제로 관리합니다.
-
-최종 membership 검증을 Worker로 미룬 구조는 인증된 사용자의 잘못된 stream 요청도 Kafka·Worker 자원을 소비하게 합니다. production 전환 시 rate limit, per-user quota, authorization cache 또는 ACL snapshot이 필요합니다.
-
-### PostgreSQL 장애와 readiness
-
-API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서는 Kafka intake를 계속 받을 수 있습니다. DB가 없는 상태에서 새 API Pod가 기동하면 schema startup이 끝나지 않아 `/v1`·`/v2` 요청을 `503`으로 차단합니다.
-
-`/health/ready`는 full dependency health보다 **Kafka intake를 서비스할 수 있는가**에 가깝습니다. PostgreSQL HA guardrail 이탈은 `degraded`와 HTTP `200`으로 노출하고, schema·Kafka·auth secret hard failure는 `503`으로 처리합니다. Worker Kubernetes probe는 처리 가능성 전체가 아니라 프로세스와 metrics endpoint 생존을 확인합니다.
-
-### Ops Agent tool 경계
-
-Evidence collector는 Application·Prometheus·Kubernetes·Argo CD를 read-only로 수집합니다. Diagnosis Agent의 `get_partition_lag`, `get_postgres_health` 같은 도구는 cluster를 새로 조회하지 않고 **이미 고정된 Evidence Bundle에서 허용된 evidence를 선택·정규화**합니다.
-
 ## 대표 장애 재현
 
-2026-08-23 actual `local-ha`에서 KEDA·Worker 설정을 바꾸지 않고 64 streams에 `75→330→75 records/s`를 가해 Worker backlog incident를 재현했습니다.
-
-```text
-75/s baseline
-  -> 330/s pressure
-  -> lag 20,574
-  -> KEDA Worker 2 -> 4
-  -> 75/s recovery load
-  -> lag drain
-  -> deterministic recovery and closure
-```
+2026-08-23 실제 `local-ha` 환경에서 KEDA·Worker 설정을 바꾸지 않고 64개 stream에 `75→330→75 records/s` 부하를 가해 Worker backlog 장애를 재현했습니다.
 
 | 단계 | 결과 |
 | --- | --- |
-| Workload quality | accepted `6,750 / 29,697 / 135,000`, HTTP failure `0`, dropped iteration `0` |
-| Detection | lag `7,205→10,497→13,936`, slope `120.07→174.47→230.77/s`, 연속 3 capture |
-| Scaling | peak lag `20,574`, Worker desired/available `4/4` |
-| Diagnosis | recorded tool 4개, `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED`; causal truth 확정 아님 |
-| Recovery | `ACTIVE → RECOVERING → RECOVERED`, PostgreSQL ready |
-| Lifecycle | incident `inc-88a1eeaa17897f6a8a929bba`, `CLOSED / RECOVERED` |
+| 부하 증가 | `75 → 330 records/s` |
+| Backlog | peak lag `20,574` |
+| Scale-out | Worker `2 → 4` |
+| 복구 부하 | `330 → 75 records/s` |
+| 결과 | lag 회복, `ACTIVE → RECOVERING → RECOVERED` |
+| 요청 실패 | HTTP failure `0`, dropped iteration `0` |
 
-Public Demo의 Investigation은 이 실행의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
-
-상세 evidence와 정책: [Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
+[전체 incident evidence](docs/OPS_AGENT.md)
 
 ## 이 프로젝트에서 보여주는 역량
 
 ### Cloud / Infrastructure
 
-Kubernetes workload 설계 · StatefulSet/PVC · PostgreSQL replication · Pgpool · PDB · backup/restore · Terraform 기반 AWS 전환 설계
+- Kubernetes에서 stateless·stateful workload와 persistent storage를 구성했습니다.
+- PostgreSQL replication·Pgpool 기반 DB failover 경로를 검증했습니다.
+- 로컬 구성을 EKS·MSK·RDS로 이전하기 위한 Terraform blueprint를 작성했습니다.
 
 ### DevOps / Platform
 
-GitHub Actions · immutable SHA image · GHCR · Argo CD · sync wave · Kustomize/Helm render · KEDA/HPA · deployment provenance
+- GitHub Actions에서 test·manifest render·image 검증을 통과한 immutable SHA image를 게시합니다.
+- Argo CD sync wave로 migration → Worker → API 배포 순서를 구성했습니다.
+- API는 CPU HPA, Worker는 consumer lag KEDA로 workload 특성에 따라 분리했습니다.
 
 ### Reliability / Operations
 
-Kafka offset·ordering·idempotency · retry/DLQ/replay · Prometheus/Grafana · 장애 주입 · recovery calibration · incident lifecycle
+- consumer lag·latency·replica 상태로 병목 구간을 확인합니다.
+- 장애 주입 뒤 ordering·offset·recovery 상태를 검증했습니다.
+- Prometheus와 Grafana로 intake, persistence, backlog, PostgreSQL HA 지표를 관측합니다.
 
-## 현재 한계와 다음 우선순위
+## 검증 범위
+
+- single-node kind 환경이므로 node·AZ failure-domain HA는 검증하지 않았습니다.
+- Worker crash·consumer rebalance 직후 offset recovery는 추가 장애 주입 대상입니다.
+- AWS 구성은 Terraform migration blueprint이며 실제 AWS stack을 배포하지 않았습니다.
+
+[전체 개선 우선순위](docs/IMPROVEMENT_ROADMAP.md)
+
+<details>
+<summary><b>상세 검증 결과</b></summary>
+
+| Experiment | Result |
+| --- | ---: |
+| KEDA scale-out | core Worker `2 → 4` |
+| Backlog throughput | `121.42 → 137.67 events/s` |
+| Backlog drain | `222.49 → 194.05초` (`12.78%` 감소) |
+| Same-stream ordering | `100/100`, missing `0`, duplicate `0` |
+| Kafka intake | stable baseline `31,676`, error `0.00%`, p95 `80.65ms` |
+| DB outage recovery | final core·notification consumer lag `0/0` |
+| PostgreSQL recovery | `3/3 ready`, sync/quorum standby `2` |
+| Verified incident | `DETECTED → ACTIVE → RECOVERING → RECOVERED → CLOSED` |
+
+수치는 서로 다른 실험 조건을 섞지 않습니다. Redis queue-first 결과, historical Kafka baseline, current v2 candidate는 [검증 결과](docs/TEST_RESULTS.md)에서 조건과 함께 분리해 기록합니다.
+
+</details>
+
+<details>
+<summary><b>설계 계약과 알려진 제약</b></summary>
+
+### `202 Accepted`
+
+`202`는 **Kafka ingress append 성공**을 뜻하며 PostgreSQL persistence 완료를 보장하지 않습니다. JWT는 API에서 확인하지만 stream membership, idempotency, sequence는 Worker persistence 단계에서 검증합니다.
+
+Worker가 status row를 만들기 전에는 `GET /v1/event-requests/{request_id}`가 잠시 `404`를 반환할 수 있습니다. 최종 membership 검증을 Worker로 미뤄 인증된 잘못된 stream 요청도 Kafka·Worker 자원을 소비할 수 있으므로 운영 환경 전환에는 rate limit, per-user quota, authorization cache 또는 ACL snapshot이 필요합니다.
+
+### PostgreSQL 장애와 readiness
+
+API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서는 Kafka intake를 계속 받을 수 있습니다. DB가 없는 상태에서 새 API Pod가 기동하면 schema startup이 끝나지 않아 `/v1`·`/v2` 요청을 `503`으로 차단합니다.
+
+`/health/ready`는 Kafka intake 가능 여부를 중심으로 판정합니다. PostgreSQL HA guardrail 이탈은 `degraded`와 HTTP `200`, schema·Kafka·auth secret hard failure는 `503`으로 노출합니다. Worker probe는 프로세스와 metrics endpoint 생존만 확인합니다.
+
+### 알려진 제약
 
 | 현재 경계 | 다음 작업 |
 | --- | --- |
 | DB commit 뒤 notification publish 사이 crash gap | transactional outbox |
-| `202` 직후 status row가 없어 짧은 `404` 가능 | accepted-state 계약 또는 read model |
+| `202` 직후 짧은 status `404` 가능 | accepted-state 계약 또는 read model |
 | record commit 직전 Worker crash·rebalance 미검증 | kill/restart/rebalance 장애 주입 |
 | migration Job과 API startup이 모두 Alembic 실행 | Kubernetes migration owner를 Job으로 단일화 |
 | Worker probe가 metrics TCP 생존만 확인 | consumer 처리 상태용 health endpoint |
-| degraded grace가 만료돼도 HTTP 동작이 바뀌지 않음 | grace를 제거하거나 만료 행동 구현 |
+| degraded grace 만료가 HTTP 동작을 바꾸지 않음 | grace 제거 또는 만료 행동 구현 |
 | backup이 같은 host/PVC에 존재 | object storage copy와 cluster-loss restore |
-| local kind가 single-node | multi-node·multi-AZ disruption drill |
 
-이 프로젝트는 production-ready HA, exactly-once, global ordering, autonomous remediation, 배포된 AWS 환경을 주장하지 않습니다. 로컬 replica/failover 메커니즘과 workload 수준 장애 복구를 검증한 범위입니다.
+exactly-once, global ordering, production-grade HA, autonomous remediation을 주장하지 않습니다.
+
+</details>
+
+<details>
+<summary><b>Ops Agent — Incident diagnosis architecture</b></summary>
+
+```mermaid
+flowchart LR
+    Sources[Application · Prometheus<br/>Kubernetes · Argo CD] --> Evidence[Frozen Evidence Bundle]
+    Evidence --> Detection[Rule-based Detection]
+    Detection --> Diagnosis[Bounded AI Diagnosis]
+    Detection --> Recovery[Rule-based Recovery]
+    Diagnosis --> Incident[Incident Record]
+    Recovery --> Incident
+```
+
+Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis Agent는 cluster를 새로 조회하지 않고 이미 고정된 Evidence Bundle에서 허용된 evidence를 선택·정규화합니다. LLM은 deterministic `PRESENT`를 입력으로 받으며 incident 발생, recovery, runtime 변경을 결정할 수 없습니다.
+
+Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
+
+[Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
+
+</details>
 
 <details>
 <summary><b>프로젝트 발전 과정</b></summary>
