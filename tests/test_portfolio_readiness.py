@@ -61,14 +61,19 @@ class TestOperationalDocumentation:
             "## 아키텍처",
             "## 핵심 운영 판단",
             "## 대표 장애 재현",
+            "## Ops Agent — Evidence-grounded Incident Diagnosis",
             "## 이 프로젝트에서 보여주는 역량",
             "## 검증 범위",
             "상세 검증 결과",
+            "추가 트러블슈팅 사례",
+            "AWS Migration Blueprint — 설계 및 정적 검증",
+            "주요 workload 구성",
             "설계 계약과 알려진 제약",
-            "Ops Agent — Incident diagnosis architecture",
+            "Ops Agent 구현 경계와 recorded replay",
             "p95 `80.65ms`",
             "API → Kafka → Worker → PostgreSQL",
             "Public Demo",
+            "Terraform (AWS migration blueprint)",
             "Kafka ingress append 성공",
             "schema startup을 완료한 뒤",
             "Worker probe",
@@ -82,23 +87,36 @@ class TestOperationalDocumentation:
         architecture_index = readme.index("## 아키텍처")
         decisions_index = readme.index("## 핵심 운영 판단")
         incident_index = readme.index("## 대표 장애 재현")
+        agent_index = readme.index("## Ops Agent — Evidence-grounded Incident Diagnosis")
         skills_index = readme.index("## 이 프로젝트에서 보여주는 역량")
         scope_index = readme.index("## 검증 범위")
         results_index = readme.index("상세 검증 결과")
+        troubleshooting_index = readme.index("추가 트러블슈팅 사례")
+        aws_index = readme.index("AWS Migration Blueprint — 설계 및 정적 검증")
+        workload_index = readme.index("주요 workload 구성")
         contracts_index = readme.index("설계 계약과 알려진 제약")
-        agent_index = readme.index("Ops Agent — Incident diagnosis architecture")
+        agent_detail_index = readme.index("Ops Agent 구현 경계와 recorded replay")
+        evolution_index = readme.index("프로젝트 발전 과정")
+        local_index = readme.index("로컬 실행")
         assert (
             summary_index
             < architecture_index
             < decisions_index
             < incident_index
+            < agent_index
             < skills_index
             < scope_index
             < results_index
+            < troubleshooting_index
+            < aws_index
+            < workload_index
             < contracts_index
-            < agent_index
+            < agent_detail_index
+            < evolution_index
+            < local_index
         )
-        assert readme.index("Sources[Application") > scope_index
+        assert incident_index < readme.index("Signals[Operational Signals]") < skills_index
+        assert readme.count("Windows에서는 Docker Desktop") == 1
 
     def test_korean_and_english_readmes_keep_the_same_claim_boundaries(self):
         readme = read_text("README.md")
@@ -310,7 +328,7 @@ class TestOperationalDocumentation:
         assert "bootstrap_tools.ps1" in readme
         assert "bootstrap_tools.ps1" in quick_start
         assert "bootstrap_tools.ps1" in repository_structure
-        assert "Docker Desktop만 설치하고 실행" in readme
+        assert "Windows에서는 Docker Desktop만 설치하면 되며" in readme
         assert "Docker Desktop만 설치하고 실행" in quick_start
         assert "tools/kubectl.exe" in gitignore
         assert "tools/downloads/" in gitignore

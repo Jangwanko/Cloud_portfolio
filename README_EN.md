@@ -2,11 +2,11 @@
 
 [Korean](README.md) | [English](README_EN.md)
 
-A hands-on Kubernetes operations project built around an asynchronous Kafka workload, focused on **lag-based autoscaling, observability, failure recovery, and GitOps delivery**. The application provides a real workload for operational experiments. AI is restricted to evidence-grounded hypothesis classification after deterministic incident detection.
+A hands-on Kubernetes operations project built around an asynchronous Kafka workload, focused on **lag-based autoscaling, observability, failure recovery, and GitOps delivery**. Incident investigation includes a bounded LLM Agent that can use only previously collected operational evidence.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
-**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform
+**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
 
 ## What I validated
 
@@ -51,11 +51,10 @@ flowchart LR
 - `stream_id` is the Kafka key and defines the ordering boundary.
 - The Worker explicitly commits each offset after PostgreSQL commit.
 - A failed record is retried from the same offset, and later records in that partition are held back.
-- Inline retry protects ordering and keeps the implementation small, but it can delay other partitions assigned to the same consumer.
 
 ### GitOps delivery
 
-- Release order is Secret wave `-3` -> migration Job `-2` -> Worker `-1` -> API `0`.
+- Deploying migration -> Worker -> API in order protects schema and consumer compatibility.
 - CI runs tests, rendering, and static checks before publishing an immutable commit-SHA image.
 - Argo revision, desired image, Pod image, and imageID connect source to the running workload.
 
@@ -73,6 +72,25 @@ On 2026-08-23, an actual `local-ha` run applied `75→330→75 records/s` across
 | Request failures | HTTP failures `0`, dropped iterations `0` |
 
 [Full incident evidence](docs/OPS_AGENT.md)
+
+## Ops Agent: Evidence-grounded Incident Diagnosis
+
+I implemented a bounded LLM Diagnosis Agent for investigating evidence after deterministic incident detection. It cannot query the live cluster arbitrarily. It selects only allowlisted evidence from Frozen Evidence Bundles collected through Application, Prometheus, Kubernetes, and Argo CD read-only paths.
+
+```mermaid
+flowchart LR
+    Signals[Operational Signals] --> Evidence[Frozen Evidence Bundle]
+    Evidence --> Detection[Deterministic Detection]
+    Detection -->|PRESENT| Diagnosis[Bounded LLM Diagnosis]
+    Diagnosis --> Validation[Deterministic Validation]
+    Validation --> Incident[Incident Record]
+```
+
+- It classifies supporting evidence, conflicting evidence, and gaps for predefined hypotheses.
+- The validator rejects fabricated evidence IDs and attempts to declare recovery or remediation.
+- Deterministic logic retains authority over incident detection, recovery, and runtime changes.
+
+[Ops Agent design and validation](docs/OPS_AGENT.md)
 
 ## Skills demonstrated
 
@@ -120,6 +138,15 @@ Results from Redis, historical Kafka baselines, and current v2 candidates remain
 </details>
 
 <details>
+<summary><b>AWS migration blueprint</b></summary>
+
+The Terraform source maps the validated local responsibilities to EKS, ECR, MSK, RDS/Aurora PostgreSQL, ALB, ACM, Route 53, and Secrets Manager. It passes `fmt`, offline `init`, and `validate`.
+
+No AWS `plan`, `apply`, or deployed stack is claimed. See [AWS IaC Plan](docs/AWS_IAC_PLAN.md).
+
+</details>
+
+<details>
 <summary><b>Design contracts and known gaps</b></summary>
 
 ### What `202 Accepted` means
@@ -133,6 +160,11 @@ Before the Worker creates a durable status row, `GET /v1/event-requests/{request
 Kafka intake can continue during a PostgreSQL runtime outage only after the API has completed schema startup. A new API Pod cannot serve `/v1` or `/v2` while database startup is incomplete.
 
 `/health/ready` primarily answers whether Kafka intake can be served. PostgreSQL HA degradation returns HTTP `200` with a degraded body, while schema, Kafka, and unsafe-secret failures return `503`. Worker probes only verify process and metrics-endpoint availability.
+
+### Processing and delivery details
+
+- Inline retry protects ordering and keeps the implementation small, but it can delay other partitions assigned to the same consumer.
+- Argo CD sync waves are Secret `-3` -> migration Job `-2` -> Worker `-1` -> API `0`.
 
 ### Known gaps
 
@@ -151,32 +183,13 @@ Exactly-once processing, global ordering, production-grade HA, and autonomous re
 </details>
 
 <details>
-<summary><b>Ops Agent: incident diagnosis architecture</b></summary>
-
-```mermaid
-flowchart LR
-    Sources[Application · Prometheus<br/>Kubernetes · Argo CD] --> Evidence[Frozen Evidence Bundle]
-    Evidence --> Detection[Rule-based Detection]
-    Detection --> Diagnosis[Bounded AI Diagnosis]
-    Detection --> Recovery[Rule-based Recovery]
-    Diagnosis --> Incident[Incident Record]
-    Recovery --> Incident
-```
+<summary><b>Ops Agent implementation boundaries and recorded replay</b></summary>
 
 The runtime data path and the operations decision path are separate. Diagnosis tools do not query the live system again; they select and normalize evidence from already frozen Evidence Bundles. The LLM receives a deterministic `PRESENT` condition and cannot declare an incident, verify recovery, remediate, or change runtime state.
 
 The public Investigation UI replays a sanitized static artifact from the actual incident. It does not call the OpenAI API and separates the recorded `local-ha` incident from the current low-resource demo runtime.
 
 [Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
-
-</details>
-
-<details>
-<summary><b>AWS migration blueprint</b></summary>
-
-The Terraform source maps the validated local responsibilities to EKS, ECR, MSK, RDS/Aurora PostgreSQL, ALB, ACM, Route 53, and Secrets Manager. It passes `fmt`, offline `init`, and `validate`.
-
-No AWS `plan`, `apply`, or deployed stack is claimed. See [AWS IaC Plan](docs/AWS_IAC_PLAN.md).
 
 </details>
 
