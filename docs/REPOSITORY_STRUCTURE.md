@@ -17,7 +17,8 @@
 ├─ scripts/                   # 운영/테스트 자동화 스크립트
 ├─ tools/                     # ignored local binaries + tracked PostgreSQL HA chart archive
 ├─ worker/                    # 비동기 처리 워커
-└─ README.md                  # 프로젝트 개요
+├─ README.md                  # 국내 Cloud/DevOps 지원용 개요
+└─ README_EN.md               # Canada/해외 지원용 영어 개요
 ```
 
 ## 폴더 설명
@@ -78,7 +79,8 @@
 - `results/ops-agent/live-baseline/no-backlog-20260812.conditions.json`: captured bundle의 deterministic derived result
 - `results/ops-agent/diagnosis/golden-eval-v1.json`: Phase 3 offline golden evaluation summary
 - `results/ops-agent/incident-e2e/`, `results/ops-agent/incidents/`: Phase 5 live/canonical local artifacts; 기본 Git 추적 제외
-- `README.md`: 프로젝트 개요, 아키텍처, 결과 요약
+- `README.md`: 국내 지원용 프로젝트 개요, 아키텍처, 결과 요약
+- `README_EN.md`: 동일한 검증 경계를 유지하는 영어권 지원용 개요
 - `demo/order-dashboard.html`: Reliable Event Processing System 흐름과 order reference payload를 보여주는 브라우저 데모; 파일명은 URL 호환을 위해 유지
 - `scripts/load_test_k6.js`: k6 공통 시나리오/결과 출력 정의
 - `scripts/ordering_failure_injection.py`: single/multi stream ordering, Pgpool 장애 주입, PostgreSQL row evidence 검증

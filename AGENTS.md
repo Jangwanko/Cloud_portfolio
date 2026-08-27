@@ -127,7 +127,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 
 ## Important Docs
 
-- `README.md`: interview-facing overview.
+- `README.md`: 국내 Cloud/DevOps 지원용 interview-facing overview.
+- `README_EN.md`: Canada/해외 지원용 English overview.
 - `docs/TEST_RESULTS.md`: current validation results and measurement conditions.
 - `docs/ARCHITECTURE.md`: Kafka-centered architecture, ordering boundary, autoscaling design.
 - `docs/RELIABILITY_POLICY.md`: degraded / critical interpretation.

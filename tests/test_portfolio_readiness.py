@@ -14,6 +14,7 @@ class TestOperationalDocumentation:
     def test_service_requirements_define_user_slo_and_operating_purpose(self):
         requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
         readme = read_text("README.md")
+        readme_en = read_text("README_EN.md")
         architecture = read_text("docs/ARCHITECTURE.md")
         reliability = read_text("docs/RELIABILITY_POLICY.md")
         repository_structure = read_text("docs/REPOSITORY_STRUCTURE.md")
@@ -44,11 +45,11 @@ class TestOperationalDocumentation:
         for document in (readme, architecture, reliability, repository_structure, test_results):
             assert "SERVICE_REQUIREMENTS.md" in document
 
-        assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
-        assert "through a working event-processing workload" in readme
-        assert "## 한눈에 보기 / Executive Summary" in readme
-        assert "## AWS Migration Blueprint" in readme
-        assert "## 운영 경계와 다음 단계" in readme
+        assert "Kafka 기반 비동기 이벤트 처리 시스템" in readme
+        assert "A hands-on Kubernetes operations project" in readme_en
+        assert "## 30초 요약" in readme
+        assert "AWS Migration Blueprint — 설계 및 정적 검증" in readme
+        assert "## 현재 한계와 다음 우선순위" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in architecture
 
@@ -56,37 +57,64 @@ class TestOperationalDocumentation:
         readme = read_text("README.md")
 
         for token in (
-            "## 한눈에 보기 / Executive Summary",
-            "## Kubernetes 설계 / Kubernetes Architecture",
-            "## Pod 구성 / Workload Inventory",
-            "## AWS Migration Blueprint",
-            "## 관측 설계 / Observability Map",
-            "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
-            "### 사례 1 — Worker scaling 기준을 CPU에서 queue backlog로 전환",
-            "### 사례 2 — Worker 확장 뒤 DB 경합",
-            "### 사례 3 — GitOps namespace prune 사고 복구",
-            "### 사례 4 — DB 장애 중 API pod 재시도·로그 폭증",
-            "### 추가 트러블슈팅 기록",
-            "5,434 requests·p95 8,175ms",
+            "## 30초 요약",
+            "## 주요 검증 결과",
+            "## 아키텍처",
+            "## 왜 이렇게 설계했는가",
+            "## 반드시 구분하는 계약",
+            "## 대표 장애 재현",
+            "## 이 프로젝트에서 보여주는 역량",
+            "## 현재 한계와 다음 우선순위",
             "p95 `80.65ms`",
             "API → Kafka → Worker → PostgreSQL",
-            "## 트러블슈팅 검증 요약 / Troubleshooting Evidence",
-            "## Demo",
-            "Public demo-lite",
-            "same-stream ordering",
-            "## 운영 경계와 다음 단계",
-            "Kafka append",
-            "disk-pressure alert",
-            "consumer group rebalance",
+            "Public Demo",
+            "Kafka ingress append 성공",
+            "schema startup을 완료한 뒤",
+            "Worker Kubernetes probe",
+            "이미 고정된 Evidence Bundle",
+            "transactional outbox",
+            "Worker crash·rebalance",
         ):
             assert token in readme
 
-        architecture_index = readme.index("## Kubernetes 설계 / Kubernetes Architecture")
-        inventory_index = readme.index("## Pod 구성 / Workload Inventory")
-        aws_index = readme.index("## AWS Migration Blueprint")
-        observability_index = readme.index("## 관측 설계 / Observability Map")
-        star_index = readme.index("## STAR 운영 문제 해결 경험 / Operational STAR Cases")
-        assert architecture_index < inventory_index < aws_index < observability_index < star_index
+        summary_index = readme.index("## 30초 요약")
+        results_index = readme.index("## 주요 검증 결과")
+        architecture_index = readme.index("## 아키텍처")
+        decisions_index = readme.index("## 왜 이렇게 설계했는가")
+        contracts_index = readme.index("## 반드시 구분하는 계약")
+        incident_index = readme.index("## 대표 장애 재현")
+        limits_index = readme.index("## 현재 한계와 다음 우선순위")
+        assert (
+            summary_index
+            < results_index
+            < architecture_index
+            < decisions_index
+            < contracts_index
+            < incident_index
+            < limits_index
+        )
+
+    def test_korean_and_english_readmes_keep_the_same_claim_boundaries(self):
+        readme = read_text("README.md")
+        readme_en = read_text("README_EN.md")
+
+        assert "[English](README_EN.md)" in readme
+        assert "[Korean](README.md)" in readme_en
+        for token in (
+            "202",
+            "404",
+            "schema startup",
+            "transactional outbox",
+            "Exactly-once",
+            "deployed AWS",
+            "frozen Evidence Bundle",
+        ):
+            assert token.lower() in readme_en.lower()
+
+        assert "production-ready HA" in readme
+        assert "autonomous remediation" in readme
+        assert "Production-grade or multi-AZ HA" in readme_en
+        assert "Autonomous remediation" in readme_en
 
 
 
@@ -214,7 +242,7 @@ class TestOperationalDocumentation:
         assert "elasticache" not in terraform
 
     def test_public_docs_do_not_use_stale_operating_claims(self):
-        public_docs = [read_text("README.md")]
+        public_docs = [read_text("README.md"), read_text("README_EN.md")]
         public_docs.extend(path.read_text(encoding="utf-8") for path in (ROOT / "docs").glob("*.md"))
         combined = "\n".join(public_docs)
 
