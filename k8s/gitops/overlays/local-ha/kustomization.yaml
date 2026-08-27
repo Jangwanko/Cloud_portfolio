@@ -5,7 +5,7 @@ resources:
 images:
   - name: messaging-portfolio
     newName: ghcr.io/jangwanko/cloud_portfolio
-    newTag: 7082967994c8
+    newTag: 97c903494a25
 patches:
   - target:
       group: apps
