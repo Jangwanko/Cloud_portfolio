@@ -64,7 +64,7 @@ def build_artifact() -> dict:
 
 def main() -> int:
     payload = json.dumps(build_artifact(), indent=2, ensure_ascii=True) + "\n"
-    OUTPUT_PATH.write_text(payload, encoding="utf-8", newline="\n")
+    OUTPUT_PATH.write_text(payload, encoding="utf-8")
     print(OUTPUT_PATH.relative_to(ROOT).as_posix())
     return 0
 
