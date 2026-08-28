@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka / demo-dev source candidate: UI `2.4.0`, API `2.1.0`
+Dev-kafka / demo-dev source candidate: UI `2.4.1`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.4.0`, API `2.1.0` (2026-08-24)
 
@@ -35,7 +35,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` / `demo-dev` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`와 sanitized recorded Investigation replay 사용
+- `dev-kafka` / `demo-dev` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, 첫 화면 진입부와 sanitized recorded Investigation replay 사용
 - local GitOps release: UI `2.3.1`, API `2.1.0`, image `66e9cc995dca`
 - public demo-lite 2026-08-24: UI `2.4.0`, API `2.1.0`, image `7489ab270995`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`, 운영 부산물 7일 retention
@@ -57,7 +57,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.4.0` source image build/load:
+- 현재 `2.4.1` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -70,6 +70,8 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 - 새 disposable cluster를 `quick_start_all.ps1`로 만들었거나 staged rollout을 완료한 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
 - 외국인 리크루터에게 보여줄 때 `EN` 선택
+- 첫 화면 `검증된 AI 장애 조사 재생`에서 확정된 조건, 읽기 전용 조회 수, 가설 검토 결과와 출력 검증 결과 확인
+- `조사 기록 재생`을 누르면 기존 가로 workspace의 오른쪽 끝 Investigation 열로 이동해 static trace 재생
 - `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
 - `Reference 이벤트 보내기` / `Send Reference Events` 클릭
 - 숫자 흐름 확인:
@@ -88,7 +90,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - supporting/conflicting citation, evidence gap, Validator `VALID`, read-only boundary
   - 현재 demo-lite runtime을 재진단하거나 OpenAI API를 호출하지 않는 static replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.4.0`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.4.1`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
