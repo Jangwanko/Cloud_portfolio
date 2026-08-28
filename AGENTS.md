@@ -109,7 +109,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Namespace prune 전환 결함으로 namespace-scoped PostgreSQL/Pgpool, local demo row와 in-cluster backup PVC가 삭제됐습니다. 같은 kind cluster에 PostgreSQL/Pgpool을 clean reinstall했고 삭제된 local demo data는 복구하지 못했습니다. 2026-07-21 v2 suite는 이 clean DB state에서 실행했습니다.
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
-- Public demo-lite는 2026-08-24 image `7489ab270995`, UI `2.4.0`, API `2.1.0`, replay `200`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
+- Public demo-lite는 2026-08-28 release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0`, replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
 - `demo-dev`는 public demo-lite의 저사양 자원 경계를 관리합니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, migration → Worker → API gate를 포함합니다.
 - 2026-08-10 demo-lite storage 경계는 backup dump·completed backup Job·Kafka active topic·Prometheus 시계열을 최대 7일로 제한합니다. Kafka는 partition별 `128MiB`, Prometheus는 block `512MB`와 `emptyDir` `768MiB` 상한을 함께 사용합니다. PostgreSQL event row는 자동 삭제 대상에서 제외합니다.
 - 2026-08-10 notification batch 최적화를 demo-lite overlay에 적용한 `demo-dev` local suite는 `358 passed`입니다. Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1` 경계는 유지합니다.
@@ -204,7 +204,7 @@ Latest ordering / failure injection result after fixing local client skew:
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
 - `dev-kafka` source는 Demo UI `2.4.1`, API `2.1.0`입니다. 범용 event flow와 운영 panel 계약을 유지하고 첫 화면에서 recorded Investigation replay로 진입합니다.
-- 마지막으로 검증된 public demo-lite deployment는 UI `2.4.0`, API `2.1.0`, image `7489ab270995`입니다.
+- 마지막으로 검증된 public demo-lite deployment는 UI `2.4.1`, API `2.1.0`, image `ece446d47370`입니다.
 - `demo-dev` candidate의 source Demo UI는 `2.4.1`, API는 `2.1.0`입니다. 기존 persistence/Worker evidence와 actual Phase 5.1 `local-ha`의 sanitized static Investigation replay를 유지하고 첫 화면 replay 진입부를 추가합니다. 현재 demo-lite를 재진단하거나 OpenAI API를 호출하지 않습니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.

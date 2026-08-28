@@ -8,6 +8,8 @@ Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜�
 - `조사 기록 재생`은 기존 다섯 번째 가로 열로 이동해 recorded trace를 재생하며 OpenAI API 호출 없음
 - `2.4.0`의 자연스러운 한글 설명, 현재 demo-lite 상태와 과거 local-ha 기록의 분리, 저사양 topology와 autoscaling 설정 유지
 - focused generic event/demo contract `55 passed`, full suite `359 passed`, compileall·k6 inspect·diff check 통과
+- demo-dev source `ece446d`, CI release `2fc8649`, image `ece446d47370`
+- public UI/replay/readiness/ops summary HTTP `200`, UI `2.4.1`, Validator `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
 
 ## 2026-08-24 demo-lite recorded AI Investigation replay
 
