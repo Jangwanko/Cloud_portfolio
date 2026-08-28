@@ -6,7 +6,7 @@
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.4.0`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay candidate; runtime 배포 전 |
+| Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay와 첫 화면 진입부 구현·public 검증 |
 | Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI `#83` validate·publish 통과 |
 | Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
@@ -18,12 +18,13 @@
 | Ops Agent Phase 2.5 | 64-stream Worker backlog 3회, 15초 evidence timeline | 세 run `COMPLETE`; v2 replay에서 모두 `CORE_BACKLOG_PRESSURE=PRESENT` |
 | Ops Agent Phase 2.6 negative controls | short burst·sustainable high·single transient spike | 세 control `COMPLETE`; v2 replay에서 `PRESENT` 없음, v1 미변경 |
 | Ops Agent Phase 3.1 | single grounded Diagnosis Agent, 9 read-only tools, bounded output repair | offline golden 9개와 repair fixture 5개 통과; Luna live dry-run VALID |
+| Ops Agent Phase 3.2 | `ops.diagnosis.v2`, controlled acquisition, observation-conditioned branching | 4 scenario와 paired branch 모두 recorded replay PASS; OpenAI/runtime source 미호출 |
 | Ops Agent Phase 4 calibration | arrival-rate A/B/C/E/F, E 3회와 F 1회 recovery | actual `local-ha` COMPLETE; 원본 artifact hash PASS |
 | Ops Agent Phase 4.1 recovery | deterministic recovery policy v1 ACTIVE/RECOVERING/UNKNOWN | actual E 3회/F 1회 replay에서 모두 RECOVERING 관측; v1 RECOVERED pending |
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
 | Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
 | Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
-| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract와 public demo-lite live route 확인 |
+| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.1` source contract와 public demo-lite live route 확인 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
@@ -31,7 +32,7 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, current master image `f38a8c0958e7` 게시 확인 |
-| Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+| Public demo-lite | release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0` | entry/replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
 
@@ -117,6 +118,15 @@ Worker replica → PostgreSQL health 순서를 그대로 표시합니다. 네 ev
 citation과 evidence gap, validator `VALID`, repair `1`, stop `sufficient_evidence`,
 read-only 권한 경계를 함께 표시합니다. Replay는 static artifact만 읽고 OpenAI API를
 다시 호출하지 않습니다. Public demo-lite는 동일 static replay를 image `7489ab270995`로 제공합니다.
+
+UI `2.4.1`은 첫 화면에서 condition, read-only tool-call 수,
+SUPPORTED diagnosis와 validator 결과를 같은 artifact에서 요약합니다. 재생 버튼은
+기존 다섯 번째 Investigation 열로 가로 이동한 뒤 기존 static trace만 실행합니다.
+
+Public runtime은 HTML, replay, readiness, `/ops/summary` 모두 HTTP `200`을 반환했습니다.
+화면 version `2.4.1`, `CORE_BACKLOG_PRESSURE=PRESENT`, tool call `4`,
+`WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED`, Validator `VALID`, readiness `ready`,
+Worker desired/available `1/1`, KEDA max `2`를 확인했습니다.
 
 Source validation은 Ops Agent `250 passed`, full repository `608 passed`입니다.
 Edge headless `1440px` desktop과 `390px` mobile에서 static artifact fetch, 네 trace step,
@@ -258,6 +268,31 @@ global health, incident clearing, 새 incident 분리 또는 remediation 승인�
   artifact/hash validation, changed-file secret scan, diff check `PASS`
 - runtime boundary: workload API write만 사용; OpenAI API와 Kubernetes/KEDA/Worker/
   Argo/Kafka offset/DB control-plane write 없음
+
+## Ops Agent Phase 3.2 Scenario Lab - 2026-08-28
+
+Actual Phase 5.1 `CORE_BACKLOG_PRESSURE=PRESENT` evaluation ID와 세 source bundle digest를
+공통 activation으로 고정했습니다. 네 fixture는 allowlisted tool 9개의 observation을 모두
+정의하며 fixture digest 변경을 무결성 오류로 처리합니다. Recorded mode는 OpenAI API와
+runtime source를 호출하지 않고 실제 v2 Agent loop와 validator를 통과합니다.
+
+| Fixture | Tool sequence | Final result | Branch |
+| --- | --- | --- | --- |
+| `worker-db-path-pressure` | stage latency -> PostgreSQL health -> Worker replica | `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED` | `3/3 PASS` |
+| `worker-replica-shortfall` | stage latency -> Worker replica -> KEDA | `WORKER_CAPACITY_SHORTFALL_SUSPECTED=SUPPORTED` | `3/3 PASS` |
+| `postgres-path-degradation` | stage latency -> PostgreSQL health | `POSTGRES_PATH_DEGRADED_SUSPECTED=SUPPORTED` | `2/2 PASS` |
+| `telemetry-unavailable` | stage latency -> PostgreSQL health | `INSUFFICIENT_EVIDENCE`; `PROMETHEUS_TIMEOUT` gap | `2/2 PASS` |
+
+Paired fixture에서 첫 tool은 `get_worker_stage_latency`로 동일합니다. Normalized flag가
+`ABOVE_SCENARIO_BASELINE`이면 두 번째 tool은 `get_postgres_health`,
+`WITHIN_SCENARIO_BASELINE`이면 `get_worker_replica_status`였습니다. 별도 adversarial
+client가 `get_runtime_image`를 선택한 경우 completed diagnosis contract는 VALID였지만
+branch evaluation은 `FAIL`로 보존됐습니다.
+
+Focused Scenario/Phase 3/Demo contract suite는 `90 passed`, Ops Agent suite는
+`267 passed`, full suite는 `626 passed`입니다. Compileall, 두 k6 script inspect,
+local Scenario Lab HTML/JSON HTTP `200`, artifact 재현성, diff/secret/path 검증을
+통과했습니다. Recorded scenario 실행은 OpenAI API와 runtime source를 호출하지 않았습니다.
 
 ## Ops Agent Phase 3 Diagnosis Agent - 2026-08-16
 

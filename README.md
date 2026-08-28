@@ -79,7 +79,7 @@ flowchart LR
 
 ## Ops Agent — Evidence-grounded Incident Diagnosis
 
-장애 판정 이후 수집된 운영 증거를 조사하는 bounded LLM Diagnosis Agent를 구현했습니다. Agent는 실시간 cluster를 임의 조회하지 않고 Application·Prometheus·Kubernetes·Argo CD에서 미리 수집한 Frozen Evidence Bundle 안에서 허용된 evidence만 선택합니다.
+장애 판정 이후 운영 증거를 조사하는 bounded LLM Diagnosis Agent를 구현했습니다. 실제 incident 진단은 미리 수집한 Frozen Evidence Bundle을 사용합니다. Local Scenario Lab은 같은 deterministic activation에 통제된 normalized observation을 공급해 직전 관측에 따라 다음 read-only tool 선택이 달라지는지 검증합니다. 실시간 cluster 임의 조회는 허용하지 않습니다.
 
 ```mermaid
 flowchart LR
@@ -93,6 +93,7 @@ flowchart LR
 - 필요한 evidence를 선택해 정의된 장애 가설별로 이를 지지하거나 반박하는 evidence와 부족한 evidence를 분류합니다.
 - 존재하지 않는 evidence ID나 recovery·remediation 판단처럼 허용 범위를 벗어난 출력은 validator가 거부합니다.
 - incident 발생과 recovery 판정, runtime 변경 권한은 deterministic logic에 유지합니다.
+- `ops.diagnosis.v2`는 Worker capacity와 PostgreSQL path 가설, acquisition provenance, branch evaluation을 추가합니다. Public Demo는 검증된 과거 incident만 재생하며 Scenario Lab과 분리합니다.
 
 [Ops Agent 상세 설계 및 검증](docs/OPS_AGENT.md)
 

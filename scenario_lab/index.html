@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>AI Investigation Scenario Lab</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202833;
+      --muted: #66758a;
+      --line: #d7e0e9;
+      --surface: #ffffff;
+      --soft: #f3f6f8;
+      --green: #176b4d;
+      --green-soft: #e7f5ed;
+      --blue: #1769aa;
+      --blue-soft: #eaf3fa;
+      --amber: #8a5b00;
+      --amber-soft: #fff5d9;
+      --red: #a12a2a;
+      --red-soft: #fff0f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: #eef2f4;
+      color: var(--ink);
+      font-family: Inter, "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, select { font: inherit; letter-spacing: 0; }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      min-height: 64px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .brand { min-width: 0; }
+    .brand h1 { margin: 0; font-size: 21px; line-height: 1.25; }
+    .brand p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }
+
+    .header-badges, .controls, .facts, .step-meta, .validator-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--soft);
+      color: #4c5a6b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.controlled { border-color: #b9d5ea; background: var(--blue-soft); color: var(--blue); }
+    .badge.readonly { border-color: #b9ddca; background: var(--green-soft); color: var(--green); }
+    .badge.pass { border-color: #b9ddca; background: var(--green-soft); color: var(--green); }
+    .badge.fail { border-color: #efbcbc; background: var(--red-soft); color: var(--red); }
+    .badge.unavailable { border-color: #ead392; background: var(--amber-soft); color: var(--amber); }
+
+    .control-band {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .field { display: grid; gap: 6px; min-width: min(420px, 70vw); }
+    .field label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 34px 8px 10px;
+      border: 1px solid #b9c6d2;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .command {
+      min-height: 40px;
+      padding: 8px 14px;
+      border: 1px solid #155d45;
+      border-radius: 6px;
+      background: var(--green);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .command:hover { background: #10583e; }
+    .command:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 3px solid #9cc8e6;
+      outline-offset: 2px;
+    }
+
+    .lab-status {
+      min-height: 46px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--line);
+      background: #f9fbfc;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .workspace {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 18px 20px 24px;
+      scroll-behavior: smooth;
+      scroll-snap-type: x proximity;
+    }
+
+    .investigation-track {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 420px;
+      gap: 14px;
+      width: max-content;
+      min-height: 610px;
+    }
+
+    .track-panel {
+      position: relative;
+      min-height: 590px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      scroll-snap-align: start;
+    }
+
+    .track-panel.revealing {
+      border-color: #7eafcf;
+      box-shadow: 0 0 0 2px #d9ebf7;
+    }
+
+    .track-panel.pending { opacity: .42; }
+
+    .panel-number {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .panel-kicker {
+      margin: 16px 0 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .track-panel h2 {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .tool-name {
+      display: block;
+      margin-top: 10px;
+      color: var(--blue);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    .purpose { margin: 16px 0; color: #4f5d6d; line-height: 1.55; }
+
+    .metric-list {
+      display: grid;
+      gap: 0;
+      margin: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: minmax(135px, 1fr) minmax(120px, 1.2fr);
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric-row dt { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .metric-row dd { margin: 0; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; }
+
+    details { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+    summary { color: var(--blue); cursor: pointer; font-size: 13px; font-weight: 800; }
+    pre {
+      max-height: 250px;
+      overflow: auto;
+      margin: 12px 0 0;
+      padding: 12px;
+      border-radius: 6px;
+      background: #192129;
+      color: #f3f6f8;
+      font: 12px/1.5 Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .branch-box {
+      margin-top: 18px;
+      padding: 12px 0;
+      border-top: 2px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .branch-box p { margin: 6px 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+
+    .hypothesis-name {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--green);
+      font-size: 17px;
+      overflow-wrap: anywhere;
+    }
+
+    .hypothesis-status { font-size: 13px; font-weight: 800; }
+    .gap-list { margin: 10px 0 0; padding-left: 20px; color: #4f5d6d; font-size: 13px; }
+    .gap-list li { margin: 5px 0; overflow-wrap: anywhere; }
+
+    .boundary {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .empty {
+      display: grid;
+      place-items: center;
+      min-height: 540px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 720px) {
+      .app-header, .control-band { align-items: stretch; flex-direction: column; }
+      .header-badges { justify-content: flex-start; }
+      .field { min-width: 0; width: 100%; }
+      .controls { width: 100%; }
+      .command { flex: 1; }
+      .workspace { padding-left: 12px; padding-right: 12px; }
+      .investigation-track { grid-auto-columns: min(88vw, 390px); }
+      .track-panel { min-height: 610px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>AI Investigation Scenario Lab</h1>
+      <p>동일한 backlog activation에 통제된 관측값을 적용한 조사 분기 기록</p>
+    </div>
+    <div class="header-badges">
+      <span class="badge">LOCAL / ADMIN</span>
+      <span class="badge controlled">CONTROLLED_SCENARIO</span>
+      <span class="badge readonly">READ-ONLY</span>
+    </div>
+  </header>
+
+  <section class="control-band" aria-label="시나리오 제어">
+    <div class="field">
+      <label for="scenario-select">Scenario</label>
+      <select id="scenario-select"></select>
+    </div>
+    <div class="controls">
+      <button class="command" id="replay-button" type="button">조사 재생</button>
+    </div>
+  </section>
+
+  <div class="lab-status" id="lab-status" role="status">Scenario catalog를 불러오는 중입니다.</div>
+
+  <main class="workspace" id="workspace" tabindex="-1">
+    <div class="investigation-track" id="investigation-track">
+      <div class="empty">Controlled scenario artifact를 기다리는 중입니다.</div>
+    </div>
+  </main>
+
+  <script>
+    const state = { artifact: null, scenario: null, timers: [] };
+    const select = document.getElementById("scenario-select");
+    const replayButton = document.getElementById("replay-button");
+    const track = document.getElementById("investigation-track");
+    const workspace = document.getElementById("workspace");
+    const statusLine = document.getElementById("lab-status");
+
+    const escapeHtml = (value) => String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+    const shortId = (value) => {
+      const text = String(value ?? "");
+      return text.length > 22 ? `${text.slice(0, 10)}...${text.slice(-8)}` : text;
+    };
+
+    const toolPurpose = {
+      get_worker_stage_latency: "Worker DB persist stage의 평균 처리 시간과 scenario baseline을 비교합니다.",
+      get_postgres_health: "PostgreSQL HA, primary, standby, sync, replication delay를 확인합니다.",
+      get_worker_replica_status: "Worker desired/current/ready/available replica 상태를 확인합니다.",
+      get_keda_status: "KEDA readiness, activation, replica 범위를 확인합니다.",
+      get_partition_lag: "partition별 lag 분포와 전체 backlog를 확인합니다.",
+      get_application_readiness: "Application readiness component 상태를 확인합니다.",
+      get_runtime_image: "desired image와 Pod runtime image가 일치하는지 확인합니다.",
+      get_pod_restart_status: "Worker restart와 termination 상태를 확인합니다.",
+      get_argocd_status: "Argo CD sync, health, revision 상태를 확인합니다."
+    };
+
+    function summaryRows(evidence) {
+      const summary = evidence.summary || {};
+      const rows = [];
+      if (evidence.tool_id === "get_worker_stage_latency") {
+        rows.push(["Stage mean", `${summary.worker_stage_mean_ms} ms`]);
+        rows.push(["Scenario baseline", `${summary.scenario_baseline_ms} ms`]);
+        rows.push(["Relative", `${Number(summary.relative_to_baseline).toFixed(2)}x`]);
+        rows.push(["Normalized", summary.semantic_flag]);
+      } else if (evidence.tool_id === "get_postgres_health" && evidence.status !== "UNAVAILABLE") {
+        rows.push(["HA / Primary", `${summary.ha_mode} / ${summary.primary_reachable}`]);
+        rows.push(["Standby / Sync", `${summary.standby_count} / ${summary.sync_standby_count}`]);
+        rows.push(["Replication delay", `${Number(summary.max_replication_delay_bytes).toLocaleString()} bytes`]);
+        rows.push(["Normalized", summary.semantic_flag]);
+      } else if (evidence.tool_id === "get_worker_replica_status") {
+        rows.push(["Desired / Current", `${summary.desired_replicas} / ${summary.current_replicas}`]);
+        rows.push(["Ready / Available", `${summary.ready_replicas} / ${summary.available_replicas}`]);
+        rows.push(["Availability gap", summary.availability_gap]);
+        rows.push(["Normalized", summary.semantic_flag]);
+      } else if (evidence.tool_id === "get_keda_status") {
+        rows.push(["Ready / Active", `${summary.ready} / ${summary.active}`]);
+        rows.push(["Replica range", `${summary.min_replicas} - ${summary.max_replicas}`]);
+        rows.push(["Current", summary.current_replicas]);
+      } else if (evidence.status === "UNAVAILABLE") {
+        rows.push(["Status", "UNAVAILABLE"]);
+        rows.push(["Error code", evidence.error_code]);
+        rows.push(["Freshness", evidence.freshness?.status]);
+      } else {
+        Object.entries(summary).slice(0, 5).forEach(([key, value]) => {
+          rows.push([key, typeof value === "object" ? JSON.stringify(value) : value]);
+        });
+      }
+      return rows.map(([label, value]) => `
+        <div class="metric-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>
+      `).join("");
+    }
+
+    function branchMarkup(run, toolId) {
+      const branch = (run.branch_evaluations || []).find((item) => item.after_tool_id === toolId);
+      if (!branch) return "";
+      const resultClass = branch.result === "PASS" ? "pass" : "fail";
+      const expected = branch.expected_next_tools.length
+        ? branch.expected_next_tools.join(" 또는 ")
+        : "조사 종료";
+      const selected = branch.selected_next_tool || "조사 종료";
+      return `
+        <div class="branch-box">
+          <div class="step-meta"><strong>Branch Evaluation</strong><span class="badge ${resultClass}">${escapeHtml(branch.result)}</span></div>
+          <p><strong>Expected:</strong> ${escapeHtml(expected)}</p>
+          <p><strong>Selected:</strong> ${escapeHtml(selected)}</p>
+        </div>`;
+    }
+
+    function activationPanel(artifact, run) {
+      const activation = artifact.activation;
+      const facts = activation.facts;
+      return `
+        <section class="track-panel" data-replay-index="0">
+          <span class="panel-number">A</span>
+          <p class="panel-kicker">Immutable activation</p>
+          <h2>${escapeHtml(activation.condition)}</h2>
+          <div class="facts">
+            <span class="badge pass">${escapeHtml(activation.state)}</span>
+            <span class="badge">${escapeHtml(activation.profile)}</span>
+          </div>
+          <dl class="metric-list">
+            <div class="metric-row"><dt>Total lag</dt><dd>${facts.activation_window_total_lag_records.map((value) => Number(value).toLocaleString()).join(" -> ")}</dd></div>
+            <div class="metric-row"><dt>Lag slope</dt><dd>${facts.activation_window_lag_slope_records_per_second.map((value) => Number(value).toFixed(1)).join(" -> ")} records/s</dd></div>
+            <div class="metric-row"><dt>Condition evaluation</dt><dd>${escapeHtml(shortId(run.condition_evaluation_id))}</dd></div>
+            <div class="metric-row"><dt>Acquisition</dt><dd>${escapeHtml(run.acquisition_mode)}</dd></div>
+          </dl>
+          <div class="boundary">장애 존재 여부는 이 immutable evidence로 deterministic하게 확정됐습니다. Scenario Agent는 이 판정을 변경하지 않습니다.</div>
+        </section>`;
+    }
+
+    function stepPanel(step, evidence, run, index) {
+      const badgeClass = evidence.status === "UNAVAILABLE" ? "unavailable" : "pass";
+      return `
+        <section class="track-panel pending" data-replay-index="${index}">
+          <span class="panel-number">${step.step}</span>
+          <p class="panel-kicker">Agent selected</p>
+          <h2>Read-only tool</h2>
+          <code class="tool-name">${escapeHtml(step.tool_id)}</code>
+          <p class="purpose">${escapeHtml(toolPurpose[step.tool_id] || step.reason_code)}</p>
+          <div class="step-meta">
+            <span class="badge ${badgeClass}">${escapeHtml(evidence.status)}</span>
+            <span class="badge">${escapeHtml(evidence.freshness?.status)}</span>
+            <span class="badge">${escapeHtml(evidence.provenance?.acquisition_mode)}</span>
+          </div>
+          <dl class="metric-list">${summaryRows(evidence)}</dl>
+          <p><strong>Evidence</strong> <code>${escapeHtml(shortId(evidence.evidence_id))}</code></p>
+          ${branchMarkup(run, step.tool_id)}
+          <details>
+            <summary>Evidence JSON</summary>
+            <pre>${escapeHtml(JSON.stringify(evidence, null, 2))}</pre>
+          </details>
+        </section>`;
+    }
+
+    function resultPanel(scenario, run, index) {
+      const hypotheses = run.hypotheses.map((item) => `
+        <div>
+          <strong class="hypothesis-name">${escapeHtml(item.hypothesis)}</strong>
+          <span class="hypothesis-status">${escapeHtml(item.support_status)}</span>
+          <dl class="metric-list">
+            <div class="metric-row"><dt>Supporting</dt><dd>${escapeHtml(item.supporting_evidence_ids.map(shortId).join(", ") || "없음")}</dd></div>
+            <div class="metric-row"><dt>Conflicting</dt><dd>${escapeHtml(item.conflicting_evidence_ids.map(shortId).join(", ") || "없음")}</dd></div>
+          </dl>
+          ${item.evidence_gaps.length ? `<strong>Evidence gaps</strong><ul class="gap-list">${item.evidence_gaps.map((gap) => `<li>${escapeHtml(gap)}</li>`).join("")}</ul>` : ""}
+        </div>`).join("");
+      const branchPass = run.branch_evaluations.every((item) => item.result === "PASS");
+      return `
+        <section class="track-panel pending" data-replay-index="${index}">
+          <span class="panel-number">R</span>
+          <p class="panel-kicker">Structured diagnosis</p>
+          <h2>Hypothesis Result</h2>
+          ${hypotheses}
+          <div class="validator-row">
+            <strong>Validator</strong>
+            <span class="badge pass">VALID</span>
+            <strong>Branch</strong>
+            <span class="badge ${branchPass ? "pass" : "fail"}">${branchPass ? "PASS" : "FAIL"}</span>
+          </div>
+          <dl class="metric-list">
+            <div class="metric-row"><dt>Stop reason</dt><dd>${escapeHtml(run.stop_reason)}</dd></div>
+            <div class="metric-row"><dt>Model mode</dt><dd>${escapeHtml(run.policy.model_mode)}</dd></div>
+            <div class="metric-row"><dt>API requests</dt><dd>${escapeHtml(run.usage.api_requests)}</dd></div>
+            <div class="metric-row"><dt>Diagnosis ID</dt><dd>${escapeHtml(shortId(run.diagnosis_id))}</dd></div>
+          </dl>
+          <div class="boundary">Validator는 schema, citation, tool allowlist, budget, stop, forbidden claim 계약을 검사합니다. 원인의 사실 여부를 독립적으로 확정하지 않습니다.</div>
+          <div class="boundary"><strong>READ-ONLY:</strong> Pod 재시작, Worker scale, Kubernetes 변경, Kafka offset reset, recovery 선언, remediation은 허용되지 않습니다.</div>
+        </section>`;
+    }
+
+    function renderScenario(scenario) {
+      state.scenario = scenario;
+      const run = scenario.run;
+      const evidenceById = new Map(run.additional_evidence.map((item) => [item.evidence_id, item]));
+      const panels = [activationPanel(state.artifact, run)];
+      run.steps.forEach((step, index) => {
+        panels.push(stepPanel(step, evidenceById.get(step.returned_evidence_ids[0]), run, index + 1));
+      });
+      panels.push(resultPanel(scenario, run, run.steps.length + 1));
+      track.innerHTML = panels.join("");
+      statusLine.textContent = `${scenario.title} | ${run.steps.length} tool calls | ${scenario.expected_primary_hypothesis}`;
+      workspace.scrollTo({ left: 0, behavior: "auto" });
+    }
+
+    function replay() {
+      state.timers.forEach(clearTimeout);
+      state.timers = [];
+      const panels = [...track.querySelectorAll("[data-replay-index]")];
+      panels.forEach((panel, index) => {
+        panel.classList.toggle("pending", index > 0);
+        panel.classList.remove("revealing");
+      });
+      panels.forEach((panel, index) => {
+        const timer = setTimeout(() => {
+          panels.forEach((item) => item.classList.remove("revealing"));
+          panel.classList.remove("pending");
+          panel.classList.add("revealing");
+          panel.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }, index * 650);
+        state.timers.push(timer);
+      });
+    }
+
+    select.addEventListener("change", () => {
+      const scenario = state.artifact.scenarios.find((item) => item.fixture_id === select.value);
+      if (scenario) renderScenario(scenario);
+    });
+    replayButton.addEventListener("click", replay);
+
+    fetch("scenario-lab-replay.json", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((artifact) => {
+        if (artifact.classification !== "CONTROLLED_SCENARIO_REPLAY") {
+          throw new Error("Unexpected artifact classification");
+        }
+        state.artifact = artifact;
+        select.innerHTML = artifact.scenarios.map((scenario) => `
+          <option value="${escapeHtml(scenario.fixture_id)}">${escapeHtml(scenario.title)}</option>
+        `).join("");
+        renderScenario(artifact.scenarios[0]);
+      })
+      .catch((error) => {
+        statusLine.textContent = `Scenario artifact load failed: ${error.message}`;
+        track.innerHTML = '<div class="empty">Scenario artifact를 확인할 수 없습니다.</div>';
+      });
+  </script>
+</body>
+</html>

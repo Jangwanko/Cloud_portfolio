@@ -5,7 +5,7 @@ resources:
 images:
   - name: messaging-portfolio
     newName: ghcr.io/jangwanko/cloud_portfolio
-    newTag: 97c903494a25
+    newTag: 54ee42a2fb29
 patches:
   - target:
       group: apps
@@ -17,4 +17,9 @@ patches:
         path: /spec/template/spec/containers/0/env/-
         value:
           name: GENERIC_EVENTS_V2_ENABLED
+          value: "true"
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SCENARIO_LAB_ENABLED
           value: "true"

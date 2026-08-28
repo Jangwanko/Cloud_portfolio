@@ -302,6 +302,15 @@ condition 재판정, recovery 선언, remediation은 허용하지 않습니다. 
 schema, citation, tool budget, stop semantics를 통과한 output만 completed diagnosis로
 승격합니다.
 
+Phase 3.2는 adaptive loop를 유지하고 evidence acquisition을 versioned interface로
+분리합니다. `FROZEN_PROJECTED`는 activation bundle에서 투영한 evidence,
+`CONTROLLED_SCENARIO`는 canonical fixture에서 정규화한 evidence,
+`LIVE_READ_ONLY`는 fixed query contract가 runtime source에서 새로 획득할 evidence의
+provenance 계약입니다. 현재 registry 구현은 controlled scenario까지이며 live source
+connector는 미구현입니다. `ops.diagnosis.v2`는 acquisition provenance, investigation
+session, branch evaluation과 Worker capacity/PostgreSQL path hypothesis를 추가합니다.
+V1 artifact와 public recorded incident는 변경하지 않습니다.
+
 Phase 4 calibration harness는 host-local k6가 current KEDA `2→4`를 유지한 채 64-stream
 arrival-rate traffic을 만들고 약 15초 간격으로 bundle을 수집합니다. Recovery v1은
 activation 뒤 fresh usable capture 세 개의 negative slope, committed rate `>=` produce
@@ -328,8 +337,8 @@ observation을 closed record와 분리했으며 automatic reopen/new incident co
 이 계층은 self-healing이나 production-ready AI가 아닙니다. Threshold/envelope는
 single-node kind `local-ha` calibration이고, consumer rebalance·CPU throttling·exact
 transaction commit latency는 현재 instrumentation으로 `UNAVAILABLE`입니다. Public
-Verified Incident Replay는 sanitized static source candidate까지 구현했으며 demo-lite
-배포는 아직 진행하지 않았습니다. 상세 계약과 case study는
+Verified Incident Replay `2.4.1`은 sanitized static artifact와 첫 화면 요약을 demo-lite에
+배포했습니다. 요약에서 기존 가로형 Investigation trace로 진입합니다. 상세 계약과 case study는
 [OPS_AGENT.md](OPS_AGENT.md), 실제 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)를 봅니다.
 
 ## 백업과 복구

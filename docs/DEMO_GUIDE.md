@@ -1,8 +1,8 @@
 # Demo Guide
 
-Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`
+Dev-kafka source candidate: UI `2.4.1`, API `2.1.0`
 
-Public demo-lite last verified: UI `2.4.0`, API `2.1.0` (2026-08-24)
+Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
 
 ## Purpose
 
@@ -20,12 +20,13 @@ Public demo-lite last verified: UI `2.4.0`, API `2.1.0` (2026-08-24)
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.4.0` generic v2와 recorded Investigation replay 시연 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.4.1` generic v2와 첫 화면에서 진입하는 recorded Investigation replay 시연 |
 | Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
 | Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
 | Deployed DLQ summary | `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5` | 로그인 user 범위 recent log sample 확인 |
 | Local Demo UI | `http://localhost/demo/order-dashboard.html` | 로컬 데모 확인 |
+| Local Scenario Lab | `http://localhost/admin/scenario-lab/` | controlled normalized fixture의 Agent tool branching 재생; `SCENARIO_LAB_ENABLED=true` local operator surface |
 | Local Swagger | `http://localhost/docs` | 로컬 API contract 확인 |
 | Local Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | 로컬 운영 지표 확인 |
 
@@ -36,9 +37,9 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay 사용
+- `dev-kafka` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay와 첫 화면 replay 진입부 사용
 - `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f` (2026-08-12 local live)
-- public demo-lite 2026-08-24: UI `2.4.0`, API `2.1.0`, image `7489ab270995`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
+- public demo-lite 2026-08-28: UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
 
@@ -58,7 +59,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.4.0` source image build/load:
+- 현재 `2.4.1` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -71,6 +72,8 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 - 새 disposable cluster를 `quick_start_all.ps1`로 만들었거나 staged rollout을 완료한 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
 - 외국인 리크루터에게 보여줄 때 `EN` 선택
+- 첫 화면 `Verified AI Investigation Replay`에서 condition, tool-call 수, supported diagnosis, validator 결과 확인
+- `Agent 조사 재생`을 누르면 기존 가로 workspace의 오른쪽 끝 `AI Investigation`으로 이동하고 recorded trace가 순서대로 강조됨
 - `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
 - `Reference 이벤트 보내기` / `Send Reference Events` 클릭
 - 숫자 흐름 확인:
@@ -92,13 +95,31 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 - `기록 재생`은 static trace 강조이며 OpenAI API를 호출하지 않음
 - 좁은 화면에서도 기존 패널 아래로 재배치하지 않고, 같은 가로 흐름을 스크롤해 Investigation 열로 이동
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.4.0`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.4.1`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
-- 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.4.0`; replay schema `demo.verified-incident-replay.v1`, Validator `VALID`
+- 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.4.1`; replay schema `demo.verified-incident-replay.v1`, Validator `VALID`
 - Kafka append와 DB persistence의 동시 진행률, Worker `현재/최대`, Operations Advisor 확인
+
+## Local Scenario Lab
+
+Scenario Lab은 actual incident activation을 reference로 유지하고 조사 observation만 통제합니다.
+화면의 `CONTROLLED_SCENARIO`와 `recorded` 표시는 현재 runtime 조회나 새 OpenAI 호출이
+아님을 뜻합니다.
+
+1. `http://localhost/admin/scenario-lab/` 접속
+2. 네 scenario 중 하나 선택
+3. `조사 재생` 실행
+4. 가로 trace에서 selected tool, normalized evidence, expected/selected next tool 확인
+5. 마지막 열에서 hypothesis, evidence gap, validator, branch result 확인
+
+`worker-db-path-pressure`와 `worker-replica-shortfall`은 같은 activation을 사용합니다.
+첫 stage observation의 normalized flag가 달라 두 번째 tool이 PostgreSQL health와 Worker
+replica로 갈라집니다. `telemetry-unavailable`은 PostgreSQL evidence를
+`UNAVAILABLE/PROMETHEUS_TIMEOUT`으로 보존하고 `INSUFFICIENT_EVIDENCE`로 종료합니다.
+Branch가 예상과 다르면 UI는 `FAIL`을 그대로 표시합니다.
 
 ## English Demo Script
 

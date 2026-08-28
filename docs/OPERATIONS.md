@@ -150,9 +150,9 @@ Response의 `app_version`은 실행 중인 API build version입니다. 2026-08-1
 
 ## Demo Access
 
-Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`; sanitized recorded AI Investigation replay 포함, runtime 배포 전
+Dev-kafka source candidate: UI `2.4.1`, API `2.1.0`; sanitized recorded AI Investigation replay와 첫 화면 replay 진입부 포함, runtime 배포 전
 
-Public demo-lite Demo UI: `2.4.0` / API `2.1.0` / image `7489ab270995` (2026-08-24 live)
+Public demo-lite Demo UI: `2.4.1` / API `2.1.0` / image `ece446d47370` (2026-08-28 live)
 
 Local surfaces:
 

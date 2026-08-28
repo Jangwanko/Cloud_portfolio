@@ -959,8 +959,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.4.0"',
-        "ver. 2.4.0 / api -",
+        'const DEMO_UI_VERSION = "2.4.1"',
+        "ver. 2.4.1 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",
@@ -1129,6 +1129,10 @@ def test_demo_verified_incident_replay_is_sanitized_and_artifact_grounded():
 
     assert 'fetch("./verified-incident-replay.json"' in demo
     assert "function replayInvestigationTrace()" in demo
+    assert 'id="open-investigation-replay"' in demo
+    assert "Verified AI Investigation Replay" in demo
+    assert "Recorded LLM run" in demo
+    assert "Deterministic" in demo
     assert 'class="workspace-scroll"' in demo
     assert "overflow-x: auto" in demo
     assert "grid-template-columns: 320px 520px 320px 340px 1040px" in demo
@@ -1137,6 +1141,17 @@ def test_demo_verified_incident_replay_is_sanitized_and_artifact_grounded():
         "async function loadVerifiedIncidentReplay", 1
     )[0]
     assert "fetch(" not in replay_function
+    entry_function = demo.split("function openInvestigationReplay()", 1)[1].split(
+        "function replayInvestigationTrace()", 1
+    )[0]
+    assert 'document.querySelector(".workspace-scroll")' in entry_function
+    assert 'document.querySelector("#ai-investigation")' in entry_function
+    assert "workspace.scrollTo" in entry_function
+    assert "replayInvestigationTrace()" in entry_function
+    assert "fetch(" not in entry_function
+    assert "investigation.tool_calls.length" in demo
+    assert 'item.support_status === "SUPPORTED"' in demo
+    assert "verifiedIncidentReplay.validation.result" in demo
     assert "Confirmed Root Cause" not in demo
     for text in (
         "Supporting evidence",

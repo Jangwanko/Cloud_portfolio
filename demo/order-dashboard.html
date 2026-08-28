@@ -131,6 +131,60 @@
       font-weight: 700;
     }
 
+    .investigation-entry {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-top: 4px solid #235347;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+      padding: 14px 16px;
+    }
+
+    .investigation-entry-head {
+      align-items: center;
+      display: flex;
+      gap: 16px;
+      justify-content: space-between;
+    }
+
+    .investigation-entry-title {
+      min-width: 0;
+    }
+
+    .investigation-entry-title h2 {
+      margin: 6px 0 2px;
+    }
+
+    .investigation-entry-summary {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .investigation-entry-summary > div {
+      background: #f8fafc;
+      border-left: 3px solid #b9c6d3;
+      min-width: 0;
+      padding: 8px 10px;
+    }
+
+    .investigation-entry-summary strong {
+      color: var(--muted);
+      display: block;
+      font-size: 11px;
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .investigation-entry-summary span {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: 320px 520px 320px 340px 1040px;
@@ -434,6 +488,13 @@
 
     .advisor h3 {
       margin-bottom: 0;
+    }
+
+    .advisor-title {
+      align-items: center;
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
     }
 
     .advisor p {
@@ -807,6 +868,22 @@
       main {
         padding: 16px;
       }
+
+      .investigation-entry-head {
+        align-items: stretch;
+      }
+
+      .investigation-entry-head button {
+        flex: 0 0 auto;
+      }
+
+      .investigation-entry-summary {
+        grid-auto-columns: minmax(160px, 1fr);
+        grid-auto-flow: column;
+        grid-template-columns: none;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
     }
   </style>
 </head>
@@ -815,7 +892,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.4.0 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.4.1 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -831,6 +908,23 @@
       <div class="status"><strong>Kafka intake</strong><span id="kafka-status">미전송</span></div>
       <div class="status"><strong data-i18n="operatorCategory">Producer 분류(metadata)</strong><span id="category-status">-</span></div>
     </div>
+
+    <aside class="investigation-entry" aria-labelledby="investigation-entry-title">
+      <div class="investigation-entry-head">
+        <div class="investigation-entry-title">
+          <span class="status-badge" data-i18n="investigationRecorded">Recorded LLM run</span>
+          <h2 id="investigation-entry-title" data-i18n="investigationEntryTitle">Verified AI Investigation Replay</h2>
+          <p class="subtitle" data-i18n="investigationEntrySubtitle">검증된 장애 기록의 AI 조사 과정을 재생합니다. OpenAI API를 다시 호출하지 않습니다.</p>
+        </div>
+        <button id="open-investigation-replay" type="button" data-i18n="openInvestigationReplay" disabled>Agent 조사 재생</button>
+      </div>
+      <div class="investigation-entry-summary" aria-live="polite">
+        <div><strong>Condition</strong><span id="investigation-entry-condition">-</span></div>
+        <div><strong>LLM Investigation</strong><span id="investigation-entry-tools">-</span></div>
+        <div><strong>Diagnosis</strong><span id="investigation-entry-diagnosis">-</span></div>
+        <div><strong>Validator</strong><span id="investigation-entry-validator">-</span></div>
+      </div>
+    </aside>
 
     <div class="workspace-scroll" tabindex="0" aria-label="Operations workspace">
     <div class="grid">
@@ -1036,7 +1130,10 @@
 
       <section class="stack result-panel waiting" id="result-panel">
         <div class="advisor" id="operations-advisor">
-          <h3>Operations Advisor</h3>
+          <div class="advisor-title">
+            <h3>Operations Advisor</h3>
+            <span class="status-badge">Deterministic</span>
+          </div>
           <p data-i18n="advisorHelp">정해진 규칙으로 운영 신호를 해석합니다. AI API는 호출하지 않습니다.</p>
           <div class="proof-grid">
             <div class="proof"><strong data-i18n="advisorStatus">상태</strong><span id="advisor-status">-</span></div>
@@ -1059,11 +1156,11 @@
         </div>
       </section>
 
-    <section class="stack investigation-section" id="ai-investigation" aria-labelledby="ai-investigation-title">
+    <section class="stack investigation-section" id="ai-investigation" aria-labelledby="ai-investigation-title" tabindex="-1">
       <div class="investigation-head">
         <div>
           <div class="badge-row">
-            <span class="status-badge" data-i18n="investigationRecorded">Recorded replay</span>
+            <span class="status-badge" data-i18n="investigationRecorded">Recorded LLM run</span>
             <span class="status-badge read-only">Read-only</span>
             <span class="status-badge ok" id="investigation-validation-badge">Validator -</span>
           </div>
@@ -1149,7 +1246,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.4.0";
+    const DEMO_UI_VERSION = "2.4.1";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -1279,7 +1376,11 @@
         dbPaymentColumn: "도메인 데이터와 추적·분류용 확장 정보",
         dbTraceColumns: "요청 추적 식별자와 DB row 생성 시각",
         envelopeVerification: "Envelope 샘플 검증",
-        investigationRecorded: "Recorded replay",
+        investigationRecorded: "Recorded LLM run",
+        investigationEntryTitle: "Verified AI Investigation Replay",
+        investigationEntrySubtitle: "검증된 장애 기록의 AI 조사 과정을 재생합니다. OpenAI API를 다시 호출하지 않습니다.",
+        investigationEntryToolCalls: "읽기 전용 도구 {count}회",
+        openInvestigationReplay: "Agent 조사 재생",
         investigationTitle: "AI Investigation",
         investigationSubtitle: "실제 Phase 5.1 기록에서 bounded tool 선택, evidence 연결, hypothesis 출력을 재생합니다.",
         traceTitle: "Investigation Trace",
@@ -1443,7 +1544,11 @@
         dbPaymentColumn: "Domain payload plus extensible tracing and classification metadata",
         dbTraceColumns: "Request trace identifier and DB row creation time",
         envelopeVerification: "Envelope Sample Verification",
-        investigationRecorded: "Recorded replay",
+        investigationRecorded: "Recorded LLM run",
+        investigationEntryTitle: "Verified AI Investigation Replay",
+        investigationEntrySubtitle: "Replay the AI investigation from a verified incident record. No new OpenAI API call is made.",
+        investigationEntryToolCalls: "{count} read-only tool calls",
+        openInvestigationReplay: "Replay Agent Investigation",
         investigationTitle: "AI Investigation",
         investigationSubtitle: "Replays bounded tool selection, evidence links, and hypotheses from the recorded Phase 5.1 run.",
         traceTitle: "Investigation Trace",
@@ -1503,6 +1608,7 @@
     let latestDlqSummary = null;
     let verifiedIncidentReplay = null;
     let investigationReplayTimer = null;
+    let investigationNavigationTimer = null;
     const queueStats = {
       queued: 0,
       kafkaAppended: 0,
@@ -1750,6 +1856,25 @@
       }
       const source = verifiedIncidentReplay.source;
       const investigation = verifiedIncidentReplay.investigation;
+      const supportedHypothesis = verifiedIncidentReplay.hypotheses.find(
+        (item) => item.support_status === "SUPPORTED"
+      );
+      setText(
+        "#investigation-entry-condition",
+        `${source.condition.name} · ${source.condition.state}`
+      );
+      setText(
+        "#investigation-entry-tools",
+        formatText("investigationEntryToolCalls", { count: investigation.tool_calls.length })
+      );
+      setText(
+        "#investigation-entry-diagnosis",
+        supportedHypothesis
+          ? `${supportedHypothesis.hypothesis} · ${supportedHypothesis.support_status}`
+          : t("insufficientMeaning")
+      );
+      setText("#investigation-entry-validator", verifiedIncidentReplay.validation.result);
+      document.querySelector("#open-investigation-replay").disabled = false;
       document.querySelector("#investigation-meta").innerHTML = `
         <div><strong>Condition</strong><span>${escapeHtml(source.condition.name)} = ${escapeHtml(source.condition.state)}</span></div>
         <div><strong>Model</strong><span>${escapeHtml(source.model)}</span></div>
@@ -1768,6 +1893,27 @@
       );
       renderInvestigationTrace();
       renderInvestigationHypotheses();
+    }
+
+    function openInvestigationReplay() {
+      if (!verifiedIncidentReplay) {
+        return;
+      }
+      const workspace = document.querySelector(".workspace-scroll");
+      const investigation = document.querySelector("#ai-investigation");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (investigationNavigationTimer) {
+        window.clearTimeout(investigationNavigationTimer);
+      }
+      workspace.scrollTo({
+        left: Math.max(0, investigation.offsetLeft - 16),
+        behavior: reduceMotion ? "auto" : "smooth"
+      });
+      investigationNavigationTimer = window.setTimeout(() => {
+        investigation.focus({ preventScroll: true });
+        replayInvestigationTrace();
+        investigationNavigationTimer = null;
+      }, reduceMotion ? 0 : 450);
     }
 
     function replayInvestigationTrace() {
@@ -2907,6 +3053,7 @@
       replayAllDlqItems().catch((error) => log(describeFetchFailure(error)));
     });
     document.querySelector("#replay-investigation").addEventListener("click", replayInvestigationTrace);
+    document.querySelector("#open-investigation-replay").addEventListener("click", openInvestigationReplay);
     document.querySelector("#ops-refresh-interval").addEventListener("change", restartOpsAutoRefresh);
     document.querySelectorAll("[data-language]").forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.language));

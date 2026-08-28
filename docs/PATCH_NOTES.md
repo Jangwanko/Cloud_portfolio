@@ -2,6 +2,28 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-08-28 Controlled Scenario Lab candidate
+
+- 기존 `ops.diagnosis.v1`과 adaptive Agent loop를 유지하고 acquisition provenance와 확장 hypothesis를 가진 `ops.diagnosis.v2` 추가
+- `FROZEN_PROJECTED`, `CONTROLLED_SCENARIO`, `LIVE_READ_ONLY` provenance 계약을 discriminated union으로 분리; runtime live connector는 미구현
+- Worker stage ratio, replica availability gap, PostgreSQL HA guardrail을 deterministic하게 정규화하는 controlled registry와 canonical fixture digest 검증 추가
+- Worker DB-path pressure, replica shortfall, PostgreSQL path degradation, telemetry unavailable 네 scenario 구현
+- 같은 activation의 paired fixture에서 첫 observation에 따라 PostgreSQL health와 Worker replica로 다음 tool이 달라지는 branch 검증 추가
+- 예상과 다른 allowlisted tool 선택은 숨기지 않고 `BranchEvaluation=FAIL`로 보존
+- `SCENARIO_LAB_ENABLED=true`에서만 mount하는 Local/Admin `/admin/scenario-lab/`과 deterministic recorded artifact 추가; Public Verified Replay와 demo-lite는 변경하지 않음
+- recorded Scenario CLI는 OpenAI API와 runtime source를 호출하지 않으며 `--model-mode live`만 명시적 local model 실행 허용
+
+## 2026-08-28 Verified AI Investigation replay visibility candidate
+
+- Demo UI `2.4.1` 첫 화면에 condition, read-only tool-call 수, SUPPORTED diagnosis, validator 결과를 compact summary로 추가
+- 요약 값은 기존 sanitized `demo.verified-incident-replay.v1`에서 읽으며 generic/fake evidence를 만들지 않음
+- `Agent 조사 재생`은 기존 다섯 번째 가로 열로 이동해 recorded tool trace를 재생하며 OpenAI API를 호출하지 않음
+- 기존 five-column workspace, expandable evidence, hypothesis gap, validator와 read-only boundary는 유지
+- Operations Advisor는 `Deterministic`, AI Investigation은 `Recorded LLM run`으로 역할을 구분
+- focused docs/demo contract `87 passed`, full suite `609 passed`, compileall과 두 k6 script inspect 통과
+- dev-kafka source `1aca815`, CI image `1aca8155092a`; demo-dev source `ece446d`, release `2fc8649`, image `ece446d47370`
+- public UI/replay/readiness/ops summary HTTP `200`, UI `2.4.1`, Validator `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
+
 ## 2026-08-24 Phase 5.2 recorded AI Investigation replay candidate
 
 - Demo UI `2.4.0`에 actual Phase 5.1 diagnosis의 four-step tool trace, normalized evidence status/freshness와 expandable safe summary 추가

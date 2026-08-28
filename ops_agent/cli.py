@@ -18,6 +18,8 @@ from ops_agent.diagnosis_agent import (
     run_diagnosis,
 )
 from ops_agent.diagnosis_models import DiagnosisPolicy
+from ops_agent.diagnosis_scenarios import load_scenario_catalog
+from ops_agent.diagnosis_v2_models import DiagnosisPolicyV2
 from ops_agent.evaluator import evaluate_bundle
 from ops_agent.incident_lifecycle import (
     attach_diagnosis,
@@ -31,6 +33,7 @@ from ops_agent.recovery_evaluator import evaluate_recovery
 from ops_agent.recovery_policies import load_recovery_policy
 from ops_agent.sequence_evaluator import evaluate_bundle_sequence
 from ops_agent.sequence_models import SequenceConditionEvaluation
+from ops_agent.scenario_agent import RecordedBranchModelClient, run_scenario_diagnosis
 
 
 _MAX_EVIDENCE_INPUT_BYTES = 16 * 1024 * 1024
@@ -122,6 +125,23 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="explicitly opt in to one bounded OpenAI Responses API diagnosis",
     )
+    diagnose_scenario = subparsers.add_parser(
+        "diagnose-scenario",
+        help="run an ops.diagnosis.v2 controlled Scenario Lab investigation",
+    )
+    diagnose_scenario.add_argument(
+        "--catalog",
+        type=Path,
+        default=Path("ops_agent/fixtures/diagnosis/scenario_lab_v1.json"),
+    )
+    diagnose_scenario.add_argument("--scenario", required=True)
+    diagnose_scenario.add_argument(
+        "--model-mode",
+        choices=("recorded", "live"),
+        default="recorded",
+        help="recorded offline branch policy or explicit live OpenAI model",
+    )
+    diagnose_scenario.add_argument("--output", type=Path, required=True)
     build_incident = subparsers.add_parser(
         "build-incident",
         help="build an ops.incident.v1 artifact from a frozen PRESENT activation",
@@ -374,6 +394,41 @@ def run_diagnose(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_diagnose_scenario(args: argparse.Namespace) -> int:
+    if args.catalog.resolve() == args.output.resolve():
+        raise ValueError("scenario diagnosis output must not overwrite its catalog")
+    catalog = load_scenario_catalog(args.catalog)
+    if args.model_mode == "live":
+        api_key, model = load_openai_configuration(Path.cwd())
+        policy = DiagnosisPolicyV2(model=model, model_mode="live")
+        client = OpenAIResponsesClient(
+            api_key=api_key,
+            timeout_seconds=policy.request_timeout_seconds,
+            max_retries=policy.max_retries,
+        )
+    else:
+        policy = DiagnosisPolicyV2(
+            model="recorded-branch-policy-v1",
+            model_mode="recorded",
+            max_retries=0,
+            max_output_repairs=0,
+        )
+        client = RecordedBranchModelClient()
+    diagnosis = run_scenario_diagnosis(
+        catalog=catalog,
+        fixture_id=args.scenario,
+        client=client,
+        policy=policy,
+    )
+    _atomic_write(
+        args.output,
+        json.dumps(diagnosis.model_dump(mode="json"), indent=2, ensure_ascii=True)
+        + "\n",
+    )
+    sys.stdout.write(f"{args.output.as_posix()}\n")
+    return 0
+
+
 def _repository_relative_reference(path: Path) -> str:
     try:
         return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
@@ -449,6 +504,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_evaluate_recovery(args)
     if args.command == "diagnose":
         return run_diagnose(args)
+    if args.command == "diagnose-scenario":
+        return run_diagnose_scenario(args)
     if args.command == "build-incident":
         return run_build_incident(args)
     if args.command == "update-incident":
