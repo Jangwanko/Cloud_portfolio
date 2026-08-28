@@ -7,7 +7,7 @@
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Source candidate | API `2.1.0`, Demo UI `2.4.0`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay candidate; runtime 배포 전 |
-| Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI validate·publish 통과 |
+| Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI `#83` validate·publish 통과 |
 | Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
@@ -30,7 +30,7 @@
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
-| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, master image `7035cdab4050` 게시 확인 |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, current master image `f38a8c0958e7` 게시 확인 |
 | Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23

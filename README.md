@@ -64,7 +64,7 @@ flowchart LR
 
 ## 대표 장애 재현
 
-2026-08-23 실제 `local-ha` 환경에서 KEDA·Worker 설정을 바꾸지 않고 64개 stream에 `75→330→75 records/s` 부하를 가해 Worker backlog 장애를 재현했습니다.
+2026-08-23 `local-ha` 환경에서 KEDA·Worker 설정을 바꾸지 않고 64개 stream에 `75→330→75 records/s` 부하를 가해 Worker backlog 장애를 재현했습니다.
 
 | 단계 | 결과 |
 | --- | --- |
@@ -90,7 +90,7 @@ flowchart LR
     Validation --> Incident[Incident Record]
 ```
 
-- 필요한 evidence를 선택해 predefined hypothesis의 supporting·conflicting evidence와 gap을 분류합니다.
+- 필요한 evidence를 선택해 정의된 장애 가설별로 이를 지지하거나 반박하는 evidence와 부족한 evidence를 분류합니다.
 - 존재하지 않는 evidence ID나 recovery·remediation 판단처럼 허용 범위를 벗어난 출력은 validator가 거부합니다.
 - incident 발생과 recovery 판정, runtime 변경 권한은 deterministic logic에 유지합니다.
 

@@ -183,6 +183,8 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - 모든 실행 error `0.00%`, ordering `100/100`, final message/notification lag `0/0`
 - local suite `354 passed`; candidate image `messaging-portfolio:notification-batch` build·import·rollout·smoke 통과
 - dirty local candidate와 CI publication 전 조건으로 stable release baseline 승격 제외
+- dev-kafka commit `8d334b8`, CI image `8d334b8abeaf`, demo-dev commit `8640ca0`, demo-lite release `7610475` 확인
+- public demo-lite image `8640ca010960` 게시 뒤 UI `2.3.1`, API `2.1.0`, readiness `ready` 확인
 
 ## 2026-08-05 단순화 source 재검증과 Worker scaling 경계 조정
 
