@@ -98,7 +98,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.4.0`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, recorded Investigation은 sanitized static artifact만 재생합니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, 첫 화면에서 진입하는 recorded Investigation은 sanitized static artifact만 재생합니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
 - 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, `master` merge `cab7647`입니다. dev-kafka CI `#76` validate·publish와 image `66e9cc995dca`, master CI `#77` validate·publish와 image `cab76474db1c`, master tag commit `6c91f71`을 확인했습니다. local image `messaging-portfolio:v2-core-cleanup`은 `59,776,838` bytes, user `10001:10001`, live/root/OpenAPI smoke 통과입니다.
@@ -203,9 +203,9 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
-- `master` source는 Demo UI `2.3.1`, `dev-kafka` source는 `2.4.0`, API는 모두 `2.1.0`입니다. 범용 event flow와 운영 panel 계약을 유지하고 `2.4.0`은 recorded Investigation replay를 추가합니다.
+- `dev-kafka` source는 Demo UI `2.4.1`, API `2.1.0`입니다. 범용 event flow와 운영 panel 계약을 유지하고 첫 화면에서 recorded Investigation replay로 진입합니다.
 - 마지막으로 검증된 public demo-lite deployment는 UI `2.4.0`, API `2.1.0`, image `7489ab270995`입니다.
-- `demo-dev` candidate의 source Demo UI는 `2.4.0`, API는 `2.1.0`입니다. 기존 persistence/Worker evidence에 actual Phase 5.1 `local-ha`의 sanitized static Investigation replay를 추가하며, 현재 demo-lite를 재진단하거나 OpenAI API를 호출하지 않습니다.
+- `demo-dev` candidate의 source Demo UI는 `2.4.1`, API는 `2.1.0`입니다. 기존 persistence/Worker evidence와 actual Phase 5.1 `local-ha`의 sanitized static Investigation replay를 유지하고 첫 화면 replay 진입부를 추가합니다. 현재 demo-lite를 재진단하거나 OpenAI API를 호출하지 않습니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.

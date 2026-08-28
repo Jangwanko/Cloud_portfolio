@@ -2,6 +2,13 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-28 Verified AI Investigation replay visibility candidate
+
+- Demo UI `2.4.1` 첫 화면에 확정된 condition, 읽기 전용 조회 수, SUPPORTED 가설과 validator 결과를 static artifact에서 요약
+- `조사 기록 재생`은 기존 다섯 번째 가로 열로 이동해 recorded trace를 재생하며 OpenAI API 호출 없음
+- `2.4.0`의 자연스러운 한글 설명, 현재 demo-lite 상태와 과거 local-ha 기록의 분리, 저사양 topology와 autoscaling 설정 유지
+- focused generic event/demo contract `55 passed`, full suite `359 passed`, compileall·k6 inspect·diff check 통과
+
 ## 2026-08-24 demo-lite recorded AI Investigation replay
 
 - UI `2.4.0`에 actual Phase 5.1 `local-ha` diagnosis의 sanitized four-step tool/evidence/hypothesis trace 이식
