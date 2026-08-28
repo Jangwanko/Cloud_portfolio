@@ -16,7 +16,7 @@
 - 주문·결제 lifecycle은 범용 처리 경계를 보여주는 reference scenario입니다. `/v1/orders/{order_id}/events`, `category`, `payment_id`, body-only stream route는 기존 client와 과거 증거를 위한 compatibility adapter/alias로 유지하며 핵심 정체성으로 설명하지 않습니다.
 - 데모는 주문 lifecycle을 reference scenario로 사용하되 Kafka append와 DB persistence를 서로 다른 운영 증거로 보여줍니다.
 - Kafka / Worker / DLQ / PostgreSQL read model / observability는 event domain과 무관하게 수락 이후 처리와 장애 대응을 담당합니다.
-- 마지막 승격 기준 브랜치는 `master`입니다. 2026-08-10 notification batch 최적화는 `master` merge `7035cda`, CI image `7035cdab4050`으로 승격했습니다. Runtime log·backup retention·README 최적화는 `dev-kafka` source `a2b157f`, CI image `a2b157f1283f`까지 검증했습니다.
+- 마지막 승격 기준 브랜치는 `master`입니다. 2026-08-28 controlled Scenario Lab은 `dev-kafka` source `54ee42a`, CI image `54ee42a2fb29`, `master` merge `ad686f3`, CI image `ad686f35448f`까지 승격했습니다. 이 값은 source와 image publication 기준이며 local-ha runtime rollout 증거는 아닙니다.
 - 브랜치 운영 기준: `master`는 최종 병합 / 보관 장소이며, 일반 개발과 문서 개편의 기본 작업 브랜치는 `dev-kafka`입니다. 저사양 데모 관련 개발 작업은 `demo-dev`에서 진행합니다. 작업 시작 전 현재 브랜치를 확인하고, 대상 역할에 맞는 브랜치에서 진행합니다.
 - API는 PostgreSQL에 먼저 쓰지 않고 Kafka `message-ingress` topic에 append한 뒤 `202 Accepted`를 반환합니다.
 - Worker consumer group `message-worker`가 Kafka partition을 consume하고 PostgreSQL HA에 비동기로 persistence합니다.
@@ -115,7 +115,8 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.1`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary와 첫 화면 replay 진입부를 포함하며 OpenAI API를 재호출하지 않습니다. CI validation을 통과한 dev-kafka image는 `1aca8155092a`입니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.1`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary와 첫 화면 replay 진입부를 포함하며 OpenAI API를 재호출하지 않습니다. Controlled Scenario Lab을 포함해 CI validation을 통과한 dev-kafka image는 `54ee42a2fb29`입니다.
+- 2026-08-28 Phase 3.2 기준 focused suite `90 passed`, Ops Agent suite `267 passed`, full suite `626 passed`입니다. dev-kafka CI runs `33175480687`·`33175967293`, master CI run `33176442914`가 성공했고 master overlay bot commit은 `b9218c7`입니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
 - 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, master merge `cab7647`로 승격했습니다. dev-kafka CI `#76`, master CI `#77`의 validate·publish를 통과했습니다.

@@ -1,14 +1,15 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-24`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-28`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay와 첫 화면 진입부 구현·public 검증 |
-| Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI `#83` validate·publish 통과 |
-| Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
+| Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2와 `ops.diagnosis.v2` Scenario Lab | actual Gate 2 recorded replay와 controlled observation branching 구현·검증 |
+| Current source promotion | feature `b2e1037`, final source `54ee42a`, dev image `54ee42a2fb29` | dev CI runs `33175480687`·`33175967293` 성공 |
+| Current master promotion | merge `ad686f3`, image `ad686f35448f`, overlay `b9218c7` | master CI run `33176442914` 성공 |
+| Last verified local GitOps runtime | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy`; 현재 published image rollout과 구분 |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
@@ -31,7 +32,7 @@
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
-| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `a2b157f1283f`, current master image `f38a8c0958e7` 게시 확인 |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `54ee42a2fb29`, master image `ad686f35448f` 게시 확인; runtime sync는 별도 검증 |
 | Public demo-lite | release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0` | entry/replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
