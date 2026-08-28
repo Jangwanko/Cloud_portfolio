@@ -161,6 +161,15 @@ app.mount(
     StaticFiles(directory=Path(__file__).resolve().parents[1] / "demo", html=True),
     name="demo",
 )
+if settings.scenario_lab_enabled:
+    app.mount(
+        "/admin/scenario-lab",
+        StaticFiles(
+            directory=Path(__file__).resolve().parents[1] / "scenario_lab",
+            html=True,
+        ),
+        name="scenario-lab",
+    )
 
 
 async def database_unavailable_handler(_request: Request, exc: Exception):

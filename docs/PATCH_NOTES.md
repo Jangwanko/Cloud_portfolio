@@ -2,6 +2,17 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-08-28 Controlled Scenario Lab candidate
+
+- 기존 `ops.diagnosis.v1`과 adaptive Agent loop를 유지하고 acquisition provenance와 확장 hypothesis를 가진 `ops.diagnosis.v2` 추가
+- `FROZEN_PROJECTED`, `CONTROLLED_SCENARIO`, `LIVE_READ_ONLY` provenance 계약을 discriminated union으로 분리; runtime live connector는 미구현
+- Worker stage ratio, replica availability gap, PostgreSQL HA guardrail을 deterministic하게 정규화하는 controlled registry와 canonical fixture digest 검증 추가
+- Worker DB-path pressure, replica shortfall, PostgreSQL path degradation, telemetry unavailable 네 scenario 구현
+- 같은 activation의 paired fixture에서 첫 observation에 따라 PostgreSQL health와 Worker replica로 다음 tool이 달라지는 branch 검증 추가
+- 예상과 다른 allowlisted tool 선택은 숨기지 않고 `BranchEvaluation=FAIL`로 보존
+- `SCENARIO_LAB_ENABLED=true`에서만 mount하는 Local/Admin `/admin/scenario-lab/`과 deterministic recorded artifact 추가; Public Verified Replay와 demo-lite는 변경하지 않음
+- recorded Scenario CLI는 OpenAI API와 runtime source를 호출하지 않으며 `--model-mode live`만 명시적 local model 실행 허용
+
 ## 2026-08-28 Verified AI Investigation replay visibility candidate
 
 - Demo UI `2.4.1` 첫 화면에 condition, read-only tool-call 수, SUPPORTED diagnosis, validator 결과를 compact summary로 추가

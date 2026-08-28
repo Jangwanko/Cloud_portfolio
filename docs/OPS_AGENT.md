@@ -1,6 +1,6 @@
 # Read-only Operations Evidence Agent
 
-`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 고정 read-only tool을 선택하고 `ops.diagnosis.v1`을 생성합니다. Recovery v1/v2의 deterministic output과 diagnosis를 Phase 5 `ops.incident.v1` lifecycle에 연결하되 runtime data path와 control plane은 변경하지 않습니다.
+`ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 허용된 read-only tool을 선택합니다. 기존 frozen projection은 `ops.diagnosis.v1`, controlled acquisition과 확장된 원인 vocabulary는 `ops.diagnosis.v2`로 분리합니다. Recovery v1/v2의 deterministic output과 diagnosis를 Phase 5 `ops.incident.v1` lifecycle에 연결하되 runtime data path와 control plane은 변경하지 않습니다.
 
 ## Phase 경계
 
@@ -10,6 +10,7 @@
 | Phase 2: Deterministic Condition Evaluation | versioned rule로 condition의 `PRESENT` / `ABSENT` / `UNKNOWN` 판정 | v1 single-bundle baseline과 v2 sequence activation 구현 완료 |
 | Phase 2.5/2.6: Controlled Calibration | 실제 multi-stream backlog와 negative control로 positive rule 보정 | positive 3회와 negative control 3종 완료; v2 replay 통과 |
 | Phase 3: Evidence-guided Investigation | 확정된 backlog에 필요한 추가 read-only 조사와 grounded hypothesis | 구현 완료; positive run-01 live VALID와 bounded output repair 검증 |
+| Phase 3.2: Scenario Lab | 같은 activation에 다른 normalized observation을 공급해 observation-conditioned tool branching 검증 | `ops.diagnosis.v2`, controlled fixture 4개, paired branch replay 구현 |
 | Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현 완료 |
 | Phase 5/5.1: Incident Lifecycle/E2E | condition·diagnosis·recovery identity 연결, timeline·closure·current observation 분리 | actual local-ha zero-drop Gate 2와 canonical local artifact 검증 완료 |
 | Phase 5.2: Public Replay | sanitized verified incident의 recorded tool/evidence/hypothesis replay | UI `2.4.1` 첫 화면 replay 진입부 public 배포·검증 완료 |
@@ -517,6 +518,53 @@ Worker stage latency, PostgreSQL health, pod restart, partition lag 도구를 �
 repair 1회 뒤 VALID가 됐습니다. 최종 결과는 모든 causal hypothesis를
 `INSUFFICIENT`로 유지하고 `insufficient_evidence`로 중단했습니다. local-only
 artifact는 `results/ops-agent/diagnosis/20260816-positive-run-01-luna.json`입니다.
+
+## Phase 3.2 Controlled Scenario Lab - 2026-08-28
+
+Scenario Lab은 actual Phase 5.1의 immutable `CORE_BACKLOG_PRESSURE=PRESENT`
+activation reference를 고정하고 조사 단계의 observation만 통제합니다. 자연어로 원인을
+프롬프트에 주입하지 않습니다. Fixture의 raw metric을 deterministic normalizer가 비교한
+뒤 `semantic_flag`를 붙이고, 기존과 같은 zero-argument allowlisted tool loop가 다음
+조사 대상을 선택합니다.
+
+`ops.diagnosis.v2`는 v1을 유지하면서 아래 계약을 추가합니다.
+
+- acquisition provenance: `FROZEN_PROJECTED`, `CONTROLLED_SCENARIO`, `LIVE_READ_ONLY`
+- `CONTROLLED_SCENARIO`: `fixture_id`, canonical fixture digest, scenario contract version 필수
+- `LIVE_READ_ONLY`: source identity, fixed query contract, request/source timestamp 필수
+- hypothesis: `WORKER_CAPACITY_SHORTFALL_SUSPECTED`, `POSTGRES_PATH_DEGRADED_SUSPECTED` 추가
+- `investigation_session_id`, acquisition mode, branch evaluation을 diagnosis identity에 포함
+- allowlist, citation, budget, stop, forbidden claim 검증은 v2 validator가 유지
+
+현재 구현된 acquisition은 `CONTROLLED_SCENARIO`입니다. `LIVE_READ_ONLY`는 provenance
+schema와 registry interface만 예약했으며 runtime collector 연결은 아직 구현하지 않았습니다.
+Public Verified Replay도 변경하지 않았습니다.
+
+| Scenario | Observation-conditioned tool path | Result |
+| --- | --- | --- |
+| Worker DB-path pressure | stage latency -> PostgreSQL health -> Worker replica | `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED` |
+| Worker replica shortfall | stage latency -> Worker replica -> KEDA | `WORKER_CAPACITY_SHORTFALL_SUSPECTED=SUPPORTED` |
+| PostgreSQL path degradation | stage latency -> PostgreSQL health | `POSTGRES_PATH_DEGRADED_SUSPECTED=SUPPORTED` |
+| Telemetry unavailable | stage latency -> PostgreSQL health `UNAVAILABLE` | `INSUFFICIENT_EVIDENCE` |
+
+Paired fixture의 첫 tool은 모두 `get_worker_stage_latency`입니다. Stage가 scenario
+baseline 위이면 다음 tool이 `get_postgres_health`, baseline 범위이면
+`get_worker_replica_status`로 달라집니다. 예상과 다른 allowlisted tool을 모델이 선택해도
+결과를 정상 경로로 바꾸지 않고 `BranchEvaluation=FAIL`로 보존합니다.
+
+Local/Admin UI는 `/admin/scenario-lab/`에서 recorded branch policy의 네 run을 가로
+trace로 재생합니다. `CONTROLLED_SCENARIO_REPLAY` artifact만 읽으며 OpenAI API와 runtime
+source를 호출하지 않습니다. Actual model 검증은 아래 CLI에서만 명시적으로 선택합니다.
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent diagnose-scenario `
+  --scenario worker-db-path-pressure `
+  --model-mode recorded `
+  --output results\ops-agent\scenario-lab\worker-db-path-pressure.json
+```
+
+`--model-mode live`는 기존 local OpenAI credential gate를 사용합니다. Public UI에서 API
+key를 전달하거나 model request를 생성하는 경로는 없습니다.
 
 ## Phase 5 Incident Lifecycle and Actual E2E - 2026-08-23
 

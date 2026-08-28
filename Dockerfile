@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 COPY --chown=app:app portfolio ./portfolio
 COPY --chown=app:app worker ./worker
 COPY --chown=app:app demo ./demo
+COPY --chown=app:app scenario_lab ./scenario_lab
 COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app alembic.ini ./alembic.ini
 

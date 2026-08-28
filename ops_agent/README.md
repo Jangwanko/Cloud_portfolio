@@ -260,6 +260,47 @@ the initial stop-consistency validation, and passed after one tool-free output
 repair. The completed run stopped with `insufficient_evidence`; no causal
 hypothesis was promoted beyond the available citations.
 
+## Phase 3.2 controlled acquisition
+
+`ops.diagnosis.v1` and its frozen tool registry remain unchanged. The separate
+`ops.diagnosis.v2` contract adds acquisition-specific provenance and two
+operationally distinct hypotheses:
+
+- `WORKER_CAPACITY_SHORTFALL_SUSPECTED`
+- `POSTGRES_PATH_DEGRADED_SUSPECTED`
+
+Evidence provenance is a discriminated union. `FROZEN_PROJECTED` requires source
+bundle and evidence references. `CONTROLLED_SCENARIO` requires a fixture ID,
+canonical fixture digest, and scenario contract version. `LIVE_READ_ONLY`
+requires source identity, a fixed query contract, and request/source timestamps.
+The live provenance type and registry interface are defined, but runtime source
+acquisition is not connected in this phase.
+
+The tracked scenario catalog contains four complete normalized observation sets.
+The deterministic normalizer computes stage-latency ratios, Worker availability
+gaps, PostgreSQL guardrail state, partition totals, and image consistency. The
+Agent still chooses the next zero-argument allowlisted tool. Recorded offline
+runs use the same loop and v2 validator without making an API call:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent diagnose-scenario `
+  --scenario worker-replica-shortfall `
+  --model-mode recorded `
+  --output results\ops-agent\scenario-lab\worker-replica-shortfall.json
+```
+
+Use `--model-mode live` only for an explicit model-backed local run. It loads the
+same Git-ignored OpenAI configuration as Phase 3. The public replay never uses
+this path. Rebuild the deterministic local UI artifact with:
+
+```powershell
+.venv\Scripts\python.exe scripts\build_scenario_lab_artifact.py
+```
+
+The local Scenario Lab is `/admin/scenario-lab/`. It displays expected and
+selected next tools and preserves `BranchEvaluation=FAIL` when a model takes an
+unexpected allowlisted path.
+
 The negative-control runner applies that frozen candidate to a short burst, a
 180-second sustainable high load, and a single transient lag spike. It treats
 lag slope as the only growth signal; produce minus committed is an arithmetic

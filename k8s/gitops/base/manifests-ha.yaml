@@ -10,6 +10,7 @@ stringData:
   APP_ENV: "k8s-ha"
   REQUEST_BODY_MAX_BYTES: "1048576"
   DEMO_RESET_ENABLED: "true"
+  SCENARIO_LAB_ENABLED: "false"
   GENERIC_EVENTS_V2_ENABLED: "false"
   DB_HOST: "messaging-postgresql-ha-pgpool.messaging-app.svc.cluster.local"
   DB_PORT: "5432"

@@ -26,6 +26,7 @@ Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
 | Deployed DLQ summary | `https://vm118.js-banjiha.cloud/v1/dlq/ingress/summary?limit=200&sample_limit=5` | 로그인 user 범위 recent log sample 확인 |
 | Local Demo UI | `http://localhost/demo/order-dashboard.html` | 로컬 데모 확인 |
+| Local Scenario Lab | `http://localhost/admin/scenario-lab/` | controlled normalized fixture의 Agent tool branching 재생; `SCENARIO_LAB_ENABLED=true` local operator surface |
 | Local Swagger | `http://localhost/docs` | 로컬 API contract 확인 |
 | Local Grafana | `http://localhost/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | 로컬 운영 지표 확인 |
 
@@ -101,6 +102,24 @@ Public demo-lite 확인:
 - `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` 접속
 - 마지막 확인 title/badge: `Reliable Event Processing Console` / `2.4.1`; replay schema `demo.verified-incident-replay.v1`, Validator `VALID`
 - Kafka append와 DB persistence의 동시 진행률, Worker `현재/최대`, Operations Advisor 확인
+
+## Local Scenario Lab
+
+Scenario Lab은 actual incident activation을 reference로 유지하고 조사 observation만 통제합니다.
+화면의 `CONTROLLED_SCENARIO`와 `recorded` 표시는 현재 runtime 조회나 새 OpenAI 호출이
+아님을 뜻합니다.
+
+1. `http://localhost/admin/scenario-lab/` 접속
+2. 네 scenario 중 하나 선택
+3. `조사 재생` 실행
+4. 가로 trace에서 selected tool, normalized evidence, expected/selected next tool 확인
+5. 마지막 열에서 hypothesis, evidence gap, validator, branch result 확인
+
+`worker-db-path-pressure`와 `worker-replica-shortfall`은 같은 activation을 사용합니다.
+첫 stage observation의 normalized flag가 달라 두 번째 tool이 PostgreSQL health와 Worker
+replica로 갈라집니다. `telemetry-unavailable`은 PostgreSQL evidence를
+`UNAVAILABLE/PROMETHEUS_TIMEOUT`으로 보존하고 `INSUFFICIENT_EVIDENCE`로 종료합니다.
+Branch가 예상과 다르면 UI는 `FAIL`을 그대로 표시합니다.
 
 ## English Demo Script
 

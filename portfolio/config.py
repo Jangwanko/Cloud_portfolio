@@ -27,6 +27,10 @@ class Settings:
         "DEMO_RESET_ENABLED",
         "true" if os.getenv("APP_ENV", "local") in {"local", "development", "dev", "test"} else "false",
     ).lower() == "true"
+    scenario_lab_enabled: bool = os.getenv(
+        "SCENARIO_LAB_ENABLED",
+        "true" if os.getenv("APP_ENV", "local") in {"local", "development", "dev", "test"} else "false",
+    ).lower() == "true"
     generic_events_v2_enabled: bool = os.getenv(
         "GENERIC_EVENTS_V2_ENABLED",
         "true" if os.getenv("APP_ENV", "local") in {"local", "development", "dev", "test"} else "false",

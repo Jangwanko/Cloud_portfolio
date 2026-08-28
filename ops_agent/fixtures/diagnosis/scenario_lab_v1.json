@@ -1,0 +1,123 @@
+{
+  "schema_version": "ops.diagnosis.scenario-catalog.v1",
+  "scenario_contract_version": "ops.diagnosis.scenario.v1",
+  "activation": {
+    "incident_id": "phase5-20260823T152359Z-sample-008",
+    "condition": "CORE_BACKLOG_PRESSURE",
+    "state": "PRESENT",
+    "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+    "profile": "local-ha",
+    "cluster_context": "kind-messaging-ha",
+    "namespace": "messaging-app",
+    "topic": "message-ingress",
+    "consumer_group": "message-worker",
+    "source_bundle_digests": [
+      "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+      "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+      "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+    ],
+    "evidence_ids": [
+      "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+      "prometheus.kafka_consumergroup_lag.47658d42fc91",
+      "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+    ],
+    "facts": {
+      "activation_window_total_lag_records": [7205, 10497, 13936],
+      "activation_window_lag_slope_records_per_second": [120.0667, 174.4667, 230.7667],
+      "policy_version": "local-ha.conditions.v2",
+      "recovery_or_clearing_evaluated": false
+    }
+  },
+  "thresholds": {
+    "worker_stage_elevated_ratio": 2.0,
+    "postgres_max_replication_delay_bytes": 1048576.0
+  },
+  "scenarios": [
+    {
+      "fixture_id": "worker-db-path-pressure",
+      "title": "Worker DB-path pressure",
+      "fixture_digest": "05168a924b4933ae3062ba4bfdf91271bd7753b13e435fc2115b0a6ffba3aee3",
+      "expected_primary_hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+      "branch_expectations": [
+        {"after_tool_id": "get_worker_stage_latency", "expected_next_tools": ["get_postgres_health"]},
+        {"after_tool_id": "get_postgres_health", "expected_next_tools": ["get_worker_replica_status"]},
+        {"after_tool_id": "get_worker_replica_status", "expected_next_tools": []}
+      ],
+      "observations": {
+        "get_partition_lag": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"lag_slope_60s_records_per_second": 230.7667, "per_partition_lag": {"0": 2846, "1": 2689, "2": 935, "3": 1008, "4": 1810, "5": 1203, "6": 1683, "7": 1762}}},
+        "get_worker_stage_latency": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"worker_stage_mean_ms": 14.3, "scenario_baseline_ms": 3.2, "observation_count": 5134}},
+        "get_worker_replica_status": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"desired_replicas": 4, "current_replicas": 4, "ready_replicas": 4, "available_replicas": 4}},
+        "get_keda_status": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"ready": true, "active": true, "min_replicas": 2, "max_replicas": 4, "current_replicas": 4}},
+        "get_postgres_health": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"ha_mode": true, "primary_reachable": true, "standby_count": 2, "required_standby_count": 2, "sync_standby_count": 2, "required_sync_standby_count": 2, "max_replication_delay_bytes": 4920}},
+        "get_application_readiness": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"state": "ready", "postgres_component": "ready", "kafka_component": "ready"}},
+        "get_runtime_image": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"desired_image": "messaging-portfolio:verified", "pod_images": ["messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified"]}},
+        "get_pod_restart_status": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"ready_pods": 4, "restart_count": 0, "last_termination_reasons": []}},
+        "get_argocd_status": {"observed_at": "2026-08-23T15:27:08Z", "metrics": {"sync_status": "Synced", "health_status": "Healthy", "revision": "recorded-phase5"}}
+      }
+    },
+    {
+      "fixture_id": "worker-replica-shortfall",
+      "title": "Worker replica shortfall",
+      "fixture_digest": "ec5330ca72349d187cbbc3dc3adf766eb66c2298f80e06d6b40c239f77338a63",
+      "expected_primary_hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+      "branch_expectations": [
+        {"after_tool_id": "get_worker_stage_latency", "expected_next_tools": ["get_worker_replica_status"]},
+        {"after_tool_id": "get_worker_replica_status", "expected_next_tools": ["get_keda_status"]},
+        {"after_tool_id": "get_keda_status", "expected_next_tools": []}
+      ],
+      "observations": {
+        "get_partition_lag": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"lag_slope_60s_records_per_second": 230.7667, "per_partition_lag": {"0": 2846, "1": 2689, "2": 935, "3": 1008, "4": 1810, "5": 1203, "6": 1683, "7": 1762}}},
+        "get_worker_stage_latency": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"worker_stage_mean_ms": 3.3, "scenario_baseline_ms": 3.2, "observation_count": 5050}},
+        "get_worker_replica_status": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"desired_replicas": 4, "current_replicas": 4, "ready_replicas": 2, "available_replicas": 2}},
+        "get_keda_status": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"ready": true, "active": true, "min_replicas": 2, "max_replicas": 4, "current_replicas": 4}},
+        "get_postgres_health": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"ha_mode": true, "primary_reachable": true, "standby_count": 2, "required_standby_count": 2, "sync_standby_count": 2, "required_sync_standby_count": 2, "max_replication_delay_bytes": 4096}},
+        "get_application_readiness": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"state": "ready", "postgres_component": "ready", "kafka_component": "ready"}},
+        "get_runtime_image": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"desired_image": "messaging-portfolio:verified", "pod_images": ["messaging-portfolio:verified", "messaging-portfolio:verified"]}},
+        "get_pod_restart_status": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"ready_pods": 2, "restart_count": 0, "last_termination_reasons": []}},
+        "get_argocd_status": {"observed_at": "2026-08-23T15:32:08Z", "metrics": {"sync_status": "Synced", "health_status": "Healthy", "revision": "recorded-phase5"}}
+      }
+    },
+    {
+      "fixture_id": "postgres-path-degradation",
+      "title": "PostgreSQL path degradation",
+      "fixture_digest": "a3d2068fa1c3eba2fe07cc495510006d28cd9e3c29a92ae1e6fe00870d0c6660",
+      "expected_primary_hypothesis": "POSTGRES_PATH_DEGRADED_SUSPECTED",
+      "branch_expectations": [
+        {"after_tool_id": "get_worker_stage_latency", "expected_next_tools": ["get_postgres_health"]},
+        {"after_tool_id": "get_postgres_health", "expected_next_tools": []}
+      ],
+      "observations": {
+        "get_partition_lag": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"lag_slope_60s_records_per_second": 230.7667, "per_partition_lag": {"0": 2846, "1": 2689, "2": 935, "3": 1008, "4": 1810, "5": 1203, "6": 1683, "7": 1762}}},
+        "get_worker_stage_latency": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"worker_stage_mean_ms": 18.6, "scenario_baseline_ms": 3.2, "observation_count": 4800}},
+        "get_worker_replica_status": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"desired_replicas": 4, "current_replicas": 4, "ready_replicas": 4, "available_replicas": 4}},
+        "get_keda_status": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"ready": true, "active": true, "min_replicas": 2, "max_replicas": 4, "current_replicas": 4}},
+        "get_postgres_health": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"ha_mode": true, "primary_reachable": true, "standby_count": 1, "required_standby_count": 2, "sync_standby_count": 0, "required_sync_standby_count": 2, "max_replication_delay_bytes": 2097152}},
+        "get_application_readiness": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"state": "degraded", "postgres_component": "degraded", "kafka_component": "ready"}},
+        "get_runtime_image": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"desired_image": "messaging-portfolio:verified", "pod_images": ["messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified"]}},
+        "get_pod_restart_status": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"ready_pods": 4, "restart_count": 0, "last_termination_reasons": []}},
+        "get_argocd_status": {"observed_at": "2026-08-23T15:37:08Z", "metrics": {"sync_status": "Synced", "health_status": "Healthy", "revision": "recorded-phase5"}}
+      }
+    },
+    {
+      "fixture_id": "telemetry-unavailable",
+      "title": "Telemetry unavailable",
+      "fixture_digest": "967c00a306b1b5325e534eacd02acd07d30ab69aa3c5467cb95512937e6912c6",
+      "expected_primary_hypothesis": "INSUFFICIENT_EVIDENCE",
+      "branch_expectations": [
+        {"after_tool_id": "get_worker_stage_latency", "expected_next_tools": ["get_postgres_health"]},
+        {"after_tool_id": "get_postgres_health", "expected_next_tools": []}
+      ],
+      "observations": {
+        "get_partition_lag": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"lag_slope_60s_records_per_second": 230.7667, "per_partition_lag": {"0": 2846, "1": 2689, "2": 935, "3": 1008, "4": 1810, "5": 1203, "6": 1683, "7": 1762}}},
+        "get_worker_stage_latency": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"worker_stage_mean_ms": 14.3, "scenario_baseline_ms": 3.2, "observation_count": 120}},
+        "get_worker_replica_status": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"desired_replicas": 4, "current_replicas": 4, "ready_replicas": 4, "available_replicas": 4}},
+        "get_keda_status": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"ready": true, "active": true, "min_replicas": 2, "max_replicas": 4, "current_replicas": 4}},
+        "get_postgres_health": {"status": "UNAVAILABLE", "observed_at": "2026-08-23T15:42:08Z", "freshness": "UNKNOWN", "max_age_seconds": 15.0, "metrics": {}, "error_code": "PROMETHEUS_TIMEOUT"},
+        "get_application_readiness": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"state": "ready", "postgres_component": "unknown", "kafka_component": "ready"}},
+        "get_runtime_image": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"desired_image": "messaging-portfolio:verified", "pod_images": ["messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified", "messaging-portfolio:verified"]}},
+        "get_pod_restart_status": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"ready_pods": 4, "restart_count": 0, "last_termination_reasons": []}},
+        "get_argocd_status": {"observed_at": "2026-08-23T15:42:08Z", "metrics": {"sync_status": "Synced", "health_status": "Healthy", "revision": "recorded-phase5"}}
+      }
+    }
+  ]
+}

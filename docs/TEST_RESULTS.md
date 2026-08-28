@@ -18,6 +18,7 @@
 | Ops Agent Phase 2.5 | 64-stream Worker backlog 3회, 15초 evidence timeline | 세 run `COMPLETE`; v2 replay에서 모두 `CORE_BACKLOG_PRESSURE=PRESENT` |
 | Ops Agent Phase 2.6 negative controls | short burst·sustainable high·single transient spike | 세 control `COMPLETE`; v2 replay에서 `PRESENT` 없음, v1 미변경 |
 | Ops Agent Phase 3.1 | single grounded Diagnosis Agent, 9 read-only tools, bounded output repair | offline golden 9개와 repair fixture 5개 통과; Luna live dry-run VALID |
+| Ops Agent Phase 3.2 | `ops.diagnosis.v2`, controlled acquisition, observation-conditioned branching | 4 scenario와 paired branch 모두 recorded replay PASS; OpenAI/runtime source 미호출 |
 | Ops Agent Phase 4 calibration | arrival-rate A/B/C/E/F, E 3회와 F 1회 recovery | actual `local-ha` COMPLETE; 원본 artifact hash PASS |
 | Ops Agent Phase 4.1 recovery | deterministic recovery policy v1 ACTIVE/RECOVERING/UNKNOWN | actual E 3회/F 1회 replay에서 모두 RECOVERING 관측; v1 RECOVERED pending |
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
@@ -267,6 +268,31 @@ global health, incident clearing, 새 incident 분리 또는 remediation 승인�
   artifact/hash validation, changed-file secret scan, diff check `PASS`
 - runtime boundary: workload API write만 사용; OpenAI API와 Kubernetes/KEDA/Worker/
   Argo/Kafka offset/DB control-plane write 없음
+
+## Ops Agent Phase 3.2 Scenario Lab - 2026-08-28
+
+Actual Phase 5.1 `CORE_BACKLOG_PRESSURE=PRESENT` evaluation ID와 세 source bundle digest를
+공통 activation으로 고정했습니다. 네 fixture는 allowlisted tool 9개의 observation을 모두
+정의하며 fixture digest 변경을 무결성 오류로 처리합니다. Recorded mode는 OpenAI API와
+runtime source를 호출하지 않고 실제 v2 Agent loop와 validator를 통과합니다.
+
+| Fixture | Tool sequence | Final result | Branch |
+| --- | --- | --- | --- |
+| `worker-db-path-pressure` | stage latency -> PostgreSQL health -> Worker replica | `WORKER_PATH_PRESSURE_SUSPECTED=SUPPORTED` | `3/3 PASS` |
+| `worker-replica-shortfall` | stage latency -> Worker replica -> KEDA | `WORKER_CAPACITY_SHORTFALL_SUSPECTED=SUPPORTED` | `3/3 PASS` |
+| `postgres-path-degradation` | stage latency -> PostgreSQL health | `POSTGRES_PATH_DEGRADED_SUSPECTED=SUPPORTED` | `2/2 PASS` |
+| `telemetry-unavailable` | stage latency -> PostgreSQL health | `INSUFFICIENT_EVIDENCE`; `PROMETHEUS_TIMEOUT` gap | `2/2 PASS` |
+
+Paired fixture에서 첫 tool은 `get_worker_stage_latency`로 동일합니다. Normalized flag가
+`ABOVE_SCENARIO_BASELINE`이면 두 번째 tool은 `get_postgres_health`,
+`WITHIN_SCENARIO_BASELINE`이면 `get_worker_replica_status`였습니다. 별도 adversarial
+client가 `get_runtime_image`를 선택한 경우 completed diagnosis contract는 VALID였지만
+branch evaluation은 `FAIL`로 보존됐습니다.
+
+Focused Scenario/Phase 3/Demo contract suite는 `90 passed`, Ops Agent suite는
+`267 passed`, full suite는 `626 passed`입니다. Compileall, 두 k6 script inspect,
+local Scenario Lab HTML/JSON HTTP `200`, artifact 재현성, diff/secret/path 검증을
+통과했습니다. Recorded scenario 실행은 OpenAI API와 runtime source를 호출하지 않았습니다.
 
 ## Ops Agent Phase 3 Diagnosis Agent - 2026-08-16
 

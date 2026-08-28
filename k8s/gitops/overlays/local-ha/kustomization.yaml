@@ -18,3 +18,8 @@ patches:
         value:
           name: GENERIC_EVENTS_V2_ENABLED
           value: "true"
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SCENARIO_LAB_ENABLED
+          value: "true"

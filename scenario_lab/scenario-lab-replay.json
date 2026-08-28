@@ -1,0 +1,909 @@
+{
+  "schema_version": "demo.scenario-lab-replay.v1",
+  "classification": "CONTROLLED_SCENARIO_REPLAY",
+  "catalog_digest": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+  "generated_at": "2026-08-28T00:00:00Z",
+  "activation": {
+    "incident_id": "phase5-20260823T152359Z-sample-008",
+    "condition": "CORE_BACKLOG_PRESSURE",
+    "state": "PRESENT",
+    "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+    "profile": "local-ha",
+    "cluster_context": "kind-messaging-ha",
+    "namespace": "messaging-app",
+    "topic": "message-ingress",
+    "consumer_group": "message-worker",
+    "source_bundle_digests": [
+      "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+      "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+      "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+    ],
+    "evidence_ids": [
+      "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+      "prometheus.kafka_consumergroup_lag.47658d42fc91",
+      "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+    ],
+    "facts": {
+      "activation_window_total_lag_records": [
+        7205,
+        10497,
+        13936
+      ],
+      "activation_window_lag_slope_records_per_second": [
+        120.0667,
+        174.4667,
+        230.7667
+      ],
+      "policy_version": "local-ha.conditions.v2",
+      "recovery_or_clearing_evaluated": false
+    }
+  },
+  "scenarios": [
+    {
+      "fixture_id": "worker-db-path-pressure",
+      "title": "Worker DB-path pressure",
+      "expected_primary_hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+      "run": {
+        "schema_version": "ops.diagnosis.v2",
+        "diagnosis_id": "58c21d6a6336eb123220ab9fb265b953aec8fedb3a9e98e1b629abc74b8d3071",
+        "incident_id": "phase5-20260823T152359Z-sample-008",
+        "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+        "investigation_session_id": "52957d45dfdda491bd407f40aec8393518ca7e0e05a83ecbb5a1b5cfbcbf4af7",
+        "acquisition_mode": "CONTROLLED_SCENARIO",
+        "context": {
+          "profile": "local-ha",
+          "cluster_context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker",
+          "activation_source_bundle_digests": [
+            "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+            "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+            "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+          ]
+        },
+        "policy": {
+          "policy_version": "local-ha.diagnosis.v2",
+          "required_condition_schema": "ops.conditions.v2",
+          "required_condition": "CORE_BACKLOG_PRESSURE",
+          "required_state": "PRESENT",
+          "tool_registry_version": "ops.diagnosis.tools.v2",
+          "agent_version": "ops.diagnosis.agent.v2",
+          "model": "recorded-branch-policy-v1",
+          "model_mode": "recorded",
+          "reasoning_effort": "low",
+          "max_steps": 4,
+          "max_tool_calls": 4,
+          "max_output_tokens": 1600,
+          "request_timeout_seconds": 30.0,
+          "max_retries": 0,
+          "max_output_repairs": 0
+        },
+        "input_conditions": {
+          "CORE_BACKLOG_PRESSURE": "PRESENT"
+        },
+        "initial_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "additional_evidence": [
+          {
+            "evidence_id": "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "tool_id": "get_worker_stage_latency",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:27:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:27:08Z",
+              "newest_source_timestamp": "2026-08-23T15:27:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_stage_latency_observation",
+            "summary": {
+              "worker_stage_mean_ms": 14.3,
+              "scenario_baseline_ms": 3.2,
+              "observation_count": 5134,
+              "relative_to_baseline": 4.46875,
+              "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+              "commit_latency": "UNAVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-db-path-pressure",
+              "fixture_digest": "05168a924b4933ae3062ba4bfdf91271bd7753b13e435fc2115b0a6ffba3aee3",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_postgres_health.a55b1ced3fd2cab661eb437e",
+            "tool_id": "get_postgres_health",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:27:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:27:08Z",
+              "newest_source_timestamp": "2026-08-23T15:27:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_postgres_health_observation",
+            "summary": {
+              "ha_mode": true,
+              "primary_reachable": true,
+              "standby_count": 2,
+              "required_standby_count": 2,
+              "sync_standby_count": 2,
+              "required_sync_standby_count": 2,
+              "max_replication_delay_bytes": 4920,
+              "semantic_flag": "POSTGRES_PATH_HEALTHY"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-db-path-pressure",
+              "fixture_digest": "05168a924b4933ae3062ba4bfdf91271bd7753b13e435fc2115b0a6ffba3aee3",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_worker_replica_status.01cb532d4038e4c53513601a",
+            "tool_id": "get_worker_replica_status",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:27:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:27:08Z",
+              "newest_source_timestamp": "2026-08-23T15:27:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_replica_status_observation",
+            "summary": {
+              "desired_replicas": 4,
+              "current_replicas": 4,
+              "ready_replicas": 4,
+              "available_replicas": 4,
+              "availability_gap": 0,
+              "semantic_flag": "WORKER_CAPACITY_AVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-db-path-pressure",
+              "fixture_digest": "05168a924b4933ae3062ba4bfdf91271bd7753b13e435fc2115b0a6ffba3aee3",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          }
+        ],
+        "steps": [
+          {
+            "step": 1,
+            "tool_id": "get_worker_stage_latency",
+            "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+            "requested_at": "2026-08-28T00:00:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ]
+          },
+          {
+            "step": 2,
+            "tool_id": "get_postgres_health",
+            "reason_code": "CHECK_POSTGRES_HEALTH",
+            "requested_at": "2026-08-28T00:00:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_postgres_health.a55b1ced3fd2cab661eb437e"
+            ]
+          },
+          {
+            "step": 3,
+            "tool_id": "get_worker_replica_status",
+            "reason_code": "CHECK_WORKER_REPLICA_PATH",
+            "requested_at": "2026-08-28T00:00:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_replica_status.01cb532d4038e4c53513601a"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "reason_codes": [
+              "WORKER_STAGE_ABOVE_SCENARIO_BASELINE"
+            ],
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "COMMIT_LATENCY_UNAVAILABLE"
+            ]
+          }
+        ],
+        "stop_reason": "sufficient_evidence",
+        "steps_used": 3,
+        "started_at": "2026-08-28T00:00:00Z",
+        "completed_at": "2026-08-28T00:00:01Z",
+        "model_response_ids": [
+          "recorded-branch-turn-1",
+          "recorded-branch-turn-2",
+          "recorded-branch-turn-3",
+          "recorded-branch-turn-4"
+        ],
+        "model_turns": 4,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "api_requests": 0
+        },
+        "validation": {
+          "schema_valid": true,
+          "citations_valid": true,
+          "tool_calls_valid": true,
+          "step_budget_valid": true,
+          "stop_valid": true,
+          "forbidden_claims_absent": true
+        },
+        "output_repairs_used": 0,
+        "validation_attempts": [
+          {
+            "attempt": 1,
+            "phase": "initial",
+            "result": "VALID",
+            "response_id": "recorded-branch-turn-4",
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "branch_evaluations": [
+          {
+            "after_tool_id": "get_worker_stage_latency",
+            "expected_next_tools": [
+              "get_postgres_health"
+            ],
+            "selected_next_tool": "get_postgres_health",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_postgres_health",
+            "expected_next_tools": [
+              "get_worker_replica_status"
+            ],
+            "selected_next_tool": "get_worker_replica_status",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_worker_replica_status",
+            "expected_next_tools": [],
+            "selected_next_tool": null,
+            "result": "PASS"
+          }
+        ]
+      }
+    },
+    {
+      "fixture_id": "worker-replica-shortfall",
+      "title": "Worker replica shortfall",
+      "expected_primary_hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+      "run": {
+        "schema_version": "ops.diagnosis.v2",
+        "diagnosis_id": "38288df11f8ffa2cc00b2fd32da88437cc633cc68e9b0f5bc0f92fa7b39bf00f",
+        "incident_id": "phase5-20260823T152359Z-sample-008",
+        "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+        "investigation_session_id": "0bf08c9065b97cfc79190fb1f79e5c0cd36b7ffdb491a47b665dcdfecfad492e",
+        "acquisition_mode": "CONTROLLED_SCENARIO",
+        "context": {
+          "profile": "local-ha",
+          "cluster_context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker",
+          "activation_source_bundle_digests": [
+            "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+            "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+            "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+          ]
+        },
+        "policy": {
+          "policy_version": "local-ha.diagnosis.v2",
+          "required_condition_schema": "ops.conditions.v2",
+          "required_condition": "CORE_BACKLOG_PRESSURE",
+          "required_state": "PRESENT",
+          "tool_registry_version": "ops.diagnosis.tools.v2",
+          "agent_version": "ops.diagnosis.agent.v2",
+          "model": "recorded-branch-policy-v1",
+          "model_mode": "recorded",
+          "reasoning_effort": "low",
+          "max_steps": 4,
+          "max_tool_calls": 4,
+          "max_output_tokens": 1600,
+          "request_timeout_seconds": 30.0,
+          "max_retries": 0,
+          "max_output_repairs": 0
+        },
+        "input_conditions": {
+          "CORE_BACKLOG_PRESSURE": "PRESENT"
+        },
+        "initial_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "additional_evidence": [
+          {
+            "evidence_id": "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "tool_id": "get_worker_stage_latency",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:32:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:32:08Z",
+              "newest_source_timestamp": "2026-08-23T15:32:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_stage_latency_observation",
+            "summary": {
+              "worker_stage_mean_ms": 3.3,
+              "scenario_baseline_ms": 3.2,
+              "observation_count": 5050,
+              "relative_to_baseline": 1.0312499999999998,
+              "semantic_flag": "WITHIN_SCENARIO_BASELINE",
+              "commit_latency": "UNAVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-replica-shortfall",
+              "fixture_digest": "ec5330ca72349d187cbbc3dc3adf766eb66c2298f80e06d6b40c239f77338a63",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "tool_id": "get_worker_replica_status",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:32:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:32:08Z",
+              "newest_source_timestamp": "2026-08-23T15:32:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_replica_status_observation",
+            "summary": {
+              "desired_replicas": 4,
+              "current_replicas": 4,
+              "ready_replicas": 2,
+              "available_replicas": 2,
+              "availability_gap": 2,
+              "semantic_flag": "WORKER_CAPACITY_SHORTFALL"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-replica-shortfall",
+              "fixture_digest": "ec5330ca72349d187cbbc3dc3adf766eb66c2298f80e06d6b40c239f77338a63",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_keda_status.20b613c4b6ffa80688b13799",
+            "tool_id": "get_keda_status",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:32:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:32:08Z",
+              "newest_source_timestamp": "2026-08-23T15:32:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_keda_status_observation",
+            "summary": {
+              "ready": true,
+              "active": true,
+              "min_replicas": 2,
+              "max_replicas": 4,
+              "current_replicas": 4
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "worker-replica-shortfall",
+              "fixture_digest": "ec5330ca72349d187cbbc3dc3adf766eb66c2298f80e06d6b40c239f77338a63",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          }
+        ],
+        "steps": [
+          {
+            "step": 1,
+            "tool_id": "get_worker_stage_latency",
+            "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+            "requested_at": "2026-08-28T00:01:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5"
+            ]
+          },
+          {
+            "step": 2,
+            "tool_id": "get_worker_replica_status",
+            "reason_code": "CHECK_WORKER_REPLICA_PATH",
+            "requested_at": "2026-08-28T00:01:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ]
+          },
+          {
+            "step": 3,
+            "tool_id": "get_keda_status",
+            "reason_code": "CHECK_KEDA_ACTIVITY",
+            "requested_at": "2026-08-28T00:01:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_keda_status.20b613c4b6ffa80688b13799"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "reason_codes": [
+              "WORKER_AVAILABLE_BELOW_DESIRED"
+            ],
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+              "diagnosis.get_keda_status.20b613c4b6ffa80688b13799"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "sufficient_evidence",
+        "steps_used": 3,
+        "started_at": "2026-08-28T00:01:00Z",
+        "completed_at": "2026-08-28T00:01:01Z",
+        "model_response_ids": [
+          "recorded-branch-turn-1",
+          "recorded-branch-turn-2",
+          "recorded-branch-turn-3",
+          "recorded-branch-turn-4"
+        ],
+        "model_turns": 4,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "api_requests": 0
+        },
+        "validation": {
+          "schema_valid": true,
+          "citations_valid": true,
+          "tool_calls_valid": true,
+          "step_budget_valid": true,
+          "stop_valid": true,
+          "forbidden_claims_absent": true
+        },
+        "output_repairs_used": 0,
+        "validation_attempts": [
+          {
+            "attempt": 1,
+            "phase": "initial",
+            "result": "VALID",
+            "response_id": "recorded-branch-turn-4",
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "branch_evaluations": [
+          {
+            "after_tool_id": "get_worker_stage_latency",
+            "expected_next_tools": [
+              "get_worker_replica_status"
+            ],
+            "selected_next_tool": "get_worker_replica_status",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_worker_replica_status",
+            "expected_next_tools": [
+              "get_keda_status"
+            ],
+            "selected_next_tool": "get_keda_status",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_keda_status",
+            "expected_next_tools": [],
+            "selected_next_tool": null,
+            "result": "PASS"
+          }
+        ]
+      }
+    },
+    {
+      "fixture_id": "postgres-path-degradation",
+      "title": "PostgreSQL path degradation",
+      "expected_primary_hypothesis": "POSTGRES_PATH_DEGRADED_SUSPECTED",
+      "run": {
+        "schema_version": "ops.diagnosis.v2",
+        "diagnosis_id": "5ae0e2fd323ebd04ef20829e2404d94c4096499ea74747e379310585e8102df6",
+        "incident_id": "phase5-20260823T152359Z-sample-008",
+        "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+        "investigation_session_id": "502125e9fe2b5f383039f648ad57e06c231a2836a9765747612c83c08a89ad2d",
+        "acquisition_mode": "CONTROLLED_SCENARIO",
+        "context": {
+          "profile": "local-ha",
+          "cluster_context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker",
+          "activation_source_bundle_digests": [
+            "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+            "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+            "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+          ]
+        },
+        "policy": {
+          "policy_version": "local-ha.diagnosis.v2",
+          "required_condition_schema": "ops.conditions.v2",
+          "required_condition": "CORE_BACKLOG_PRESSURE",
+          "required_state": "PRESENT",
+          "tool_registry_version": "ops.diagnosis.tools.v2",
+          "agent_version": "ops.diagnosis.agent.v2",
+          "model": "recorded-branch-policy-v1",
+          "model_mode": "recorded",
+          "reasoning_effort": "low",
+          "max_steps": 4,
+          "max_tool_calls": 4,
+          "max_output_tokens": 1600,
+          "request_timeout_seconds": 30.0,
+          "max_retries": 0,
+          "max_output_repairs": 0
+        },
+        "input_conditions": {
+          "CORE_BACKLOG_PRESSURE": "PRESENT"
+        },
+        "initial_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "additional_evidence": [
+          {
+            "evidence_id": "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "tool_id": "get_worker_stage_latency",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:37:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:37:08Z",
+              "newest_source_timestamp": "2026-08-23T15:37:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_stage_latency_observation",
+            "summary": {
+              "worker_stage_mean_ms": 18.6,
+              "scenario_baseline_ms": 3.2,
+              "observation_count": 4800,
+              "relative_to_baseline": 5.8125,
+              "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+              "commit_latency": "UNAVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "postgres-path-degradation",
+              "fixture_digest": "a3d2068fa1c3eba2fe07cc495510006d28cd9e3c29a92ae1e6fe00870d0c6660",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_postgres_health.438cea86974175db5bce7dda",
+            "tool_id": "get_postgres_health",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:37:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:37:08Z",
+              "newest_source_timestamp": "2026-08-23T15:37:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_postgres_health_observation",
+            "summary": {
+              "ha_mode": true,
+              "primary_reachable": true,
+              "standby_count": 1,
+              "required_standby_count": 2,
+              "sync_standby_count": 0,
+              "required_sync_standby_count": 2,
+              "max_replication_delay_bytes": 2097152,
+              "semantic_flag": "POSTGRES_PATH_DEGRADED"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "postgres-path-degradation",
+              "fixture_digest": "a3d2068fa1c3eba2fe07cc495510006d28cd9e3c29a92ae1e6fe00870d0c6660",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          }
+        ],
+        "steps": [
+          {
+            "step": 1,
+            "tool_id": "get_worker_stage_latency",
+            "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+            "requested_at": "2026-08-28T00:02:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0"
+            ]
+          },
+          {
+            "step": 2,
+            "tool_id": "get_postgres_health",
+            "reason_code": "CHECK_POSTGRES_HEALTH",
+            "requested_at": "2026-08-28T00:02:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "POSTGRES_PATH_DEGRADED_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "reason_codes": [
+              "POSTGRES_PATH_GUARDRAIL_BREACH"
+            ],
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "stop_reason": "sufficient_evidence",
+        "steps_used": 2,
+        "started_at": "2026-08-28T00:02:00Z",
+        "completed_at": "2026-08-28T00:02:01Z",
+        "model_response_ids": [
+          "recorded-branch-turn-1",
+          "recorded-branch-turn-2",
+          "recorded-branch-turn-3"
+        ],
+        "model_turns": 3,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "api_requests": 0
+        },
+        "validation": {
+          "schema_valid": true,
+          "citations_valid": true,
+          "tool_calls_valid": true,
+          "step_budget_valid": true,
+          "stop_valid": true,
+          "forbidden_claims_absent": true
+        },
+        "output_repairs_used": 0,
+        "validation_attempts": [
+          {
+            "attempt": 1,
+            "phase": "initial",
+            "result": "VALID",
+            "response_id": "recorded-branch-turn-3",
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "branch_evaluations": [
+          {
+            "after_tool_id": "get_worker_stage_latency",
+            "expected_next_tools": [
+              "get_postgres_health"
+            ],
+            "selected_next_tool": "get_postgres_health",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_postgres_health",
+            "expected_next_tools": [],
+            "selected_next_tool": null,
+            "result": "PASS"
+          }
+        ]
+      }
+    },
+    {
+      "fixture_id": "telemetry-unavailable",
+      "title": "Telemetry unavailable",
+      "expected_primary_hypothesis": "INSUFFICIENT_EVIDENCE",
+      "run": {
+        "schema_version": "ops.diagnosis.v2",
+        "diagnosis_id": "aefabb9c08ebd6fb4ed9113fef0af93d84f3c18d8df19daf1f3b9067d1218c24",
+        "incident_id": "phase5-20260823T152359Z-sample-008",
+        "condition_evaluation_id": "687fb490ea6ae0975f3548e608e230b013cdd786cb20d5fa4a4b8f421468dd1d",
+        "investigation_session_id": "6fa2c74bc5aebaa405788a96fc0876393b2bde8e4ce637c458e28716cf8475f5",
+        "acquisition_mode": "CONTROLLED_SCENARIO",
+        "context": {
+          "profile": "local-ha",
+          "cluster_context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker",
+          "activation_source_bundle_digests": [
+            "bb45ad087612e651111d4cae350785f4e50715dff81a7e1e887cece02a608cd4",
+            "0f07c0069c2d1a81f7d90b89284bb3bbeafbd9317d28d782ea56a0ddd6f90b85",
+            "eb634713fa94f2eef2846b5c69e91208a5e67f549feda94712332d77291ffb46"
+          ]
+        },
+        "policy": {
+          "policy_version": "local-ha.diagnosis.v2",
+          "required_condition_schema": "ops.conditions.v2",
+          "required_condition": "CORE_BACKLOG_PRESSURE",
+          "required_state": "PRESENT",
+          "tool_registry_version": "ops.diagnosis.tools.v2",
+          "agent_version": "ops.diagnosis.agent.v2",
+          "model": "recorded-branch-policy-v1",
+          "model_mode": "recorded",
+          "reasoning_effort": "low",
+          "max_steps": 4,
+          "max_tool_calls": 4,
+          "max_output_tokens": 1600,
+          "request_timeout_seconds": 30.0,
+          "max_retries": 0,
+          "max_output_repairs": 0
+        },
+        "input_conditions": {
+          "CORE_BACKLOG_PRESSURE": "PRESENT"
+        },
+        "initial_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "additional_evidence": [
+          {
+            "evidence_id": "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "tool_id": "get_worker_stage_latency",
+            "status": "OK",
+            "observed_at": "2026-08-23T15:42:08Z",
+            "freshness": {
+              "status": "FRESH",
+              "oldest_source_timestamp": "2026-08-23T15:42:08Z",
+              "newest_source_timestamp": "2026-08-23T15:42:08Z",
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_worker_stage_latency_observation",
+            "summary": {
+              "worker_stage_mean_ms": 14.3,
+              "scenario_baseline_ms": 3.2,
+              "observation_count": 120,
+              "relative_to_baseline": 4.46875,
+              "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+              "commit_latency": "UNAVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "telemetry-unavailable",
+              "fixture_digest": "967c00a306b1b5325e534eacd02acd07d30ab69aa3c5467cb95512937e6912c6",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": null
+          },
+          {
+            "evidence_id": "diagnosis.get_postgres_health.c73e9fd56f27dcd46e993c8c",
+            "tool_id": "get_postgres_health",
+            "status": "UNAVAILABLE",
+            "observed_at": "2026-08-23T15:42:08Z",
+            "freshness": {
+              "status": "UNKNOWN",
+              "oldest_source_timestamp": null,
+              "newest_source_timestamp": null,
+              "max_age_seconds": 15.0
+            },
+            "semantic_type": "normalized_get_postgres_health_observation",
+            "summary": {
+              "observation": "UNAVAILABLE"
+            },
+            "provenance": {
+              "acquisition_mode": "CONTROLLED_SCENARIO",
+              "fixture_id": "telemetry-unavailable",
+              "fixture_digest": "967c00a306b1b5325e534eacd02acd07d30ab69aa3c5467cb95512937e6912c6",
+              "scenario_contract_version": "ops.diagnosis.scenario.v1"
+            },
+            "error_code": "PROMETHEUS_TIMEOUT"
+          }
+        ],
+        "steps": [
+          {
+            "step": 1,
+            "tool_id": "get_worker_stage_latency",
+            "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+            "requested_at": "2026-08-28T00:03:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1"
+            ]
+          },
+          {
+            "step": 2,
+            "tool_id": "get_postgres_health",
+            "reason_code": "CHECK_POSTGRES_HEALTH",
+            "requested_at": "2026-08-28T00:03:00Z",
+            "returned_evidence_ids": [
+              "diagnosis.get_postgres_health.c73e9fd56f27dcd46e993c8c"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "INSUFFICIENT_EVIDENCE",
+            "support_status": "INSUFFICIENT",
+            "reason_codes": [
+              "INSUFFICIENT_EVIDENCE"
+            ],
+            "supporting_evidence_ids": [],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "POSTGRES_HEALTH_TELEMETRY_UNAVAILABLE"
+            ]
+          }
+        ],
+        "stop_reason": "insufficient_evidence",
+        "steps_used": 2,
+        "started_at": "2026-08-28T00:03:00Z",
+        "completed_at": "2026-08-28T00:03:01Z",
+        "model_response_ids": [
+          "recorded-branch-turn-1",
+          "recorded-branch-turn-2",
+          "recorded-branch-turn-3"
+        ],
+        "model_turns": 3,
+        "usage": {
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "api_requests": 0
+        },
+        "validation": {
+          "schema_valid": true,
+          "citations_valid": true,
+          "tool_calls_valid": true,
+          "step_budget_valid": true,
+          "stop_valid": true,
+          "forbidden_claims_absent": true
+        },
+        "output_repairs_used": 0,
+        "validation_attempts": [
+          {
+            "attempt": 1,
+            "phase": "initial",
+            "result": "VALID",
+            "response_id": "recorded-branch-turn-3",
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "branch_evaluations": [
+          {
+            "after_tool_id": "get_worker_stage_latency",
+            "expected_next_tools": [
+              "get_postgres_health"
+            ],
+            "selected_next_tool": "get_postgres_health",
+            "result": "PASS"
+          },
+          {
+            "after_tool_id": "get_postgres_health",
+            "expected_next_tools": [],
+            "selected_next_tool": null,
+            "result": "PASS"
+          }
+        ]
+      }
+    }
+  ]
+}
