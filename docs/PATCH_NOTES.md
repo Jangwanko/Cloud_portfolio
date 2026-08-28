@@ -10,6 +10,8 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - 기존 five-column workspace, expandable evidence, hypothesis gap, validator와 read-only boundary는 유지
 - Operations Advisor는 `Deterministic`, AI Investigation은 `Recorded LLM run`으로 역할을 구분
 - focused docs/demo contract `87 passed`, full suite `609 passed`, compileall과 두 k6 script inspect 통과
+- dev-kafka source `1aca815`, CI image `1aca8155092a`; demo-dev source `ece446d`, release `2fc8649`, image `ece446d47370`
+- public UI/replay/readiness/ops summary HTTP `200`, UI `2.4.1`, Validator `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` 확인
 
 ## 2026-08-24 Phase 5.2 recorded AI Investigation replay candidate
 

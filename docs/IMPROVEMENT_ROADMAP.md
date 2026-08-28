@@ -11,7 +11,6 @@
 3. **지속 가능 처리량 확정**: 15분 이상 일정 입력률에서 lag가 증가하지 않는 최대 처리량, DB pool·lock·commit latency 동시 측정
 4. **복구 지점 자동화**: object storage 복제, cluster-loss 복구, scheduled dump 무결성 검사, 정기 restore drill과 RPO/RTO 기록
 5. **incident 연속성**: closed incident 뒤 regrowth의 automatic reopen/new incident correlation 정책과 false-correlation regression
-6. **public replay visibility**: sanitized recorded investigation은 demo-lite `2.4.0`에 배포 완료; `2.4.1` 첫 화면 요약과 기존 trace 재생 진입부 배포 검증 대기
 
 2026-08-10 notification batch candidate의 clean 64-stream A/B는 fixed `2`와 KEDA `2→4`를 각각 3회 실행했습니다. KEDA backlog 처리율은 `13.38%` 증가했고 평균 drain은 `12.78%` 감소했습니다. KEDA p95 평균은 `6.49%` 증가했습니다. 반복 범위는 분리됐지만 dirty local image 조건이므로 stable release baseline은 유지하지 않습니다.
 
@@ -26,6 +25,7 @@
 - Phase 3.1 single Diagnosis Agent: `ops.diagnosis.v1`, normalized tool 9개, citation/stop validator, offline golden 9개와 bounded output repair fixture 5개; positive run-01 live VALID
 - Phase 4/4.1/4.2 recovery: arrival-rate A/B/C/E/F로 drain과 MEDIUM envelope 재진입을 실측하고 deterministic `ACTIVE / RECOVERING / UNKNOWN / RECOVERED` 구현
 - Phase 5/5.1 incident lifecycle: condition·diagnosis·recovery identity/timeline, strict zero-drop workload gate, actual `75→330→75/s` local-ha E2E, `CLOSED / RECOVERED` canonical local artifact와 post-closure current observation 분리 완료
+- Phase 5.2 public replay: sanitized artifact와 validator/read-only trace, UI `2.4.1` 첫 화면 진입부를 demo-lite에 배포·검증
 - API `2.1.0` 단순화 image build·non-root smoke·local cluster 동일 image rollout
 - generic v2 contract, PostgreSQL read, `/ops/summary`, ordering·DB outage suite 재검증
 - notification Worker 독립 KEDA 추가, core `2→4`·notification `1→2` 상한 적용
@@ -47,7 +47,7 @@
 | Phase 3 Guided Investigation | v2 `PRESENT` 뒤 추가 normalized read-only evidence 선택과 grounded hypothesis | 구현 완료; Luna live dry-run과 tool-free output repair 검증 |
 | Phase 4 Recovery Evaluation | varying traffic calibration, continuous/zero-ingress drain, false-recovery 차단, deterministic recovery state | recovery v1 ACTIVE/RECOVERING/UNKNOWN 및 versioned v2 MEDIUM 3-capture RECOVERED 완료; global clearing 의미는 부여하지 않음 |
 | Phase 5 Incident Lifecycle | condition·diagnosis·recovery identity, immutable timeline, strict workload gate, closure/current observation 분리 | actual local-ha Gate 2 완료; automatic reopen/correlation 대기 |
-| Phase 5.2 Public Replay | sanitized verified artifact, hash validator, recorded tool→evidence→hypothesis trace | UI `2.4.0` public 배포 완료; `2.4.1` 첫 화면 replay 진입부 source candidate |
+| Phase 5.2 Public Replay | sanitized verified artifact, hash validator, recorded tool→evidence→hypothesis trace | UI `2.4.1` 첫 화면 replay 진입부 public 배포·검증 완료 |
 
 Phase 2는 bundle 전체가 `PARTIAL`이라는 이유로 모든 condition을 `UNKNOWN`으로 만들지 않습니다. 각 condition의 required evidence가 complete/fresh하면 optional evidence 누락과 독립적으로 판정합니다. Kafka partition coverage 누락, required committed offset `-1`, required freshness `STALE/UNKNOWN`은 해당 condition을 `UNKNOWN`으로 만듭니다.
 
