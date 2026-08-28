@@ -6,7 +6,7 @@
 
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
-| Source candidate | API `2.1.0`, Demo UI `2.4.0`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay candidate; runtime 배포 전 |
+| Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2 | actual Gate 2 diagnosis의 sanitized recorded replay와 첫 화면 진입부 candidate; runtime 배포 전 |
 | Current source release | source `a2b157f`, image `a2b157f1283f` | runtime log·backup retention 최적화, CI `#83` validate·publish 통과 |
 | Local GitOps target | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
@@ -23,7 +23,7 @@
 | Ops Agent Phase 4.2 recovered | versioned recovery v2 MEDIUM envelope re-entry | continuous E 6회 중 5회 RECOVERED, 신규 E4~E6 `3/3`; E2는 UNKNOWN |
 | Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
 | Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
-| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.0` source contract와 public demo-lite live route 확인 |
+| Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.1` source contract; public demo-lite `2.4.0` live route 확인 |
 | Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
@@ -117,6 +117,10 @@ Worker replica → PostgreSQL health 순서를 그대로 표시합니다. 네 ev
 citation과 evidence gap, validator `VALID`, repair `1`, stop `sufficient_evidence`,
 read-only 권한 경계를 함께 표시합니다. Replay는 static artifact만 읽고 OpenAI API를
 다시 호출하지 않습니다. Public demo-lite는 동일 static replay를 image `7489ab270995`로 제공합니다.
+
+UI `2.4.1` source candidate는 첫 화면에서 condition, read-only tool-call 수,
+SUPPORTED diagnosis와 validator 결과를 같은 artifact에서 요약합니다. 재생 버튼은
+기존 다섯 번째 Investigation 열로 가로 이동한 뒤 기존 static trace만 실행합니다.
 
 Source validation은 Ops Agent `250 passed`, full repository `608 passed`입니다.
 Edge headless `1440px` desktop과 `390px` mobile에서 static artifact fetch, 네 trace step,

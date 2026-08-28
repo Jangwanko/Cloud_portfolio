@@ -12,7 +12,7 @@
 | Phase 3: Evidence-guided Investigation | 확정된 backlog에 필요한 추가 read-only 조사와 grounded hypothesis | 구현 완료; positive run-01 live VALID와 bounded output repair 검증 |
 | Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현 완료 |
 | Phase 5/5.1: Incident Lifecycle/E2E | condition·diagnosis·recovery identity 연결, timeline·closure·current observation 분리 | actual local-ha zero-drop Gate 2와 canonical local artifact 검증 완료 |
-| Phase 5.2: Public Replay | sanitized verified incident의 recorded tool/evidence/hypothesis replay | UI `2.4.0` source candidate 구현; demo-lite 배포 대기 |
+| Phase 5.2: Public Replay | sanitized verified incident의 recorded tool/evidence/hypothesis replay | UI `2.4.0` public 배포 완료; `2.4.1` 첫 화면 replay 진입부 source candidate |
 
 목표는 source timestamp와 provenance가 있는 증거로 detection, investigation, recovery verification, lifecycle record를 재현하는 것입니다. Incident 존재와 recovery는 deterministic evaluator가 판정하고, LLM은 확정된 incident에 필요한 추가 read-only evidence 선택과 hypothesis 정리에만 사용합니다.
 
@@ -612,8 +612,9 @@ digest, model response ID는 공개 파일에서 제외합니다.
 호출하지 않습니다. Validator `VALID`, repair `1`, stop `sufficient_evidence`는
 schema/citation/tool/budget/stop 계약 통과를 뜻하며 causal truth 확인이 아닙니다.
 Agent는 read-only evidence 조사와 hypothesis 생성만 할 수 있고 Pod restart, scale,
-Kubernetes/Kafka 변경, recovery 선언, remediation은 할 수 없습니다. Public demo-lite
-runtime은 아직 UI `2.3.1`이므로 `2.4.0` source candidate의 별도 배포 검증이 남았습니다.
+Kubernetes/Kafka 변경, recovery 선언, remediation은 할 수 없습니다. Public demo-lite는
+UI `2.4.0`에서 이 replay를 제공하며 `2.4.1` source candidate는 첫 화면 요약과 기존
+Investigation 열로 이동하는 재생 진입부를 추가합니다.
 
 ### 현재 제한
 
@@ -624,7 +625,7 @@ runtime은 아직 UI `2.3.1`이므로 `2.4.0` source candidate의 별도 배포 
 - Lifecycle은 closed incident의 automatic reopen과 새 incident correlation을 구현하지 않아 post-closure `ACTIVE` observation이 존재할 수 있습니다.
 - Remediation, recovery LLM, multi-agent manager, production SLA, exactly-once, global ordering, blanket no-loss 보장은 범위 밖입니다.
 - PostgreSQL commit 뒤 notification publish gap을 닫는 transactional outbox는 후속 과제입니다.
-- Verified Incident Replay source candidate는 구현했지만 public demo-lite에는 아직 배포하지 않았습니다.
+- Verified Incident Replay `2.4.0`은 public demo-lite에 배포됐습니다. `2.4.1` 첫 화면 replay 진입부는 source candidate이며 배포 검증 전입니다.
 
 ## Deterministic lifecycle 흐름
 

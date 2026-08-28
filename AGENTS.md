@@ -114,7 +114,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local Demo UI 동시 진행률과 Worker peak contract 보강 뒤 local suite는 `364 passed`입니다.
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.4.0`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.0`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary를 포함하며 OpenAI API를 재호출하지 않습니다. CI validation을 통과한 GitOps target image는 아직 `a2b157f1283f`입니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.1`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary와 첫 화면 replay 진입부를 포함하며 OpenAI API를 재호출하지 않습니다. CI validation을 통과한 GitOps target image는 아직 `a2b157f1283f`입니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
 - 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, master merge `cab7647`로 승격했습니다. dev-kafka CI `#76`, master CI `#77`의 validate·publish를 통과했습니다.
@@ -273,7 +273,7 @@ Latest ordering / failure injection result after fixing local client skew:
 ## Demo UI Rules
 
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
-- 현재 `dev-kafka` source candidate는 Demo UI `2.4.0`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay, sanitized recorded AI Investigation trace가 기준입니다.
+- 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay, 첫 화면에서 진입하는 sanitized recorded AI Investigation trace가 기준입니다.
 - 문서에 등록된 public demo-lite deployment는 UI `2.4.0`, API `2.1.0`, image `7489ab270995`입니다.
 - `demo-dev` candidate의 source Demo UI는 `2.3.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.

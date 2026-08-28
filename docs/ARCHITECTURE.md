@@ -328,8 +328,8 @@ observation을 closed record와 분리했으며 automatic reopen/new incident co
 이 계층은 self-healing이나 production-ready AI가 아닙니다. Threshold/envelope는
 single-node kind `local-ha` calibration이고, consumer rebalance·CPU throttling·exact
 transaction commit latency는 현재 instrumentation으로 `UNAVAILABLE`입니다. Public
-Verified Incident Replay는 sanitized static source candidate까지 구현했으며 demo-lite
-배포는 아직 진행하지 않았습니다. 상세 계약과 case study는
+Verified Incident Replay `2.4.0`은 sanitized static artifact로 demo-lite에 배포했습니다.
+`2.4.1` source candidate는 첫 화면 요약에서 기존 가로형 Investigation trace로 진입합니다. 상세 계약과 case study는
 [OPS_AGENT.md](OPS_AGENT.md), 실제 결과는 [TEST_RESULTS.md](TEST_RESULTS.md)를 봅니다.
 
 ## 백업과 복구

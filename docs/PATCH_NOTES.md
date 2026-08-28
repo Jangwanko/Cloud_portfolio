@@ -2,6 +2,15 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-08-28 Verified AI Investigation replay visibility candidate
+
+- Demo UI `2.4.1` 첫 화면에 condition, read-only tool-call 수, SUPPORTED diagnosis, validator 결과를 compact summary로 추가
+- 요약 값은 기존 sanitized `demo.verified-incident-replay.v1`에서 읽으며 generic/fake evidence를 만들지 않음
+- `Agent 조사 재생`은 기존 다섯 번째 가로 열로 이동해 recorded tool trace를 재생하며 OpenAI API를 호출하지 않음
+- 기존 five-column workspace, expandable evidence, hypothesis gap, validator와 read-only boundary는 유지
+- Operations Advisor는 `Deterministic`, AI Investigation은 `Recorded LLM run`으로 역할을 구분
+- focused docs/demo contract `87 passed`, full suite `609 passed`, compileall과 두 k6 script inspect 통과
+
 ## 2026-08-24 Phase 5.2 recorded AI Investigation replay candidate
 
 - Demo UI `2.4.0`에 actual Phase 5.1 diagnosis의 four-step tool trace, normalized evidence status/freshness와 expandable safe summary 추가

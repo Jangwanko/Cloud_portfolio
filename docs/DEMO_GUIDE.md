@@ -1,6 +1,6 @@
 # Demo Guide
 
-Dev-kafka source candidate: UI `2.4.0`, API `2.1.0`
+Dev-kafka source candidate: UI `2.4.1`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.4.0`, API `2.1.0` (2026-08-24)
 
@@ -36,7 +36,7 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source candidate: UI `2.4.0`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay 사용
+- `dev-kafka` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay와 첫 화면 replay 진입부 사용
 - `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f` (2026-08-12 local live)
 - public demo-lite 2026-08-24: UI `2.4.0`, API `2.1.0`, image `7489ab270995`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
@@ -58,7 +58,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.4.0` source image build/load:
+- 현재 `2.4.1` source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -71,6 +71,8 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 - 새 disposable cluster를 `quick_start_all.ps1`로 만들었거나 staged rollout을 완료한 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
 - 외국인 리크루터에게 보여줄 때 `EN` 선택
+- 첫 화면 `Verified AI Investigation Replay`에서 condition, tool-call 수, supported diagnosis, validator 결과 확인
+- `Agent 조사 재생`을 누르면 기존 가로 workspace의 오른쪽 끝 `AI Investigation`으로 이동하고 recorded trace가 순서대로 강조됨
 - `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
 - `Reference 이벤트 보내기` / `Send Reference Events` 클릭
 - 숫자 흐름 확인:
@@ -92,7 +94,7 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 - `기록 재생`은 static trace 강조이며 OpenAI API를 호출하지 않음
 - 좁은 화면에서도 기존 패널 아래로 재배치하지 않고, 같은 가로 흐름을 스크롤해 Investigation 열로 이동
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.4.0`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.4.1`과 API version `2.1.0` 표시 확인
 
 Public demo-lite 확인:
 
