@@ -12,6 +12,9 @@ Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 �
 - 예상과 다른 allowlisted tool 선택은 숨기지 않고 `BranchEvaluation=FAIL`로 보존
 - `SCENARIO_LAB_ENABLED=true`에서만 mount하는 Local/Admin `/admin/scenario-lab/`과 deterministic recorded artifact 추가; Public Verified Replay와 demo-lite는 변경하지 않음
 - recorded Scenario CLI는 OpenAI API와 runtime source를 호출하지 않으며 `--model-mode live`만 명시적 local model 실행 허용
+- focused suite `90 passed`, Ops Agent suite `267 passed`, full suite `626 passed`; compileall, k6 inspect, artifact 재현성, diff·secret·path 검증 통과
+- dev-kafka feature `b2e1037`, final source `54ee42a`, image `54ee42a2fb29`; master merge `ad686f3`, image `ad686f35448f`, overlay `b9218c7`로 승격
+- dev CI runs `33175480687`·`33175967293`, master CI run `33176442914` 성공; local-ha runtime rollout은 이번 승격에서 미검증
 
 ## 2026-08-28 Verified AI Investigation replay visibility candidate
 

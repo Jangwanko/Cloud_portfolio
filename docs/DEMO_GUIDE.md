@@ -38,7 +38,8 @@ Grafana 접근:
 Version boundary:
 
 - `dev-kafka` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay와 첫 화면 replay 진입부 사용
-- `dev-kafka` GitOps target: UI `2.3.1`, API `2.1.0`, image `a2b157f1283f` (2026-08-12 local live)
+- `dev-kafka` published GitOps target: UI `2.4.1`, API `2.1.0`, image `54ee42a2fb29`; local-ha runtime rollout은 이번 승격에서 미검증
+- 마지막 검증 local-ha runtime: image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` (2026-08-12)
 - public demo-lite 2026-08-28: UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
