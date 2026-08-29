@@ -1,6 +1,8 @@
 # Demo Guide
 
-Dev-kafka / demo-dev source candidate: UI `2.4.1`, API `2.1.0`
+Dev-kafka source: UI `2.4.1`, API `2.1.0`
+
+Demo-dev source candidate: UI `2.5.0`, API `2.1.0`
 
 Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
 
@@ -35,7 +37,8 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` / `demo-dev` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, 첫 화면 진입부와 sanitized recorded Investigation replay 사용
+- `dev-kafka` source: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, 첫 화면 진입부와 sanitized recorded Investigation replay 사용
+- `demo-dev` source candidate: UI `2.5.0`, API `2.1.0`, 네 controlled scenario의 recorded tool branching을 별도 sanitized artifact로 재생
 - local GitOps release: UI `2.3.1`, API `2.1.0`, image `66e9cc995dca`
 - public demo-lite 2026-08-28: UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`, 운영 부산물 7일 retention
@@ -57,7 +60,7 @@ API boundary:
 powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 ```
 
-- 현재 `2.4.1` source image build/load:
+- 현재 `2.5.0` demo-dev source image build/load:
 
 ```powershell
 docker build -t messaging-portfolio:local .
@@ -70,8 +73,15 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
 
 - 새 disposable cluster를 `quick_start_all.ps1`로 만들었거나 staged rollout을 완료한 로컬 데모: `http://localhost/demo/order-dashboard.html` 접속
 - 외국인 리크루터에게 보여줄 때 `EN` 선택
-- 첫 화면 `검증된 AI 장애 조사 재생`에서 확정된 조건, 읽기 전용 조회 수, 가설 검토 결과와 출력 검증 결과 확인
-- `조사 기록 재생`을 누르면 기존 가로 workspace의 오른쪽 끝 Investigation 열로 이동해 static trace 재생
+- 첫 화면 `AI 장애 상황별 조사`에서 네 시나리오 중 하나를 선택하고 `선택한 조사 재생` 실행
+- 초기 비교는 Worker DB 경로 지연의 `get_postgres_health`와 Worker 실행 수 부족의 `get_worker_replica_status` 분기 사용
+- 장애 조건 → Agent 도구 선택 → normalized observation → 기록된 다음 선택 → 최종 판단의 순차 등장 확인
+- 각 Agent 선택 카드의 `왜 이 도구인가?`에서 recorded reason code의 자연어 설명 확인
+- 서로 다른 시나리오를 선택해 이전/현재 첫 관측값과 다음 조사 도구 비교 표시 확인
+- `Telemetry unavailable` 시나리오에서 `PROMETHEUS_TIMEOUT`, `INSUFFICIENT`, evidence gap 확인
+- `Grounding Validator`는 evidence citation과 출력 계약을 검증하며 원인 자체를 확정하지 않음
+- 접힌 `별도 실행 기록: Phase 5.1 실제 장애 조사`는 현재 시나리오와 다른 실행이며 필요할 때만 펼침
+- 별도 실행 기록의 `조사 기록 재생`을 누르면 기존 가로 workspace의 오른쪽 끝 Investigation 열로 이동해 static trace 재생
 - `샘플 10개 추가`, `샘플 100개 추가`, `샘플 1000개 추가` 중 하나 선택
 - `Reference 이벤트 보내기` / `Send Reference Events` 클릭
 - 숫자 흐름 확인:
@@ -90,7 +100,20 @@ tools\kind.exe load docker-image messaging-portfolio:local --name messaging-ha
   - supporting/conflicting citation, evidence gap, Validator `VALID`, read-only boundary
   - 현재 demo-lite runtime을 재진단하거나 OpenAI API를 호출하지 않는 static replay
 - 운영 상태 refresh: 기본 30초, 선택 60초
-- source candidate 배포 뒤 화면 `ver. 2.4.1`과 API version `2.1.0` 표시 확인
+- source candidate 배포 뒤 화면 `ver. 2.5.0`과 API version `2.1.0` 표시 확인
+
+Controlled scenario replay boundary:
+
+- `demo/verified-scenario-replays.json`만 읽는 static replay
+- Scenario Lab의 validated branch result를 public-safe field로 투영
+- activation, tool sequence, normalized evidence summary, hypothesis, stop reason, validator result 보존
+- replay 전 결과 숨김, 650ms 간격 순차 공개, 시나리오 선택만으로 자동 실행하지 않음
+- 이전/현재 시나리오의 첫 관측값과 기록된 다음 tool 비교
+- incident ID, condition evaluation ID, raw evidence ID, source digest, model response ID 제외
+- OpenAI API 호출 `0`, runtime source 조회 `0`, runtime write `0`
+- 기존 actual Phase 5.1 incident Investigation 상세 replay 유지
+- Phase 5.1 compact summary는 기본 접힘 상태의 별도 실행 기록으로 분리
+- 기존 Kafka/Worker 실행 UI는 `Event Processing Demo` 구분선 아래의 별도 데모로 표시
 
 Public demo-lite 확인:
 

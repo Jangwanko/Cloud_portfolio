@@ -1,0 +1,625 @@
+{
+  "schema_version": "demo.verified-scenario-replays.v1",
+  "classification": "SANITIZED_CONTROLLED_SCENARIO_REPLAY",
+  "generated_at": "2026-08-28T00:00:00Z",
+  "source_catalog_digest": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+  "activation": {
+    "condition": "CORE_BACKLOG_PRESSURE",
+    "state": "PRESENT",
+    "policy_version": "local-ha.conditions.v2",
+    "total_lag_records": [
+      7205,
+      10497,
+      13936
+    ],
+    "lag_slope_records_per_second": [
+      120.0667,
+      174.4667,
+      230.7667
+    ]
+  },
+  "scenarios": [
+    {
+      "scenario_id": "worker-db-path-pressure",
+      "title": "Worker DB-path pressure",
+      "expected_primary_hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+      "acquisition_mode": "CONTROLLED_SCENARIO",
+      "steps": [
+        {
+          "step": 1,
+          "tool_id": "get_worker_stage_latency",
+          "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+          "returned_evidence_ref": "worker-db-path-pressure.evidence.step-1"
+        },
+        {
+          "step": 2,
+          "tool_id": "get_postgres_health",
+          "reason_code": "CHECK_POSTGRES_HEALTH",
+          "returned_evidence_ref": "worker-db-path-pressure.evidence.step-2"
+        },
+        {
+          "step": 3,
+          "tool_id": "get_worker_replica_status",
+          "reason_code": "CHECK_WORKER_REPLICA_PATH",
+          "returned_evidence_ref": "worker-db-path-pressure.evidence.step-3"
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_ref": "worker-db-path-pressure.evidence.step-1",
+          "tool_id": "get_worker_stage_latency",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_stage_latency_observation",
+          "summary": {
+            "worker_stage_mean_ms": 14.3,
+            "scenario_baseline_ms": 3.2,
+            "observation_count": 5134,
+            "relative_to_baseline": 4.46875,
+            "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+            "commit_latency": "UNAVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "worker-db-path-pressure.evidence.step-2",
+          "tool_id": "get_postgres_health",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_postgres_health_observation",
+          "summary": {
+            "ha_mode": true,
+            "primary_reachable": true,
+            "standby_count": 2,
+            "required_standby_count": 2,
+            "sync_standby_count": 2,
+            "required_sync_standby_count": 2,
+            "max_replication_delay_bytes": 4920,
+            "semantic_flag": "POSTGRES_PATH_HEALTHY"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "worker-db-path-pressure.evidence.step-3",
+          "tool_id": "get_worker_replica_status",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:27:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_replica_status_observation",
+          "summary": {
+            "desired_replicas": 4,
+            "current_replicas": 4,
+            "ready_replicas": 4,
+            "available_replicas": 4,
+            "availability_gap": 0,
+            "semantic_flag": "WORKER_CAPACITY_AVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        }
+      ],
+      "situation_highlights": [
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "worker_stage_mean_ms",
+          "value": 14.3
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "scenario_baseline_ms",
+          "value": 3.2
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "semantic_flag",
+          "value": "ABOVE_SCENARIO_BASELINE"
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "primary_reachable",
+          "value": true
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "standby_count",
+          "value": 2
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "sync_standby_count",
+          "value": 2
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "semantic_flag",
+          "value": "POSTGRES_PATH_HEALTHY"
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "desired_replicas",
+          "value": 4
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "available_replicas",
+          "value": 4
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "semantic_flag",
+          "value": "WORKER_CAPACITY_AVAILABLE"
+        }
+      ],
+      "branch_trace": [
+        {
+          "after_tool_id": "get_worker_stage_latency",
+          "selected_next_tool": "get_postgres_health",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_postgres_health",
+          "selected_next_tool": "get_worker_replica_status",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_worker_replica_status",
+          "selected_next_tool": null,
+          "result": "PASS"
+        }
+      ],
+      "hypotheses": [
+        {
+          "hypothesis": "WORKER_PATH_PRESSURE_SUSPECTED",
+          "support_status": "SUPPORTED",
+          "supporting_evidence_refs": [
+            "worker-db-path-pressure.evidence.step-1"
+          ],
+          "conflicting_evidence_refs": [],
+          "evidence_gaps": [
+            "COMMIT_LATENCY_UNAVAILABLE"
+          ]
+        }
+      ],
+      "stop_reason": "sufficient_evidence",
+      "validation": {
+        "result": "VALID"
+      },
+      "usage": {
+        "api_requests": 0
+      }
+    },
+    {
+      "scenario_id": "worker-replica-shortfall",
+      "title": "Worker replica shortfall",
+      "expected_primary_hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+      "acquisition_mode": "CONTROLLED_SCENARIO",
+      "steps": [
+        {
+          "step": 1,
+          "tool_id": "get_worker_stage_latency",
+          "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+          "returned_evidence_ref": "worker-replica-shortfall.evidence.step-1"
+        },
+        {
+          "step": 2,
+          "tool_id": "get_worker_replica_status",
+          "reason_code": "CHECK_WORKER_REPLICA_PATH",
+          "returned_evidence_ref": "worker-replica-shortfall.evidence.step-2"
+        },
+        {
+          "step": 3,
+          "tool_id": "get_keda_status",
+          "reason_code": "CHECK_KEDA_ACTIVITY",
+          "returned_evidence_ref": "worker-replica-shortfall.evidence.step-3"
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_ref": "worker-replica-shortfall.evidence.step-1",
+          "tool_id": "get_worker_stage_latency",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:32:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_stage_latency_observation",
+          "summary": {
+            "worker_stage_mean_ms": 3.3,
+            "scenario_baseline_ms": 3.2,
+            "observation_count": 5050,
+            "relative_to_baseline": 1.0312499999999998,
+            "semantic_flag": "WITHIN_SCENARIO_BASELINE",
+            "commit_latency": "UNAVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "worker-replica-shortfall.evidence.step-2",
+          "tool_id": "get_worker_replica_status",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:32:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_replica_status_observation",
+          "summary": {
+            "desired_replicas": 4,
+            "current_replicas": 4,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "availability_gap": 2,
+            "semantic_flag": "WORKER_CAPACITY_SHORTFALL"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "worker-replica-shortfall.evidence.step-3",
+          "tool_id": "get_keda_status",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:32:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_keda_status_observation",
+          "summary": {
+            "ready": true,
+            "active": true,
+            "min_replicas": 2,
+            "max_replicas": 4,
+            "current_replicas": 4
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        }
+      ],
+      "situation_highlights": [
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "worker_stage_mean_ms",
+          "value": 3.3
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "scenario_baseline_ms",
+          "value": 3.2
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "semantic_flag",
+          "value": "WITHIN_SCENARIO_BASELINE"
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "desired_replicas",
+          "value": 4
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "available_replicas",
+          "value": 2
+        },
+        {
+          "tool_id": "get_worker_replica_status",
+          "field": "semantic_flag",
+          "value": "WORKER_CAPACITY_SHORTFALL"
+        },
+        {
+          "tool_id": "get_keda_status",
+          "field": "ready",
+          "value": true
+        },
+        {
+          "tool_id": "get_keda_status",
+          "field": "active",
+          "value": true
+        },
+        {
+          "tool_id": "get_keda_status",
+          "field": "current_replicas",
+          "value": 4
+        }
+      ],
+      "branch_trace": [
+        {
+          "after_tool_id": "get_worker_stage_latency",
+          "selected_next_tool": "get_worker_replica_status",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_worker_replica_status",
+          "selected_next_tool": "get_keda_status",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_keda_status",
+          "selected_next_tool": null,
+          "result": "PASS"
+        }
+      ],
+      "hypotheses": [
+        {
+          "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+          "support_status": "SUPPORTED",
+          "supporting_evidence_refs": [
+            "worker-replica-shortfall.evidence.step-2",
+            "worker-replica-shortfall.evidence.step-3"
+          ],
+          "conflicting_evidence_refs": [],
+          "evidence_gaps": []
+        }
+      ],
+      "stop_reason": "sufficient_evidence",
+      "validation": {
+        "result": "VALID"
+      },
+      "usage": {
+        "api_requests": 0
+      }
+    },
+    {
+      "scenario_id": "postgres-path-degradation",
+      "title": "PostgreSQL path degradation",
+      "expected_primary_hypothesis": "POSTGRES_PATH_DEGRADED_SUSPECTED",
+      "acquisition_mode": "CONTROLLED_SCENARIO",
+      "steps": [
+        {
+          "step": 1,
+          "tool_id": "get_worker_stage_latency",
+          "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+          "returned_evidence_ref": "postgres-path-degradation.evidence.step-1"
+        },
+        {
+          "step": 2,
+          "tool_id": "get_postgres_health",
+          "reason_code": "CHECK_POSTGRES_HEALTH",
+          "returned_evidence_ref": "postgres-path-degradation.evidence.step-2"
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_ref": "postgres-path-degradation.evidence.step-1",
+          "tool_id": "get_worker_stage_latency",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:37:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_stage_latency_observation",
+          "summary": {
+            "worker_stage_mean_ms": 18.6,
+            "scenario_baseline_ms": 3.2,
+            "observation_count": 4800,
+            "relative_to_baseline": 5.8125,
+            "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+            "commit_latency": "UNAVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "postgres-path-degradation.evidence.step-2",
+          "tool_id": "get_postgres_health",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:37:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_postgres_health_observation",
+          "summary": {
+            "ha_mode": true,
+            "primary_reachable": true,
+            "standby_count": 1,
+            "required_standby_count": 2,
+            "sync_standby_count": 0,
+            "required_sync_standby_count": 2,
+            "max_replication_delay_bytes": 2097152,
+            "semantic_flag": "POSTGRES_PATH_DEGRADED"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        }
+      ],
+      "situation_highlights": [
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "worker_stage_mean_ms",
+          "value": 18.6
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "scenario_baseline_ms",
+          "value": 3.2
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "semantic_flag",
+          "value": "ABOVE_SCENARIO_BASELINE"
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "primary_reachable",
+          "value": true
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "standby_count",
+          "value": 1
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "sync_standby_count",
+          "value": 0
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "semantic_flag",
+          "value": "POSTGRES_PATH_DEGRADED"
+        }
+      ],
+      "branch_trace": [
+        {
+          "after_tool_id": "get_worker_stage_latency",
+          "selected_next_tool": "get_postgres_health",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_postgres_health",
+          "selected_next_tool": null,
+          "result": "PASS"
+        }
+      ],
+      "hypotheses": [
+        {
+          "hypothesis": "POSTGRES_PATH_DEGRADED_SUSPECTED",
+          "support_status": "SUPPORTED",
+          "supporting_evidence_refs": [
+            "postgres-path-degradation.evidence.step-1",
+            "postgres-path-degradation.evidence.step-2"
+          ],
+          "conflicting_evidence_refs": [],
+          "evidence_gaps": []
+        }
+      ],
+      "stop_reason": "sufficient_evidence",
+      "validation": {
+        "result": "VALID"
+      },
+      "usage": {
+        "api_requests": 0
+      }
+    },
+    {
+      "scenario_id": "telemetry-unavailable",
+      "title": "Telemetry unavailable",
+      "expected_primary_hypothesis": "INSUFFICIENT_EVIDENCE",
+      "acquisition_mode": "CONTROLLED_SCENARIO",
+      "steps": [
+        {
+          "step": 1,
+          "tool_id": "get_worker_stage_latency",
+          "reason_code": "CHECK_WORKER_PERSIST_STAGE",
+          "returned_evidence_ref": "telemetry-unavailable.evidence.step-1"
+        },
+        {
+          "step": 2,
+          "tool_id": "get_postgres_health",
+          "reason_code": "CHECK_POSTGRES_HEALTH",
+          "returned_evidence_ref": "telemetry-unavailable.evidence.step-2"
+        }
+      ],
+      "evidence": [
+        {
+          "evidence_ref": "telemetry-unavailable.evidence.step-1",
+          "tool_id": "get_worker_stage_latency",
+          "status": "OK",
+          "observed_at": "2026-08-23T15:42:08Z",
+          "freshness": {
+            "status": "FRESH",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_worker_stage_latency_observation",
+          "summary": {
+            "worker_stage_mean_ms": 14.3,
+            "scenario_baseline_ms": 3.2,
+            "observation_count": 120,
+            "relative_to_baseline": 4.46875,
+            "semantic_flag": "ABOVE_SCENARIO_BASELINE",
+            "commit_latency": "UNAVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO"
+        },
+        {
+          "evidence_ref": "telemetry-unavailable.evidence.step-2",
+          "tool_id": "get_postgres_health",
+          "status": "UNAVAILABLE",
+          "observed_at": "2026-08-23T15:42:08Z",
+          "freshness": {
+            "status": "UNKNOWN",
+            "max_age_seconds": 15.0
+          },
+          "semantic_type": "normalized_get_postgres_health_observation",
+          "summary": {
+            "observation": "UNAVAILABLE"
+          },
+          "acquisition_mode": "CONTROLLED_SCENARIO",
+          "error_code": "PROMETHEUS_TIMEOUT"
+        }
+      ],
+      "situation_highlights": [
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "worker_stage_mean_ms",
+          "value": 14.3
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "scenario_baseline_ms",
+          "value": 3.2
+        },
+        {
+          "tool_id": "get_worker_stage_latency",
+          "field": "semantic_flag",
+          "value": "ABOVE_SCENARIO_BASELINE"
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "status",
+          "value": "UNAVAILABLE"
+        },
+        {
+          "tool_id": "get_postgres_health",
+          "field": "error_code",
+          "value": "PROMETHEUS_TIMEOUT"
+        }
+      ],
+      "branch_trace": [
+        {
+          "after_tool_id": "get_worker_stage_latency",
+          "selected_next_tool": "get_postgres_health",
+          "result": "PASS"
+        },
+        {
+          "after_tool_id": "get_postgres_health",
+          "selected_next_tool": null,
+          "result": "PASS"
+        }
+      ],
+      "hypotheses": [
+        {
+          "hypothesis": "INSUFFICIENT_EVIDENCE",
+          "support_status": "INSUFFICIENT",
+          "supporting_evidence_refs": [],
+          "conflicting_evidence_refs": [],
+          "evidence_gaps": [
+            "POSTGRES_HEALTH_TELEMETRY_UNAVAILABLE"
+          ]
+        }
+      ],
+      "stop_reason": "insufficient_evidence",
+      "validation": {
+        "result": "VALID"
+      },
+      "usage": {
+        "api_requests": 0
+      }
+    }
+  ],
+  "boundary": {
+    "recorded_replay": true,
+    "openai_api_called": false,
+    "runtime_source_called": false,
+    "runtime_write_allowed": false
+  }
+}

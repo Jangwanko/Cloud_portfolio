@@ -2,6 +2,26 @@
 
 Reliable Event Processing System 포트폴리오의 주요 구현, 검증, 튜닝 기록입니다.
 
+## 2026-08-29 Public controlled scenario replay candidate
+
+- Demo UI `2.5.0` 첫 화면에 네 controlled Scenario Lab replay 선택기 추가
+- Worker DB-path pressure, Worker replica shortfall, PostgreSQL path degradation, Telemetry unavailable 분기 보존
+- activation → recorded tool selection → normalized evidence → next tool/stop → hypothesis → validator 순서 재생
+- `demo.verified-scenario-replays.v1` artifact에 public evidence reference만 유지하고 내부 ID·digest·raw reference 제외
+- OpenAI API, runtime source, runtime write 호출 없는 static replay 경계 검사
+- 기존 actual Phase 5.1 incident Investigation replay와 상세 trace 유지
+- replay 전 결과를 숨기고 조건·도구 선택·관측·다음 분기·최종 판단을 650ms 간격으로 순차 공개
+- `[hidden]` 안내 영역의 CSS 우선순위를 고쳐 replay 이후 안내와 trace 동시 노출 제거
+- 초기 비교를 Worker DB path `get_postgres_health`와 Worker shortfall `get_worker_replica_status`로 고정
+- 시나리오 변경 시 이전/현재 첫 관측값과 다음 조사 tool을 비교해 adaptive branch 차이 표시
+- recorded reason code를 `왜 이 도구인가?` 강조 블록으로 표시
+- Phase 5.1 compact summary를 기본 접힌 별도 실행 기록으로 분리해 현재 scenario 결과와 동시 노출 방지
+- 기존 운영 기능을 `Event Processing Demo` 구분선 아래로 분리
+- `Grounding Validator`로 명명하고 evidence citation·출력 계약 검증 범위 명시
+- desktop 넓은 timeline과 mobile 단일 열 replay, 무수평 overflow 검증
+- focused scenario/generic contract `59 passed`, full suite `363 passed`, compileall·k6 inspect·diff check 통과
+- 배포 전 `demo-dev` source candidate이며 마지막 public demo-lite는 UI `2.4.1` 유지
+
 ## 2026-08-28 Verified AI Investigation replay visibility candidate
 
 - Demo UI `2.4.1` 첫 화면에 확정된 condition, 읽기 전용 조회 수, SUPPORTED 가설과 validator 결과를 static artifact에서 요약

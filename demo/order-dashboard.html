@@ -185,6 +185,509 @@
       overflow-wrap: anywhere;
     }
 
+    .investigation-archive {
+      border-top-width: 1px;
+      box-shadow: none;
+      display: block;
+      padding: 0;
+    }
+
+    .investigation-archive > summary {
+      align-items: center;
+      cursor: pointer;
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      list-style: none;
+      padding: 12px 16px;
+    }
+
+    .investigation-archive > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .investigation-archive > summary::after {
+      color: var(--muted);
+      content: "+";
+      flex: 0 0 auto;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .investigation-archive[open] > summary::after {
+      content: "−";
+    }
+
+    .investigation-archive-summary strong {
+      display: block;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .investigation-archive-summary span:last-child {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .investigation-archive-body {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 14px;
+      padding: 14px 16px;
+    }
+
+    .scenario-replay {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #f8fafb;
+      padding: 18px 0 20px;
+    }
+
+    .scenario-replay-head {
+      align-items: start;
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      padding: 0 16px;
+    }
+
+    .scenario-replay-title {
+      min-width: 0;
+    }
+
+    .scenario-replay-title h2 {
+      margin: 7px 0 3px;
+    }
+
+    .scenario-method {
+      border-left: 3px solid #8ca1b4;
+      color: #4c5d6e;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 9px 0 0;
+      max-width: 900px;
+      padding-left: 10px;
+    }
+
+    .scenario-badges,
+    .scenario-options,
+    .scenario-panel-meta,
+    .scenario-result-meta {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .scenario-options {
+      padding: 14px 16px 0;
+    }
+
+    .scenario-option {
+      min-height: 38px;
+      border: 1px solid #b9c6d3;
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 11px;
+      text-align: left;
+    }
+
+    .scenario-option:hover {
+      border-color: var(--accent);
+    }
+
+    .scenario-option.active {
+      border-color: #176b4d;
+      background: #e8f5ed;
+      color: #12563e;
+    }
+
+    .scenario-option:focus-visible,
+    #replay-selected-scenario:focus-visible {
+      outline: 3px solid #a9cdea;
+      outline-offset: 2px;
+    }
+
+    .scenario-status {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding: 14px 16px 10px;
+    }
+
+    .scenario-situation {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-trace-summary {
+      background: #edf6f1;
+      border-left: 4px solid #27805b;
+      color: #214f3d;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.55;
+      margin: 0 16px 12px;
+      padding: 10px 12px;
+    }
+
+    #replay-selected-scenario {
+      align-self: start;
+      min-height: 38px;
+      border: 1px solid #155d45;
+      border-radius: 6px;
+      background: #176b4d;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 12px;
+    }
+
+    #replay-selected-scenario:disabled {
+      cursor: wait;
+      opacity: .65;
+    }
+
+    .scenario-comparison {
+      background: #fff;
+      border: 1px solid #cbd7e2;
+      border-left: 4px solid #287aa8;
+      display: grid;
+      gap: 9px;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      margin: 0 16px 12px;
+      padding: 11px 13px;
+    }
+
+    .scenario-comparison[hidden] {
+      display: none;
+    }
+
+    .scenario-compare-item strong,
+    .scenario-compare-result strong {
+      display: block;
+      font-size: 11px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+
+    .scenario-compare-item span {
+      display: block;
+      font-size: 12px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-compare-arrow {
+      align-self: center;
+      color: #287aa8;
+      font-size: 20px;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .scenario-compare-result {
+      background: #eaf4fb;
+      grid-column: 1 / -1;
+      padding: 8px 10px;
+    }
+
+    .scenario-compare-result span {
+      color: #1d526f;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .scenario-story {
+      padding: 4px 16px 8px;
+    }
+
+    .scenario-track {
+      width: 100%;
+    }
+
+    .scenario-awaiting {
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      display: flex;
+      justify-content: center;
+      min-height: 180px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .scenario-awaiting[hidden] {
+      display: none;
+    }
+
+    .scenario-run-layout {
+      align-items: start;
+      display: grid;
+      gap: 24px;
+      grid-template-columns: minmax(240px, 320px) minmax(520px, 1fr);
+    }
+
+    .scenario-activation,
+    .scenario-event,
+    .scenario-decision {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 15px;
+    }
+
+    .scenario-replay-node {
+      display: none;
+    }
+
+    .scenario-replay-node.replay-visible {
+      animation: scenario-reveal .28s ease-out;
+      display: block;
+    }
+
+    .scenario-replay-node.replay-active {
+      border-color: #287aa8;
+      box-shadow: 0 0 0 3px #dbeef8;
+    }
+
+    @keyframes scenario-reveal {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .scenario-activation {
+      position: sticky;
+      top: 12px;
+    }
+
+    .scenario-timeline {
+      border-left: 2px solid #b8c7d3;
+      display: grid;
+      gap: 14px;
+      padding-left: 22px;
+    }
+
+    .scenario-event,
+    .scenario-decision {
+      position: relative;
+    }
+
+    .scenario-event::before,
+    .scenario-decision::before {
+      background: #287aa8;
+      border: 3px solid #f8fafb;
+      border-radius: 50%;
+      content: "";
+      height: 12px;
+      left: -30px;
+      position: absolute;
+      top: 19px;
+      width: 12px;
+    }
+
+    .scenario-event.selection {
+      background: #edf6fb;
+      border-color: #b9d5e4;
+    }
+
+    .scenario-why {
+      background: #fff;
+      border-left: 4px solid #287aa8;
+      display: grid;
+      gap: 4px;
+      margin-top: 12px;
+      padding: 10px 12px;
+    }
+
+    .scenario-why strong {
+      color: #1d526f;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .scenario-why span {
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .scenario-event.observation-unavailable,
+    .scenario-decision.insufficient {
+      border-left: 4px solid #a36a13;
+    }
+
+    .scenario-decision.supported {
+      border-left: 4px solid #17824b;
+    }
+
+    .scenario-panel-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      margin: 0 0 6px;
+      text-transform: uppercase;
+    }
+
+    .scenario-activation h3,
+    .scenario-event h3,
+    .scenario-decision h3 {
+      font-size: 16px;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-tool {
+      color: #1769aa;
+      display: block;
+      font-size: 14px;
+      margin: 9px 0 0;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-purpose {
+      color: #4f5d6d;
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 10px 0;
+    }
+
+    .scenario-observed-at {
+      color: #526476;
+      font-size: 11px;
+      font-weight: 800;
+      margin: 0 0 8px;
+      text-transform: uppercase;
+    }
+
+    .scenario-evidence-note {
+      background: #f1f5f8;
+      border-left: 3px solid #7e94a6;
+      color: #3d5061;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 10px 0 0;
+      padding: 9px 10px;
+    }
+
+    .scenario-role-explanation {
+      color: #506172;
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 8px 0;
+    }
+
+    .scenario-metrics {
+      display: grid;
+      margin: 10px 0 0;
+    }
+
+    .scenario-metric {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: minmax(95px, 1fr) minmax(105px, 1.15fr);
+      padding: 7px 0;
+      border-top: 1px solid #e4e9ef;
+    }
+
+    .scenario-metric dt {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .scenario-metric dd {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-next {
+      border-top: 1px solid var(--line);
+      color: #37546a;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 10px 0 0;
+      padding-top: 9px;
+    }
+
+    .scenario-hypothesis {
+      color: #176b4d;
+      display: block;
+      font-size: 14px;
+      margin: 10px 0 4px;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-gap {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 8px 0 0;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-abstention {
+      background: #fff7e8;
+      color: #744d10;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.5;
+      margin: 12px 0 0;
+      padding: 9px 10px;
+    }
+
+    .scenario-validator {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 4px;
+      margin-top: 13px;
+      padding-top: 10px;
+    }
+
+    .scenario-validator span:last-child {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .demo-section-divider {
+      border-top: 2px solid #8ea0b0;
+      margin-top: 10px;
+      padding: 18px 2px 4px;
+    }
+
+    .demo-section-divider strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+
+    .demo-section-divider span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+    }
+
+    .scenario-load-error {
+      color: var(--danger);
+      font-size: 13px;
+      padding: 12px 16px 0;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: 320px 520px 320px 340px 1040px;
@@ -849,6 +1352,13 @@
       font-size: 13px;
     }
 
+    @media (max-width: 1100px) {
+      .scenario-options {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
     @media (max-width: 860px) {
       header {
         align-items: flex-start;
@@ -884,6 +1394,39 @@
         overflow-x: auto;
         padding-bottom: 4px;
       }
+
+      .scenario-replay-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .scenario-options {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-status {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-comparison {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-compare-arrow {
+        transform: rotate(90deg);
+      }
+
+      .scenario-run-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .scenario-activation {
+        position: static;
+      }
+
+      .scenario-timeline {
+        margin-left: 8px;
+      }
     }
   </style>
 </head>
@@ -892,7 +1435,7 @@
     <div>
       <div class="title-row">
         <h1>Reliable Event Processing Console</h1>
-        <span class="version-badge" id="demo-version">ver. 2.4.1 / api -</span>
+        <span class="version-badge" id="demo-version">ver. 2.5.0 / api -</span>
       </div>
       <p class="subtitle" data-i18n="pageSubtitle">도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.</p>
     </div>
@@ -909,22 +1452,60 @@
       <div class="status"><strong data-i18n="operatorCategory">Producer 분류(metadata)</strong><span id="category-status">-</span></div>
     </div>
 
-    <aside class="investigation-entry" aria-labelledby="investigation-entry-title">
-      <div class="investigation-entry-head">
-        <div class="investigation-entry-title">
-          <span class="status-badge" data-i18n="investigationRecorded">과거 기록 재생</span>
-          <h2 id="investigation-entry-title" data-i18n="investigationEntryTitle">검증된 AI 장애 조사 재생</h2>
-          <p class="subtitle" data-i18n="investigationEntrySubtitle">Phase 5.1 장애 실험의 조사 기록을 재생합니다. 현재 서버를 다시 진단하거나 OpenAI API를 호출하지 않습니다.</p>
+    <section class="scenario-replay" id="ai-scenario-replay" aria-labelledby="scenario-replay-title">
+      <div class="scenario-replay-head">
+        <div class="scenario-replay-title">
+          <div class="scenario-badges">
+            <span class="status-badge" data-i18n="scenarioVerifiedRun">검증된 Agent 실행</span>
+            <span class="status-badge" data-i18n="scenarioRecordedReplay">기록 재생</span>
+            <span class="status-badge read-only" data-i18n="readOnly">읽기 전용</span>
+          </div>
+          <h2 id="scenario-replay-title" data-i18n="scenarioTitle">AI 장애 상황별 조사</h2>
+          <p class="subtitle" data-i18n="scenarioSubtitle">같은 적체 조건에서도 관측 결과에 따라 AI Agent가 확인하는 운영 증거가 달라집니다.</p>
+          <p class="scenario-method" data-i18n="scenarioMethod">같은 적체 장애에서 일부 관측값만 바꿔 Agent가 조사 순서를 바꾸는지 확인합니다. 검증된 실행 기록을 재생하며 모델 API를 다시 호출하지 않습니다.</p>
         </div>
-        <button id="open-investigation-replay" type="button" data-i18n="openInvestigationReplay" disabled>조사 기록 재생</button>
       </div>
-      <div class="investigation-entry-summary" aria-live="polite">
-        <div><strong data-i18n="conditionLabel">확정된 조건</strong><span id="investigation-entry-condition">-</span></div>
-        <div><strong data-i18n="llmInvestigationLabel">LLM 조사</strong><span id="investigation-entry-tools">-</span></div>
-        <div><strong data-i18n="diagnosisLabel">가설 검토 결과</strong><span id="investigation-entry-diagnosis">-</span></div>
-        <div><strong data-i18n="validatorTitle">출력 검증</strong><span id="investigation-entry-validator">-</span></div>
+      <div class="scenario-options" id="scenario-options" role="group" aria-label="AI incident scenarios"></div>
+      <div class="scenario-status">
+        <p class="scenario-situation" id="scenario-situation" aria-live="polite" data-i18n="scenarioLoading">검증된 상황 기록을 불러오는 중입니다.</p>
+        <button id="replay-selected-scenario" type="button" data-i18n="scenarioReplay" disabled>선택한 조사 재생</button>
       </div>
-    </aside>
+      <p class="scenario-trace-summary" id="scenario-trace-summary" aria-live="polite"></p>
+      <div class="scenario-comparison" id="scenario-comparison" aria-live="polite" hidden></div>
+      <div class="scenario-story" id="scenario-story" tabindex="0">
+        <div class="scenario-track" id="scenario-track"></div>
+      </div>
+    </section>
+
+    <details class="investigation-entry investigation-archive">
+      <summary>
+        <span class="investigation-archive-summary">
+          <span class="status-badge" data-i18n="investigationRecorded">과거 기록 재생</span>
+          <strong data-i18n="investigationArchiveTitle">별도 실행 기록: Phase 5.1 실제 장애 조사</strong>
+          <span data-i18n="investigationArchiveHelp">현재 선택한 시나리오와 다른 실행입니다. 필요할 때만 펼쳐 상세 증거를 확인합니다.</span>
+        </span>
+      </summary>
+      <div class="investigation-archive-body">
+        <div class="investigation-entry-head">
+          <div class="investigation-entry-title">
+            <h2 id="investigation-entry-title" data-i18n="investigationEntryTitle">검증된 AI 장애 조사 재생</h2>
+            <p class="subtitle" data-i18n="investigationEntrySubtitle">Phase 5.1 장애 실험의 조사 기록을 재생합니다. 현재 서버를 다시 진단하거나 OpenAI API를 호출하지 않습니다.</p>
+          </div>
+          <button id="open-investigation-replay" type="button" data-i18n="openInvestigationReplay" disabled>조사 기록 재생</button>
+        </div>
+        <div class="investigation-entry-summary" aria-live="polite">
+          <div><strong data-i18n="conditionLabel">확정된 조건</strong><span id="investigation-entry-condition">-</span></div>
+          <div><strong data-i18n="llmInvestigationLabel">LLM 조사</strong><span id="investigation-entry-tools">-</span></div>
+          <div><strong data-i18n="diagnosisLabel">가설 검토 결과</strong><span id="investigation-entry-diagnosis">-</span></div>
+          <div><strong data-i18n="validatorTitle">출력 검증</strong><span id="investigation-entry-validator">-</span></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="demo-section-divider" aria-labelledby="event-processing-demo-title">
+      <strong id="event-processing-demo-title" data-i18n="eventProcessingDemoTitle">Event Processing Demo</strong>
+      <span data-i18n="eventProcessingDemoHelp">아래 영역은 Kafka 수락과 Worker DB 저장 흐름을 직접 실행하는 별도 데모입니다.</span>
+    </div>
 
     <div class="workspace-scroll" tabindex="0" aria-label="Operations workspace">
     <div class="grid">
@@ -1247,7 +1828,7 @@
 
   <script>
     let currentLanguage = "ko";
-    const DEMO_UI_VERSION = "2.4.1";
+    const DEMO_UI_VERSION = "2.5.0";
     const translations = {
       ko: {
         pageSubtitle: "도메인 이벤트의 Kafka 수락, 순서 있는 영속화, 장애 격리와 재처리를 확인한다.",
@@ -1377,7 +1958,44 @@
         dbPaymentColumn: "도메인 데이터와 추적·분류용 확장 정보",
         dbTraceColumns: "요청 추적 식별자와 DB row 생성 시각",
         envelopeVerification: "Envelope 샘플 검증",
+        scenarioControlled: "통제된 상황 재생",
+        scenarioVerifiedRun: "검증된 Agent 실행",
+        scenarioRecordedReplay: "기록 재생",
+        scenarioTitle: "AI 장애 상황별 조사",
+        scenarioSubtitle: "같은 적체 조건에서도 관측 결과에 따라 AI Agent가 확인하는 운영 증거가 달라집니다.",
+        scenarioMethod: "같은 적체 장애에서 일부 관측값만 바꿔 Agent가 조사 순서를 바꾸는지 확인합니다. 검증된 실행 기록을 재생하며 모델 API를 다시 호출하지 않습니다.",
+        scenarioLoading: "검증된 상황 기록을 불러오는 중입니다.",
+        scenarioReplay: "선택한 조사 재생",
+        scenarioAwaiting: "재생을 누르면 장애 조건부터 최종 판단까지 차례로 나타납니다.",
+        scenarioActivation: "확정된 장애 조건",
+        scenarioAgentSelected: "Agent가 선택한 도구",
+        scenarioObservation: "규칙 기반 관측 결과",
+        scenarioObservedAt: "관측 #{step} · {time} UTC",
+        scenarioAiHypothesisHelp: "Agent가 규칙 기반 관측 증거를 연결해 검토한 가설입니다.",
+        scenarioReplicaAvailabilityNote: "동일 시점에 Deployment current는 {current}였지만 ready/available은 {ready}/{available}이었습니다.",
+        scenarioKedaReplicaNote: "같은 시점의 KEDA current={current}는 가용 Worker 수가 아니라 scaler가 관측한 replica 수입니다.",
+        scenarioWhyTool: "왜 이 도구인가?",
+        scenarioRecordedBranch: "기록된 다음 선택",
+        scenarioResult: "최종 판단",
+        scenarioNextTool: "다음 조회",
+        scenarioStop: "조사 종료",
+        scenarioEvidenceGap: "확인하지 못한 정보",
+        scenarioDecisionHeld: "AI 가설 판단 보류",
+        scenarioDecisionSupported: "AI 가설 판단",
+        scenarioAbstained: "필요한 상태 증거를 확보하지 못해 원인 가설을 확정하지 않았습니다.",
+        scenarioSupportedCaveat: "사용 가능한 증거가 이 가설을 지지합니다. 원인을 확정한 판정은 아닙니다.",
+        scenarioGroundingValidator: "Grounding Validator",
+        scenarioGroundingHelp: "출력 스키마와 증거 인용 계약을 검증했습니다. 장애 원인의 참·거짓을 판정하지 않습니다.",
+        scenarioPrevious: "이전 시나리오",
+        scenarioCurrent: "현재 시나리오",
+        scenarioBranchChanged: "관측 결과에 따라 다음 조사 도구가 변경됐습니다.",
+        scenarioOutcomeChanged: "다음 조사 도구는 같지만 관측 결과와 최종 판단이 달라졌습니다.",
+        scenarioLoadFailed: "검증된 상황 기록을 불러오지 못했습니다.",
         investigationRecorded: "과거 기록 재생",
+        investigationArchiveTitle: "별도 실행 기록: Phase 5.1 실제 장애 조사",
+        investigationArchiveHelp: "현재 선택한 시나리오와 다른 실행입니다. 필요할 때만 펼쳐 상세 증거를 확인합니다.",
+        eventProcessingDemoTitle: "Event Processing Demo",
+        eventProcessingDemoHelp: "아래 영역은 Kafka 수락과 Worker DB 저장 흐름을 직접 실행하는 별도 데모입니다.",
         investigationEntryTitle: "검증된 AI 장애 조사 재생",
         investigationEntrySubtitle: "Phase 5.1 장애 실험의 조사 기록을 재생합니다. 현재 서버를 다시 진단하거나 OpenAI API를 호출하지 않습니다.",
         investigationEntryToolCalls: "읽기 전용 조회 {count}회",
@@ -1570,7 +2188,44 @@
         dbPaymentColumn: "Domain payload plus extensible tracing and classification metadata",
         dbTraceColumns: "Request trace identifier and DB row creation time",
         envelopeVerification: "Envelope Sample Verification",
+        scenarioControlled: "Controlled scenario replay",
+        scenarioVerifiedRun: "Verified Agent Run",
+        scenarioRecordedReplay: "Recorded Replay",
+        scenarioTitle: "AI Incident Scenarios",
+        scenarioSubtitle: "With the same backlog condition, the Agent checks different operational evidence as observations change.",
+        scenarioMethod: "Change selected normalized observations under the same backlog activation and verify that the Agent changes its investigation path. This replays verified runs without calling the model API again.",
+        scenarioLoading: "Loading verified scenario records.",
+        scenarioReplay: "Replay selected investigation",
+        scenarioAwaiting: "Start the replay to reveal the incident condition, investigation steps, and decision in order.",
+        scenarioActivation: "Confirmed incident condition",
+        scenarioAgentSelected: "Agent-selected tool",
+        scenarioObservation: "Deterministic observation",
+        scenarioObservedAt: "Observation #{step} · {time} UTC",
+        scenarioAiHypothesisHelp: "The Agent assessed this hypothesis by grounding it in deterministic observation evidence.",
+        scenarioReplicaAvailabilityNote: "At the same observation time, Deployment current was {current}, while ready/available were {ready}/{available}.",
+        scenarioKedaReplicaNote: "At the same observation time, KEDA current={current} is the replica count observed by the scaler, not the available Worker count.",
+        scenarioWhyTool: "Why this tool?",
+        scenarioRecordedBranch: "Recorded next selection",
+        scenarioResult: "Final decision",
+        scenarioNextTool: "Next observation",
+        scenarioStop: "Stop investigation",
+        scenarioEvidenceGap: "Evidence gap",
+        scenarioDecisionHeld: "AI hypothesis withheld",
+        scenarioDecisionSupported: "AI hypothesis assessment",
+        scenarioAbstained: "The Agent did not assert a cause because the required state evidence was unavailable.",
+        scenarioSupportedCaveat: "Available evidence supports this hypothesis. This is not a confirmed root cause.",
+        scenarioGroundingValidator: "Grounding Validator",
+        scenarioGroundingHelp: "Validated the output schema and evidence-citation contract. It does not validate causal truth.",
+        scenarioPrevious: "Previous scenario",
+        scenarioCurrent: "Current scenario",
+        scenarioBranchChanged: "The next investigation tool changed with the observation.",
+        scenarioOutcomeChanged: "The next tool stayed the same, while the observation and final decision changed.",
+        scenarioLoadFailed: "The verified scenario records could not be loaded.",
         investigationRecorded: "Recorded replay",
+        investigationArchiveTitle: "Separate run: Phase 5.1 live incident investigation",
+        investigationArchiveHelp: "This is a different run from the selected scenario. Expand it only when you need the detailed evidence record.",
+        eventProcessingDemoTitle: "Event Processing Demo",
+        eventProcessingDemoHelp: "The section below is a separate hands-on demo of Kafka acceptance and Worker database persistence.",
         investigationEntryTitle: "Verified AI Investigation Replay",
         investigationEntrySubtitle: "Replay the Phase 5.1 incident investigation. This does not re-diagnose the current server or call the OpenAI API.",
         investigationEntryToolCalls: "{count} read-only tool calls",
@@ -1658,6 +2313,10 @@
     let latestReadiness = null;
     let latestDlqSummary = null;
     let verifiedIncidentReplay = null;
+    let verifiedScenarioReplays = null;
+    let activeScenarioId = null;
+    let previousScenarioId = null;
+    let scenarioReplayTimers = [];
     let investigationReplayTimer = null;
     let investigationNavigationTimer = null;
     const queueStats = {
@@ -1748,6 +2407,499 @@
             standby: "대기 / 동기 대기 서버",
             delay: "최대 복제 지연",
           };
+    }
+
+    function scenarioCopy(scenarioId) {
+      const copy = {
+        ko: {
+          "worker-db-path-pressure": {
+            title: "Worker DB 경로 지연",
+            description: "메시지 적체가 증가하고 Worker의 DB 저장 단계가 통제 기준보다 느린 상황입니다.",
+            summary: "Worker DB 저장 단계가 기준보다 느렸습니다. Agent는 PostgreSQL 상태와 Worker 가용 상태를 차례로 조사했습니다."
+          },
+          "worker-replica-shortfall": {
+            title: "Worker 실행 수 부족",
+            description: "같은 적체 조건에서 Worker 처리 시간은 기준 범위지만 사용 가능한 Worker 수가 부족한 상황입니다.",
+            summary: "Worker 처리 시간은 기준 범위였지만 사용 가능한 Worker는 4개 중 2개였습니다. Agent는 Worker 가용 상태를 확인한 뒤 KEDA 상태를 추가 조사했습니다."
+          },
+          "postgres-path-degradation": {
+            title: "PostgreSQL 경로 이상",
+            description: "Worker의 DB 저장 단계가 느리고 PostgreSQL 고가용성 조건도 충족하지 못한 상황입니다.",
+            summary: "Worker DB 저장 단계가 기준보다 느렸고 PostgreSQL 고가용성 조건도 충족되지 않았습니다. Agent는 PostgreSQL 상태 증거를 조사했습니다."
+          },
+          "telemetry-unavailable": {
+            title: "관측 정보 수집 실패",
+            description: "Worker 단계 지연은 확인됐지만 PostgreSQL 상태 정보는 가져오지 못한 상황입니다.",
+            summary: "Worker DB 저장 단계의 지연은 확인됐지만 PostgreSQL 상태 조회가 실패했습니다. Agent는 추가 근거 없이 원인 가설을 확정하지 않았습니다."
+          }
+        },
+        en: {
+          "worker-db-path-pressure": {
+            title: "Worker DB-path pressure",
+            description: "Backlog is rising while the Worker DB-persist stage is above the controlled baseline.",
+            summary: "The Worker DB-persist stage was above baseline. The Agent inspected PostgreSQL health and Worker availability in sequence."
+          },
+          "worker-replica-shortfall": {
+            title: "Worker replica shortfall",
+            description: "With the same backlog, stage time is within baseline but available Worker replicas are short.",
+            summary: "Worker stage time was within baseline, while only two of four Workers were available. The Agent checked Worker availability and then KEDA status."
+          },
+          "postgres-path-degradation": {
+            title: "PostgreSQL path degradation",
+            description: "The Worker DB-persist stage is elevated and PostgreSQL HA guardrails are not met.",
+            summary: "The Worker DB-persist stage was elevated and PostgreSQL HA guardrails were not met. The Agent inspected PostgreSQL health evidence."
+          },
+          "telemetry-unavailable": {
+            title: "Telemetry unavailable",
+            description: "Worker stage pressure is observed, but PostgreSQL telemetry cannot be acquired.",
+            summary: "Worker stage pressure was observed, but PostgreSQL health acquisition failed. The Agent did not assert a cause without additional evidence."
+          }
+        }
+      };
+      return copy[currentLanguage][scenarioId] || { title: scenarioId, description: "", summary: "" };
+    }
+
+    function scenarioToolPurpose(toolId) {
+      const copy = {
+        ko: {
+          get_worker_stage_latency: "Worker DB 저장 단계의 처리 시간을 기준값과 비교합니다.",
+          get_postgres_health: "PostgreSQL 주 서버와 대기 서버, 동기 복제 및 복제 지연을 확인합니다.",
+          get_worker_replica_status: "필요한 Worker 수와 실제로 사용 가능한 Worker 수를 확인합니다.",
+          get_keda_status: "KEDA 작동 여부와 허용된 Worker 수 범위를 확인합니다."
+        },
+        en: {
+          get_worker_stage_latency: "Compare the observed Worker DB-persist stage with the controlled baseline.",
+          get_postgres_health: "Inspect PostgreSQL primary, standby, sync, and replication delay.",
+          get_worker_replica_status: "Compare desired Worker capacity with available replicas.",
+          get_keda_status: "Inspect KEDA activation and the allowed replica range."
+        }
+      };
+      return copy[currentLanguage][toolId] || toolId;
+    }
+
+    function scenarioFieldLabel(field, toolId) {
+      if (field === "current_replicas" && toolId === "get_keda_status") {
+        return currentLanguage === "ko" ? "KEDA 관측 replica" : "KEDA current replicas";
+      }
+      const labels = {
+        ko: {
+          worker_stage_mean_ms: "Worker stage 평균",
+          scenario_baseline_ms: "통제 기준",
+          relative_to_baseline: "기준 대비",
+          semantic_flag: "관측 분류",
+          commit_latency: "Commit latency",
+          primary_reachable: "주 서버 연결",
+          standby_count: "대기 서버",
+          sync_standby_count: "동기 대기 서버",
+          max_replication_delay_bytes: "복제 지연",
+          desired_replicas: "Deployment desired",
+          current_replicas: "Deployment current",
+          ready_replicas: "Deployment ready",
+          available_replicas: "Deployment available",
+          availability_gap: "부족한 Worker",
+          ready: "KEDA Ready",
+          active: "KEDA Active",
+          min_replicas: "최소 Worker",
+          max_replicas: "최대 Worker",
+          status: "수집 상태",
+          error_code: "오류 코드"
+        },
+        en: {
+          worker_stage_mean_ms: "Worker stage mean",
+          scenario_baseline_ms: "Controlled baseline",
+          relative_to_baseline: "Relative to baseline",
+          semantic_flag: "Deterministic observation",
+          commit_latency: "Commit latency",
+          primary_reachable: "Primary reachable",
+          standby_count: "Standby",
+          sync_standby_count: "Sync standby",
+          max_replication_delay_bytes: "Replication delay",
+          desired_replicas: "Deployment desired",
+          current_replicas: "Deployment current",
+          ready_replicas: "Deployment ready",
+          available_replicas: "Deployment available",
+          availability_gap: "Replica gap",
+          ready: "KEDA Ready",
+          active: "KEDA Active",
+          min_replicas: "Minimum replicas",
+          max_replicas: "Maximum replicas",
+          status: "Acquisition status",
+          error_code: "Error code"
+        }
+      };
+      return labels[currentLanguage][field] || field;
+    }
+
+    function scenarioFieldValue(field, value) {
+      if (field.endsWith("_ms")) {
+        return `${Number(value).toLocaleString()} ms`;
+      }
+      if (field === "relative_to_baseline") {
+        return `${Number(value).toFixed(2)}x`;
+      }
+      if (field === "max_replication_delay_bytes") {
+        return `${Number(value).toLocaleString()} bytes`;
+      }
+      if (typeof value === "boolean") {
+        return value ? "true" : "false";
+      }
+      return typeof value === "number" ? value.toLocaleString() : String(value);
+    }
+
+    function scenarioSummaryFields(evidence) {
+      const fields = {
+        get_worker_stage_latency: [
+          "worker_stage_mean_ms",
+          "scenario_baseline_ms",
+          "relative_to_baseline",
+          "semantic_flag"
+        ],
+        get_postgres_health: evidence.status === "UNAVAILABLE"
+          ? ["status", "error_code"]
+          : ["primary_reachable", "standby_count", "sync_standby_count", "max_replication_delay_bytes", "semantic_flag"],
+        get_worker_replica_status: [
+          "desired_replicas",
+          "current_replicas",
+          "ready_replicas",
+          "available_replicas",
+          "availability_gap",
+          "semantic_flag"
+        ],
+        get_keda_status: ["ready", "active", "min_replicas", "max_replicas", "current_replicas"]
+      };
+      return fields[evidence.tool_id].map((field) => {
+        const value = field === "status"
+          ? evidence.status
+          : field === "error_code"
+            ? evidence.error_code
+            : evidence.summary[field];
+        return [field, value];
+      }).filter(([, value]) => value !== undefined && value !== null);
+    }
+
+    function renderScenarioMetrics(evidence) {
+      return scenarioSummaryFields(evidence).map(([field, value]) => `
+        <div class="scenario-metric">
+          <dt>${escapeHtml(scenarioFieldLabel(field, evidence.tool_id))}</dt>
+          <dd>${escapeHtml(scenarioFieldValue(field, value))}</dd>
+        </div>
+      `).join("");
+    }
+
+    function scenarioReasonLabel(reasonCode) {
+      const labels = {
+        ko: {
+          CHECK_WORKER_PERSIST_STAGE: "Worker DB 저장 단계가 적체와 함께 느려졌는지 확인",
+          CHECK_POSTGRES_HEALTH: "PostgreSQL 경로 상태가 Worker 처리에 영향을 주는지 확인",
+          CHECK_WORKER_REPLICA_PATH: "실행 중인 Worker 수가 처리 요구량을 충족하는지 확인",
+          CHECK_KEDA_ACTIVITY: "KEDA가 허용된 범위에서 Worker를 확장할 수 있는지 확인"
+        },
+        en: {
+          CHECK_WORKER_PERSIST_STAGE: "Check whether the Worker DB-persist stage is elevated with the backlog",
+          CHECK_POSTGRES_HEALTH: "Check whether the PostgreSQL path is affecting Worker processing",
+          CHECK_WORKER_REPLICA_PATH: "Check whether available Worker capacity meets the desired count",
+          CHECK_KEDA_ACTIVITY: "Check whether KEDA can scale Workers within its configured range"
+        }
+      };
+      return labels[currentLanguage][reasonCode] || reasonCode;
+    }
+
+    function scenarioGapLabel(gap) {
+      const labels = {
+        ko: {
+          POSTGRES_HEALTH_TELEMETRY_UNAVAILABLE: "PostgreSQL 상태 조회 실패",
+          COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY: "DB 트랜잭션 확정 시간은 Worker 단계 지표에서 확인할 수 없음"
+        },
+        en: {
+          POSTGRES_HEALTH_TELEMETRY_UNAVAILABLE: "PostgreSQL health observation unavailable",
+          COMMIT_LATENCY_EXCLUDED_FROM_STAGE_TELEMETRY: "DB commit latency is excluded from Worker stage telemetry"
+        }
+      };
+      return labels[currentLanguage][gap] || gap;
+    }
+
+    function scenarioObservedAtLabel(step, observedAt) {
+      const parsed = new Date(observedAt);
+      const time = Number.isNaN(parsed.getTime())
+        ? String(observedAt)
+        : parsed.toISOString().slice(11, 19);
+      return formatText("scenarioObservedAt", { step: step.step, time });
+    }
+
+    function scenarioEvidenceNote(scenario, evidence) {
+      if (scenario.scenario_id !== "worker-replica-shortfall") {
+        return "";
+      }
+      if (evidence.tool_id === "get_worker_replica_status") {
+        return formatText("scenarioReplicaAvailabilityNote", {
+          current: evidence.summary.current_replicas,
+          ready: evidence.summary.ready_replicas,
+          available: evidence.summary.available_replicas
+        });
+      }
+      if (evidence.tool_id === "get_keda_status") {
+        return formatText("scenarioKedaReplicaNote", {
+          current: evidence.summary.current_replicas
+        });
+      }
+      return "";
+    }
+
+    function scenarioBranchSnapshot(scenario) {
+      const firstStep = scenario.steps[0];
+      const evidence = scenario.evidence.find(
+        (item) => item.evidence_ref === firstStep.returned_evidence_ref
+      );
+      const branch = scenario.branch_trace.find(
+        (item) => item.after_tool_id === firstStep.tool_id
+      );
+      const stage = Number(evidence.summary.worker_stage_mean_ms).toLocaleString();
+      const baseline = Number(evidence.summary.scenario_baseline_ms).toLocaleString();
+      return {
+        nextTool: branch?.selected_next_tool || t("scenarioStop"),
+        observation: `${stage} ms / baseline ${baseline} ms`,
+        hypothesis: scenario.hypotheses[0]?.hypothesis || "-"
+      };
+    }
+
+    function renderScenarioComparison() {
+      const container = document.querySelector("#scenario-comparison");
+      if (!previousScenarioId || previousScenarioId === activeScenarioId) {
+        container.hidden = true;
+        container.innerHTML = "";
+        return;
+      }
+      const previous = verifiedScenarioReplays.scenarios.find(
+        (item) => item.scenario_id === previousScenarioId
+      );
+      const current = activeScenario();
+      if (!previous || !current) {
+        container.hidden = true;
+        return;
+      }
+      const previousCopy = scenarioCopy(previous.scenario_id);
+      const currentCopy = scenarioCopy(current.scenario_id);
+      const previousBranch = scenarioBranchSnapshot(previous);
+      const currentBranch = scenarioBranchSnapshot(current);
+      const branchChanged = previousBranch.nextTool !== currentBranch.nextTool;
+      const conclusion = branchChanged ? t("scenarioBranchChanged") : t("scenarioOutcomeChanged");
+      container.innerHTML = `
+        <div class="scenario-compare-item">
+          <strong>${escapeHtml(t("scenarioPrevious"))}</strong>
+          <span>${escapeHtml(previousCopy.title)}</span>
+          <span>${escapeHtml(previousBranch.observation)} → <code>${escapeHtml(previousBranch.nextTool)}</code></span>
+        </div>
+        <span class="scenario-compare-arrow" aria-hidden="true">→</span>
+        <div class="scenario-compare-item">
+          <strong>${escapeHtml(t("scenarioCurrent"))}</strong>
+          <span>${escapeHtml(currentCopy.title)}</span>
+          <span>${escapeHtml(currentBranch.observation)} → <code>${escapeHtml(currentBranch.nextTool)}</code></span>
+        </div>
+        <div class="scenario-compare-result">
+          <strong>${escapeHtml(branchChanged ? t("scenarioRecordedBranch") : t("scenarioResult"))}</strong>
+          <span>✓ ${escapeHtml(conclusion)}</span>
+        </div>
+      `;
+      container.hidden = false;
+    }
+
+    function clearScenarioReplay() {
+      scenarioReplayTimers.forEach((timer) => window.clearTimeout(timer));
+      scenarioReplayTimers = [];
+      document.querySelector("#replay-selected-scenario").disabled = !verifiedScenarioReplays;
+    }
+
+    function activeScenario() {
+      if (!verifiedScenarioReplays) {
+        return null;
+      }
+      return verifiedScenarioReplays.scenarios.find(
+        (item) => item.scenario_id === activeScenarioId
+      ) || verifiedScenarioReplays.scenarios[0];
+    }
+
+    function renderScenarioReplay() {
+      const scenario = activeScenario();
+      if (!scenario) {
+        return;
+      }
+      activeScenarioId = scenario.scenario_id;
+      const activation = verifiedScenarioReplays.activation;
+      const copy = scenarioCopy(scenario.scenario_id);
+      const evidenceByRef = new Map(
+        scenario.evidence.map((item) => [item.evidence_ref, item])
+      );
+      document.querySelector("#scenario-options").innerHTML = verifiedScenarioReplays.scenarios
+        .map((item) => {
+          const itemCopy = scenarioCopy(item.scenario_id);
+          const active = item.scenario_id === scenario.scenario_id;
+          return `<button type="button" class="scenario-option${active ? " active" : ""}" data-scenario-id="${escapeHtml(item.scenario_id)}" aria-pressed="${active}">${escapeHtml(itemCopy.title)}</button>`;
+        })
+        .join("");
+      document.querySelector("#scenario-situation").textContent = copy.description;
+      document.querySelector("#scenario-trace-summary").textContent = copy.summary;
+      renderScenarioComparison();
+
+      const lag = activation.total_lag_records.map((value) => Number(value).toLocaleString()).join(" → ");
+      const slope = activation.lag_slope_records_per_second.map((value) => Number(value).toFixed(1)).join(" → ");
+      let replayStep = 0;
+      const activationPanel = `
+        <article class="scenario-activation scenario-replay-node" data-scenario-replay-step="${replayStep++}">
+          <p class="scenario-panel-kicker">${escapeHtml(t("scenarioActivation"))}</p>
+          <h3>${escapeHtml(activation.condition)}</h3>
+          <div class="scenario-panel-meta">
+            <span class="status-badge ok">${escapeHtml(activation.state)}</span>
+            <span class="status-badge">${escapeHtml(activation.policy_version)}</span>
+          </div>
+          <dl class="scenario-metrics">
+            <div class="scenario-metric"><dt>Total lag</dt><dd>${escapeHtml(lag)}</dd></div>
+            <div class="scenario-metric"><dt>60s slope</dt><dd>${escapeHtml(slope)} records/s</dd></div>
+          </dl>
+          <p class="scenario-next">${currentLanguage === "ko" ? "장애 조건은 규칙 기반 평가기가 확정했습니다." : "The deterministic evaluator confirmed the incident condition."}</p>
+        </article>
+      `;
+      const timeline = [];
+
+      scenario.steps.forEach((step) => {
+        const evidence = evidenceByRef.get(step.returned_evidence_ref);
+        const evidenceNote = scenarioEvidenceNote(scenario, evidence);
+        const branch = scenario.branch_trace.find(
+          (item) => item.after_tool_id === step.tool_id
+        );
+        const nextTool = branch?.selected_next_tool || t("scenarioStop");
+        const statusClass = evidence.status === "OK" ? "ok" : "";
+        timeline.push(`
+          <article class="scenario-event selection scenario-replay-node" data-scenario-replay-step="${replayStep++}">
+            <p class="scenario-panel-kicker">${escapeHtml(t("scenarioAgentSelected"))} · ${step.step}</p>
+            <code class="scenario-tool">${escapeHtml(step.tool_id)}</code>
+            <p class="scenario-purpose">${escapeHtml(scenarioToolPurpose(step.tool_id))}</p>
+            <div class="scenario-why">
+              <strong>${escapeHtml(t("scenarioWhyTool"))}</strong>
+              <span>${escapeHtml(scenarioReasonLabel(step.reason_code))}</span>
+            </div>
+          </article>
+          <article class="scenario-event observation-${escapeHtml(evidence.status.toLowerCase())} scenario-replay-node" data-scenario-replay-step="${replayStep++}">
+            <p class="scenario-panel-kicker">${escapeHtml(t("scenarioObservation"))}</p>
+            <p class="scenario-observed-at">${escapeHtml(scenarioObservedAtLabel(step, evidence.observed_at))}</p>
+            <h3>${escapeHtml(step.tool_id)}</h3>
+            <div class="scenario-panel-meta">
+              <span class="status-badge ${statusClass}">${escapeHtml(evidence.status)}</span>
+              <span class="status-badge">${escapeHtml(evidence.freshness.status)}</span>
+            </div>
+            <dl class="scenario-metrics">${renderScenarioMetrics(evidence)}</dl>
+            ${evidenceNote ? `<p class="scenario-evidence-note">${escapeHtml(evidenceNote)}</p>` : ""}
+            <p class="scenario-next"><strong>${escapeHtml(t("scenarioRecordedBranch"))}:</strong> <code>${escapeHtml(nextTool)}</code></p>
+          </article>
+        `);
+      });
+
+      const primaryHypothesis = scenario.hypotheses[0];
+      const insufficient = primaryHypothesis.support_status === "INSUFFICIENT";
+      const gaps = primaryHypothesis.evidence_gaps.map(scenarioGapLabel);
+      timeline.push(`
+        <article class="scenario-decision ${insufficient ? "insufficient" : "supported"} scenario-replay-node" data-scenario-replay-step="${replayStep++}">
+          <p class="scenario-panel-kicker">${escapeHtml(t("scenarioResult"))}</p>
+          <h3>${escapeHtml(insufficient ? t("scenarioDecisionHeld") : t("scenarioDecisionSupported"))}</h3>
+          <p class="scenario-role-explanation">${escapeHtml(t("scenarioAiHypothesisHelp"))}</p>
+          <strong class="scenario-hypothesis">${escapeHtml(primaryHypothesis.hypothesis)}</strong>
+          <span class="status-badge ${insufficient ? "" : "ok"}">${escapeHtml(primaryHypothesis.support_status)}</span>
+          ${gaps.length ? `<p class="scenario-gap"><strong>${escapeHtml(t("scenarioEvidenceGap"))}:</strong> ${escapeHtml(gaps.join(" · "))}</p>` : ""}
+          <p class="${insufficient ? "scenario-abstention" : "scenario-purpose"}">${escapeHtml(insufficient ? t("scenarioAbstained") : t("scenarioSupportedCaveat"))}</p>
+          <div class="scenario-validator">
+            <div class="scenario-result-meta">
+              <strong>${escapeHtml(t("scenarioGroundingValidator"))}</strong>
+              <span class="status-badge ok">${escapeHtml(scenario.validation.result)}</span>
+            </div>
+            <span>${escapeHtml(t("scenarioGroundingHelp"))}</span>
+          </div>
+          <p class="scenario-next"><strong>Stop:</strong> ${escapeHtml(scenario.stop_reason)}</p>
+        </article>
+      `);
+      document.querySelector("#scenario-track").innerHTML = `
+        <div class="scenario-awaiting">${escapeHtml(t("scenarioAwaiting"))}</div>
+        <div class="scenario-run-layout">
+          ${activationPanel}
+          <div class="scenario-timeline">${timeline.join("")}</div>
+        </div>
+      `;
+      document.querySelector("#replay-selected-scenario").disabled = false;
+    }
+
+    function replaySelectedScenario() {
+      if (!activeScenario()) {
+        return;
+      }
+      clearScenarioReplay();
+      const story = document.querySelector("#scenario-story");
+      const panels = Array.from(document.querySelectorAll("[data-scenario-replay-step]"));
+      const awaiting = document.querySelector(".scenario-awaiting");
+      const button = document.querySelector("#replay-selected-scenario");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      button.disabled = true;
+      awaiting.hidden = true;
+      panels.forEach((panel) => {
+        panel.classList.remove("replay-visible", "replay-active");
+      });
+      if (reduceMotion) {
+        panels.forEach((panel) => panel.classList.add("replay-visible"));
+        button.disabled = false;
+        return;
+      }
+      panels.forEach((panel, index) => {
+        const timer = window.setTimeout(() => {
+          panels.forEach((item) => item.classList.remove("replay-active"));
+          panel.classList.add("replay-visible", "replay-active");
+          panel.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, index * 650);
+        scenarioReplayTimers.push(timer);
+      });
+      const finishTimer = window.setTimeout(() => {
+        panels.forEach((panel) => panel.classList.remove("replay-active"));
+        button.disabled = false;
+        scenarioReplayTimers = [];
+        story.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, panels.length * 650);
+      scenarioReplayTimers.push(finishTimer);
+    }
+
+    function selectScenario(scenarioId, replay = false) {
+      clearScenarioReplay();
+      if (activeScenarioId && activeScenarioId !== scenarioId) {
+        previousScenarioId = activeScenarioId;
+      }
+      activeScenarioId = scenarioId;
+      renderScenarioReplay();
+      if (replay) {
+        replaySelectedScenario();
+      }
+    }
+
+    async function loadVerifiedScenarioReplays() {
+      const response = await fetch("./verified-scenario-replays.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`verified scenario replay HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      if (
+        payload.schema_version !== "demo.verified-scenario-replays.v1"
+        || payload.classification !== "SANITIZED_CONTROLLED_SCENARIO_REPLAY"
+        || payload.scenarios?.length !== 4
+        || payload.boundary?.openai_api_called !== false
+        || payload.boundary?.runtime_source_called !== false
+        || payload.boundary?.runtime_write_allowed !== false
+      ) {
+        throw new Error("verified scenario replay contract mismatch");
+      }
+      verifiedScenarioReplays = payload;
+      const dbPathScenario = payload.scenarios.find(
+        (item) => item.scenario_id === "worker-db-path-pressure"
+      );
+      const workerShortfallScenario = payload.scenarios.find(
+        (item) => item.scenario_id === "worker-replica-shortfall"
+      );
+      previousScenarioId = dbPathScenario?.scenario_id || payload.scenarios[0].scenario_id;
+      activeScenarioId = workerShortfallScenario?.scenario_id || payload.scenarios[1].scenario_id;
+      renderScenarioReplay();
     }
 
     function evidenceDetailRows(toolCall) {
@@ -2104,6 +3256,8 @@
         updateQueueMetrics();
       }
       renderEvents();
+      clearScenarioReplay();
+      renderScenarioReplay();
       renderVerifiedIncidentReplay();
     }
 
@@ -3133,6 +4287,13 @@
     });
     document.querySelector("#replay-investigation").addEventListener("click", replayInvestigationTrace);
     document.querySelector("#open-investigation-replay").addEventListener("click", openInvestigationReplay);
+    document.querySelector("#replay-selected-scenario").addEventListener("click", replaySelectedScenario);
+    document.querySelector("#scenario-options").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-scenario-id]");
+      if (button) {
+        selectScenario(button.dataset.scenarioId);
+      }
+    });
     document.querySelector("#ops-refresh-interval").addEventListener("change", restartOpsAutoRefresh);
     document.querySelectorAll("[data-language]").forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.language));
@@ -3150,6 +4311,12 @@
     resetOpsStatusIfPending();
     refreshOpsStatus();
     restartOpsAutoRefresh();
+    loadVerifiedScenarioReplays().catch((error) => {
+      document.querySelector("#scenario-situation").textContent = t("scenarioLoadFailed");
+      document.querySelector("#scenario-track").innerHTML = `<p class="scenario-load-error">${escapeHtml(error.message)}</p>`;
+      document.querySelector("#replay-selected-scenario").disabled = true;
+      log(`verified scenario replay unavailable: ${error.message}`);
+    });
     loadVerifiedIncidentReplay().catch((error) => {
       document.querySelector("#investigation-trace").innerHTML = `<p class="investigation-error">${escapeHtml(t("investigationLoadFailed"))}</p>`;
       document.querySelector("#replay-investigation").disabled = true;

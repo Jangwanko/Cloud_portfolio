@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-24`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 source·local candidate 성능 검증은 `2026-08-10`, 최신 public runtime 확인은 `2026-08-28`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Current Evidence Status
 
@@ -10,8 +10,8 @@
 | Source candidate | API `2.1.0`, Demo UI `2.4.0` | dev-kafka local suite `608 passed`; sanitized recorded Investigation replay 포함 |
 | Candidate runtime | image `messaging-portfolio:notification-batch` | fixed/KEDA 각 3회, generic v2·ordering·final lag·오류율 검증; registry publication 전 |
 | Local GitOps release | image `66e9cc995dca`, UI `2.3.1`, API `2.1.0` | `dev-kafka` CI validation 뒤 게시된 GHCR image |
-| Demo-lite source candidate | API `2.1.0`, Demo UI `2.4.0` | static local-ha incident replay, 저사양 topology·7일 retention 유지; local suite `359 passed` |
-| Public demo-lite runtime | API `2.1.0`, Demo UI `2.4.0`, image `7489ab270995` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+| Demo-lite source candidate | API `2.1.0`, Demo UI `2.5.0` | actual incident replay 유지; 네 controlled scenario의 sanitized branch replay 추가; local suite `363 passed` |
+| Public demo-lite runtime | API `2.1.0`, Demo UI `2.4.1`, image `ece446d47370` | replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
@@ -23,7 +23,24 @@
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev-kafka commit `8d334b8` 게시; candidate image·master·demo publication 확인 대기 |
-| Public demo-lite | image `7489ab270995`, UI `2.4.0`, API `2.1.0` | 2026-08-24 recorded replay와 저사양 runtime boundary 확인 |
+| Public demo-lite | image `ece446d47370`, UI `2.4.1`, API `2.1.0` | 2026-08-28 recorded replay와 저사양 runtime boundary 확인 |
+
+## Public Controlled Scenario Replay Candidate — 2026-08-29
+
+- source: validated `demo.scenario-lab-replay.v1` catalog from controlled Scenario Lab
+- public projection: `demo/verified-scenario-replays.json`, schema `demo.verified-scenario-replays.v1`
+- scenarios: Worker DB-path pressure, Worker replica shortfall, PostgreSQL path degradation, Telemetry unavailable
+- preserved: deterministic activation, tool order, normalized evidence summary, next-tool branch, hypothesis status/gap, stop reason, validator result
+- removed: incident and evaluation IDs, source bundle digests, raw evidence IDs, runtime context, model response IDs
+- runtime boundary: OpenAI API `0`, runtime source call `0`, runtime write `0`
+- replay behavior: initial visible step `0`, 0.9초 뒤 `2`, 첫 3-tool scenario 완료 뒤 `8`; 선택만으로 자동 replay 없음
+- initial branch comparison: Worker DB path `14.3ms → get_postgres_health`와 Worker shortfall `3.3ms → get_worker_replica_status` 차이 표시
+- replay state: 완료 뒤 awaiting 안내 hidden, trace와 안내 동시 노출 없음
+- browser checks: desktop `1440x1000`, mobile `390x844`, second replay network request `0`, mobile width `356/356`로 horizontal overflow `0`
+- telemetry abstention: `PROMETHEUS_TIMEOUT`, `INSUFFICIENT_EVIDENCE`, 자연어 evidence gap, Grounding Validator `VALID` 표시
+- actual Phase 5.1 compact summary: desktop/mobile 기본 접힘, 현재 scenario 결과와 분리
+- validation: focused scenario/generic contract `59 passed`, full suite `363 passed`, compileall·k6 inspect·diff check 통과
+- deployment status: `demo-dev` source candidate; public demo-lite remains UI `2.4.1`
 
 원본 위치:
 
