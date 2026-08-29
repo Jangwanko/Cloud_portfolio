@@ -959,8 +959,8 @@ def test_demo_uses_v2_generic_events_with_order_as_reference_scenario():
 
     for token in (
         "Reliable Event Processing Console",
-        'const DEMO_UI_VERSION = "2.4.1"',
-        "ver. 2.4.1 / api -",
+        'const DEMO_UI_VERSION = "2.5.0"',
+        "ver. 2.5.0 / api -",
         "Reference Scenario",
         "범용 stream 처리 경계",
         "reference.payment.completed",

@@ -7,7 +7,7 @@ resources:
 images:
   - name: messaging-portfolio
     newName: ghcr.io/jangwanko/cloud_portfolio
-    newTag: ece446d47370
+    newTag: a67f40e2a29b
 
 patches:
   - path: patches/api-generic-v2-k3s.yaml
