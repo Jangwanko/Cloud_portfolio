@@ -1,29 +1,34 @@
 # Demo Lite
 
-## 현재 상태 — 2026-07-27
+## Current State - 2026-08-29
 
-| 대상 | 상태 |
+| Boundary | Version and evidence |
 | --- | --- |
-| Public `demo-lite` runtime | UI `2.1.0`, API `2.0.0`, generic v2, event `202` |
-| Public scaling evidence | `message-worker` lag peak `828`, HPA desired·actual replica `1→2` |
-| `demo-dev` candidate | UI `2.3.0`, tests `368 passed`, public deployment 미확인 |
-| `master` source | UI `2.0.0`, full local HA profile |
+| Master / dev-kafka source | UI `2.4.1`, API `2.1.0`, full local-ha profile |
+| Demo-dev candidate | UI `2.5.0`, API `2.1.0`, commit `a67f40e`, `363 passed` |
+| Public demo-lite runtime | UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370` |
+| Public runtime check | replay `200` / `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
-Public runtime과 branch source는 UI badge, readiness `app_version`, runtime image로 각각 확인합니다. Branch의 최신 commit만으로 public 배포 완료를 판단하지 않습니다.
+Branch HEAD나 source version만으로 배포 완료를 판단하지 않습니다. Public 상태는 release,
+image, UI badge, readiness와 runtime route를 함께 확인한 경우에만 기록합니다. 따라서
+`demo-dev` UI `2.5.0`은 검증된 source candidate이며 아직 public deployment가 아닙니다.
 
-## 목적과 범위
+## Purpose
 
-- 대상: Ubuntu, 2코어급 CPU, 8GB memory, 제한된 disk
-- 배포: k3s, Argo CD, registry image
-- 흐름: API → Kafka → Worker → PostgreSQL
-- 시나리오: 범용 event contract 위의 주문·결제 reference data
-- 제외: 3-broker Kafka HA, PostgreSQL HA failover, full-profile 성능 baseline
+Demo Lite는 제한된 서버에서 핵심 event-processing 경계를 공개 시연합니다.
 
-Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니다. Full local HA의 broker·standby 구성과 성능 수치를 대체하지 않습니다.
+- API → Kafka → Worker → PostgreSQL 처리 흐름
+- Kafka append와 PostgreSQL persistence의 분리된 진행 상태
+- lag 기반 core Worker 확장
+- DLQ와 Operations Advisor
+- actual verified incident의 static AI Investigation replay
 
-## Profile 차이
+3-broker Kafka HA, PostgreSQL standby failover와 full-profile 성능 baseline은 local-ha에서
+검증합니다. Demo Lite 수치로 대체하지 않습니다.
 
-| 구성 | Full local HA | Demo Lite |
+## Profile Boundary
+
+| Component | Full local-ha | Demo Lite |
 | --- | ---: | ---: |
 | Kafka | `3` brokers | `1` broker |
 | PostgreSQL | primary `1` + standby `2` | single instance |
@@ -31,41 +36,50 @@ Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니
 | API | `6→8` | `1→2` |
 | Core Worker | `2→4` | `1→2` |
 | Notification Worker | `1→2` | fixed `1` |
-| 목적 | HA·복구·성능 실험 | 공개 시연과 저사양 운영 |
+| Main purpose | HA, recovery, performance experiments | public replay and low-resource operation |
 
-## UI 버전 경계
+## AI Replay Boundary
 
-- Public UI `2.1.0`: generic v2 envelope와 `202`, Pipeline Evidence 내 저장 증거
-- Candidate UI `2.3.0`: Kafka append와 DB persistence 동시 진행률, Worker 현재/최대 replica 단일 표시, 진행 중 Advisor 판정
-- API `2.0.0`: `/v2/streams/{stream_id}/events`, request status, persistence summary
+Public UI `2.4.1`은 actual Phase 5.1 incident에서 생성한 sanitized
+`demo.verified-incident-replay.v1` artifact를 재생합니다. OpenAI API를 다시 호출하지
+않고 현재 demo-lite runtime을 재진단하지 않습니다.
 
-Candidate 기능은 `demo-dev` 검증과 release workflow를 거쳐 `demo-lite`에 게시된 뒤 public 기능으로 기록합니다.
+`demo-dev` UI `2.5.0` 후보는 네 controlled Scenario Lab 결과를
+`demo.verified-scenario-replays.v1`로 투영합니다. 같은 deterministic activation에서
+observation에 따라 다음 read-only tool 선택이 달라지는 기록을 비교합니다.
 
-## Release 경계
+- Worker DB-path pressure
+- Worker replica shortfall
+- PostgreSQL path degradation
+- Telemetry unavailable
 
-1. `demo-dev` source와 test 확정
-2. CI validation 성공
+Worker shortfall scenario의 Deployment `current=4`, `ready/available=2/2`와 KEDA
+`current=4`는 같은 `2026-08-23T15:32:08Z` capture입니다. KEDA current는 scaler가
+관측한 replica 수입니다. available Worker 수나 scale-out 완료 시점을 뜻하지 않습니다.
+
+Normalizer의 `WORKER_CAPACITY_SHORTFALL`은 deterministic observation classification입니다.
+Agent의 `WORKER_CAPACITY_SHORTFALL_SUSPECTED=SUPPORTED`는 evidence-grounded hypothesis입니다.
+Grounding Validator는 output schema와 evidence citation을 검사하며 root cause를 확정하지
+않습니다.
+
+## Release Boundary
+
+1. `demo-dev` source와 tests 확정
+2. CI validation 통과
 3. 검증된 commit으로 image build
-4. 동일 commit과 image tag를 `demo-lite` release commit에 기록
+4. 동일 source commit과 image tag를 `demo-lite` release에 기록
 5. Argo CD sync
-6. UI badge, readiness, generic event `202`, Worker scaling 확인
+6. UI badge, readiness, replay route, Worker/KEDA 상태 확인
 
-Schema release 순서는 migration → Worker → API gate입니다. API만 먼저 교체하는 배포는 허용하지 않습니다.
+Schema rollout은 migration → Worker → API gate 순서를 유지합니다. UI candidate를
+기록했다는 이유만으로 public runtime version을 올리지 않습니다.
 
-## 확인
-
-Public:
+## Public Endpoints
 
 - Demo UI: `https://vm118.js-banjiha.cloud/demo/order-dashboard.html`
 - Swagger: `https://vm118.js-banjiha.cloud/docs`
 - Readiness: `https://vm118.js-banjiha.cloud/health/ready`
 - Grafana: `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s`
 
-Local branch:
-
-```powershell
-git branch --show-current
-git status --short
-```
-
-`master`에는 full local HA 실행 경로를 유지합니다. Demo Lite overlay와 배포 script의 기준 source는 `demo-dev`와 release branch에서 확인합니다.
+`master`는 full local-ha 실행 경로의 canonical source입니다. `demo-dev`는 저사양 배포
+후보를 검증하고, `demo-lite`는 승인된 public release와 CI image-tag commit을 보존합니다.

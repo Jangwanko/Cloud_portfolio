@@ -14,6 +14,7 @@
 | Phase 4/4.1/4.2: Recovery Calibration/Evaluation | continuous/zero-ingress drain과 MEDIUM envelope 재진입 | ACTIVE/RECOVERING/UNKNOWN 및 policy v2 RECOVERED 구현 완료 |
 | Phase 5/5.1: Incident Lifecycle/E2E | condition·diagnosis·recovery identity 연결, timeline·closure·current observation 분리 | actual local-ha zero-drop Gate 2와 canonical local artifact 검증 완료 |
 | Phase 5.2: Public Replay | sanitized verified incident의 recorded tool/evidence/hypothesis replay | UI `2.4.1` 첫 화면 replay 진입부 public 배포·검증 완료 |
+| Public Scenario Replay candidate | controlled Scenario Lab 결과를 public-safe static artifact로 투영 | `demo-dev` UI `2.5.0` source 검증 완료, public 배포 미완료 |
 
 목표는 source timestamp와 provenance가 있는 증거로 detection, investigation, recovery verification, lifecycle record를 재현하는 것입니다. Incident 존재와 recovery는 deterministic evaluator가 판정하고, LLM은 확정된 incident에 필요한 추가 read-only evidence 선택과 hypothesis 정리에만 사용합니다.
 
@@ -565,6 +566,26 @@ source를 호출하지 않습니다. Actual model 검증은 아래 CLI에서만 
 
 `--model-mode live`는 기존 local OpenAI credential gate를 사용합니다. Public UI에서 API
 key를 전달하거나 model request를 생성하는 경로는 없습니다.
+
+## Public Controlled Scenario Replay Candidate - 2026-08-29
+
+`demo-dev` UI `2.5.0`은 기존 adaptive Scenario Lab 실행을 새로 수행하지 않습니다.
+검증된 네 run에서 허용된 필드만 `demo.verified-scenario-replays.v1`로 투영하고,
+브라우저는 recorded condition, tool selection, observation, next branch, hypothesis와
+validator 결과를 순서대로 재생합니다. OpenAI API, runtime source, runtime write는
+호출하지 않습니다.
+
+Worker replica shortfall scenario의 Deployment `current=4`, `ready=2`, `available=2`와
+KEDA `current=4`는 같은 `2026-08-23T15:32:08Z` capture입니다. 이 evidence는
+`available 2 → KEDA scale-out → current 4` 시간 흐름을 증명하지 않습니다. UI는
+Deployment availability와 scaler-observed replica count를 별도 label로 표시합니다.
+Normalizer의 `WORKER_CAPACITY_SHORTFALL`은 관측 분류이고, Agent의
+`WORKER_CAPACITY_SHORTFALL_SUSPECTED=SUPPORTED`는 그 evidence를 인용한 가설
+판단입니다. Grounding Validator는 schema와 citation 계약을 검사하며 causal truth를
+확정하지 않습니다.
+
+이 candidate는 commit `a67f40e`, focused `59 passed`, full `363 passed`로 검증됐습니다.
+현재 public demo-lite는 UI `2.4.1`이므로 배포 완료로 기록하지 않습니다.
 
 ## Phase 5 Incident Lifecycle and Actual E2E - 2026-08-23
 

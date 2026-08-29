@@ -2,6 +2,8 @@
 
 Dev-kafka source candidate: UI `2.4.1`, API `2.1.0`
 
+Demo-dev source candidate: UI `2.5.0`, API `2.1.0`, commit `a67f40e`
+
 Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
 
 ## Purpose
@@ -40,6 +42,7 @@ Version boundary:
 - `dev-kafka` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay와 첫 화면 replay 진입부 사용
 - `dev-kafka` published GitOps target: UI `2.4.1`, API `2.1.0`, image `54ee42a2fb29`; local-ha runtime rollout은 이번 승격에서 미검증
 - 마지막 검증 local-ha runtime: image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` (2026-08-12)
+- `demo-dev` source candidate: UI `2.5.0`, 네 controlled scenario의 public-safe static replay; source 검증 완료, public 배포 미완료
 - public demo-lite 2026-08-28: UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
 - 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
@@ -179,7 +182,7 @@ DB 저장 증거:
 - `metadata`: classification, external reference 같은 선택적 JSON context
 - DB row 조회: 로그인 user와 stream membership 범위
 - `master` UI `2.0.0`: 별도 DB 저장 컬럼 패널
-- `demo-dev` UI `2.3.0`: Pipeline Evidence의 DB 단계 뒤 compact evidence
+- `demo-dev` UI `2.5.0`: 기존 compact evidence와 controlled scenario replay 후보
 
 주문 reference sample은 `reference.payment.completed`, `reference.order.created` 같은 `event_type`과 `metadata.external_references.payment`를 사용합니다. 이 값은 generic core의 필수 domain 규칙이 아닙니다.
 
@@ -200,7 +203,7 @@ Legacy compatibility:
 - 현재 방식:
   - rule-based
   - AI API 미사용
-  - `demo-dev` UI `2.3.0`: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정
+  - `demo-dev` UI `2.5.0`: 전송·저장 추적 중 `처리 중`, run 종료 뒤 카운터 불일치 판정, controlled scenario replay 후보
 - 확장 여지:
   - 별도 AI Worker
   - 운영 요약 생성

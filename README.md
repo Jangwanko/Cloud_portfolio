@@ -93,7 +93,7 @@ flowchart LR
 - 필요한 evidence를 선택해 정의된 장애 가설별로 이를 지지하거나 반박하는 evidence와 부족한 evidence를 분류합니다.
 - 존재하지 않는 evidence ID나 recovery·remediation 판단처럼 허용 범위를 벗어난 출력은 validator가 거부합니다.
 - incident 발생과 recovery 판정, runtime 변경 권한은 deterministic logic에 유지합니다.
-- `ops.diagnosis.v2`는 Worker capacity와 PostgreSQL path 가설, acquisition provenance, branch evaluation을 추가합니다. Public Demo는 검증된 과거 incident만 재생하며 Scenario Lab과 분리합니다.
+- `ops.diagnosis.v2`는 Worker capacity와 PostgreSQL path 가설, acquisition provenance, branch evaluation을 추가합니다. 현재 배포된 Public Demo `2.4.1`은 검증된 과거 incident를 재생합니다. `demo-dev` UI `2.5.0` 후보는 같은 activation에 대한 네 controlled scenario를 별도 static artifact로 투영하며 아직 public runtime에 배포되지 않았습니다.
 
 [Ops Agent 상세 설계 및 검증](docs/OPS_AGENT.md)
 

@@ -2,6 +2,19 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-08-29 Public controlled scenario replay candidate
+
+- `demo-dev` UI `2.5.0`, commit `a67f40e`에 네 controlled Scenario Lab replay 추가
+- actual Phase 5.1 replay와 controlled scenario를 별도 실행으로 분리
+- condition → recorded tool selection → normalized observation → next branch → hypothesis → validator 순서 재생
+- 첫 비교는 Worker DB path의 `get_postgres_health`와 Worker shortfall의 `get_worker_replica_status` 분기 사용
+- `왜 이 도구인가?`, 관측 시각, deterministic observation과 AI hypothesis 역할 구분 표시
+- 동일 capture의 Deployment current/ready/available과 KEDA current 의미를 분리하고 scale-out 시간 흐름을 임의 추론하지 않음
+- internal ID·digest·raw reference를 제외한 `demo.verified-scenario-replays.v1` public artifact 사용
+- OpenAI API, runtime source, runtime write 호출 없는 static replay
+- focused `59 passed`, full suite `363 passed`, compileall·k6 inspect·artifact projection·diff/secret/path 검증 통과
+- source candidate만 검증됐으며 public demo-lite UI `2.4.1` 배포 상태는 변경하지 않음
+
 ## 2026-08-28 Controlled Scenario Lab candidate
 
 - 기존 `ops.diagnosis.v1`과 adaptive Agent loop를 유지하고 acquisition provenance와 확장 hypothesis를 가진 `ops.diagnosis.v2` 추가

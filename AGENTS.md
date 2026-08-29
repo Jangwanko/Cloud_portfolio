@@ -117,6 +117,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - 2026-07-27 local rollout: Argo CD revision `ddb888a`, `Synced / Healthy`, API/Worker image `1cd84d4df742`, API `6/6`, Worker `2/2`, readiness `ready`, UI `2.2.0`, concurrent persistence polling과 Worker peak asset 반영 확인.
 - 2026-07-27 Demo UI `2.3.0` 정보 구조·Advisor 판정 정리 뒤 local suite는 `364 passed`입니다.
 - 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. Worker 현재/최대 수는 `/ops/summary`에서 읽고, Kafka append와 DB persistence를 병렬 갱신합니다. UI `2.4.1`은 actual Phase 5.1 diagnosis의 sanitized recorded tool→evidence→hypothesis replay, validator/read-only boundary와 첫 화면 replay 진입부를 포함하며 OpenAI API를 재호출하지 않습니다. Controlled Scenario Lab을 포함해 CI validation을 통과한 dev-kafka image는 `54ee42a2fb29`입니다.
+- `demo-dev` source candidate는 Demo UI `2.5.0`, API `2.1.0`, commit `a67f40e`입니다. 네 controlled Scenario Lab 결과를 `demo.verified-scenario-replays.v1` public-safe artifact로 투영하고 첫 화면에서 condition → tool selection → observation → next branch → hypothesis → validator 순서로 재생합니다. focused `59 passed`, full suite `363 passed`, compileall·k6 inspect·artifact projection·secret/path/diff 검증을 통과했습니다. 이 값은 source candidate이며 public demo-lite 배포 증거가 아닙니다.
 - 2026-08-28 Phase 3.2 기준 focused suite `90 passed`, Ops Agent suite `267 passed`, full suite `626 passed`입니다. dev-kafka CI runs `33175480687`·`33175967293`, master CI run `33176442914`가 성공했고 master overlay bot commit은 `b9218c7`입니다.
 - 2026-07-27 master 문서·container 최적화 기준 local suite는 `365 passed`입니다.
 - 2026-07-27 demo-lite generic v2 동기화와 Demo UI `2.3.0` 후보의 `demo-dev` suite는 `368 passed`입니다.
@@ -133,7 +134,7 @@ Kafka 1차/2차 비교는 Worker scaling ON/OFF 비교가 아닙니다. Pgpool H
 - Reinstall 뒤 manual backup Job 완료와 새 `postgres-backups` PVC `Bound`를 확인했습니다. 이어 host `backups/`에 `39,433,414` byte logical dump를 만들고 disposable database에 복원해 10개 table row count, Alembic `0008`, generic v2 row `33,840`, max id/sequence가 원본과 일치함을 확인한 뒤 임시 DB를 삭제했습니다. 같은 host 장애를 견디는 object storage 사본과 정기 restore drill/복구 orchestration 자동화는 아직 없습니다.
 - PostgreSQL HA chart의 sync environment는 first boot에만 적용되어 persisted-volume 재시작 뒤 `synchronous_standby_names`가 사라질 수 있습니다. Install/DB recovery 경로는 모든 ready PostgreSQL pod에 `synchronous_commit=on`, `ANY 1`을 `ALTER SYSTEM`으로 지속 적용하고 현재 primary의 streaming sync/quorum standby `>=1`을 확인해야 완료입니다.
 - Public demo-lite는 2026-08-28 release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0`, replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2`를 확인했습니다. 저사양 topology는 Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`입니다.
-- `demo-dev`는 public demo-lite의 저사양 자원 경계를 관리합니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, migration → Worker → API gate를 포함합니다.
+- `demo-dev`는 public demo-lite의 저사양 자원 경계를 관리합니다. Kafka append·DB persistence 동시 진행률, 운영 상태 패널의 Worker 현재/최대 replica, compact DB 저장 증거, 진행 중 Advisor 판정, migration → Worker → API gate를 포함합니다. UI `2.5.0` controlled scenario replay는 같은 시점의 Deployment current/ready/available과 KEDA current를 서로 다른 관측 의미로 표시하며 시간 순서나 scale-out 완료를 임의로 추론하지 않습니다.
 
 ## Important Docs
 
@@ -278,7 +279,7 @@ Latest ordering / failure injection result after fixing local client skew:
 - 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
 - 현재 `dev-kafka` source candidate는 Demo UI `2.4.1`, API `2.1.0`입니다. 범용 시스템 정체성과 주문 reference scenario 표시, 운영 refresh 기본 `30초`/선택 `60초`, auth token memory 재사용, Kafka append와 동시에 시작하는 stream persistence summary `1초` polling, `/ops/summary` Worker replica, `send_failed`/일부 미확인 종료, Pipeline Evidence 내부의 범용 envelope panel, user-filtered DLQ recent log detail/manual replay, 첫 화면에서 진입하는 sanitized recorded AI Investigation trace가 기준입니다.
 - 문서에 등록된 public demo-lite deployment는 UI `2.4.1`, API `2.1.0`, image `ece446d47370`입니다.
-- `demo-dev` candidate의 source Demo UI는 `2.3.0`입니다. Kafka append와 동시에 시작하는 persistence summary `1초` polling, 운영 상태 패널의 Worker 현재/최대 replica, Pipeline Evidence 내부의 compact DB 저장 증거가 기준입니다.
+- `demo-dev` candidate의 source Demo UI는 `2.5.0`입니다. 기존 저사양 event-processing UI와 actual Phase 5.1 replay를 유지하고, 네 controlled scenario의 recorded branching을 public-safe static artifact에서 재생합니다. 현재 public demo-lite는 UI `2.4.1`이며 이 후보는 아직 배포되지 않았습니다.
 - 샘플 예약 버튼의 현재 기준은 `10개`, `100개`, `1000개`입니다.
 - `예약 건수`는 전송 시작 후 `남은 예약/전체 예약`으로 표시합니다. API가 Kafka append에 성공하면 줄어듭니다.
 - `Kafka 적재`는 API가 `message-ingress` topic append를 성공시킨 수입니다.

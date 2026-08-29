@@ -7,6 +7,7 @@
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2와 `ops.diagnosis.v2` Scenario Lab | actual Gate 2 recorded replay와 controlled observation branching 구현·검증 |
+| Demo-dev presentation candidate | API `2.1.0`, Demo UI `2.5.0`, commit `a67f40e` | 네 controlled scenario의 public-safe recorded replay; `59` focused / `363` full tests 통과, public 배포 미완료 |
 | Current source promotion | feature `b2e1037`, final source `54ee42a`, dev image `54ee42a2fb29` | dev CI runs `33175480687`·`33175967293` 성공 |
 | Current master promotion | merge `ad686f3`, image `ad686f35448f`, overlay `b9218c7` | master CI run `33176442914` 성공 |
 | Last verified local GitOps runtime | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy`; 현재 published image rollout과 구분 |
@@ -34,6 +35,23 @@
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `54ee42a2fb29`, master image `ad686f35448f` 게시 확인; runtime sync는 별도 검증 |
 | Public demo-lite | release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0` | entry/replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+
+## Public Controlled Scenario Replay Candidate - 2026-08-29
+
+`demo-dev` UI `2.5.0`은 validated `demo.scenario-lab-replay.v1` catalog를
+`demo.verified-scenario-replays.v1` public artifact로 투영합니다. 네 scenario는 같은
+`CORE_BACKLOG_PRESSURE=PRESENT` activation을 사용하고 normalized observation에 따라
+기록된 다음 tool 선택과 hypothesis가 달라지는 과정을 재생합니다.
+
+- scenarios: Worker DB-path pressure, Worker replica shortfall, PostgreSQL path degradation, Telemetry unavailable
+- preserved: deterministic activation, ordered tool calls, normalized summary, next-tool branch, hypothesis status/gap, stop reason, validator result
+- removed: incident/evaluation ID, source bundle digest, raw evidence ID, runtime context, model response ID
+- boundary: OpenAI API `0`, runtime source call `0`, runtime write `0`
+- default comparison: `14.3ms → get_postgres_health`와 `3.3ms → get_worker_replica_status`
+- evidence semantics: Worker shortfall의 Deployment `current=4`, `ready/available=2/2`와 KEDA `current=4`는 모두 `2026-08-23T15:32:08Z` 관측입니다. KEDA current는 scaler가 본 replica 수이며 available Worker 수가 아닙니다.
+- UI roles: `WORKER_CAPACITY_SHORTFALL`은 deterministic observation classification, `WORKER_CAPACITY_SHORTFALL_SUSPECTED`는 evidence-grounded AI hypothesis
+- validation: focused `59 passed`, full suite `363 passed`, compileall, k6 inspect, artifact projection, diff/secret/path/conflict scan PASS
+- deployment: `demo-dev` source candidate only; public demo-lite는 UI `2.4.1` 유지
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
 
