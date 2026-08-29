@@ -8,6 +8,7 @@
 - 승인된 Git·네트워크 명령 형식을 재사용하고 관련 확인을 가능한 범위에서 묶어 불필요한 sandbox 승인 창을 최소화합니다.
 - destructive operation, secret·데이터 손실 위험, 의미를 확정할 수 없는 merge conflict처럼 실제 사용자 판단이 필요한 경우에만 중단하고 보고합니다.
 - 원격 CI가 진행 중이면 별도 확인을 요청하지 않고 완료될 때까지 기다린 뒤 결과와 최종 bot commit을 확인합니다.
+- 명시적으로 꼭 필요한 경우가 아니면 `CreatorTemp`, OS temp, sandbox 임시 디렉터리 등에 Git worktree, 저장소 복사본, 프로젝트 파일을 만들지 않습니다. 추가 worktree가 필요하면 `C:\Users\rhwkd\VSC` 아래의 명확한 sibling 경로를 사용합니다. 불가피하게 만든 임시 검증 파일과 프로세스는 같은 작업 안에서 정리합니다.
 
 ## Current Project Identity
 
