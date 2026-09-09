@@ -2,6 +2,37 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-09-05 Transactional Outbox candidate
+
+- Migration `0009_notification_outbox`, event/status와 원자적 intent 기록, 별도 publisher와 capped retry 추가
+- Kafka ACK 이후 완료 표시, 재발행 시 기존 notification_attempts unique constraint 활용
+- Publisher manifest, Prometheus pending/age/success 지표와 oldest-age alert, benchmark reset 중지 순서 추가
+- 실제 격리 run `20260905T144053Z` PASS: commit 전후·ACK 직후 강제 종료, send failure, relay 2개 검증
+- 최종 event 12개 / Kafka notification 13개 / DB attempt 12개 / pending 0; 기존 workload spec 불변, cleanup 완료
+- 전체 local suite `658 passed`, infrastructure contract `27 passed`, promtool 규칙 24개·scrape config와 Kustomize render 검증
+- [상세 계약·제약](TRANSACTIONAL_OUTBOX.md); public image/runtime 승격·성능 baseline은 별도
+
+## 2026-09-05 외부 백업 준비와 로컬 복원 리허설
+
+- 저장소 미보유 상태에 맞춰 독립 `infra/terraform/envs/backup` root 추가: 비공개 S3, AES256, versioning, HTTPS, 계정 ID 제한, prefix 단위 client policy 출력
+- Terraform `1.15.8` / AWS provider `5.100.0`의 fmt·init·validate 통과; AWS plan/apply는 미실행
+
+- Host-only S3 업로드·다운로드 도구 추가: conditional PUT, AES256, SHA-256, version 지정 다운로드, 손상·덮어쓰기 차단
+- 합성 v2 이벤트 10개로 실제 schema dump 생성 후 원본 실험 namespace 삭제, 새 PostgreSQL Pod에 복원
+- 11개 table 내용/행 수, sequence 4개, column 정의, Alembic version 일치; cleanup 완료
+- 손상·덮어쓰기·복원 불일치 차단 focused suite 14개, 전체 local suite `654 passed`
+- 외부 버킷과 인증 프로필 미지정으로 S3 왕복은 미실행. 로컬 리허설을 host-loss 복구 증거로 해석하지 않음
+- [재현 절차와 대기 항목](OFFHOST_BACKUP_DRILL.md)
+
+## 2026-09-05 Isolated release failure lab
+
+- 격리된 namespace-local Helm fixture와 실제 Argo controller로 migration 실패 → rollback → forward recovery 실행 스크립트 추가
+- 의도한 SQL 실패의 transactional DDL rollback, Worker/API wave 차단, 기존 release 처리와 수정 release 재배포 검증
+- 실제 실행 `20260905T133642Z` PASS: 총 40개 event 저장·순서·구조화 데이터 일치, 기존 workload spec 불변, cleanup 완료
+- 전체 local suite `640 passed`; raw 34개 파일 hash 대조와 28개 checkpoint의 compact evidence 보존
+- 동일 published image와 synthetic additive revision 실험이며 Git/CI 전달 E2E·서로 다른 image 호환성·production 무중단 검증은 포함하지 않음
+- 상세 조건과 이력서 표현 예시는 [RELEASE_FAILURE_LAB.md](RELEASE_FAILURE_LAB.md)에 기록
+
 ## 2026-08-28 Controlled Scenario Lab candidate
 
 - 기존 `ops.diagnosis.v1`과 adaptive Agent loop를 유지하고 acquisition provenance와 확장 hypothesis를 가진 `ops.diagnosis.v2` 추가
@@ -1033,3 +1064,11 @@ Performance suite:
 - DLQ topic depth / replay rate 전용 Grafana panel 강화
 - 장시간 500+ VU capacity profile 측정
 - multi-node Kubernetes 기준 anti-affinity / topology spread 검증
+
+## Historical context 보완 — root AGENTS.md에서 이동
+
+아래는 기존 root에만 남아 있던 checkpoint 또는 publication 식별자입니다. 당시 검증 범위이며 현재 test count나 runtime 상태로 재사용하지 않습니다.
+
+- 2026-08-05 v2 운영 본체 단순화는 Demo UI `2.3.1`, API `2.1.0`, local suite `345 passed`, master merge `cab7647`로 승격했습니다. dev-kafka CI `#76`, master CI `#77`의 validate·publish를 통과했습니다.
+- 2026-07-21 dev-kafka delivery gate remote 검증: source `041ab21` → image `041ab21cf795` → overlay bot commit `e3bf987`, direct-language source `043df1b` → image `043df1bd3f24` → overlay bot commit `9ded313` 확인. Local Argo runtime rollout은 별도 확인 대기입니다.
+- 2026-07-14 generic v2 전환 작업 중간 checkpoint의 local suite는 `195 passed`입니다. 같은 날 이후 reliability 보강 결과나 현재 pass count로 해석하지 않으며, 이후 변경에서는 이 수치를 복사하지 말고 suite를 다시 실행합니다.

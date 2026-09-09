@@ -350,6 +350,11 @@ RECOVERED after `809.557s`; 133 bundles and 532 raw projections passed hash
 validation. The canonical directory is local-only under
 `results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`.
 
-The current public demo-lite deployment does not contain a Verified Incident
-Replay API, page, artifact, or deployment. Phase 5.2 is deferred. Local raw
-projections are not a public replay source.
+Phase 5.2 was deferred at the Phase 5 incident checkpoint. The later
+2026-08-28 public demo-lite validation recorded UI `2.4.1`, release `2fc8649`,
+image `ece446d47370`, and a successful recorded replay response. The replay
+uses the sanitized `demo/verified-incident-replay.json` projection; canonical
+incident artifacts and raw evidence remain local-only. Playback makes no
+OpenAI API or runtime-source calls. See the
+[public replay boundary](../docs/OPS_AGENT.md#public-replay-boundary) and
+[release history](../docs/PATCH_NOTES.md).

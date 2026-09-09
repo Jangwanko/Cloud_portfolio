@@ -1,0 +1,4 @@
+aws_account_id = "123456789012" # Replace with your account ID.
+aws_region     = "ap-northeast-2"
+bucket_name    = "replace-with-your-unique-portfolio-backup-name"
+object_prefix  = "portfolio-backup-drill"

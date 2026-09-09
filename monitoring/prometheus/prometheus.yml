@@ -30,6 +30,14 @@ scrape_configs:
         port: 9101
         refresh_interval: 15s
 
+  - job_name: outbox-publisher
+    metrics_path: /metrics
+    dns_sd_configs:
+      - names: ["outbox-publisher.messaging-app.svc.cluster.local"]
+        type: A
+        port: 9101
+        refresh_interval: 15s
+
   - job_name: dlq-replayer
     metrics_path: /metrics
     dns_sd_configs:

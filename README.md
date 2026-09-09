@@ -10,6 +10,22 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 
 **Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
 
+## 프로젝트 발전 과정
+
+| 단계 | 주요 변화와 검증 |
+| --- | --- |
+| A | API의 DB 직접 저장 → Redis queue-first 전환, PostgreSQL·Redis 주 노드 삭제와 페일오버 실험 |
+| B | 인증·TLS·백업·GitOps 보강, Redis 병목 튜닝과 queue-depth KEDA 적용 |
+| C | Kafka append-first 전환, partition ordering·inline retry·consumer lag 기반 확장 |
+| D | DB 장애 중 ordering 검증, event/status transaction 통합, notification Worker 분리 |
+| E | Generic v2와 migration → 신규 Worker → API 배포 경계, record별 offset commit 보강 |
+| F | Namespace prune으로 데이터 손실, 재설치 후 새 백업의 복원 검증과 동기 복제 복구 보강 |
+| G | Cache 경로 제거, notification batch와 fixed/KEDA 반복 비교로 drain·API 지연의 trade-off 확인 |
+| H | 운영 증거 수집·규칙 판정·제한된 LLM 조사·복구 lifecycle, 공개 recorded replay |
+| I | 격리 배포 실패 실험, 로컬 백업·복원 리허설, Transactional Outbox 후보 검증 |
+
+[전체 발전사: 문제 → 선택 → 검증과 근거](docs/PROJECT_EVOLUTION.md) · [날짜별 패치노트](docs/PATCH_NOTES.md)
+
 ## 30초 요약
 
 | 운영 문제 | 선택 | 검증 결과 |
@@ -212,7 +228,7 @@ API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서
 
 | 현재 경계 | 다음 작업 |
 | --- | --- |
-| DB commit 뒤 notification publish 사이 crash gap | transactional outbox |
+| Outbox는 로컬 candidate에서 장애 검증 완료, 공개 runtime 미승격 | rollout·부하 검증과 완료 row 보관 정책 |
 | `202` 직후 짧은 status `404` 가능 | accepted-state 계약 또는 read model |
 | record commit 직전 Worker crash·rebalance 미검증 | kill/restart/rebalance 장애 주입 |
 | migration Job과 API startup이 모두 Alembic 실행 | Kubernetes migration owner를 Job으로 단일화 |
@@ -232,21 +248,6 @@ Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis 
 Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
 
 [Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
-
-</details>
-
-<details>
-<summary><b>프로젝트 발전 과정</b></summary>
-
-| 단계 | 추가한 운영 능력 |
-| --- | --- |
-| Initial | API·Worker·PostgreSQL 비동기 처리 |
-| Kafka | append-first intake, partition ordering, explicit offset commit, retry·DLQ |
-| Kubernetes | StatefulSet·Deployment·HPA·KEDA·PDB·GitOps |
-| Ops Phase 1–2 | normalized evidence와 deterministic condition |
-| Ops Phase 3 | single bounded evidence-grounded diagnosis |
-| Ops Phase 4 | deterministic recovery calibration/evaluation |
-| Ops Phase 5 | incident identity, timeline, closure, current observation 분리 |
 
 </details>
 
@@ -273,6 +274,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Ski
 
 ## 문서 지도
 
+- 발전 과정: [Project Evolution](docs/PROJECT_EVOLUTION.md) · [Patch Notes](docs/PATCH_NOTES.md)
 - 설계: [Architecture](docs/ARCHITECTURE.md) · [Service Requirements](docs/SERVICE_REQUIREMENTS.md)
 - 배포: [GitOps](docs/GITOPS.md) · [AWS IaC Plan](docs/AWS_IAC_PLAN.md)
 - 관측·대응: [Observability](docs/OBSERVABILITY.md) · [Runbook](docs/RUNBOOK.md) · [Reliability Policy](docs/RELIABILITY_POLICY.md)

@@ -356,6 +356,7 @@ try {
     & $script:kubectlCommand set env deployment/api -n $Namespace GENERIC_EVENTS_V2_ENABLED=true | Out-Host
     Wait-Deployment -Name "api"
     Wait-Deployment -Name "notification-worker"
+    Wait-Deployment -Name "outbox-publisher"
     Wait-Deployment -Name "dlq-replayer"
     Wait-Deployment -Name "kafka-exporter"
     Wait-Deployment -Name "prometheus"

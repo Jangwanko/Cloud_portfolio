@@ -155,7 +155,27 @@ results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/*
 !results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/argocd.json
 k6/results/
 
+# Compact backup drill evidence; dumps and credentials remain excluded.
+!results/outbox-failure/
+results/outbox-failure/*
+!results/outbox-failure/20260905T144053Z/
+
+!results/offhost-backup/
+results/offhost-backup/*
+!results/offhost-backup/20260905-local-rehearsal.json
+
 # Docker
+# Keep the release failure lab summary and raw-file integrity inventory; raw captures stay local.
+!results/release-failure/
+results/release-failure/*
+!results/release-failure/README.md
+!results/release-failure/20260905T133642Z/
+results/release-failure/20260905T133642Z/*
+!results/release-failure/20260905T133642Z/summary.json
+!results/release-failure/20260905T133642Z/hashes.json
+!results/release-failure/20260905T133642Z/evidence.compact.json
+!results/release-failure/20260905T133642Z/migration-failure-log.json
+
 .dockerignore
 
 # Backup files

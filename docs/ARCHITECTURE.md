@@ -58,8 +58,8 @@ Current source는 API pod별 Kafka snapshot replay를 사용하지 않습니다.
 2. API가 `stream_id`를 key로 `message-ingress`에 append
 3. Kafka append 성공 시 `202 Accepted` 반환
 4. `message-worker` consumer group이 partition을 분산 consume
-5. Worker가 membership·idempotency·sequence를 검증하고 PostgreSQL transaction으로 event와 request status 저장
-6. commit 완료 뒤 notification job 발행
+5. Worker가 membership·idempotency·sequence를 검증하고 PostgreSQL transaction으로 event·request status·notification outbox 저장
+6. 별도 outbox-publisher가 pending row를 잠그고 Kafka ACK 뒤 published_at commit. ACK와 완료 표시 사이 crash는 재발행 가능
 7. transient failure는 같은 record inline retry, terminal failure는 DLQ 이동
 8. status·event 조회는 PostgreSQL source of truth 사용
 
@@ -69,15 +69,19 @@ sequenceDiagram
     participant API
     participant Kafka
     participant Worker
+    participant Relay as Outbox publisher
     participant DB as PostgreSQL HA
 
     Client->>API: POST /v2/streams/{id}/events
     API->>Kafka: append envelope, key=stream_id
     API-->>Client: 202 Accepted
     Worker->>Kafka: consume partition
-    Worker->>DB: event + request status
+    Worker->>DB: event + request status + outbox
     Worker->>DB: commit
-    Worker->>Kafka: notification job
+    Relay->>DB: pending row FOR UPDATE SKIP LOCKED
+    Relay->>Kafka: notification job
+    Kafka-->>Relay: ACK
+    Relay->>DB: published_at + commit
     Client->>API: GET status / events
     API->>DB: authorized read
     DB-->>API: durable state
@@ -119,10 +123,10 @@ Kafka를 request intake 경로에 둔 이유:
 - DLQ topic 분리, 실패 이벤트 보존과 replay
 - Worker scaling 기준: queue length 제외, consumer lag 사용
 - Worker success path: message persistence와 request status update를 하나의 PostgreSQL transaction으로 처리
-- 알림 처리: DB commit 이후 `message-notifications` topic best-effort 전달. 별도 `notification-worker`가 poll당 최대 20건을 한 statement·transaction으로 `notification_attempts`에 기록. DB commit 뒤 각 record offset을 순서대로 commit
+- 알림 처리: event와 같은 transaction에 durable outbox 기록 후 `outbox-publisher`가 `message-notifications`에 at-least-once 전달. 별도 `notification-worker`가 poll당 최대 20건을 한 statement·transaction으로 `notification_attempts`에 기록. DB commit 뒤 각 record offset을 순서대로 commit
 - notification batch failure: DB 연결 오류 시 poll에 포함된 각 partition의 첫 record로 rewind. PostgreSQL DataError는 record 단위 처리로 전환해 terminal row와 정상 row 분리
 - notification replay: DB commit 뒤 offset commit 전 crash는 같은 job 재처리 가능. `notification_attempts.message_id` unique constraint와 `ON CONFLICT DO NOTHING`으로 중복 insert 억제
-- post-commit notification 발행: 현재 transactional outbox 미적용, DB commit 뒤 process crash 시 notification job 누락 gap 존재
+- Outbox source candidate는 2026-09-05 격리 장애 실험에서 검증했습니다. 공개 image/runtime 승격과 성능 측정은 별도입니다. [계약과 증거](TRANSACTIONAL_OUTBOX.md)
 - local Kafka trust boundary: PLAINTEXT demo 구성; production에서 broker 인증과 topic별 최소 권한 ACL 필요
 - `event_type` 의미와 `metadata` 분류: producer/adapter 소유; generic Worker가 domain taxonomy를 강제하지 않음
 - order reference adapter 분류 예시: `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`

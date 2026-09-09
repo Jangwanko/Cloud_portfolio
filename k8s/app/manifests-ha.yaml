@@ -357,6 +357,100 @@ spec:
       port: 9101
       targetPort: 9101
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outbox-publisher
+  namespace: messaging-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: outbox-publisher
+  template:
+    metadata:
+      labels:
+        app: outbox-publisher
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: outbox-publisher
+          image: messaging-portfolio:local
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          command: ["python", "-m", "worker.main"]
+          ports:
+            - name: metrics
+              containerPort: 9101
+          env:
+            - name: WORKER_MODE
+              value: "outbox"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: messaging-postgresql-ha-postgresql
+                  key: password
+          envFrom:
+            - secretRef:
+                name: messaging-env
+            - secretRef:
+                name: messaging-runtime-secrets
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "400m"
+              memory: "384Mi"
+          startupProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            tcpSocket:
+              port: metrics
+            periodSeconds: 10
+            timeoutSeconds: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: outbox-publisher
+  namespace: messaging-app
+spec:
+  clusterIP: None
+  selector:
+    app: outbox-publisher
+  ports:
+    - name: metrics
+      port: 9101
+      targetPort: 9101
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -640,6 +734,14 @@ data:
             port: 9101
             refresh_interval: 15s
 
+      - job_name: outbox-publisher
+        metrics_path: /metrics
+        dns_sd_configs:
+          - names: ["outbox-publisher.messaging-app.svc.cluster.local"]
+            type: A
+            port: 9101
+            refresh_interval: 15s
+
       - job_name: dlq-replayer
         metrics_path: /metrics
         dns_sd_configs:
@@ -880,6 +982,24 @@ data:
               summary: "Kafka consumer group lag high"
               description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
+          - alert: MessagingOutboxPendingOld
+            expr: max(messaging_outbox_oldest_pending_seconds{job="outbox-publisher"}) > 60
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Notification outbox is not draining"
+              description: "A durable notification intent has waited over 60 seconds for publication."
+
+          - alert: MessagingOutboxPublisherUnavailable
+            expr: absent(up{job="outbox-publisher"} == 1) or (max(messaging_health_status{job="outbox-publisher",component="outbox"}) == 0)
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Outbox publisher unavailable"
+              description: "No publisher is scrapeable or all observed relays report transaction failure."
+
           - alert: MessagingNotificationConsumerLagHigh
             expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0)) > 100
             for: 5m
@@ -950,7 +1070,7 @@ spec:
       labels:
         app: prometheus
       annotations:
-        portfolio.jangwanko.dev/config-hash: "964b227076466205"
+        portfolio.jangwanko.dev/config-hash: "493ddbc4f04f32b1"
     spec:
       automountServiceAccountToken: false
       securityContext:

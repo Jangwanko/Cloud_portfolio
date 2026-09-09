@@ -100,7 +100,7 @@ if (-not $SkipArgoCd) {
 }
 
 Write-Section "Core workloads"
-foreach ($name in @("api", "worker", "notification-worker", "dlq-replayer", "kafka-exporter", "prometheus", "grafana", "kube-state-metrics", "messaging-postgresql-ha-pgpool")) {
+foreach ($name in @("api", "worker", "notification-worker", "outbox-publisher", "dlq-replayer", "kafka-exporter", "prometheus", "grafana", "kube-state-metrics", "messaging-postgresql-ha-pgpool")) {
   Assert-DeploymentReady $name
 }
 foreach ($name in @("kafka", "messaging-postgresql-ha-postgresql")) {

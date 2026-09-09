@@ -69,3 +69,8 @@ git status --short
 ```
 
 `master`에는 full local HA 실행 경로를 유지합니다. Demo Lite overlay와 배포 script의 기준 source는 `demo-dev`와 release branch에서 확인합니다.
+
+## 장애 해석 경계
+
+- `demo-lite` PostgreSQL은 단일 primary 기준입니다. primary 연결 실패는 standby failover를 의미하지 않으며, 단일 primary 복구 대기와 Kafka backlog / Worker retry 관점으로 설명합니다.
+- full HA topology와 성능 baseline은 `local-ha` / full-ha 문서와 테스트 결과에서 설명합니다. 기존 DB outage/recovery 결과를 primary promotion/failover 성공 증거로 재표현하지 않습니다.

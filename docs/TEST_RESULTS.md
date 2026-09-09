@@ -4,6 +4,23 @@
 
 ## Current Evidence Status
 
+2026-09-05 Outbox candidate: `20260905T144053Z` 격리 실제 장애 실험 **PASS**.
+Commit 전후 및 Kafka ACK 직후 process exit, send failure, relay 2개 검증.
+Event 12개와 DB notification attempt 12개, Kafka notification 13개(의도한 재발행 1개), pending 0.
+전체 local suite `658 passed`; promtool 규칙 24개와 scrape config 검증 통과.
+[계약·provenance](TRANSACTIONAL_OUTBOX.md). 공개 runtime과 성능 baseline은 변경하지 않았습니다.
+
+2026-09-05 backup drill 로컬 리허설: 원본 실험 namespace 삭제 후 새 PostgreSQL 복원 **PASS**.
+합성 이벤트 10개, table 11개와 sequence 4개 검증. 외부 저장소 왕복은 버킷/인증 미지정으로 미실행이며
+host-loss 복구를 증명하지 않습니다. 이번 변경 후 전체 local suite는 `654 passed`입니다.
+[조건과 대기 항목](OFFHOST_BACKUP_DRILL.md).
+
+2026-09-05 isolated release lab: migration 실패 주입, Worker/API wave 차단, transactional DDL rollback,
+이전 fixture release 복원과 수정 migration 재배포 **PASS**. 4단계 총 40개 event 저장·순서 검증,
+기존 workload spec 불변, 실험 리소스 cleanup 완료. 전체 local suite `640 passed`.
+동일 published image와 namespace-local Helm fixture를 사용한 단일 실행이며 Git→CI 전달 E2E나
+production 무중단 증거로 해석하지 않습니다. [조건과 결과](RELEASE_FAILURE_LAB.md).
+
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2와 `ops.diagnosis.v2` Scenario Lab | actual Gate 2 recorded replay와 controlled observation branching 구현·검증 |
@@ -26,7 +43,7 @@
 | Ops Agent Phase 5.0 lifecycle | deterministic incident identity, timeline, diagnosis/recovery attachment, closure/current observation 분리 | schema·transition·identity regression과 canonical local record 구현 |
 | Ops Agent Phase 5.1 Gate 2 | actual `75→330→75/s` workload에서 detection→diagnosis→recovery→closure | 2026-08-23 zero-drop run PASS; 133 bundles/532 raw verified |
 | Ops Agent Phase 5.2 replay | actual diagnosis tool/evidence/hypothesis의 sanitized static replay | UI `2.4.1` source contract와 public demo-lite live route 확인 |
-| Worker post-commit | notification job만 Kafka 발행 | request-status·message snapshot 동기 발행 제거 |
+| Worker notification source candidate | event/status와 outbox를 원자 저장, 별도 publisher | 2026-09-05 isolated crash/replay PASS; public rollout pending |
 | Worker scaling | core `2→4`, notification `1→2`, 각 consumer lag 기반 KEDA | KEDA 3회 모두 core `4` 도달, final lag `0/0` |
 | Fixed/KEDA A/B | fixed `2`와 KEDA `2→4` 각 3회 | KEDA backlog 처리율 `13.38%` 증가, drain `12.78%` 감소, API p95 `6.49%` 증가 |
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
@@ -531,6 +548,8 @@ Evaluator는 Kafka source/tool/semantic/unit/window/label selector, partition `8
 
 ## Notification Batch Fixed/KEDA A/B Candidate — 2026-08-10
 
+기존 root 요약의 event 평균 정밀값: fixed `30,289.67`, KEDA `30,351.33`.
+
 공통 조건은 `messaging-portfolio:notification-batch`, API `6`, 64 streams, 100 VU / 30s, 실행별 clean DB/topic, deletion quiet period `75s`, 시작 consumer lag `0`입니다. Fixed core `2`와 KEDA core `2→4`·notification `1→2`를 각각 3회 실행했습니다. source HEAD는 `e378164`이며 candidate 변경이 있는 dirty worktree입니다.
 
 | Mode | Event `202` 3회 | Avg latency 평균 | p95 평균 | p99 평균 | Peak message lag 평균 | Drain 3회 | Backlog 처리율 평균 |
@@ -610,6 +629,8 @@ core `2→8` 실험에서 notification backlog 이동과 single-node DB 경합�
 - 원본: [fixed Worker](../results/kafka-performance/worker-ab-fixed.txt), [KEDA](../results/kafka-performance/worker-ab-keda.txt)
 
 ## Generic v2 Performance Recovery Candidate — 2026-07-21
+
+기존 root 요약의 event `202` 3회 범위: `28,749~29,608`.
 
 이 결과는 2026-08-05에 제거한 materialized cache와 snapshot publish 경로를 포함한 historical candidate입니다.
 

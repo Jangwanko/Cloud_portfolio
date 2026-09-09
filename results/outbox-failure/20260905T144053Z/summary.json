@@ -1,0 +1,212 @@
+{
+  "result": "PASS",
+  "run_id": "20260905T144053Z",
+  "image": "docker.io/library/messaging-portfolio@sha256:bc1d2280acb2dd1f6ebefe271252ba9186a6e4d7cd5060c7a186f95ed4d1118c",
+  "context": "kind-messaging-ha",
+  "checks": {
+    "commit_crash_retains_event_and_intent": true,
+    "send_failure_retains_intent": true,
+    "ack_crash_republished_without_duplicate_attempt": true,
+    "precommit_crash_rolls_back_event_and_intent": true,
+    "concurrent_relays_and_ordering": true,
+    "existing_workload_specs_unchanged": true
+  },
+  "source_commit": "fc59535d7d21a90aa904df5fc4b0fcd7ea40a6f0",
+  "source_dirty": true,
+  "scope": "Isolated local candidate; real Kafka/PostgreSQL and abrupt Python process exits. No production SLA or external channel delivery claim.",
+  "control_before": {
+    "deployments/api": {
+      "uid": "4abe8aa1-c30c-4dee-97d5-590293243e74",
+      "spec_hash": "6485e96b1429839a7db72d0f0b5a9fc99eed417b8ef7d7be678ed713b6b30ecd"
+    },
+    "deployments/dlq-replayer": {
+      "uid": "904562f0-e3a8-440a-9b3c-2509f407d0ea",
+      "spec_hash": "5d37f3624ff7d2a96e95e51f90d1995447ee972e9b34a479cc0f99628415ffe2"
+    },
+    "deployments/grafana": {
+      "uid": "4ba6bf44-df21-457b-bea0-1579a23e3499",
+      "spec_hash": "769fe6533a899818c05758cd4f0c3c0b0fee3348c0fe1bdfa0c5fc7be499552a"
+    },
+    "deployments/kafka-exporter": {
+      "uid": "630c1797-36c2-4091-9c22-b55adb68dfdb",
+      "spec_hash": "0da997833c90b193a28a7577327a4fa1d4e7a36d6b49058ecef2778c330306ef"
+    },
+    "deployments/kube-state-metrics": {
+      "uid": "224328b6-1c72-428e-a97c-ef19df98e7b1",
+      "spec_hash": "b58e29ccd31a8ab4e5b55de24b92e4beb564d6403ba99c462d223e9dcca43c67"
+    },
+    "deployments/messaging-postgresql-ha-pgpool": {
+      "uid": "c5c6a31f-16f1-445c-9916-08bedeb4cfce",
+      "spec_hash": "7ebe943b58f8698e1c6871c712247c6f7636ad3cb39aa7f15c83c21de14c9589"
+    },
+    "deployments/notification-worker": {
+      "uid": "9569c7d5-8fc3-443c-b039-8a0e37b2f5de",
+      "spec_hash": "d7019c78dba6c50d45ccc4f8813da67d6db3e453b82b8393da8d288ce845613c"
+    },
+    "deployments/prometheus": {
+      "uid": "ff7d0e69-ae6a-4f7d-a42f-1e44c2e22b5e",
+      "spec_hash": "91bf90ec7337ce0391763b7051d233abedeb78661f27a1d61b7409a153f6338c"
+    },
+    "deployments/worker": {
+      "uid": "4e421edd-1c84-4591-a6a3-edcf67cc1b41",
+      "spec_hash": "1e2a3ed20647b02ce07fece203ed0307fe16145793988867aecb289321e61d30"
+    },
+    "statefulsets/kafka": {
+      "uid": "635c564c-1145-4ca6-b2c6-5edd0e81250f",
+      "spec_hash": "afa939d2abb15d694c13d23342bb148792d313380b3465f2cde96037c6c0cb76"
+    },
+    "statefulsets/messaging-postgresql-ha-postgresql": {
+      "uid": "fa3bd864-52bf-4c79-981d-debccffa6cb3",
+      "spec_hash": "584958ac01091854ab41f1afa02c2f73fd677631e7083a031dd2475ed6d32ee1"
+    },
+    "persistentvolumeclaims/data-kafka-0": {
+      "uid": "7421eb2e-546e-4659-97d0-3835dab151f8",
+      "spec_hash": "fa2e893233a24940247778a98300f386e8169fb865b0ddebb6a46285153f29b7"
+    },
+    "persistentvolumeclaims/data-kafka-1": {
+      "uid": "8b7e09fc-2d27-4294-9d13-d0e781b5f6ac",
+      "spec_hash": "6357023c951da202d8d11c4eb537bd10ad55a40f01c266450b6b58badec81053"
+    },
+    "persistentvolumeclaims/data-kafka-2": {
+      "uid": "09aa9aea-0c0e-4900-aa13-80511fc4c0f5",
+      "spec_hash": "a729a2a071132ae9d41ee6c3a599ce8994915a4b3647ef84e78a46344af9f3e9"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-0": {
+      "uid": "407b13ff-c490-4689-9446-61b75834fe4e",
+      "spec_hash": "d6208244a11e02c1f745885261675c436bd8349ea824d53a3636bcf70cfaa858"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-1": {
+      "uid": "3417ffd2-3d60-4f69-84a9-83cdd201d6e9",
+      "spec_hash": "c88483765d89f34be9310a7ad3352df0b899954bf496e1af4f4b0fe1c8dbb494"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-2": {
+      "uid": "fcae4e41-1205-464a-9700-5c50d5138a4d",
+      "spec_hash": "9ce948e6dcbe74918db10e4a2c65eccff14bc15b31108557ff0ee6715420641b"
+    },
+    "persistentvolumeclaims/postgres-backups": {
+      "uid": "f2b7a79a-9ad4-477b-aac0-e0c3b4f7e7ad",
+      "spec_hash": "7e151ba764b38c47b686562f76c0034ee52c71433ce575460ec6d9b4e3bb77bf"
+    },
+    "application": {
+      "uid": "7f5203fe-c5d3-4d8d-a35d-19168e635cbe",
+      "spec_hash": "28e066c13aee648dbe098d6061e3589b6c626a49ae619ec29dfa03af1972bf4f"
+    }
+  },
+  "final": {
+    "messages": 12,
+    "outbox_total": 12,
+    "pending": 0,
+    "publish_attempts": 13,
+    "notifications": 12,
+    "persisted_statuses": 12,
+    "event_data_and_ordering": true,
+    "kafka_notifications": 13,
+    "kafka_delivery_counts": {
+      "1": 2,
+      "3": 1,
+      "4": 1,
+      "6": 1,
+      "7": 1,
+      "8": 1,
+      "9": 1,
+      "10": 1,
+      "11": 1,
+      "12": 1,
+      "13": 1,
+      "5": 1
+    },
+    "database_notification_deduplication": true
+  },
+  "control_after": {
+    "deployments/api": {
+      "uid": "4abe8aa1-c30c-4dee-97d5-590293243e74",
+      "spec_hash": "6485e96b1429839a7db72d0f0b5a9fc99eed417b8ef7d7be678ed713b6b30ecd"
+    },
+    "deployments/dlq-replayer": {
+      "uid": "904562f0-e3a8-440a-9b3c-2509f407d0ea",
+      "spec_hash": "5d37f3624ff7d2a96e95e51f90d1995447ee972e9b34a479cc0f99628415ffe2"
+    },
+    "deployments/grafana": {
+      "uid": "4ba6bf44-df21-457b-bea0-1579a23e3499",
+      "spec_hash": "769fe6533a899818c05758cd4f0c3c0b0fee3348c0fe1bdfa0c5fc7be499552a"
+    },
+    "deployments/kafka-exporter": {
+      "uid": "630c1797-36c2-4091-9c22-b55adb68dfdb",
+      "spec_hash": "0da997833c90b193a28a7577327a4fa1d4e7a36d6b49058ecef2778c330306ef"
+    },
+    "deployments/kube-state-metrics": {
+      "uid": "224328b6-1c72-428e-a97c-ef19df98e7b1",
+      "spec_hash": "b58e29ccd31a8ab4e5b55de24b92e4beb564d6403ba99c462d223e9dcca43c67"
+    },
+    "deployments/messaging-postgresql-ha-pgpool": {
+      "uid": "c5c6a31f-16f1-445c-9916-08bedeb4cfce",
+      "spec_hash": "7ebe943b58f8698e1c6871c712247c6f7636ad3cb39aa7f15c83c21de14c9589"
+    },
+    "deployments/notification-worker": {
+      "uid": "9569c7d5-8fc3-443c-b039-8a0e37b2f5de",
+      "spec_hash": "d7019c78dba6c50d45ccc4f8813da67d6db3e453b82b8393da8d288ce845613c"
+    },
+    "deployments/prometheus": {
+      "uid": "ff7d0e69-ae6a-4f7d-a42f-1e44c2e22b5e",
+      "spec_hash": "91bf90ec7337ce0391763b7051d233abedeb78661f27a1d61b7409a153f6338c"
+    },
+    "deployments/worker": {
+      "uid": "4e421edd-1c84-4591-a6a3-edcf67cc1b41",
+      "spec_hash": "1e2a3ed20647b02ce07fece203ed0307fe16145793988867aecb289321e61d30"
+    },
+    "statefulsets/kafka": {
+      "uid": "635c564c-1145-4ca6-b2c6-5edd0e81250f",
+      "spec_hash": "afa939d2abb15d694c13d23342bb148792d313380b3465f2cde96037c6c0cb76"
+    },
+    "statefulsets/messaging-postgresql-ha-postgresql": {
+      "uid": "fa3bd864-52bf-4c79-981d-debccffa6cb3",
+      "spec_hash": "584958ac01091854ab41f1afa02c2f73fd677631e7083a031dd2475ed6d32ee1"
+    },
+    "persistentvolumeclaims/data-kafka-0": {
+      "uid": "7421eb2e-546e-4659-97d0-3835dab151f8",
+      "spec_hash": "fa2e893233a24940247778a98300f386e8169fb865b0ddebb6a46285153f29b7"
+    },
+    "persistentvolumeclaims/data-kafka-1": {
+      "uid": "8b7e09fc-2d27-4294-9d13-d0e781b5f6ac",
+      "spec_hash": "6357023c951da202d8d11c4eb537bd10ad55a40f01c266450b6b58badec81053"
+    },
+    "persistentvolumeclaims/data-kafka-2": {
+      "uid": "09aa9aea-0c0e-4900-aa13-80511fc4c0f5",
+      "spec_hash": "a729a2a071132ae9d41ee6c3a599ce8994915a4b3647ef84e78a46344af9f3e9"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-0": {
+      "uid": "407b13ff-c490-4689-9446-61b75834fe4e",
+      "spec_hash": "d6208244a11e02c1f745885261675c436bd8349ea824d53a3636bcf70cfaa858"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-1": {
+      "uid": "3417ffd2-3d60-4f69-84a9-83cdd201d6e9",
+      "spec_hash": "c88483765d89f34be9310a7ad3352df0b899954bf496e1af4f4b0fe1c8dbb494"
+    },
+    "persistentvolumeclaims/data-messaging-postgresql-ha-postgresql-2": {
+      "uid": "fcae4e41-1205-464a-9700-5c50d5138a4d",
+      "spec_hash": "9ce948e6dcbe74918db10e4a2c65eccff14bc15b31108557ff0ee6715420641b"
+    },
+    "persistentvolumeclaims/postgres-backups": {
+      "uid": "f2b7a79a-9ad4-477b-aac0-e0c3b4f7e7ad",
+      "spec_hash": "7e151ba764b38c47b686562f76c0034ee52c71433ce575460ec6d9b4e3bb77bf"
+    },
+    "application": {
+      "uid": "7f5203fe-c5d3-4d8d-a35d-19168e635cbe",
+      "spec_hash": "28e066c13aee648dbe098d6061e3589b6c626a49ae619ec29dfa03af1972bf4f"
+    }
+  },
+  "cleanup": {
+    "complete": true,
+    "errors": []
+  },
+  "finished_at": "2026-09-05T14:44:00.345314+00:00",
+  "script_hashes": {
+    "worker/dlq_replayer.py": "e7b0604ff9af8d9b08ca72f18b30e527edeb52b05f823fd5665d777a68645588",
+    "worker/main.py": "d97f3addc8ba10db3d074eccaf567545b870c014581751e6eed19d88747febb1",
+    "worker/outbox.py": "8ceeeebf010cce2d284e139ea7faf9d41141486dc33595bd097f6a0061f375fd",
+    "portfolio/metrics.py": "7a6cd9e0c21679c7fe6c4dd3f80a6bb2ac02aa167a22ac5d9ae81db8d91e7aea",
+    "alembic/versions/0009_notification_outbox.py": "3f545cc12c672eadf3a7b3fc1f43325a01c15a3cc848bcbcd2c3132f62344427",
+    "scripts/outbox_failure_lab.py": "1fa1812347e78c6e709d38dd991e1c4751aa2d700e1590a3bcf50e3285647924",
+    "scripts/outbox_fault_probe.py": "58f765faf32e19428ec472dffa1f06dfc05bff89d426b4ca9b29043df7f848f0"
+  }
+}

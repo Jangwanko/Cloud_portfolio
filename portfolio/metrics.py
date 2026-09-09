@@ -133,9 +133,15 @@ worker_failures_total = Counter(
 
 notification_publish_failures_total = Counter(
     "messaging_notification_publish_failures_total",
-    "Notification jobs that could not be published after core persistence committed",
+    "Outbox send failures retained for retry after core persistence committed",
     registry=registry,
 )
+
+outbox_pending = Gauge("messaging_outbox_pending", "Pending durable notification intents", registry=registry)
+outbox_oldest_pending_seconds = Gauge(
+    "messaging_outbox_oldest_pending_seconds", "Age of oldest pending notification intent", registry=registry)
+outbox_published_total = Counter(
+    "messaging_outbox_published_total", "Kafka ACK and outbox completion transactions committed", registry=registry)
 
 dlq_events_total = Counter(
     "messaging_dlq_events_total",

@@ -193,6 +193,8 @@ Legacy compatibility:
 
 ## Operations Advisor
 
+- Operations Advisor는 readiness, DLQ, 남은 예약, Kafka 적재 수, DB 저장 수의 불일치를 함께 확인해야 합니다. 전송·저장 추적 중에는 `처리 중`, run 종료 뒤 미확인 이벤트가 남아 있으면 `확인 필요`로 표시합니다.
+
 - 역할:
   - 예약, Kafka 적재, DB 저장, DLQ 신호 해석
   - 위험 상태와 다음 확인 항목 표시
@@ -261,3 +263,12 @@ Korean:
 English:
 
 > This demo shows a reliable event-processing boundary. The order lifecycle is a reference scenario on the generic contract. The API appends typed JSON events to Kafka and returns `202 Accepted`; workers persist them asynchronously to PostgreSQL. The UI keeps Kafka acceptance and database persistence as separate signals.
+
+## UI 변경 규칙
+
+Source: `demo/order-dashboard.html`. 카운터 의미와 종료 상태는 위 Counter Meaning / Operations Advisor 계약을 함께 적용합니다.
+
+- 데모 화면은 포트폴리오 시연용입니다. 현업 운영자가 보는 모든 raw id를 전부 노출하기보다, 처음 보는 사람이 Kafka -> Worker -> DB 흐름을 이해할 수 있는 신호를 우선합니다.
+- 데모 화면의 기능, 레이아웃, 운영 증거, 표시 문구가 바뀌면 `DEMO_UI_VERSION`과 초기 `ver.` 표시를 함께 올립니다. 버전 숫자는 화면 변경이 클러스터에 반영됐는지 확인하는 증거이므로 사소한 UI 변경이라도 누락하지 않습니다. 외형적 변경이 없는 내부 수정은 세 번째 숫자(patch), 사용자가 보는 화면이나 흐름에 변화가 있으면 두 번째 숫자(minor), 시스템이나 서비스 컨셉이 크게 바뀌는 수준이면 첫 번째 숫자(major)를 올립니다. 대부분의 일상 변경은 세 번째 숫자 변경으로 처리합니다.
+- 데모 UI 변경 후에는 README, `docs/DEMO_GUIDE.md`, `docs/OPERATIONS.md`, `docs/PATCH_NOTES.md`의 설명을 함께 맞춥니다.
+- 운영 링크는 `localhost`를 하드코딩하지 않습니다. 현재 API Base URL 또는 접속 origin을 기준으로 생성합니다.

@@ -220,6 +220,24 @@ groups:
           summary: "Kafka consumer group lag high"
           description: "message-worker consumer group lag is above 100 messages for 5 minutes."
 
+      - alert: MessagingOutboxPendingOld
+        expr: max(messaging_outbox_oldest_pending_seconds{job="outbox-publisher"}) > 60
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Notification outbox is not draining"
+          description: "A durable notification intent has waited over 60 seconds for publication."
+
+      - alert: MessagingOutboxPublisherUnavailable
+        expr: absent(up{job="outbox-publisher"} == 1) or (max(messaging_health_status{job="outbox-publisher",component="outbox"}) == 0)
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox publisher unavailable"
+          description: "No publisher is scrapeable or all observed relays report transaction failure."
+
       - alert: MessagingNotificationConsumerLagHigh
         expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="notification-worker"}, 0)) > 100
         for: 5m

@@ -1,0 +1,2 @@
+# Host-only tooling; not part of the API/Worker image.
+boto3==1.43.85

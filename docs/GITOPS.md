@@ -238,7 +238,7 @@ docker build messaging-portfolio:local
 | `ImagePullBackOff` | tag 없음, private package, pull secret 없음 | overlay tag, GHCR package, pod events |
 | source changed, pod unchanged | image workflow/tag commit 미완료 | Actions jobs, overlay commit, Argo revision |
 | Argo `OutOfSync` replicas only | autoscaler drift ignore 누락 | Application ignoreDifferences |
-| push rejected after bot commit | remote master ahead | fetch/rebase after user approval |
+| push rejected after bot commit | remote master ahead | fetch/rebase within authorized Git scope (see root AGENTS.md) |
 | registry image preflight 실패 | tag 없음, package private, Docker auth 없음 | master workflow, `docker login ghcr.io`, manifest inspect |
 | `master-bootstrap` pull failure | initial publish 미완료 또는 cluster pull 권한 없음 | master workflow, package visibility, imagePullSecret |
 | 예상 SHA와 다른 image | bootstrap alias 또는 Application override 사용 | Argo Application source kustomize image, deployment image |
@@ -251,3 +251,20 @@ docker build messaging-portfolio:local
 - API/Worker rollout success
 - `202 Accepted` smoke flow와 DB persistence 확인
 - source-only change가 새 image/tag commit 뒤 반영됨을 확인
+
+## 배포 변경 작업 규칙
+
+브랜치 역할과 Git 실행 권한은 [root AGENTS.md](../AGENTS.md#work--branch-rules)를 따릅니다.
+
+- Image tag workflow 변경 전 해당 브랜치의 Argo CD `targetRevision`, overlay path, 실제 배포 클러스터 확인
+- `demo-lite` 설정을 다른 브랜치로 옮길 때 공통 원칙만 공유하고 overlay와 배포 대상에 맞게 조정
+- 자동화 변경 뒤 `kubectl kustomize <overlay>`에서 app workload의 registry image tag 확인
+- 승인된 push가 Actions bot commit 때문에 거절되면 `git pull --rebase origin <branch>`로 통합 후 재시도; 의미가 불확실한 conflict는 사용자 판단 요청
+- 데모 서버의 public GHCR package 기본 경계 유지; private registry 사용 시 imagePullSecret 별도 문서화
+
+## Historical publication 식별자 보완
+
+기존 root 기록의 publication 식별자이며 현재 runtime rollout 증거가 아닙니다.
+
+- 2026-08-11 runtime log 후보: source `a2b157f`, CI `#83`, image `a2b157f1283f`, overlay commit `004f2e7`
+- 2026-08-10 notification batch: source `8d334b8`, dev image `8d334b8abeaf`, master image `7035cdab4050`
