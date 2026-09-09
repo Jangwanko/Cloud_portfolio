@@ -16,6 +16,9 @@
 
 ## 디렉터리 구조
 
+외부 백업만 먼저 준비할 때는 독립 root인 [envs/backup](envs/backup/README.md)을 사용합니다.
+S3 버킷과 접근·암호화·버전 설정을 관리하며 `envs/dev`의 전체 AWS 인프라를 생성하지 않습니다.
+
 ```text
 infra/terraform
 ├─ envs/

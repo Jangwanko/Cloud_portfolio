@@ -8,6 +8,8 @@ A hands-on Kubernetes operations project built around an asynchronous Kafka work
 
 **Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
 
+[Project evolution: from failover experiments to the current platform](docs/PROJECT_EVOLUTION.md) — A chronological account of design decisions and validation evidence (in Korean).
+
 ## What I validated
 
 | Operational problem | Decision | Measured result |
@@ -170,7 +172,7 @@ Kafka intake can continue during a PostgreSQL runtime outage only after the API 
 
 | Current gap | Next work |
 | --- | --- |
-| Crash gap between database commit and notification publish | transactional outbox |
+| Transactional outbox validated in an isolated local candidate; public runtime not promoted | rollout, load validation and completed-row retention policy |
 | Brief status `404` after `202` | accepted-state contract or read model |
 | Worker crash and consumer rebalance before offset commit | failure-injection test |
 | Both migration Job and API startup run Alembic | single Kubernetes migration owner |

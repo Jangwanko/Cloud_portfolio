@@ -929,13 +929,14 @@ def test_kafka_json_boundary_rejects_non_finite_values_on_write_and_read():
     assert decoded["decode_error"] == "ValueError"
 
 
-def test_alembic_head_is_generic_envelope_migration_0008():
+def test_alembic_head_is_outbox_and_generic_envelope_migration_is_preserved():
     config = Config(str(ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(ROOT / "alembic"))
     config.set_main_option("path_separator", "os")
     scripts = ScriptDirectory.from_config(config)
 
-    assert scripts.get_heads() == ["0008_generic_event_envelope"]
+    assert scripts.get_heads() == ["0009_notification_outbox"]
+    assert scripts.get_revision("0009_notification_outbox").down_revision == "0008_generic_event_envelope"
     migration = (ROOT / "alembic/versions/0008_generic_event_envelope.py").read_text(
         encoding="utf-8"
     )

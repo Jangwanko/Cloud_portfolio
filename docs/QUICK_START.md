@@ -352,3 +352,66 @@ PostgreSQL은 Argo CD Application 등록 전에 Helm으로 install/upgrade합니
 - private repository 또는 의도적 고정 배포: `-ImageRepository <ghcr-path> -ImageTag <tag>`를 함께 지정
 - private GHCR: preflight용 `docker login ghcr.io`와 cluster pull용 `imagePullSecret` 필요
 - registry 없이 local image만 사용하는 경로: `quick_start_all.ps1`
+
+## 개발 검증 명령과 Ops Agent 실행
+
+현재 작업에서 `.venv\Scripts\python.exe -m pytest -q`를 실행하고 실제 출력을 보고합니다. 과거 pass count는 현재 결과로 재사용하지 않습니다.
+
+```powershell
+.venv\Scripts\python.exe -m pytest -q
+```
+
+Portfolio status, Kafka performance, ordering/failure injection은 위의 권장 테스트 순서와 별도 부하 테스트 절차를 사용합니다. 아래 명령은 repository root에서 실행합니다. 고정된 날짜의 입력 경로는 보존된 실험 재현 예시이며 새 실험은 별도 output 경로를 사용합니다. `<...>`는 실제 artifact 경로로 대체합니다.
+
+Collect/evaluate는 read-only 수집 또는 파일 평가입니다. Calibration은 실제 이벤트 부하를 발생시키므로 대상 context와 실험 범위를 먼저 확인합니다. 이 목록 자체는 실행 승인이 아닙니다.
+
+Collect GitOps local-ha read-only evidence:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent collect --profile local-ha --incident-id phase1-live-validation --context kind-messaging-ha --output results\ops-agent\evidence-live.json
+```
+
+Evaluate a frozen Evidence Bundle:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate --input results\ops-agent\live-baseline\no-backlog-20260812.json --output results\ops-agent\live-baseline\no-backlog-20260812.conditions.json
+```
+
+Evaluate an ordered Evidence Bundle sequence:
+
+```powershell
+$inputs = Get-ChildItem results\ops-agent\calibration\20260816T032411Z\run-01\bundles\sample-*.json | Sort-Object Name | ForEach-Object FullName
+.venv\Scripts\python.exe -m ops_agent evaluate-sequence --input $inputs --output results\ops-agent\conditions-v2.json
+```
+
+Run Phase 4 recovery calibration without changing KEDA/Worker settings:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovery_calibration.py --mode calibrate --context kind-messaging-ha --low-rate 30 --medium-rate 75 --high-rate 110 --overload-rate 330 --overload-seconds 90 --recovery-phase-seconds 900 --e-repeats 3
+```
+
+Run the supplemental continuous-ingress RECOVERED calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_recovered_calibration.py --context kind-messaging-ha
+```
+
+Replay a recovery sequence with the explicit recovered policy:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent evaluate-recovery --policy-version v2 --activation <conditions.v2.json> --input <ordered-bundle.json> --output <recovery.json>
+```
+
+Run the controlled multi-stream Worker backlog calibration:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_calibration.py --runs 3 --streams 64 --vus 100 --duration 30s --think-time 0.05 --sample-interval-seconds 15 --context kind-messaging-ha
+```
+
+Run the frozen pressure-candidate negative controls:
+
+```powershell
+.venv\Scripts\python.exe scripts\worker_backlog_negative_controls.py --sample-interval-seconds 15 --context kind-messaging-ha
+```
+
+계약과 입력 조건: [Ops Agent](OPS_AGENT.md), [CLI 상세](../ops_agent/README.md). 검증 해석과 실패 피드백: [AI engineering workflow](AI_ENGINEERING_WORKFLOW.md).

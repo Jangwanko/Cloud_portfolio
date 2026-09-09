@@ -154,7 +154,7 @@ def test_postgresql_credentials_are_chart_managed_and_injected_by_secret_key() -
     assert "repmgrPassword:" not in values
     assert "adminPassword:" not in values
     assert 'DB_PASSWORD: "portfolio"' not in manifest
-    assert manifest.count(secret_ref) == 4
+    assert manifest.count(secret_ref) == 5
 
 
 def test_postgresql_chart_requests_one_of_two_synchronous_standbys() -> None:

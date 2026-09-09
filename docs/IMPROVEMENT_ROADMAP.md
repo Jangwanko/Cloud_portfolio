@@ -90,6 +90,9 @@ Phase 2는 bundle 전체가 `PARTIAL`이라는 이유로 모든 condition을 `UN
 
 ### 3. DB commit 이후 notification 발행 신뢰성
 
+- 2026-09-05 source candidate: transactional outbox와 별도 publisher 구현, 실제 commit/ACK 경계 강제 종료 및 2-relay 실험 PASS. [결과](TRANSACTIONAL_OUTBOX.md)
+- 남은 범위: 공개 rollout, 부하/DB connection 영향, 완료 row 보관, 장기 실패의 수동 격리 정책. 현재는 실패 row를 버리지 않고 재시도하며 oldest age alert로 운영합니다.
+
 - 목표: notification job 발행에 transactional outbox 또는 동등한 복구 경계 적용
 - 이유: DB commit 뒤 process crash 시 Kafka 후속 event 누락 가능성 제거
 - 완료 기준:

@@ -1,0 +1,8 @@
+{
+  "messages": 1,
+  "outbox_total": 1,
+  "pending": 1,
+  "publish_attempts": 0,
+  "notifications": 0,
+  "persisted_statuses": 1
+}

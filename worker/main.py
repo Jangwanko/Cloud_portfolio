@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+from worker.outbox import enqueue_notification, run_outbox_loop
 import logging
 import math
 import re
@@ -22,13 +23,11 @@ from portfolio.kafka_client import (
     build_notification_consumer,
     is_invalid_kafka_payload,
     publish_dlq_job,
-    publish_notification_job,
 )
 from portfolio.metrics import (
     dlq_events_total,
     event_persist_lag_seconds,
     health_status,
-    notification_publish_failures_total,
     observe_worker_stage,
     queue_wait_seconds,
     registry,
@@ -1022,25 +1021,15 @@ def persist_ingress_job(job_payload: dict) -> dict:
             with observe_worker_stage("request_status_update"):
                 upsert_request_status(cur, request_id, status_payload)
 
+            if not response.get("_idempotency_hit"):
+                enqueue_notification(cur, notification_attempt_payload(response))
+
         conn.commit()
 
     # The durable status row is written inside the transaction. The returned
     # timestamp is refreshed after commit() so the Worker histogram measures
     # the actual commit-observed boundary without a second state publish.
     response["persisted_at"] = now_iso()
-    if not response.get("_idempotency_hit"):
-        try:
-            with observe_worker_stage("notification_publish"):
-                publish_notification_job(response["room_id"], notification_attempt_payload(response))
-        except Exception as exc:  # noqa: BLE001
-            notification_publish_failures_total.inc()
-            logging.exception(
-                "Notification publish failed after PostgreSQL commit; core persistence remains committed "
-                "request_id=%s message_id=%s error=%s",
-                request_id,
-                response["id"],
-                exc,
-            )
     response.pop("_idempotency_hit", None)
     return response
 
@@ -1485,6 +1474,9 @@ def run_kafka_worker_loop() -> None:
 def main() -> None:
     init_pool_with_retry(settings.startup_retries, settings.startup_retry_delay)
     start_http_server(settings.worker_metrics_port, registry=registry)
+    if settings.worker_mode == "outbox":
+        run_outbox_loop()
+        return
     if settings.worker_mode == "notification":
         run_kafka_notification_loop()
         return

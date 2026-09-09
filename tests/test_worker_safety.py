@@ -2807,7 +2807,7 @@ def test_generic_envelope_and_persisted_at_propagate_to_internal_payloads(monkey
     assert notification["payload_preview"] == "deployment finished"
 
 
-def test_notification_publish_failure_does_not_fail_committed_persistence(monkeypatch, caplog):
+def test_notification_intent_is_enqueued_before_core_commit(monkeypatch):
     response = {
         "id": 10,
         "request_id": "req-1",
@@ -2862,11 +2862,12 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
             (request_id, dict(payload))
         ),
     )
-    def fail_after_commit(*_args):
-        assert conn.commits == 1
-        raise RuntimeError("Kafka notification unavailable")
+    intents = []
+    def enqueue_before_commit(_cur, payload):
+        assert conn.commits == 0
+        intents.append(payload)
 
-    monkeypatch.setattr(worker_main, "publish_notification_job", fail_after_commit)
+    monkeypatch.setattr(worker_main, "enqueue_notification", enqueue_before_commit)
 
     result = worker_main.persist_ingress_job({"request_id": "req-1"})
 
@@ -2876,7 +2877,8 @@ def test_notification_publish_failure_does_not_fail_committed_persistence(monkey
     assert upserted_statuses[0][1]["persisted_at"] == "2026-07-14T00:00:00.001000+00:00"
     assert result["persisted_at"] == "2026-07-14T00:00:00.002000+00:00"
     assert conn.commits == 1
-    assert "core persistence remains committed" in caplog.text
+    assert len(intents) == 1
+    assert intents[0]["event_id"] == response["id"]
 
 
 def test_notification_attempt_insert_and_migration_enforce_message_id_uniqueness():

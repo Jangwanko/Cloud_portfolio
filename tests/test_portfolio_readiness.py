@@ -78,7 +78,7 @@ class TestOperationalDocumentation:
             "schema startup을 완료한 뒤",
             "Worker probe",
             "이미 고정된 Evidence Bundle",
-            "transactional outbox",
+            "Outbox는 로컬 candidate에서 장애 검증 완료, 공개 runtime 미승격",
             "Worker crash·rebalance",
         ):
             assert token in readme
@@ -98,6 +98,7 @@ class TestOperationalDocumentation:
         agent_detail_index = readme.index("Ops Agent 구현 경계와 recorded replay")
         evolution_index = readme.index("프로젝트 발전 과정")
         local_index = readme.index("로컬 실행")
+        assert evolution_index < summary_index
         assert (
             summary_index
             < architecture_index
@@ -112,7 +113,6 @@ class TestOperationalDocumentation:
             < workload_index
             < contracts_index
             < agent_detail_index
-            < evolution_index
             < local_index
         )
         assert incident_index < readme.index("Signals[Operational Signals]") < skills_index
@@ -285,7 +285,8 @@ class TestOperationalDocumentation:
         assert "cache-first" not in combined.lower()
 
         assert "Kafka append-first intake" in combined
-        assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("AGENTS.md")
+        assert "현재 작업에서 `.venv\\Scripts\\python.exe -m pytest -q`를 실행" in read_text("docs/QUICK_START.md")
+        assert "[QUICK_START.md](docs/QUICK_START.md)" in read_text("AGENTS.md")
         assert "status `200`" in combined
         assert "202 Accepted" in combined
         assert "Kafka append" in combined

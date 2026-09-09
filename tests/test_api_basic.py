@@ -298,7 +298,7 @@ class TestKafkaIntakeBoundary:
         assert "def persist_ingress_job(" in worker
         assert "persist_ingress_job(job_payload)" in worker
 
-    def test_persist_ingress_job_keeps_notification_out_of_core_transaction(self, monkeypatch):
+    def test_persist_ingress_job_keeps_delivery_outside_and_intent_inside_transaction(self, monkeypatch):
         from worker import main as worker_main
 
         class CreatedAt:
@@ -357,12 +357,12 @@ class TestKafkaIntakeBoundary:
         monkeypatch.setattr(worker_main, "get_conn", fake_get_conn)
         monkeypatch.setattr(worker_main, "get_cursor", fake_get_cursor)
         published_notifications = []
-
-        monkeypatch.setattr(
-            worker_main,
-            "publish_notification_job",
-            lambda key, payload: published_notifications.append((key, payload)),
-        )
+        original_enqueue = worker_main.enqueue_notification
+        def record_intent(cursor, payload):
+            assert conn.commits == 0
+            original_enqueue(cursor, payload)
+            published_notifications.append((payload['stream_id'], payload))
+        monkeypatch.setattr(worker_main, "enqueue_notification", record_intent)
 
         response = worker_main.persist_ingress_job(
             {
@@ -380,6 +380,7 @@ class TestKafkaIntakeBoundary:
         assert "INSERT INTO messages" in executed_sql
         assert "INSERT INTO request_statuses" in executed_sql
         assert "INSERT INTO notification_attempts" not in executed_sql
+        assert "INSERT INTO notification_outbox" in executed_sql
         assert len(published_notifications) == 1
         notification_key, notification = published_notifications[0]
         assert notification_key == 7

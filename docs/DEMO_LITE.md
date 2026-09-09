@@ -83,3 +83,8 @@ Schema rollout은 migration → Worker → API gate 순서를 유지합니다. U
 
 `master`는 full local-ha 실행 경로의 canonical source입니다. `demo-dev`는 저사양 배포
 후보를 검증하고, `demo-lite`는 승인된 public release와 CI image-tag commit을 보존합니다.
+
+## 장애 해석 경계
+
+- `demo-lite` PostgreSQL은 단일 primary 기준입니다. primary 연결 실패는 standby failover를 의미하지 않으며, 단일 primary 복구 대기와 Kafka backlog / Worker retry 관점으로 설명합니다.
+- full HA topology와 성능 baseline은 `local-ha` / full-ha 문서와 테스트 결과에서 설명합니다. 기존 DB outage/recovery 결과를 primary promotion/failover 성공 증거로 재표현하지 않습니다.

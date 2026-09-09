@@ -112,3 +112,9 @@
 - 운영 정리: [OPERATIONS.md](OPERATIONS.md)
 - Runbook: [RUNBOOK.md](RUNBOOK.md)
 - 서비스 프로세스 점검표: [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)
+
+## 개발 에이전트 문서
+
+- 작업별 context 선택과 공통 계약: [root AGENTS.md](../AGENTS.md)
+- Human / Codex 역할, 검증 피드백, 문서 작성과 rollback 규칙: [AI_ENGINEERING_WORKFLOW.md](AI_ENGINEERING_WORKFLOW.md)
+- 개발 환경과 반복 검증 명령: [QUICK_START.md](QUICK_START.md)

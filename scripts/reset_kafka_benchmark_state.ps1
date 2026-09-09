@@ -47,13 +47,14 @@ try {
     autoscaling.keda.sh/paused-replicas="0" `
     --overwrite | Out-Null
   Assert-KubectlSuccess -Operation "pausing worker KEDA"
-  kubectl -n $Namespace scale deployment/notification-worker deployment/dlq-replayer `
+  kubectl -n $Namespace scale deployment/notification-worker deployment/dlq-replayer deployment/outbox-publisher `
     --replicas=0 | Out-Null
   Assert-KubectlSuccess -Operation "scaling auxiliary consumers to zero"
 
   Wait-DeploymentReplicas -Name "worker" -Expected 0
   Wait-DeploymentReplicas -Name "notification-worker" -Expected 0
   Wait-DeploymentReplicas -Name "dlq-replayer" -Expected 0
+  Wait-DeploymentReplicas -Name "outbox-publisher" -Expected 0
 
   $apiPod = (
     kubectl -n $Namespace get pods -l app=api `
@@ -123,9 +124,9 @@ finally {
   )
   Invoke-CleanupKubectl "restoring auxiliary consumers" @(
     "-n", $Namespace, "scale", "deployment/notification-worker",
-    "deployment/dlq-replayer", "--replicas=1"
+    "deployment/dlq-replayer", "deployment/outbox-publisher", "--replicas=1"
   )
-  foreach ($deployment in @("worker", "notification-worker", "dlq-replayer")) {
+  foreach ($deployment in @("worker", "notification-worker", "dlq-replayer", "outbox-publisher")) {
     Invoke-CleanupKubectl "waiting for deployment/$deployment rollout" @(
       "-n", $Namespace, "rollout", "status", "deployment/$deployment",
       "--timeout=$($TimeoutSec)s"

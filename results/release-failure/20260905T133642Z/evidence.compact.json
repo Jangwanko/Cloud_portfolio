@@ -1,0 +1,1865 @@
+{
+  "description": "Compact projection of all runtime checkpoints; full captures remain local. Source hashes verified before projection.",
+  "checkpoints": [
+    {
+      "source_file": "raw/001-sync-0.1.0.json",
+      "source_sha256": "d56cd18bfa749cb6bcf84a6d2190c33be1baed09a3338d9a9c90c802a9b4ca5c",
+      "captured_at": "2026-09-05T13:36:59.535175+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": null,
+      "sync_status": "OutOfSync",
+      "health": "Missing",
+      "deployments": {},
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/002-sync-0.1.0.json",
+      "source_sha256": "a77f26ce532c62f779e6ab61be752145cd75540ec812aaaed9f7859fcfc0fac7",
+      "captured_at": "2026-09-05T13:37:02.172883+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "OutOfSync",
+      "health": "Missing",
+      "deployments": {},
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 1,
+            "startTime": "2026-09-05T13:36:59Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/003-sync-0.1.0.json",
+      "source_sha256": "a1a479625873da74f1663112e75b53041e59ce2e42f7bc8c63bf5044e8939af9",
+      "captured_at": "2026-09-05T13:37:04.714284+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "OutOfSync",
+      "health": "Missing",
+      "deployments": {},
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/004-sync-0.1.0.json",
+      "source_sha256": "659df8e79ca6969c3467f5d6563959f891af4b1d9f4c0a758e537b52612acee8",
+      "captured_at": "2026-09-05T13:37:07.332485+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "OutOfSync",
+      "health": "Missing",
+      "deployments": {
+        "notification-worker": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/005-sync-0.1.0.json",
+      "source_sha256": "38917a2d923af78924c8ca3f360317d09fb6665ab049679553a637c99a53c795",
+      "captured_at": "2026-09-05T13:37:09.982224+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "OutOfSync",
+      "health": "Missing",
+      "deployments": {
+        "notification-worker": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/006-sync-0.1.0.json",
+      "source_sha256": "8bb76e1890504f2b5a3856dbefc4050818e8d4782e02cab50a737505ddf647d2",
+      "captured_at": "2026-09-05T13:37:12.627221+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/007-sync-0.1.0.json",
+      "source_sha256": "173a5db8a478209921f4edfc80e8365b8514b92e12e66f0653d926fe8166893f",
+      "captured_at": "2026-09-05T13:37:15.163622+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 0,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 0,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/008-sync-0.1.0.json",
+      "source_sha256": "4d7c382c2fc2bb041afe87b97e54e3f100f6350a9196ff2942c4538a1c425d04",
+      "captured_at": "2026-09-05T13:37:17.705285+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/009-failure.json",
+      "source_sha256": "116e4cd83e546e1cbc271e22737b86024b4788fc1f024ebd3d49c46f27f559e3",
+      "captured_at": "2026-09-05T13:37:20.989372+00:00",
+      "desired_revision": "0.2.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:05Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:05Z",
+                "lastTransitionTime": "2026-09-05T13:37:05Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:36:59Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/010-failure.json",
+      "source_sha256": "c3aa10c85be42acc7a3cb0a7acdbd747b60bea5e42927a79837e546a658ef10a",
+      "captured_at": "2026-09-05T13:37:23.585682+00:00",
+      "desired_revision": "0.2.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.2.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:22Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/011-failure.json",
+      "source_sha256": "47fdacbe2727cf4e170007f2356788638b8753bf98fce9303c2c36254b22576e",
+      "captured_at": "2026-09-05T13:37:26.195618+00:00",
+      "desired_revision": "0.2.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.2.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 1,
+            "startTime": "2026-09-05T13:37:22Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/012-failure.json",
+      "source_sha256": "fa69151e3a2be04a688236912a841552f9d3f2a8b6fe9febad3fb24c791188c8",
+      "captured_at": "2026-09-05T13:37:28.815439+00:00",
+      "desired_revision": "0.2.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.2.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:22Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/013-failure.json",
+      "source_sha256": "93c6594bb751af1c7eb4465a94aa5f2883c2dc64cdeebfed48381442a4f74838",
+      "captured_at": "2026-09-05T13:37:31.385760+00:00",
+      "desired_revision": "0.2.0",
+      "operation_phase": "Failed",
+      "operation_revision": "0.2.0",
+      "sync_status": "OutOfSync",
+      "health": "Degraded",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:29Z",
+                "lastTransitionTime": "2026-09-05T13:37:29Z",
+                "message": "Job has reached the specified backoff limit",
+                "reason": "BackoffLimitExceeded",
+                "status": "True",
+                "type": "FailureTarget"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:29Z",
+                "lastTransitionTime": "2026-09-05T13:37:29Z",
+                "message": "Job has reached the specified backoff limit",
+                "reason": "BackoffLimitExceeded",
+                "status": "True",
+                "type": "Failed"
+              }
+            ],
+            "failed": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:22Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/014-sync-0.1.0.json",
+      "source_sha256": "7bdcd33bdad366c477f91a14e8b525da2c3c5cfd40ead94a903eba43ef8488c1",
+      "captured_at": "2026-09-05T13:37:33.768564+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.2.0",
+      "sync_status": "OutOfSync",
+      "health": "Degraded",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:29Z",
+                "lastTransitionTime": "2026-09-05T13:37:29Z",
+                "message": "Job has reached the specified backoff limit",
+                "reason": "BackoffLimitExceeded",
+                "status": "True",
+                "type": "FailureTarget"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:29Z",
+                "lastTransitionTime": "2026-09-05T13:37:29Z",
+                "message": "Job has reached the specified backoff limit",
+                "reason": "BackoffLimitExceeded",
+                "status": "True",
+                "type": "Failed"
+              }
+            ],
+            "failed": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:22Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/015-sync-0.1.0.json",
+      "source_sha256": "1ff70f5adf4b804d4d7cf7980fac55f4fd4642d51fde3cacbe994fc32a3b860f",
+      "captured_at": "2026-09-05T13:37:36.353352+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:35Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/016-sync-0.1.0.json",
+      "source_sha256": "c4ac3da79f3a3e538e89dca1537d2beaabf7fd92e51aec7fd23e34258784e82d",
+      "captured_at": "2026-09-05T13:37:38.911676+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 1,
+            "startTime": "2026-09-05T13:37:35Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/017-sync-0.1.0.json",
+      "source_sha256": "d0910037125b8d51652b24df6b6f92c53870891f3164641e2c32fb081873a378",
+      "captured_at": "2026-09-05T13:37:41.475864+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:41Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:35Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/018-sync-0.1.0.json",
+      "source_sha256": "08c189cb5506d104bf6b8b6fd7e631f8583f8701c044d233eaea562b48de9731",
+      "captured_at": "2026-09-05T13:37:44.031211+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:41Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:35Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/019-sync-0.1.0.json",
+      "source_sha256": "88d962379236365d16739aea5fc7360523fd848e805741cd7667146260222852",
+      "captured_at": "2026-09-05T13:37:46.571926+00:00",
+      "desired_revision": "0.1.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:41Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:35Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/020-sync-0.3.0.json",
+      "source_sha256": "a11dc141d027e284c2495c739bab4f7859f94902e76ef37d6680a63cdac19829",
+      "captured_at": "2026-09-05T13:37:48.373905+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.1.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:41Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:41Z",
+                "lastTransitionTime": "2026-09-05T13:37:41Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:35Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/021-sync-0.3.0.json",
+      "source_sha256": "c4efc5ba4109d38ebe9f42ade18998d966d999a41f307d3db30fb5edca8b54f4",
+      "captured_at": "2026-09-05T13:37:50.894082+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.3.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/022-sync-0.3.0.json",
+      "source_sha256": "dad84fb4281e9bc0c02955392a4d7a1505ad135d8730224296bdf65367cd15ac",
+      "captured_at": "2026-09-05T13:37:53.434207+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.3.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 1,
+            "startTime": "2026-09-05T13:37:50Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/023-sync-0.3.0.json",
+      "source_sha256": "204294d15c5cdbd77d9a2dd8aaaaa8ee0844984cb432b86ee87cc54dcfb18172",
+      "captured_at": "2026-09-05T13:37:55.954357+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.3.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "1c04227c41d9d070e5043977cc35772ae9b123a95ee8d54161dade90524f1ddc",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "d6bf48743a470ca151237c232f722698a817685b573eaa4781f516311b65200e",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "active": 1,
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/024-sync-0.3.0.json",
+      "source_sha256": "e8cd5bfa50b2e03dbc6ce15734bed92e9885d8363035ef7651ea901b1d44515d",
+      "captured_at": "2026-09-05T13:37:58.483066+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.3.0",
+      "sync_status": "OutOfSync",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 1,
+          "observed_generation": 1,
+          "ready": 1,
+          "release": "0.1.0",
+          "template_hash": "ec8d5792ecc060b9656db0ffc457d86c0b01caa5ac02a5e908298f4f3f6e92c3",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "fe3147f240b5326a07c55fb3a65757479ebb3ce5e005c0c69158065acfd6ad5d",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "7852dca2c62c396c6ec77b1f8bfed932784a259b4127695c22a704eeb722f5b6",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:56Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/025-sync-0.3.0.json",
+      "source_sha256": "93e4cf2ac8bbbea1e49b11f25c2a4fe0e7c29e7aef627114ea70758ec29c2046",
+      "captured_at": "2026-09-05T13:38:01.055416+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Running",
+      "operation_revision": "0.3.0",
+      "sync_status": "OutOfSync",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "e0f2163af86c71c8decd2cb3410122bc53f128b0d7f189716d0d9321a201db7a",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "fe3147f240b5326a07c55fb3a65757479ebb3ce5e005c0c69158065acfd6ad5d",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "7852dca2c62c396c6ec77b1f8bfed932784a259b4127695c22a704eeb722f5b6",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:56Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/026-sync-0.3.0.json",
+      "source_sha256": "6fef4527f73b4be97682a79ceea858265e723cce9145a63d372e774a85a2a9f4",
+      "captured_at": "2026-09-05T13:38:03.614687+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.3.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "e0f2163af86c71c8decd2cb3410122bc53f128b0d7f189716d0d9321a201db7a",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "fe3147f240b5326a07c55fb3a65757479ebb3ce5e005c0c69158065acfd6ad5d",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "7852dca2c62c396c6ec77b1f8bfed932784a259b4127695c22a704eeb722f5b6",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:56Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/027-sync-0.3.0.json",
+      "source_sha256": "c8b7340da9d87e901275d910d20941aedd181086cb5bce823588df93f6c98b44",
+      "captured_at": "2026-09-05T13:38:06.126333+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.3.0",
+      "sync_status": "Synced",
+      "health": "Progressing",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "e0f2163af86c71c8decd2cb3410122bc53f128b0d7f189716d0d9321a201db7a",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "fe3147f240b5326a07c55fb3a65757479ebb3ce5e005c0c69158065acfd6ad5d",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "7852dca2c62c396c6ec77b1f8bfed932784a259b4127695c22a704eeb722f5b6",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:56Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    },
+    {
+      "source_file": "raw/028-sync-0.3.0.json",
+      "source_sha256": "ef2c20bf94f33c15b1338a174c75aa609ad2e8f2e61bae6788a0fa70156e46a0",
+      "captured_at": "2026-09-05T13:38:08.654070+00:00",
+      "desired_revision": "0.3.0",
+      "operation_phase": "Succeeded",
+      "operation_revision": "0.3.0",
+      "sync_status": "Synced",
+      "health": "Healthy",
+      "deployments": {
+        "api": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "e0f2163af86c71c8decd2cb3410122bc53f128b0d7f189716d0d9321a201db7a",
+          "uid": "f5203a26-4231-484d-a72a-9777a8978c97",
+          "updated": 1
+        },
+        "notification-worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "fe3147f240b5326a07c55fb3a65757479ebb3ce5e005c0c69158065acfd6ad5d",
+          "uid": "1f3d3cb7-7572-4668-8ae3-fecf1494041e",
+          "updated": 1
+        },
+        "worker": {
+          "available": 1,
+          "generation": 2,
+          "observed_generation": 2,
+          "ready": 1,
+          "release": "0.3.0",
+          "template_hash": "7852dca2c62c396c6ec77b1f8bfed932784a259b4127695c22a704eeb722f5b6",
+          "uid": "4f9c4964-d01f-4c98-9da4-eb97c8e01286",
+          "updated": 1
+        }
+      },
+      "jobs": [
+        {
+          "name": "messaging-schema-migration",
+          "annotations": {
+            "argocd.argoproj.io/sync-options": "Force=true,Replace=true",
+            "argocd.argoproj.io/sync-wave": "-2",
+            "argocd.argoproj.io/tracking-id": "release-lab-20260905t133642z:batch/Job:release-lab-20260905t133642z/messaging-schema-migration"
+          },
+          "status": {
+            "completionTime": "2026-09-05T13:37:56Z",
+            "conditions": [
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "SuccessCriteriaMet"
+              },
+              {
+                "lastProbeTime": "2026-09-05T13:37:56Z",
+                "lastTransitionTime": "2026-09-05T13:37:56Z",
+                "message": "Reached expected number of succeeded pods",
+                "reason": "CompletionsReached",
+                "status": "True",
+                "type": "Complete"
+              }
+            ],
+            "ready": 0,
+            "startTime": "2026-09-05T13:37:50Z",
+            "succeeded": 1,
+            "terminating": 0,
+            "uncountedTerminatedPods": {}
+          }
+        }
+      ]
+    }
+  ]
+}

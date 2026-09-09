@@ -1,0 +1,25 @@
+{
+  "messages": 12,
+  "outbox_total": 12,
+  "pending": 0,
+  "publish_attempts": 13,
+  "notifications": 12,
+  "persisted_statuses": 12,
+  "event_data_and_ordering": true,
+  "kafka_notifications": 13,
+  "kafka_delivery_counts": {
+    "1": 2,
+    "3": 1,
+    "4": 1,
+    "6": 1,
+    "7": 1,
+    "8": 1,
+    "9": 1,
+    "10": 1,
+    "11": 1,
+    "12": 1,
+    "13": 1,
+    "5": 1
+  },
+  "database_notification_deduplication": true
+}

@@ -1,0 +1,163 @@
+{
+  "status": "LOCAL_REHEARSAL_PASS_EXTERNAL_PENDING",
+  "external_storage_verified": false,
+  "source": {
+    "result": "PREPARED",
+    "source_kind": "isolated synthetic v2 workload",
+    "external_storage_verified": false,
+    "dump": {
+      "size_bytes": 25147,
+      "sha256": "16cf458e899ef775ae0ca1e94a4653b1ec0ab14d4c71f9c2910b7cda4ed87510"
+    },
+    "database": {
+      "tables": {
+        "alembic_version": {
+          "rows": 1,
+          "rows_sha256": "6a34e10c78dd74e88b7aae0df928aeb64e2134a28596b42f65ebf8c505bb49a6"
+        },
+        "idempotency_keys": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "intake_idempotency_keys": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "messages": {
+          "rows": 10,
+          "rows_sha256": "7a09a480326a6c3fa2a256fdf2a7abf066dd8402f75f168976cdbea5148fca72"
+        },
+        "notification_attempts": {
+          "rows": 10,
+          "rows_sha256": "ccd7ee419309e0ed2ac61fd92b693792b53523f6c9d3211fe55ba878122fb4cb"
+        },
+        "read_receipts": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "request_statuses": {
+          "rows": 10,
+          "rows_sha256": "3ff369d2ab57eb7493be243ed53c26642f65d27dbdd276b3522a0babbdabbe78"
+        },
+        "room_members": {
+          "rows": 1,
+          "rows_sha256": "55ff6deb23b61b7e791241bd12e06a03a13c187875867b65fc0868f371f50ffd"
+        },
+        "room_sequences": {
+          "rows": 1,
+          "rows_sha256": "c011f1ea9a60caaf944ff609d16ce62fe9abc6f19fc54342c3664e93665ff038"
+        },
+        "rooms": {
+          "rows": 1,
+          "rows_sha256": "aa501fd34982d697d9771dd861f2997657fff66033be0791e2de5ffd997b5064"
+        },
+        "users": {
+          "rows": 1,
+          "rows_sha256": "75d358ce1e4f35ccb796c1beb767f72d16d4e6667bd2bda5c7926e8b1d9607d7"
+        }
+      },
+      "sequences": {
+        "messages_id_seq": "10|t",
+        "notification_attempts_id_seq": "10|t",
+        "rooms_id_seq": "1|t",
+        "users_id_seq": "1|t"
+      },
+      "columns_sha256": "721fe73fb36640bde0f28f81b8575da03995487ed074f95e63913aafa5770e06",
+      "alembic_version": "0008_generic_event_envelope"
+    },
+    "source_namespace": "release-lab-20260905t135103z",
+    "source_run_id": "20260905T135103Z",
+    "accepted_events": 10,
+    "dump_seconds": 6.593,
+    "consistency_scope": "Quiescent synthetic source; manifests match before/after dump. Not an online snapshot-coordinated backup.",
+    "prepared_at": "2026-09-05T13:51:51.267113+00:00",
+    "source_cleanup": {
+      "complete": true,
+      "errors": []
+    }
+  },
+  "local_restore": {
+    "result": "PASS",
+    "namespace": "release-lab-restore-a217565b6280",
+    "context": "kind-messaging-ha",
+    "image": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+    "dump": {
+      "size_bytes": 25147,
+      "sha256": "16cf458e899ef775ae0ca1e94a4653b1ec0ab14d4c71f9c2910b7cda4ed87510"
+    },
+    "external_storage_verified": false,
+    "scope": "Isolated PostgreSQL restore; storage provenance must be joined with transfer receipt.",
+    "restore_seconds": 0.297,
+    "database": {
+      "tables": {
+        "alembic_version": {
+          "rows": 1,
+          "rows_sha256": "6a34e10c78dd74e88b7aae0df928aeb64e2134a28596b42f65ebf8c505bb49a6"
+        },
+        "idempotency_keys": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "intake_idempotency_keys": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "messages": {
+          "rows": 10,
+          "rows_sha256": "7a09a480326a6c3fa2a256fdf2a7abf066dd8402f75f168976cdbea5148fca72"
+        },
+        "notification_attempts": {
+          "rows": 10,
+          "rows_sha256": "ccd7ee419309e0ed2ac61fd92b693792b53523f6c9d3211fe55ba878122fb4cb"
+        },
+        "read_receipts": {
+          "rows": 0,
+          "rows_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "request_statuses": {
+          "rows": 10,
+          "rows_sha256": "3ff369d2ab57eb7493be243ed53c26642f65d27dbdd276b3522a0babbdabbe78"
+        },
+        "room_members": {
+          "rows": 1,
+          "rows_sha256": "55ff6deb23b61b7e791241bd12e06a03a13c187875867b65fc0868f371f50ffd"
+        },
+        "room_sequences": {
+          "rows": 1,
+          "rows_sha256": "c011f1ea9a60caaf944ff609d16ce62fe9abc6f19fc54342c3664e93665ff038"
+        },
+        "rooms": {
+          "rows": 1,
+          "rows_sha256": "aa501fd34982d697d9771dd861f2997657fff66033be0791e2de5ffd997b5064"
+        },
+        "users": {
+          "rows": 1,
+          "rows_sha256": "75d358ce1e4f35ccb796c1beb767f72d16d4e6667bd2bda5c7926e8b1d9607d7"
+        }
+      },
+      "sequences": {
+        "messages_id_seq": "10|t",
+        "notification_attempts_id_seq": "10|t",
+        "rooms_id_seq": "1|t",
+        "users_id_seq": "1|t"
+      },
+      "columns_sha256": "721fe73fb36640bde0f28f81b8575da03995487ed074f95e63913aafa5770e06",
+      "alembic_version": "0008_generic_event_envelope"
+    },
+    "provision_restore_verify_seconds": 8.921,
+    "verified_at": "2026-09-05T13:52:45.103224+00:00",
+    "cleanup_complete": true
+  },
+  "script_sha256": {
+    "postgres_backup_drill.py": "d39840726188077c7566073f2ff274bd3b2fbd427bdad5babe1230da6d1b1e02",
+    "object_storage_backup.py": "b580faeb4bfb6b61a911555df70ca6ea4874ec6b943113607d483cc113a5e992",
+    "release_failure_lab.py": "ec4f58040c2aad0431746585dd31b4d697eb33468e69bfb31da41ff824132fae",
+    "release_failure_probe.py": "c081211d96a48dd6a67289f2e9b0bc9e3ab611b0d417fe981fb14a22763b1277"
+  },
+  "remaining": [
+    "Select external bucket/region/authentication profile",
+    "Upload dump and source manifest",
+    "Download by recorded object version and verify SHA-256",
+    "Restore downloaded dump in a fresh isolated PostgreSQL instance"
+  ]
+}
