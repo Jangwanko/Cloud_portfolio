@@ -98,7 +98,9 @@ class TestOperationalDocumentation:
         agent_detail_index = readme.index("Ops Agent 구현 경계와 recorded replay")
         evolution_index = readme.index("프로젝트 발전 과정")
         local_index = readme.index("로컬 실행")
-        assert evolution_index < summary_index
+        harness_index = readme.index("## AI 개발 방식 — Codex Harness")
+        assert agent_index < harness_index < skills_index
+        assert scope_index < evolution_index < results_index
         assert (
             summary_index
             < architecture_index

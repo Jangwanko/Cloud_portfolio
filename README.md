@@ -4,34 +4,18 @@ Kubernetes & GitOps Operations Platform for Event Processing
 
 [한국어](README.md) | [English](README_EN.md)
 
-Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 장애 재현, 복구 검증**을 직접 실험한 Cloud·DevOps 포트폴리오입니다. 장애 조사에는 수집된 운영 증거만 사용하는 bounded LLM Agent를 추가했습니다.
+Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 장애 재현, 복구 검증**을 직접 실험한 Cloud·DevOps 포트폴리오입니다. 수집된 운영 증거로 장애 원인을 조사하는 AI Agent도 구현했습니다.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
 **Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
-
-## 프로젝트 발전 과정
-
-| 단계 | 주요 변화와 검증 |
-| --- | --- |
-| A | API의 DB 직접 저장 → Redis queue-first 전환, PostgreSQL·Redis 주 노드 삭제와 페일오버 실험 |
-| B | 인증·TLS·백업·GitOps 보강, Redis 병목 튜닝과 queue-depth KEDA 적용 |
-| C | Kafka append-first 전환, partition ordering·inline retry·consumer lag 기반 확장 |
-| D | DB 장애 중 ordering 검증, event/status transaction 통합, notification Worker 분리 |
-| E | Generic v2와 migration → 신규 Worker → API 배포 경계, record별 offset commit 보강 |
-| F | Namespace prune으로 데이터 손실, 재설치 후 새 백업의 복원 검증과 동기 복제 복구 보강 |
-| G | Cache 경로 제거, notification batch와 fixed/KEDA 반복 비교로 drain·API 지연의 trade-off 확인 |
-| H | 운영 증거 수집·규칙 판정·제한된 LLM 조사·복구 lifecycle, 공개 recorded replay |
-| I | 격리 배포 실패 실험, 로컬 백업·복원 리허설, Transactional Outbox 후보 검증 |
-
-[전체 발전사: 문제 → 선택 → 검증과 근거](docs/PROJECT_EVOLUTION.md) · [날짜별 패치노트](docs/PATCH_NOTES.md)
 
 ## 30초 요약
 
 | 운영 문제 | 선택 | 검증 결과 |
 | --- | --- | --- |
 | Worker backlog 증가 | `message-worker` consumer lag 기반 KEDA | Worker `2→4`, drain `12.78%` 감소 |
-| 확장 후 DB 경합 | DB 왕복과 notification transaction 수 축소 | backlog 처리율 `13.38%` 증가, API p95 trade-off 확인 |
+| 확장 효과와 API 지연의 trade-off | 고정 Worker 2개와 KEDA 2~4개 각 3회 비교 | backlog 처리율 `13.38%` 증가, API p95 `6.49%` 증가 |
 | PostgreSQL runtime 장애 | API 수락과 Worker persistence를 Kafka로 분리 | 복구 후 core·notification lag `0/0` |
 | 같은 stream 순서 보장 | `stream_id` partition과 DB commit 이후 offset commit | ordering `100/100`, missing·duplicate `0` |
 
@@ -99,7 +83,7 @@ Worker는 event·request status·notification outbox를 같은 PostgreSQL transa
 
 ## Ops Agent — Evidence-grounded Incident Diagnosis
 
-장애 판정 이후 운영 증거를 조사하는 bounded LLM Diagnosis Agent를 구현했습니다. 실제 incident 진단은 미리 수집한 Frozen Evidence Bundle을 사용합니다. Local Scenario Lab은 같은 deterministic activation에 통제된 normalized observation을 공급해 직전 관측에 따라 다음 read-only tool 선택이 달라지는지 검증합니다. 실시간 cluster 임의 조회는 허용하지 않습니다.
+규칙 기반 로직이 장애를 감지하면 AI Agent가 미리 수집한 운영 증거에서 원인 후보와 근거를 조사합니다. 조사는 허용된 증거 안에서 진행하며, 출력은 validator로 검증합니다.
 
 ```mermaid
 flowchart LR
@@ -110,32 +94,25 @@ flowchart LR
     Validation --> Incident[Incident Record]
 ```
 
-- 필요한 evidence를 선택해 정의된 장애 가설별로 이를 지지하거나 반박하는 evidence와 부족한 evidence를 분류합니다.
-- 존재하지 않는 evidence ID나 recovery·remediation 판단처럼 허용 범위를 벗어난 출력은 validator가 거부합니다.
-- incident 발생과 recovery 판정, runtime 변경 권한은 deterministic logic에 유지합니다.
-- `ops.diagnosis.v2`는 Worker capacity와 PostgreSQL path 가설, acquisition provenance, branch evaluation을 추가합니다. 현재 배포된 Public Demo `2.4.1`은 검증된 과거 incident를 재생합니다. `demo-dev` UI `2.5.0` 후보는 같은 activation에 대한 네 controlled scenario를 별도 static artifact로 투영하며 아직 public runtime에 배포되지 않았습니다.
+- 장애 가설별 지지·반박 근거와 추가 확인이 필요한 정보 분류
+- 존재하지 않는 evidence ID와 권한 밖의 복구 판단은 validator에서 거부
+- 장애·복구 판정과 runtime 변경 권한은 규칙 기반 로직에 유지
+
+Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통제된 관측에 따라 Agent의 다음 조사 선택이 달라지는지 검증합니다.
 
 [Ops Agent 상세 설계 및 검증](docs/OPS_AGENT.md)
 
+## AI 개발 방식 — Codex Harness
+
+프로젝트 invariant와 task별 context routing을 `AGENTS.md`에 고정하고, 사람은 범위·설계·완료 기준을 정하며 Codex는 구현과 검증을 수행합니다. 완료 여부는 test/evidence Gate로 확인하고 실패한 Gate·로그·위반 계약을 다음 수정에 사용합니다. 이는 제품 기능인 Ops Agent와 구분되는 개발 작업 체계입니다.
+
+문서 정합성·runtime 검증·마감 점검의 유지보수 사례 3개를 기록했습니다. 생산성·정확도·비용 개선은 아직 비교 측정하지 않았습니다. [작업 규칙과 설계 이유](docs/AI_ENGINEERING_WORKFLOW.md) · [사용 기록](docs/HARNESS_WORK_LOG.md)
+
 ## 이 프로젝트에서 보여주는 역량
 
-### Cloud / Infrastructure
-
-- Kubernetes에서 stateless·stateful workload와 persistent storage를 구성했습니다.
-- PostgreSQL replication·Pgpool 기반 DB failover 경로를 검증했습니다.
-- 로컬 구성을 EKS·MSK·RDS로 이전하기 위한 Terraform blueprint를 작성했습니다.
-
-### DevOps / Platform
-
-- GitHub Actions에서 test·manifest render·image 검증을 통과한 immutable SHA image를 게시합니다.
-- Argo CD sync wave로 migration → Worker → API 배포 순서를 구성했습니다.
-- API는 CPU HPA, Worker는 consumer lag KEDA로 workload 특성에 따라 분리했습니다.
-
-### Reliability / Operations
-
-- consumer lag·latency·replica 상태로 병목 구간을 확인합니다.
-- 장애 주입 뒤 ordering·offset·recovery 상태를 검증했습니다.
-- Prometheus와 Grafana로 intake, persistence, backlog, PostgreSQL HA 지표를 관측합니다.
+- **Cloud / Infrastructure:** stateful workload·persistent storage 구성, PostgreSQL 복제·복구 검증, AWS 이전 blueprint
+- **DevOps / Platform:** CI 검증과 SHA image 게시, GitOps 배포 순서, workload별 확장 정책
+- **Reliability / Operations:** 지표 기반 병목 분석, 장애 주입과 처리·복구 검증, Agent 조사 권한 통제
 
 ## 검증 범위
 
@@ -144,6 +121,22 @@ flowchart LR
 - AWS 구성은 Terraform migration blueprint이며 실제 AWS stack을 배포하지 않았습니다.
 
 [전체 개선 우선순위](docs/IMPROVEMENT_ROADMAP.md)
+
+## 프로젝트 발전 과정
+
+| 단계 | 주요 변화와 검증 |
+| --- | --- |
+| A | API의 DB 직접 저장 → Redis queue-first 전환, PostgreSQL·Redis 주 노드 삭제와 페일오버 실험 |
+| B | 인증·TLS·백업·GitOps 보강, Redis 병목 튜닝과 queue-depth KEDA 적용 |
+| C | Kafka append-first 전환, partition ordering·inline retry·consumer lag 기반 확장 |
+| D | DB 장애 중 ordering 검증, event/status transaction 통합, notification Worker 분리 |
+| E | Generic v2와 migration → 신규 Worker → API 배포 경계, record별 offset commit 보강 |
+| F | Namespace prune으로 데이터 손실, 재설치 후 새 백업의 복원 검증과 동기 복제 복구 보강 |
+| G | Cache 경로 제거, notification batch와 fixed/KEDA 반복 비교로 drain·API 지연의 trade-off 확인 |
+| H | 운영 증거 수집·규칙 판정·제한된 LLM 조사·복구 lifecycle, 공개 recorded replay |
+| I | 격리 배포 실패 실험, 로컬 백업·복원 리허설, Transactional Outbox 후보 검증 |
+
+[전체 발전사: 문제 → 선택 → 검증과 근거](docs/PROJECT_EVOLUTION.md) · [날짜별 패치노트](docs/PATCH_NOTES.md)
 
 <details>
 <summary><b>상세 검증 결과</b></summary>
@@ -252,6 +245,8 @@ Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis 
 
 Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
 
+Public Demo `2.4.1`은 검증된 과거 incident를 재생합니다. `demo-dev` UI `2.5.0` 후보는 같은 activation에 대한 네 controlled scenario를 별도 static artifact로 투영하며 아직 public runtime에 배포되지 않았습니다.
+
 [Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
 
 </details>
@@ -277,12 +272,6 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Ski
 
 </details>
 
-## AI 개발 방식 — Codex Harness
-
-프로젝트 invariant와 task별 context routing을 `AGENTS.md`에 고정하고, 사람은 범위·설계·완료 기준을 정하며 Codex는 구현과 검증을 수행합니다. 완료 여부는 test/evidence Gate로 확인하고 실패한 Gate·로그·위반 계약을 다음 수정에 사용합니다. 이는 제품 기능인 Ops Agent와 구분되는 개발 작업 체계입니다.
-
-현재는 Harness를 구조화하고 실제 유지보수 사례를 기록하는 단계입니다. 생산성·정확도·비용 개선은 아직 비교 측정하지 않았습니다. [작업 규칙과 설계 이유](docs/AI_ENGINEERING_WORKFLOW.md) · [사용 기록](docs/HARNESS_WORK_LOG.md)
-
 ## 문서 지도
 
 - 발전 과정: [Project Evolution](docs/PROJECT_EVOLUTION.md) · [Patch Notes](docs/PATCH_NOTES.md)
@@ -293,3 +282,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Ski
 - 검증: [Test Results](docs/TEST_RESULTS.md) · [Evidence Guide](results/README.md)
 - 개선: [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)
 - 전체 운영 점검: [Service Process Checklist](docs/SERVICE_PROCESS_CHECKLIST.md)
+
+## Contact
+
+[jangwanko93@gmail.com](mailto:jangwanko93@gmail.com)
