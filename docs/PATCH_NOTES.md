@@ -2,6 +2,13 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-09-13 README 순서·밀도와 연락처 정리
+
+- 한·영 README의 요약·아키텍처 우선 배치, 발전 과정은 요약 뒤의 펼쳐진 독립 section으로 유지
+- Ops Agent 소개와 역량 목록 압축, Codex Harness는 주요 소개 영역으로 이동
+- 고정/KEDA 비교 수치의 조건 명시, 연락처 `jangwanko93@gmail.com` 추가
+- 사용자 요청한 순서를 workflow·문서 검사에 반영; 공통 문서의 dev-kafka 작업이며 master·demo 브랜치 전파는 별도 요청 범위
+
 ## 2026-09-11 Local-ha runtime 검증과 Harness 마감
 
 - dev 이미지 `5e8addfb10d0`의 migration·Argo sync·Pod imageID와 readiness 확인

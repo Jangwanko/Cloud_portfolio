@@ -2,20 +2,18 @@
 
 [Korean](README.md) | [English](README_EN.md)
 
-A hands-on Kubernetes operations project built around an asynchronous Kafka workload, focused on **lag-based autoscaling, observability, failure recovery, and GitOps delivery**. Incident investigation includes a bounded LLM Agent that can use only previously collected operational evidence.
+A hands-on Kubernetes operations project built around an asynchronous Kafka workload, focused on **lag-based autoscaling, observability, failure recovery, and GitOps delivery**. An AI agent investigates incidents using previously collected operational evidence.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
 **Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
-
-[Project evolution: from failover experiments to the current platform](docs/PROJECT_EVOLUTION.md) — A chronological account of design decisions and validation evidence (in Korean).
 
 ## What I validated
 
 | Operational problem | Decision | Measured result |
 | --- | --- | --- |
 | Worker backlog grows while CPU stays low | Scale from `message-worker` consumer lag | Worker `2→4`; drain time decreased `12.78%` |
-| Scale-out increases database contention | Reduce database round trips and batch notification writes | Backlog throughput increased `13.38%`; API p95 trade-off recorded |
+| Scaling gains and API latency trade-off | Compare 2 fixed Workers with KEDA scaling from 2 to 4, three runs each | Backlog throughput increased `13.38%`; API p95 increased `6.49%` |
 | PostgreSQL runtime outage | Separate API acceptance from Worker persistence with Kafka | Core and notification lag returned to `0/0` after recovery |
 | Same-stream ordering | Partition by `stream_id` and commit offsets after database commit | Ordering `100/100`, missing and duplicate `0` |
 
@@ -81,7 +79,7 @@ On 2026-08-23, an actual `local-ha` run applied `75→330→75 records/s` across
 
 ## Ops Agent: Evidence-grounded Incident Diagnosis
 
-I implemented a bounded LLM Diagnosis Agent for investigating evidence after deterministic incident detection. It cannot query the live cluster arbitrarily. It selects only allowlisted evidence from Frozen Evidence Bundles collected through Application, Prometheus, Kubernetes, and Argo CD read-only paths.
+After rule-based incident detection, an AI agent investigates possible causes using previously collected operational evidence. It works within an allowlisted evidence set, and a validator checks its output.
 
 ```mermaid
 flowchart LR
@@ -96,27 +94,21 @@ flowchart LR
 - The validator rejects fabricated evidence IDs and attempts to declare recovery or remediation.
 - Deterministic logic retains authority over incident detection, recovery, and runtime changes.
 
+The Public Demo replays a verified past incident. The Scenario Lab tests whether controlled observations change the agent's next investigation step.
+
 [Ops Agent design and validation](docs/OPS_AGENT.md)
+
+## AI development workflow — Codex Harness
+
+Project invariants and task-specific context routing are defined in `AGENTS.md`. The human defines scope, design boundaries and acceptance criteria; Codex implements changes and runs evidence gates. Failed gates, logs and violated contracts guide the next iteration. This development workflow is separate from the product's Ops Agent.
+
+Three maintenance cases cover document consistency, runtime validation, and completion checks. Productivity, accuracy and cost improvements have not been comparatively measured. [Workflow and rationale](docs/AI_ENGINEERING_WORKFLOW.md) · [Maintenance work log](docs/HARNESS_WORK_LOG.md)
 
 ## Skills demonstrated
 
-### Cloud / Infrastructure
-
-- Configured stateless and stateful Kubernetes workloads with persistent storage.
-- Validated PostgreSQL replication and the Pgpool failover path.
-- Built a Terraform blueprint for mapping the local design to EKS, MSK, and RDS.
-
-### DevOps / Platform
-
-- Publish immutable commit-SHA images after tests, manifest rendering, and image checks in GitHub Actions.
-- Enforce migration -> Worker -> API release order with Argo CD sync waves.
-- Use CPU HPA for the API and consumer-lag KEDA for the Worker.
-
-### Reliability / Operations
-
-- Locate bottlenecks through consumer lag, latency, and replica state.
-- Verify ordering, offsets, and recovery after controlled failure injection.
-- Observe intake, persistence, backlog, and PostgreSQL HA through Prometheus and Grafana.
+- **Cloud / Infrastructure:** stateful workloads and persistent storage, PostgreSQL replication and recovery validation, AWS migration blueprint
+- **DevOps / Platform:** CI gates and SHA images, GitOps release ordering, workload-specific autoscaling
+- **Reliability / Operations:** metric-based bottleneck analysis, failure and recovery validation, bounded agent investigation
 
 ## Validation scope
 
@@ -125,6 +117,10 @@ flowchart LR
 - The AWS configuration is a Terraform migration blueprint; no AWS stack has been deployed.
 
 [Full improvement roadmap](docs/IMPROVEMENT_ROADMAP.md)
+
+## Project evolution
+
+[Project evolution: from failover experiments to the current platform](docs/PROJECT_EVOLUTION.md) — A chronological account of design decisions and validation evidence (in Korean).
 
 <details>
 <summary><b>Detailed validation results</b></summary>
@@ -223,8 +219,6 @@ Docker Desktop is required on Windows. The script installs pinned kind, kubectl,
 - Evidence: [Test Results](docs/TEST_RESULTS.md) · [Evidence Guide](results/README.md)
 - Roadmap: [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)
 
-## AI development workflow — Codex Harness
+## Contact
 
-Project invariants and task-specific context routing are defined in `AGENTS.md`. The human defines scope, design boundaries and acceptance criteria; Codex implements changes and runs evidence gates. Failed gates, logs and violated contracts guide the next iteration. This development workflow is separate from the product's Ops Agent.
-
-The harness is structured and maintenance cases are being recorded. Productivity, accuracy and cost improvements have not been comparatively measured. [Workflow and rationale](docs/AI_ENGINEERING_WORKFLOW.md) · [Maintenance work log](docs/HARNESS_WORK_LOG.md)
+[jangwanko93@gmail.com](mailto:jangwanko93@gmail.com)
