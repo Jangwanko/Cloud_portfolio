@@ -2,6 +2,20 @@
 
 이 프로젝트에서 Codex를 개발 에이전트로 사용하는 역할과 검증 경계를 정의합니다. 공통 계약과 작업별 문서 선택은 [root AGENTS.md](../AGENTS.md)를 따릅니다.
 
+## Harness 설계 이유와 검증 단계
+
+기존 root `AGENTS.md`는 공통 계약, 날짜별 실험 수치, 실행 명령, UI·문서·GitOps 세칙을 함께 담고 있었습니다. 2026-09-09 문서 리팩터링은 작업 시작 시 읽는 공통 범위를 줄이고, 필요한 세부 정보를 작업별 문서에서 찾도록 변경했습니다. 최초 작업 트리 기준 root는 344줄에서 96줄로 축소됐으며 이후 master 전용 임시 파일 관리 규칙도 보존했습니다. 줄 수 감소는 문서 구조 변화의 증거이며 token·비용 감소 실측이 아닙니다.
+
+- 고정 계약: root invariants와 branch/authority 규칙
+- 필요한 context: task별 기존 문서 routing; 불필요한 directory-specific instructions 추가 제외
+- 역할: 사람이 문제·범위·설계·acceptance criteria 결정, agent가 구현·검증 수행
+- 완료 판정: test/evidence Gate와 사람의 검토; agent 완료 보고만으로 승인 처리 금지
+- 실패 피드백: Gate·expected/actual·로그·위반 계약·수정 범위를 다음 iteration에 전달
+
+제품의 Ops Agent는 운영 증거를 조사하는 기능입니다. Codex Harness는 이 저장소를 개발·검증하는 작업 체계입니다. 현재 주장 범위는 체계의 구조화와 사용 기록이며, 생산성·정확도·비용 개선은 비교 가능한 측정 뒤 판단합니다.
+
+실제 유지보수 2~3개를 [사용 기록](HARNESS_WORK_LOG.md)에 남깁니다. 작업 전에 범위와 Gate를 정하고 실행 뒤 결과·실패·수정·사람의 판단을 기록합니다. 일부러 실패를 만들지 않으며 Gate 변경이 필요하면 이유를 남깁니다. First-pass는 최종 상태가 아니라 사전에 정의한 Gate의 최초 실행으로 판정합니다.
+
 ## Human responsibility
 
 - 문제와 요구사항 정의, 작업 범위 결정

@@ -29,7 +29,9 @@ flowchart LR
     API --> Kafka[(Kafka<br/>8 partitions)]
     Kafka --> Worker[Worker<br/>lag KEDA]
     Worker --> Pgpool --> PostgreSQL[(PostgreSQL)]
-    Worker --> NotificationTopic[(Notification Kafka)] --> NotificationWorker[Notification Worker]
+    PostgreSQL --> OutboxPublisher[Outbox publisher]
+    OutboxPublisher --> NotificationTopic[(Notification Kafka)] --> NotificationWorker[Notification Worker]
+    NotificationWorker --> PostgreSQL
     Kafka --> DLQ[DLQ / Replay]
 
     Prometheus -. metrics .-> API
@@ -39,6 +41,8 @@ flowchart LR
     KEDA -. consumer lag .-> Kafka
     KEDA --> Worker
 ```
+
+The Worker commits the event, request status and notification outbox in one PostgreSQL transaction. The publisher sends pending intent to Kafka; a crash after ACK but before marking completion may republish it. The notification Worker deduplicates database attempts. This diagram describes source behavior; public runtime rollout requires separate evidence.
 
 ## Key engineering decisions
 
@@ -172,7 +176,7 @@ Kafka intake can continue during a PostgreSQL runtime outage only after the API 
 
 | Current gap | Next work |
 | --- | --- |
-| Transactional outbox validated in an isolated local candidate; public runtime not promoted | rollout, load validation and completed-row retention policy |
+| Transactional outbox: isolated failure validation, image publication and local-ha runtime smoke verified | public demo rollout, load validation and completed-row retention policy |
 | Brief status `404` after `202` | accepted-state contract or read model |
 | Worker crash and consumer rebalance before offset commit | failure-injection test |
 | Both migration Job and API startup run Alembic | single Kubernetes migration owner |
@@ -218,3 +222,9 @@ Docker Desktop is required on Windows. The script installs pinned kind, kubectl,
 - Agent: [Ops Agent](docs/OPS_AGENT.md) · [Ops Agent CLI](ops_agent/README.md)
 - Evidence: [Test Results](docs/TEST_RESULTS.md) · [Evidence Guide](results/README.md)
 - Roadmap: [Improvement Roadmap](docs/IMPROVEMENT_ROADMAP.md)
+
+## AI development workflow — Codex Harness
+
+Project invariants and task-specific context routing are defined in `AGENTS.md`. The human defines scope, design boundaries and acceptance criteria; Codex implements changes and runs evidence gates. Failed gates, logs and violated contracts guide the next iteration. This development workflow is separate from the product's Ops Agent.
+
+The harness is structured and maintenance cases are being recorded. Productivity, accuracy and cost improvements have not been comparatively measured. [Workflow and rationale](docs/AI_ENGINEERING_WORKFLOW.md) · [Maintenance work log](docs/HARNESS_WORK_LOG.md)

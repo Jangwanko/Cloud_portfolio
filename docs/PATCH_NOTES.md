@@ -2,6 +2,20 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-09-11 Local-ha runtime 검증과 Harness 마감
+
+- dev 이미지 `5e8addfb10d0`의 migration·Argo sync·Pod imageID와 readiness 확인
+- standby 자체 복구 후 sync quorum 2, 이벤트 1건 persistence·Outbox published·notification attempt, pending 0 확인
+- 데이터 reset·DB 설정 변경 제외; public demo/master runtime과 성능·HA 검증 범위 분리
+- Current Evidence 표를 H002 관측과 일치시킨 H003 기록; [검증 결과](TEST_RESULTS.md#local-ha-runtime-2026-09-11)와 [Harness 기록](HARNESS_WORK_LOG.md) 연결
+
+## 2026-09-11 문서 정합성과 Harness 첫 사용 기록
+
+- 한·영 README에 atomic outbox와 publisher 경로 반영, Ops Agent와 개발용 Codex Harness 역할 구분
+- 2026-09-09 CI publication과 runtime rollout 미확인 상태 분리; 과거 실험의 조건·수치 유지
+- 마감 필수 범위·선택 검증·후속 backlog 구분, Harness 설계 이유와 실제 유지보수 기록 시작
+- 기능·runtime 변경 없음; 검증과 측정 한계는 [H001](HARNESS_WORK_LOG.md) 참조
+
 ## 2026-09-05 Transactional Outbox candidate
 
 - Migration `0009_notification_outbox`, event/status와 원자적 intent 기록, 별도 publisher와 capped retry 추가

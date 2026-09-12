@@ -27,6 +27,7 @@
 - API Deployment: generic event 검증, Kafka append, PostgreSQL status·event 조회, readiness·metrics 제공
 - Kafka StatefulSet: ingress·DLQ·notification topic, stream key partition ordering, Worker lag source
 - Worker Deployment: ingress consume, PostgreSQL transaction, inline retry, DLQ 이동, record 단위 explicit offset commit
+- Outbox publisher: PostgreSQL pending intent를 Kafka에 발행하고 ACK 후 완료 표시
 - Notification Worker: core persistence 뒤 notification job 소비, poll당 최대 20건의 attempt를 한 PostgreSQL transaction으로 기록
 - DLQ Replayer: replay guard 확인 뒤 ingress topic 재주입
 - PostgreSQL HA·Pgpool: durable source of truth, synchronous replica, writable primary routing
@@ -126,7 +127,7 @@ Kafka를 request intake 경로에 둔 이유:
 - 알림 처리: event와 같은 transaction에 durable outbox 기록 후 `outbox-publisher`가 `message-notifications`에 at-least-once 전달. 별도 `notification-worker`가 poll당 최대 20건을 한 statement·transaction으로 `notification_attempts`에 기록. DB commit 뒤 각 record offset을 순서대로 commit
 - notification batch failure: DB 연결 오류 시 poll에 포함된 각 partition의 첫 record로 rewind. PostgreSQL DataError는 record 단위 처리로 전환해 terminal row와 정상 row 분리
 - notification replay: DB commit 뒤 offset commit 전 crash는 같은 job 재처리 가능. `notification_attempts.message_id` unique constraint와 `ON CONFLICT DO NOTHING`으로 중복 insert 억제
-- Outbox source candidate는 2026-09-05 격리 장애 실험에서 검증했습니다. 공개 image/runtime 승격과 성능 측정은 별도입니다. [계약과 증거](TRANSACTIONAL_OUTBOX.md)
+- Outbox source candidate는 2026-09-05 격리 장애 실험에서 검증했습니다. 2026-09-09 master 이미지 게시를 완료했으며 runtime rollout과 새 이미지 성능 측정은 미확인입니다. [계약과 증거](TRANSACTIONAL_OUTBOX.md)
 - local Kafka trust boundary: PLAINTEXT demo 구성; production에서 broker 인증과 topic별 최소 권한 ACL 필요
 - `event_type` 의미와 `metadata` 분류: producer/adapter 소유; generic Worker가 domain taxonomy를 강제하지 않음
 - order reference adapter 분류 예시: `payment`, `order`, `delivery`, `refund`, `support`, `needs_review`

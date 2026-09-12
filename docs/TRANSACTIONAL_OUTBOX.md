@@ -1,8 +1,10 @@
 # Notification Transactional Outbox
 
-2026-09-05 `dev-kafka` source candidate입니다. Worker의 PostgreSQL commit 직후 process crash로
-notification 발행이 빠질 수 있던 경계를 DB에 저장하는 발행 의도로 보완했습니다.
-공개 image/runtime 승격과 성능 baseline 재측정은 아직 하지 않았습니다.
+2026-09-11 local-ha의 dev 이미지 배포·기본 이벤트 처리 결과: [Runtime 검증](TEST_RESULTS.md#local-ha-runtime-2026-09-11). Public demo와 master 이미지의 runtime 증거는 포함하지 않습니다.
+
+Worker의 PostgreSQL commit 직후 process crash로 notification 발행이 빠질 수 있던 경계를 DB에 저장하는 발행 의도로 보완했습니다.
+
+2026-09-05 격리 장애 실험 뒤 2026-09-09 source를 master에 병합하고 이미지 `74405259cefd`를 게시했습니다. 2026-09-11 local-ha에서는 dev 이미지 `5e8addfb10d0`의 rollout과 기본 처리 검증을 완료했습니다. Public demo/master 이미지 runtime과 새 성능 baseline은 미확인입니다. source·image·bot commit과 CI 근거는 [현재 게시 상태](TEST_RESULTS.md#publication-status-2026-09-09)를 따릅니다. 아래 실험은 당시 local candidate의 증거로 유지합니다.
 
 ## 처리 계약
 
@@ -70,8 +72,7 @@ Migration 이전 새 Worker 배포는 허용하지 않습니다. 구 Worker와 �
 직접 publish 경로가 남으므로 모든 이벤트가 outbox 보호를 받는다고 주장하지 않습니다.
 Worker image를 이전 버전으로 되돌릴 때에는 DB table을 유지하고 새 publisher를 남겨 pending을 drain해야 합니다.
 Downgrade는 pending 의도 삭제를 막기 위해 명시적으로 거부합니다.
-GitOps overlay는 아직 과거 published image를 참조하므로 현재 dirty manifest를 그대로 운영 cluster에 적용하지 않습니다.
-CI로 새 image를 게시하고 migration·Worker·publisher의 image 정합성을 확인한 뒤 승격해야 합니다.
+2026-09-09 CI는 dev image `5e8addfb10d0`, master image `74405259cefd`를 게시하고 각 overlay를 갱신했습니다. 이는 runtime rollout 증거가 아닙니다. 대상 Application revision·실행 imageID·migration 성공·Worker/publisher 상태와 pending drain을 별도로 확인해야 합니다.
 
 Prometheus의 `outbox-publisher` scrape와 다음 지표를 추가했습니다.
 

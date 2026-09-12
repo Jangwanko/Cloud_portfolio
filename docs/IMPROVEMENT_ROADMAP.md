@@ -2,9 +2,28 @@
 
 이 문서는 현재 포트폴리오의 다음 투자 순서를 정의합니다. 완료 여부는 코드 존재보다 재현 가능한 장애 주입과 원본 증거로 판단합니다.
 
-## Immediate Direction — 2026-08-28
+## Portfolio Completion Scope — 2026-09-11
 
-현재 투자 순서:
+포트폴리오의 마감 기준은 **운영 판단·검증과 AI agent 위임·통제 방식을 근거와 함께 설명할 수 있는 상태**입니다. 제품 Ops Agent와 개발용 Codex Harness는 별도 축으로 설명합니다. 아래 필수 범위를 완료한 뒤 지원용 완성본으로 동결하고, 나머지 기능은 후속 과제로 관리합니다.
+
+| 순서 | 마감 범위 | 완료 조건 | 상태 |
+| --- | --- | --- | --- |
+| 1 | 현재 문서 정합성 | Outbox 경로와 source/image/runtime 상태 구분, 한·영 설명과 링크/Gate 일치 | H001 Gate 통과, 다음 단계 진행 수락 |
+| 2 | 게시 이미지 기본 runtime 검증 | 대상 context·Application·imageID 확인, migration → Worker/publisher → API, 소규모 이벤트 persistence·attempt·pending drain 증거 | H002 local-ha runtime·smoke 통과; DB 자체 복구 확인 |
+| 3 | Harness 사용 사례 2~3개 | 사전 scope/Gate, context, 실제 결과·실패 피드백·사람 판단과 측정 한계 기록 | [H001·H002·H003](HARNESS_WORK_LOG.md) 기록; 최종 문서·회귀·원격 CI Gate로 마감 |
+| 선택 1개 | Consumer crash/rebalance | commit/offset 경계와 재할당 조건을 명시한 누락·중복·ordering·재처리 검증 | 미실행 |
+
+마감 필수 범위에서 제외: AWS 전체 stack 배포, 외부 object storage 왕복, 장시간 capacity characterization, Outbox 대규모 성능 튜닝, 새 Agent 기능. 기존 한계는 숨기지 않고 아래 backlog에 유지합니다. 백업 로컬 리허설과 Outbox 격리 crash 실험을 해당 후속 검증의 대체 증거로 사용하지 않습니다.
+
+Runtime 단계에서는 기존 데이터 reset이나 새 장애 주입을 기본 절차에 포함하지 않습니다. 먼저 읽기 전용으로 대상을 확인하고, 데이터 손실 위험 또는 배포 판단이 필요한 지점은 별도 범위를 정합니다. Harness 효율 개선 수치는 미측정이며 사용 사례 수만으로 개선을 주장하지 않습니다.
+
+최종 설명 사례: KEDA 지표 선택·trade-off, 데이터 손실 이후 설계 변경·Outbox 경계, Codex 위임과 Gate. 각 사례는 문제 → 선택 → 검증 → 한계와 근거 위치를 연결합니다.
+
+## Historical Investment Direction — 2026-08-28
+
+아래는 당시 우선순위와 기술 backlog입니다. 이번 마감의 필수 완료 목록은 위 표를 따릅니다.
+
+당시 투자 순서:
 
 1. **offset 장애 경계 검증**: notification batch와 core Worker의 DB commit 직후 강제 종료, consumer group rebalance, idempotent replay 확인
 2. **신뢰성 gap 제거**: accepted-state read model과 notification transactional outbox 구현·장애 주입
