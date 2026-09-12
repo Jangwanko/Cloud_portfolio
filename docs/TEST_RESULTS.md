@@ -2,6 +2,31 @@
 
 이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-28`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
+## Local-ha Runtime 2026-09-11
+
+`kind-messaging-ha`에서 Argo `dev-kafka` revision `9f3f2f9`가 `Synced / Healthy`, operation `Succeeded`임을 확인했습니다. Migration `0009_notification_outbox` 성공 후 API·core Worker·Outbox publisher·notification Worker 모두 `5e8addfb10d0` image와 실제 imageID, Ready 상태를 확인했습니다.
+
+Docker 재시작 후 standby clone 중 liveness 재시작이 반복됐으나 설정 변경 전에 자체 복구했습니다. Primary `synchronous_commit=on`, `ANY 1 (...)` 유지, standby 2개 `streaming/quorum`, readiness `ready`입니다. Agent는 DB 설정·Pod·PVC를 변경하지 않았습니다. 재발 방지 수정이나 failover 검증을 완료했다는 뜻은 아닙니다.
+
+`scripts/smoke_test.ps1 -SkipReset`으로 고유한 사용자/stream과 이벤트 1건을 만들었습니다. HTTP 202, v2 envelope, DB read model payload, persisted status를 확인했고 해당 event의 outbox 1행은 published, 발행 attempt 1회, notification attempt 1건, 전체 pending 0입니다. 기존 데이터 reset 없이 검증 fixture를 보존했습니다.
+
+- [배포·readiness snapshot](harness/H002-runtime-recovered.json)
+- [Smoke 식별자·DB 결과](harness/H002-smoke.json)
+- [환경 실패와 복구 과정](HARNESS_WORK_LOG.md)
+
+이 증거는 dev 이미지의 local-ha 기본 처리에 한정합니다. Public demo/master 이미지 runtime, 지속 부하, consumer crash/rebalance, HA promotion, 외부 notification 발송 성공은 검증하지 않았습니다.
+
+## Publication Status 2026-09-09
+
+2026-09-11 문서 정합성 작업에서 아래 두 CI의 `success`를 read-only로 재확인했습니다. 이미지 게시와 runtime rollout은 별도 증거입니다.
+
+| 대상 | Source / merge | 게시 이미지 | Overlay bot commit | CI |
+| --- | --- | --- | --- | --- |
+| dev-kafka | `5e8addf` | `5e8addfb10d0` | `9f3f2f9` | [34306893410](https://github.com/Jangwanko/Cloud_portfolio/actions/runs/34306893410), success |
+| master | `7440525` | `74405259cefd` | `cea699d` | [34307137049](https://github.com/Jangwanko/Cloud_portfolio/actions/runs/34307137049), success |
+
+Outbox·격리 배포 실패 lab·백업 리허설 도구·context routing이 포함된 publication입니다. 당시 local dev/master suite는 각각 `658 passed`; 현재 변경의 test count는 매 작업에서 다시 실행합니다. H001 publication 점검 당시 runtime은 미조회였으며, 이후 local-ha 관측은 아래 2026-09-11 결과에 별도로 기록합니다. Public demo runtime은 이번에 조회하지 않았습니다.
+
 ## Current Evidence Status
 
 2026-09-05 Outbox candidate: `20260905T144053Z` 격리 실제 장애 실험 **PASS**.
@@ -24,9 +49,9 @@ production 무중단 증거로 해석하지 않습니다. [조건과 결과](REL
 | Area | Current statement | Evidence status |
 | --- | --- | --- |
 | Source candidate | API `2.1.0`, Demo UI `2.4.1`, Ops Agent Phase 1~5.2와 `ops.diagnosis.v2` Scenario Lab | actual Gate 2 recorded replay와 controlled observation branching 구현·검증 |
-| Current source promotion | feature `b2e1037`, final source `54ee42a`, dev image `54ee42a2fb29` | dev CI runs `33175480687`·`33175967293` 성공 |
-| Current master promotion | merge `ad686f3`, image `ad686f35448f`, overlay `b9218c7` | master CI run `33176442914` 성공 |
-| Last verified local GitOps runtime | image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` | 2026-08-12 `dev-kafka` Argo revision `004f2e7`, `Synced / Healthy`; 현재 published image rollout과 구분 |
+| Current source publication | source `5e8addf`, dev image `5e8addfb10d0`, bot `9f3f2f9` | 2026-09-09 CI 성공; runtime rollout 별도 |
+| Current master publication | merge `7440525`, image `74405259cefd`, bot `cea699d` | 2026-09-09 CI 성공; runtime rollout 별도 |
+| Last verified local GitOps runtime | dev image `5e8addfb10d0`, API `2.1.0`, migration `0009_notification_outbox` | 2026-09-11 Argo revision `9f3f2f9`, `Synced / Healthy`; [H002 기본 처리 증거](#local-ha-runtime-2026-09-11) |
 | Core path | API → `message-ingress` → Worker → PostgreSQL | generic v2 `202`, per-stream ordering, retry·DLQ·offset commit 유지 |
 | Read model | request status와 event list를 PostgreSQL에서 조회 | API local materialized cache와 snapshot topic 3개 제거; DB read 장애는 `503` |
 | Readiness | schema, Kafka, PostgreSQL HA, auth secret | Worker 정보 제거; `/ops/summary`로 분리 |
@@ -49,7 +74,7 @@ production 무중단 증거로 해석하지 않습니다. [조건과 결과](REL
 | Historical hot-stream candidate | 3회 평균 event `33,201`, p95 `76.57ms`, drain `364.62s` | 2026-08-05 dirty local image; current 64-stream A/B와 분리 |
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
-| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `54ee42a2fb29`, master image `ad686f35448f` 게시 확인; runtime sync는 별도 검증 |
+| GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `5e8addfb10d0`, master image `74405259cefd` 게시 확인; dev local-ha sync·smoke 통과, master runtime 미검증 |
 | Public demo-lite | release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0` | entry/replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23

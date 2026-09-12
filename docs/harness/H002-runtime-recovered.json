@@ -1,0 +1,191 @@
+{
+  "captured_at_host_utc": "2026-09-10T20:54:34.361847+00:00",
+  "context": "kind-messaging-ha",
+  "expected_dev_image": "5e8addfb10d0",
+  "agent_runtime_mutations": false,
+  "application": {
+    "targetRevision": "dev-kafka",
+    "revision": "9f3f2f9b80f299afc2f66806256feec1f7bac629",
+    "sync": "Synced",
+    "health": "Healthy",
+    "operation": "Succeeded"
+  },
+  "migration": {
+    "succeeded": 1
+  },
+  "pods": [
+    {
+      "name": "api-66b7fd6986-69lzg",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "api-66b7fd6986-hhlfx",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "api-66b7fd6986-klwm4",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "api-66b7fd6986-l6w4q",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "api-66b7fd6986-rw75q",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "api-66b7fd6986-tlghx",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-0",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": true,
+          "restartCount": 15
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-1",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": true,
+          "restartCount": 49
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-2",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": true,
+          "restartCount": 51
+        }
+      ]
+    },
+    {
+      "name": "notification-worker-647d6c8985-lhv9b",
+      "containers": [
+        {
+          "name": "notification-worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "outbox-publisher-76dd64f7b9-jblmr",
+      "containers": [
+        {
+          "name": "outbox-publisher",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "worker-cdbb675c8-mj6p8",
+      "containers": [
+        {
+          "name": "worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "worker-cdbb675c8-wqt48",
+      "containers": [
+        {
+          "name": "worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    }
+  ],
+  "readiness": {
+    "app_version": "2.1.0",
+    "status": "ready",
+    "reason": [],
+    "grace_remaining_seconds": null,
+    "queue_backend": "kafka",
+    "kafka": {
+      "bootstrap_reachable": true
+    },
+    "postgres": {
+      "ha_mode": true,
+      "primary_reachable": true,
+      "standby_count": 2,
+      "sync_standby_count": 2,
+      "max_replication_delay_bytes": 0
+    }
+  }
+}

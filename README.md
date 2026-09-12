@@ -45,7 +45,9 @@ flowchart LR
     API --> Kafka[(Kafka<br/>8 partitions)]
     Kafka --> Worker[Worker<br/>lag KEDA]
     Worker --> Pgpool --> PostgreSQL[(PostgreSQL)]
-    Worker --> NotificationTopic[(Notification Kafka)] --> NotificationWorker[Notification Worker]
+    PostgreSQL --> OutboxPublisher[Outbox publisher]
+    OutboxPublisher --> NotificationTopic[(Notification Kafka)] --> NotificationWorker[Notification Worker]
+    NotificationWorker --> PostgreSQL
     Kafka --> DLQ[DLQ / Replay]
 
     Prometheus -. metrics .-> API
@@ -55,6 +57,8 @@ flowchart LR
     KEDA -. consumer lag .-> Kafka
     KEDA --> Worker
 ```
+
+Worker는 event·request status·notification outbox를 같은 PostgreSQL transaction에 기록합니다. Publisher가 pending intent를 Kafka에 발행하며, ACK 뒤 완료 표시 전 crash는 재발행될 수 있습니다. Notification Worker는 DB attempt의 중복을 억제합니다. 이 그림은 현재 source 구조이며 public demo runtime의 배포 상태를 뜻하지 않습니다.
 
 세부 구조: [Architecture](docs/ARCHITECTURE.md) · [GitOps](docs/GITOPS.md) · [Observability](docs/OBSERVABILITY.md)
 
@@ -195,6 +199,7 @@ Terraform은 EKS·ECR·MSK·RDS·ACM·Route 53·Secrets Manager skeleton을 제�
 | --- | ---: | --- |
 | API | `6→8` | Kafka append, PostgreSQL read, CPU HPA |
 | core Worker | `2→4` | persistence, retry, DLQ, lag KEDA |
+| Outbox publisher | `1` | durable intent의 Kafka 발행·재시도 |
 | notification Worker | `1→2` | notification attempt 기록 |
 | Kafka | `3` | 8 partitions, RF `3`, `min.insync.replicas=2` |
 | PostgreSQL | `3` | durable source of truth, sync standby |
@@ -228,7 +233,7 @@ API가 schema startup을 완료한 뒤 발생한 PostgreSQL runtime outage에서
 
 | 현재 경계 | 다음 작업 |
 | --- | --- |
-| Outbox는 로컬 candidate에서 장애 검증 완료, 공개 runtime 미승격 | rollout·부하 검증과 완료 row 보관 정책 |
+| Outbox 격리 장애 검증·이미지 게시·local-ha 기본 runtime 검증 완료 | public demo rollout·부하 검증과 완료 row 보관 정책 |
 | `202` 직후 짧은 status `404` 가능 | accepted-state 계약 또는 read model |
 | record commit 직전 Worker crash·rebalance 미검증 | kill/restart/rebalance 장애 주입 |
 | migration Job과 API startup이 모두 Alembic 실행 | Kubernetes migration owner를 Job으로 단일화 |
@@ -271,6 +276,12 @@ powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Ski
 [Quick Start](docs/QUICK_START.md) · [Demo Guide](docs/DEMO_GUIDE.md)
 
 </details>
+
+## AI 개발 방식 — Codex Harness
+
+프로젝트 invariant와 task별 context routing을 `AGENTS.md`에 고정하고, 사람은 범위·설계·완료 기준을 정하며 Codex는 구현과 검증을 수행합니다. 완료 여부는 test/evidence Gate로 확인하고 실패한 Gate·로그·위반 계약을 다음 수정에 사용합니다. 이는 제품 기능인 Ops Agent와 구분되는 개발 작업 체계입니다.
+
+현재는 Harness를 구조화하고 실제 유지보수 사례를 기록하는 단계입니다. 생산성·정확도·비용 개선은 아직 비교 측정하지 않았습니다. [작업 규칙과 설계 이유](docs/AI_ENGINEERING_WORKFLOW.md) · [사용 기록](docs/HARNESS_WORK_LOG.md)
 
 ## 문서 지도
 

@@ -78,7 +78,7 @@ class TestOperationalDocumentation:
             "schema startup을 완료한 뒤",
             "Worker probe",
             "이미 고정된 Evidence Bundle",
-            "Outbox는 로컬 candidate에서 장애 검증 완료, 공개 runtime 미승격",
+            "Outbox 격리 장애 검증·이미지 게시·local-ha 기본 runtime 검증 완료",
             "Worker crash·rebalance",
         ):
             assert token in readme

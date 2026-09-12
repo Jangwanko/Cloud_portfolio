@@ -1,0 +1,209 @@
+{
+  "captured_at_host_utc": "2026-09-10T20:49:04.031196+00:00",
+  "context": "kind-messaging-ha",
+  "read_only": true,
+  "expected_dev_image": "5e8addfb10d0",
+  "master_image_not_targeted": "74405259cefd",
+  "application": {
+    "targetRevision": "dev-kafka",
+    "path": "k8s/gitops/overlays/local-ha",
+    "revision": "9f3f2f9b80f299afc2f66806256feec1f7bac629",
+    "sync": "OutOfSync",
+    "health": "Missing",
+    "reconciledAt": "2026-09-10T20:46:30Z",
+    "operation": {
+      "phase": "Running",
+      "message": "waiting for healthy state of batch/Job/messaging-schema-migration"
+    }
+  },
+  "pods": [
+    {
+      "name": "api-8d5bdc6c7-4twk7",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "api-8d5bdc6c7-7pp4l",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "api-8d5bdc6c7-bmcxv",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "api-8d5bdc6c7-dxzks",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "api-8d5bdc6c7-kszxm",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "api-8d5bdc6c7-sqj4r",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "api",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-0",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": true,
+          "restartCount": 15
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-1",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": false,
+          "restartCount": 47
+        }
+      ]
+    },
+    {
+      "name": "messaging-postgresql-ha-postgresql-2",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "postgresql",
+          "image": "docker.io/bitnamilegacy/postgresql-repmgr:17.6.0-debian-12-r2",
+          "imageID": "docker.io/bitnamilegacy/postgresql-repmgr@sha256:f12387ec882ba42383bbeccfe56d1e9b7671bfbb10795426de4acf2ae800f314",
+          "ready": false,
+          "restartCount": 50
+        }
+      ]
+    },
+    {
+      "name": "messaging-schema-migration-ttbkp",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "migrate",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22",
+          "ready": true,
+          "restartCount": 0
+        }
+      ]
+    },
+    {
+      "name": "notification-worker-65b9767884-8jm4t",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "notification-worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "worker-546b9ffb7-98klg",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    },
+    {
+      "name": "worker-546b9ffb7-mvzt9",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "worker",
+          "image": "ghcr.io/jangwanko/cloud_portfolio:54ee42a2fb29",
+          "imageID": "ghcr.io/jangwanko/cloud_portfolio@sha256:a2a834aba68848835216cffa99c00ecf52117484abec6af325cceca4c3200dd6",
+          "ready": true,
+          "restartCount": 5
+        }
+      ]
+    }
+  ],
+  "readiness": {
+    "app_version": "2.1.0",
+    "status": "degraded",
+    "reason": [
+      "postgres_sync_standbys_below_minimum"
+    ],
+    "grace_remaining_seconds": 0,
+    "queue_backend": "kafka",
+    "kafka": {
+      "bootstrap_reachable": true
+    },
+    "postgres": {
+      "ha_mode": true,
+      "primary_reachable": true,
+      "standby_count": 6,
+      "sync_standby_count": 0,
+      "max_replication_delay_bytes": 0
+    }
+  }
+}

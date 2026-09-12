@@ -1,0 +1,39 @@
+{
+  "event_id": 3691660,
+  "request_id": "90e15499-1a09-4b12-a2bb-349c2d5191da",
+  "reset_performed": false,
+  "unread": 0,
+  "health": "ready",
+  "event_source": "database",
+  "event_count": 1,
+  "stream_id": 4975,
+  "database": {
+    "in_recovery": false,
+    "synchronous_commit": "on",
+    "synchronous_standby_names": "ANY 1 (\"messaging-postgresql-ha-postgresql-0\", \"messaging-postgresql-ha-postgresql-1\", \"messaging-postgresql-ha-postgresql-2\")",
+    "replication": [
+      {
+        "application": "messaging-postgresql-ha-postgresql-1",
+        "state": "streaming",
+        "sync_state": "quorum"
+      },
+      {
+        "application": "messaging-postgresql-ha-postgresql-2",
+        "state": "streaming",
+        "sync_state": "quorum"
+      }
+    ],
+    "migration": "0009_notification_outbox",
+    "outbox_total": 1,
+    "pending": 0,
+    "event_outbox": [
+      {
+        "message_id": 3691660,
+        "published": true,
+        "attempts": 1
+      }
+    ],
+    "event_notification_attempts": 1
+  },
+  "captured_at_host_utc": "2026-09-10T20:54:07.524309+00:00"
+}

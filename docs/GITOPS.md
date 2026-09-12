@@ -1,5 +1,9 @@
 # GitOps and Argo CD
 
+2026-09-11 local-ha의 dev 이미지 배포·기본 이벤트 처리 결과: [Runtime 검증](TEST_RESULTS.md#local-ha-runtime-2026-09-11). Public demo와 master 이미지의 runtime 증거는 포함하지 않습니다.
+
+2026-09-09 Outbox 포함 source의 dev/master 이미지 게시 결과는 [Publication Status](TEST_RESULTS.md#publication-status-2026-09-09)에 기록합니다. 아래 전달 계약과 과거 실행 예시를 현재 runtime 상태로 해석하지 않습니다.
+
 ## Deployment Contract
 
 master GitOps 경로:
