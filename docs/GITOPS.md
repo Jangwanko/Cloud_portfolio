@@ -204,7 +204,7 @@ Script image boundary:
 ## Status
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha
 ```
 
 확인 항목:

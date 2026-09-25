@@ -7,9 +7,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
-}
+# Data-preserving by default; -SkipReset remains a compatibility no-op.
 
 try {
   $health = Invoke-RestMethod -Method Get -Uri "$BaseUrl/health/ready"
@@ -81,7 +79,5 @@ $unread = Invoke-RestMethod -Method Get -Headers @{ Authorization = "Bearer $u2T
 Write-Host "health=$($health.status) event_count=$($eventItems.Count) event_source=$($events.source) unread=$($unread.unread)"
 }
 finally {
-  if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
-  }
+  # Keep uniquely named smoke fixtures for inspection; no automatic reset.
 }

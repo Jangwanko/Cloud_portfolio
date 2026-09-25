@@ -412,11 +412,11 @@ class TestManifestContracts:
         assert alerts.count("sum(clamp_min(kafka_consumergroup_lag") == 3
         assert "sum(kafka_consumergroup_lag" not in alerts
 
-        status_script = read_text("scripts/check_portfolio_status.ps1")
+        status_script = read_text("scripts/check_portfolio_status.py")
         suite_script = read_text("scripts/run_kafka_performance_suite.ps1")
         k6_script = read_text("scripts/load_test_k6.js")
         k6_runner = read_text("scripts/test_k6_load.ps1")
-        assert status_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
+        assert status_script.count("sum(clamp_min(kafka_consumergroup_lag") == 1
         assert suite_script.count("sum(clamp_min(kafka_consumergroup_lag") == 2
         for script in (status_script, suite_script):
             assert "sum(kafka_consumergroup_lag" not in script
@@ -533,7 +533,7 @@ class TestManifestContracts:
         assert "KEDA lag threshold: `100` for the local demo cluster" in kafka_experiment
 
     def test_portfolio_status_check_covers_runtime_control_plane(self):
-        script = read_text("scripts/check_portfolio_status.ps1")
+        script = read_text("scripts/check_portfolio_status.py")
         readme = read_text("README.md")
         quick_start = read_text("docs/QUICK_START.md")
         runbook = read_text("docs/RUNBOOK.md")

@@ -23,18 +23,11 @@ OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·
 
 [실행 구성](../infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](../infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 
-## Current State - 2026-08-29
+## Current State — 2026-09-14
 
-| Boundary | Version and evidence |
-| --- | --- |
-| Master / dev-kafka source | UI `2.4.1`, API `2.1.0`, full local-ha profile |
-| Demo-dev candidate | UI `2.5.0`, API `2.1.0`, commit `a67f40e`, `363 passed` |
-| Public demo-lite runtime | UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370` |
-| Public runtime check | replay `200` / `VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+공개 UI `2.5.0`, API `2.1.0`, readiness `ready`, Worker `1/1`을 endpoint에서 확인했습니다. Release·desired image와 서버 imageID는 구분합니다. 최신 관측과 미확인 범위의 단일 근거는 [Deployment Status](DEPLOYMENT_STATUS.md)입니다.
 
-Branch HEAD나 source version만으로 배포 완료를 판단하지 않습니다. Public 상태는 release,
-image, UI badge, readiness와 runtime route를 함께 확인한 경우에만 기록합니다. 따라서
-`demo-dev` UI `2.5.0`은 검증된 source candidate이며 아직 public deployment가 아닙니다.
+저사양 demo-lite는 full master의 핵심 흐름을 시연합니다. Outbox와 full HA 검증은 포함하지 않습니다.
 
 ## Purpose
 
@@ -63,11 +56,11 @@ Demo Lite는 제한된 서버에서 핵심 event-processing 경계를 공개 시
 
 ## AI Replay Boundary
 
-Public UI `2.4.1`은 actual Phase 5.1 incident에서 생성한 sanitized
+Public UI의 기본 Investigation은 actual Phase 5.1 incident에서 생성한 sanitized
 `demo.verified-incident-replay.v1` artifact를 재생합니다. OpenAI API를 다시 호출하지
 않고 현재 demo-lite runtime을 재진단하지 않습니다.
 
-`demo-dev` UI `2.5.0` 후보는 네 controlled Scenario Lab 결과를
+공개 UI `2.5.0`은 네 controlled Scenario Lab 결과를
 `demo.verified-scenario-replays.v1`로 투영합니다. 같은 deterministic activation에서
 observation에 따라 다음 read-only tool 선택이 달라지는 기록을 비교합니다.
 

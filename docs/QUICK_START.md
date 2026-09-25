@@ -236,37 +236,31 @@ powershell -ExecutionPolicy Bypass -File scripts/test_k6_load.ps1
 현재 클러스터 상태만 빠르게 확인하려면 아래 스크립트를 먼저 실행합니다.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha -SkipArgoCd
 ```
 
 이 스크립트는 테스트 데이터를 만들지 않고 Kubernetes, API readiness, Prometheus scrape, kafka-exporter, KEDA 상태를 읽어 운영 상태를 요약합니다. `quick_start_gitops.ps1`로 Argo CD까지 설치한 profile에서는 `-SkipArgoCd`를 제거합니다.
 
 서비스 전체 흐름을 순서대로 점검하려면 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 따릅니다.
 
-전체 검증을 순서대로 실행하려면 아래 스크립트를 사용합니다.
+기본 기능 검증은 기존 데이터를 보존하는 smoke와 API contract만 실행합니다.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1
 ```
 
-이 순서는 아래 원칙을 따릅니다.
+- 고유한 fixture 추가, 기존 데이터 reset·장애 주입·부하 실행 없음
+- 실행 결과를 보존하려면 아래의 `run_validation.py`로 이 명령을 감싸서 실행
+- 장애·부하 검증은 별도로 준비한 `portfolio-lab-*` namespace에서 `-RunIsolatedExperiments`로 명시 실행
 
-- correctness / 장애 정책 검증을 먼저 수행합니다.
-- k6 부하 테스트는 reset 후 맨 마지막에 수행합니다.
-- k6 이후 final reset을 수행해 Kafka backlog / DB 상태를 정리합니다.
-
-수동 실행 순서:
+개별 데이터 보존 검사:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 powershell -ExecutionPolicy Bypass -File scripts/smoke_test.ps1 -SkipReset
 powershell -ExecutionPolicy Bypass -File scripts/test_api_contracts.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/test_stream_ordering.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/test_db_down.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
-powershell -ExecutionPolicy Bypass -File scripts/run_kafka_performance_suite.ps1 -SkipReset
-powershell -ExecutionPolicy Bypass -File scripts/reset_k8s_state.ps1
 ```
+
+기존 `test_db_down`·DLQ·성능 스크립트는 장애나 reset을 포함할 수 있습니다. 일반 기능 점검 대신 실행하지 말고 아래 격리 실험 절차를 따릅니다.
 
 ## 개별 시나리오
 Smoke test:
@@ -415,3 +409,28 @@ Run the frozen pressure-candidate negative controls:
 ```
 
 계약과 입력 조건: [Ops Agent](OPS_AGENT.md), [CLI 상세](../ops_agent/README.md). 검증 해석과 실패 피드백: [AI engineering workflow](AI_ENGINEERING_WORKFLOW.md).
+
+## 데이터 보존 점검과 검증 기록
+
+```powershell
+# 명시한 cluster에서 읽기 전용 점검; 실패 뒤에도 독립 항목 수집
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha -Profile local-ha
+# 서버 kubeconfig 없이 공개 endpoint만 관측
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -PublicOnly -Profile demo-lite -BaseUrl https://vm118.js-banjiha.cloud -SkipPrometheus
+# 시작·종료·commit·exit code·로그를 results/validation/<run-id>/에 보존
+.venv/Scripts/python.exe scripts/run_validation.py --label regression -- .venv/Scripts/python.exe -m pytest -q
+```
+
+`run_validation.py`는 인자·출력에 credential이 없는 검증 명령에 사용합니다. 로그는 즉시 파일에 기록되며 강제 종료로 status가 `running`에 남으면 미완료입니다. 코드·환경이 바뀌었다면 이전 통과 기록을 재사용하지 않습니다. 원본 기록은 Git에서 제외하고, 필요한 snapshot만 공개 전 검토합니다.
+
+`run_recommended_tests.ps1` 기본 경로는 smoke와 API contract만 실행합니다. 고유 사용자·stream·event fixture는 추가하지만 기존 데이터 reset·장애 주입·부하 실험은 하지 않습니다. `smoke_test.ps1`과 `test_api_contracts.ps1`도 기본 데이터 보존이며 기존 `-SkipReset`은 호환용 no-op입니다.
+
+장애·reset 실험은 별도로 준비한 namespace에서만 실행합니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/run_recommended_tests.ps1 -RunIsolatedExperiments -Context kind-messaging-ha -Namespace portfolio-lab-maintenance -SkipK6
+```
+
+이 경로는 기존 lab workload를 요구하며 생성하지 않습니다. 현재 context가 명시한 context와 같아야 하고, runner가 해당 namespace의 API에 전용 port-forward를 열어 다른 HTTP 대상을 reset하지 않도록 합니다. 종료 시 자신이 만든 프로세스를 정리합니다. `-SkipK6`를 생략하면 부하 실험도 포함합니다.
+
+Status 결과는 `passed`·`failed`·`unknown`·`skipped`로 구분합니다. Exit `0`은 선택한 범위 통과, `1`은 확인된 실패, `2`는 조회 불가 등 미완료입니다. Lag는 부하에 따라 달라지는 관측값이며 임의로 실패나 성능 baseline으로 승격하지 않습니다.
