@@ -47,7 +47,7 @@ class TestOperationalDocumentation:
         assert "Kafka 기반 고신뢰 이벤트 처리 시스템" in readme
         assert "reference scenario built on the generic event contract" in readme
         assert "## 핵심 요약 / Executive Summary" in readme
-        assert "## AWS Migration Blueprint" in readme
+        assert "## Terraform 실환경 검증 — OpenStack" in readme
         assert "## Trade-offs" in readme
         assert "서비스 문제" in architecture
         assert "서비스 기준" in architecture
@@ -59,7 +59,7 @@ class TestOperationalDocumentation:
             "## 핵심 요약 / Executive Summary",
             "## Kubernetes 설계 / Kubernetes Architecture",
             "## Pod 구성 / Workload Inventory",
-            "## AWS Migration Blueprint",
+            "## Terraform 실환경 검증 — OpenStack",
             "## 관측 설계 / Observability Map",
             "## STAR 운영 문제 해결 경험 / Operational STAR Cases",
             "STAR 1 — KEDA scale-out의 DB 경합과 drain 개선",
@@ -89,7 +89,7 @@ class TestOperationalDocumentation:
 
         architecture_index = readme.index("## Kubernetes 설계 / Kubernetes Architecture")
         inventory_index = readme.index("## Pod 구성 / Workload Inventory")
-        aws_index = readme.index("## AWS Migration Blueprint")
+        aws_index = readme.index("## Terraform 실환경 검증 — OpenStack")
         observability_index = readme.index("## 관측 설계 / Observability Map")
         star_index = readme.index("## STAR 운영 문제 해결 경험 / Operational STAR Cases")
         assert architecture_index < inventory_index < aws_index < observability_index < star_index
