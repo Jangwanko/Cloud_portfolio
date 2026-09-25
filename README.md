@@ -13,7 +13,7 @@ This project demonstrates Kubernetes workload design, GitOps delivery, autoscali
 | 지원 방향 | DevOps / Platform / Cloud Operations |
 | Kubernetes 운영 | StatefulSet·Deployment·Job, probes, HPA·KEDA, Argo CD sync wave, `API → Kafka → Worker → PostgreSQL` |
 | 관측·복구 | Prometheus·Grafana, lag·replica·persistence·restore 지표, DB outage·ordering·backup/restore 검증 |
-| Cloud boundary | EKS·MSK·RDS·ECR 중심 Terraform migration blueprint; AWS `plan/apply`와 실제 배포 증거 없음 |
+| Terraform 실환경 검증 | OpenStack 리소스 생성·삭제·자동 재구축, CPU resize, 데이터 보존·서비스 복구·최종 plan 변경 없음 |
 
 현재 상태 — 2026-08-24:
 
@@ -111,7 +111,30 @@ flowchart LR
 
 PostgreSQL·Pgpool은 local HA 설치·복구 경로에서 관리합니다. Argo CD, KEDA, metrics-server, ingress-nginx는 platform controller 영역에 배치됩니다. 세부 manifest는 [GitOps base](k8s/gitops/base), [Architecture](docs/ARCHITECTURE.md), [Quick Start](docs/QUICK_START.md)에 있습니다.
 
-## AWS Migration Blueprint
+## Terraform 실환경 검증 — OpenStack, 2026-09-25
+
+OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
+빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
+2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
+| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
+| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
+| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
+| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
+| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
+| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
+
+검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
+사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
+검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
+두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
+
+[실행 구성](infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
+
+### 별도 확장 설계: AWS Migration Blueprint
 
 로컬 Kubernetes 책임을 AWS managed service와 EKS add-on 책임으로 나눈 설계입니다.
 
@@ -138,7 +161,7 @@ Internet → ALB(public subnet) → EKS nodes(private subnet)
 
 현재 AWS에 배포된 Terraform stack은 없습니다. Terraform `1.15.8`의 SHA256을 확인했고 `fmt -recursive`, `init -backend=false`, `validate`를 통과했습니다. AWS credential과 비용이 필요한 `plan` / `apply`는 실행하지 않았습니다. Security hardening과 구현 경계는 [AWS IaC Plan](docs/AWS_IAC_PLAN.md)에 있습니다.
 
-English: The Terraform source maps the validated local Kubernetes responsibilities to EKS, ECR, MSK, RDS, ALB, ACM, Route 53, and Secrets Manager. The repository currently contains blueprint validation evidence and no AWS deployment evidence.
+English: The separate AWS Terraform source maps the validated local Kubernetes responsibilities to EKS, ECR, MSK, RDS, ALB, ACM, Route 53, and Secrets Manager. This AWS root has blueprint validation evidence; the live Terraform lifecycle and resize evidence comes from OpenStack as described above.
 
 ## 관측 설계 / Observability Map
 

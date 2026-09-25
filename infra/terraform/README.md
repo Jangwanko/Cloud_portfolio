@@ -1,4 +1,14 @@
-# Terraform AWS Migration Blueprint
+# Terraform 인프라 자동화
+
+실제 적용·검증 경로는 **OpenStack demo-lite**입니다.
+
+- [OpenStack 실행 구성](envs/openstack-demo-lite/README.md): VM·네트워크 생성과 core demo-lite 자동 설치
+- [실환경 검증 기록](envs/openstack-demo-lite/VALIDATION.md): 11개 리소스 생성·삭제·재구축, CPU 2 → 3 변경, 데이터 유지, 서비스 복구, 최종 plan 변경 없음
+- 사양 변경용 플레이버가 추가된 현재 Terraform 관리 리소스는 12개입니다.
+- 작업 브랜치는 기존 demo-dev이며, 기존 AWS 구성은 별도 root로 보존합니다.
+- master 공유 범위는 OpenStack 구성 폴더와 검증 설명이며, 기존 앱 배포 설정은 각 브랜치에서 유지합니다.
+
+## 별도 확장 설계: AWS Migration Blueprint
 
 로컬 `kind + Kafka + PostgreSQL HA` 검증 구조를 AWS managed architecture로 옮길 때 사용할 `Terraform` blueprint입니다. 현재 목적은 실제 운영 배포 완료가 아니라, EKS / MSK / RDS / ALB / Secrets Manager로 책임이 어떻게 이전되는지 보여주는 것입니다.
 
