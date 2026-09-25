@@ -18,29 +18,7 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 | 확장 효과와 API 지연의 trade-off | 고정 Worker 2개와 KEDA 2~4개 각 3회 비교 | backlog 처리율 `13.38%` 증가, API p95 `6.49%` 증가 |
 | PostgreSQL runtime 장애 | API 수락과 Worker persistence를 Kafka로 분리 | 복구 후 core·notification lag `0/0` |
 | 같은 stream 순서 보장 | `stream_id` partition과 DB commit 이후 offset commit | ordering `100/100`, missing·duplicate `0` |
-
-## Terraform 실환경 검증 — OpenStack, 2026-09-25
-
-OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
-빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
-2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
-
-| 검증 | 실제 결과 |
-| --- | --- |
-| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
-| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
-| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
-| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
-| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
-| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
-| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
-
-검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
-사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
-검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
-두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
-
-[실행 구성](infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
+| 인프라 재현·사양 변경 | OpenStack에서 Terraform 적용 | 11개 리소스 재구축, CPU 2→3 변경·데이터 보존, 최종 plan 변경 없음 |
 
 ## 아키텍처
 
@@ -186,6 +164,34 @@ Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통
 - DB 장애 중 API 6개 Pod의 retry·warning 폭증을 exponential backoff와 log rate limit으로 줄였습니다.
 - API Pod별 cache와 snapshot topic이 scale-out 때 DB·memory 경합을 만들어 제거하고 PostgreSQL read model로 단일화했습니다.
 - notification batch와 DB roundtrip 축소 뒤 KEDA drain 개선과 API p95 증가를 함께 기록했습니다.
+
+</details>
+
+<details>
+<summary><b>Terraform 실환경 검증 — OpenStack</b></summary>
+
+검증일: 2026-09-25
+
+OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
+빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
+2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
+| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
+| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
+| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
+| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
+| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
+| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
+
+검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
+사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
+검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
+두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
+
+[실행 구성](infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 
 </details>
 

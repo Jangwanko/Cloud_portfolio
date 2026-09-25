@@ -16,21 +16,8 @@ A hands-on Kubernetes operations project built around an asynchronous Kafka work
 | Scaling gains and API latency trade-off | Compare 2 fixed Workers with KEDA scaling from 2 to 4, three runs each | Backlog throughput increased `13.38%`; API p95 increased `6.49%` |
 | PostgreSQL runtime outage | Separate API acceptance from Worker persistence with Kafka | Core and notification lag returned to `0/0` after recovery |
 | Same-stream ordering | Partition by `stream_id` and commit offsets after database commit | Ordering `100/100`, missing and duplicate `0` |
+| Infrastructure rebuild and resize | Apply Terraform on OpenStack | Rebuilt 11 resources; resized CPU 2→3 with data preserved; final plan showed no changes |
 
-## Terraform validation on OpenStack — 2026-09-25
-
-Provisioned 11 resources, destroyed them, verified empty state, and rebuilt the
-core demo-lite service with a single runner invocation. Then resized the same VM
-from 2 to 3 vCPU while retaining 4 GiB RAM, 40 GiB disk, VM identity and floating IP.
-
-The pre-resize event remained readable with identical type, payload and metadata.
-A new post-resize event passed HTTP 202 → persisted → read-back verification.
-The final Terraform plan reported no changes. Services restarted and recovered;
-this is not a zero-downtime or HA claim. The existing OpenStack control plane was
-retained. This lab does not install the full monitoring/GitOps/autoscaling stack.
-
-[Configuration](infra/terraform/envs/openstack-demo-lite/README.md) ·
-[Validation record](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 ## Architecture
 
 The core processing path is `API -> Kafka -> Worker -> PostgreSQL`. Notification and DLQ processing remain separate from core persistence.
@@ -150,6 +137,26 @@ Three maintenance cases cover document consistency, runtime validation, and comp
 | Verified incident lifecycle | `DETECTED → ACTIVE → RECOVERING → RECOVERED → CLOSED` |
 
 Results from Redis, historical Kafka baselines, and current v2 candidates remain separated by experiment conditions in [Test Results](docs/TEST_RESULTS.md).
+
+</details>
+
+<details>
+<summary><b>Terraform validation on OpenStack</b></summary>
+
+Validated: 2026-09-25
+
+Provisioned 11 resources, destroyed them, verified empty state, and rebuilt the
+core demo-lite service with a single runner invocation. Then resized the same VM
+from 2 to 3 vCPU while retaining 4 GiB RAM, 40 GiB disk, VM identity and floating IP.
+
+The pre-resize event remained readable with identical type, payload and metadata.
+A new post-resize event passed HTTP 202 → persisted → read-back verification.
+The final Terraform plan reported no changes. Services restarted and recovered;
+this is not a zero-downtime or HA claim. The existing OpenStack control plane was
+retained. This lab does not install the full monitoring/GitOps/autoscaling stack.
+
+[Configuration](infra/terraform/envs/openstack-demo-lite/README.md) ·
+[Validation record](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 
 </details>
 
