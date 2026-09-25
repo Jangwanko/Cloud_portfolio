@@ -6,7 +6,7 @@ A hands-on Kubernetes operations project built around an asynchronous Kafka work
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
-**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
+**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform · OpenStack
 
 ## What I validated
 
@@ -17,6 +17,20 @@ A hands-on Kubernetes operations project built around an asynchronous Kafka work
 | PostgreSQL runtime outage | Separate API acceptance from Worker persistence with Kafka | Core and notification lag returned to `0/0` after recovery |
 | Same-stream ordering | Partition by `stream_id` and commit offsets after database commit | Ordering `100/100`, missing and duplicate `0` |
 
+## Terraform validation on OpenStack — 2026-09-25
+
+Provisioned 11 resources, destroyed them, verified empty state, and rebuilt the
+core demo-lite service with a single runner invocation. Then resized the same VM
+from 2 to 3 vCPU while retaining 4 GiB RAM, 40 GiB disk, VM identity and floating IP.
+
+The pre-resize event remained readable with identical type, payload and metadata.
+A new post-resize event passed HTTP 202 → persisted → read-back verification.
+The final Terraform plan reported no changes. Services restarted and recovered;
+this is not a zero-downtime or HA claim. The existing OpenStack control plane was
+retained. This lab does not install the full monitoring/GitOps/autoscaling stack.
+
+[Configuration](infra/terraform/envs/openstack-demo-lite/README.md) ·
+[Validation record](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 ## Architecture
 
 The core processing path is `API -> Kafka -> Worker -> PostgreSQL`. Notification and DLQ processing remain separate from core persistence.
@@ -106,7 +120,7 @@ Three maintenance cases cover document consistency, runtime validation, and comp
 
 ## Skills demonstrated
 
-- **Cloud / Infrastructure:** stateful workloads and persistent storage, PostgreSQL replication and recovery validation, AWS migration blueprint
+- **Cloud / Infrastructure:** stateful workloads and persistent storage, PostgreSQL replication and recovery validation, live Terraform lifecycle and resize validation on OpenStack
 - **DevOps / Platform:** CI gates and SHA images, GitOps release ordering, workload-specific autoscaling
 - **Reliability / Operations:** metric-based bottleneck analysis, failure and recovery validation, bounded agent investigation
 

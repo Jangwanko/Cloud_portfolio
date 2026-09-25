@@ -1,5 +1,28 @@
 # Demo Lite
 
+## Terraform 실환경 검증 — OpenStack, 2026-09-25
+
+OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
+빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
+2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
+| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
+| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
+| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
+| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
+| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
+| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
+
+검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
+사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
+검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
+두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
+
+[실행 구성](../infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](../infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
+
 ## Current State - 2026-08-29
 
 | Boundary | Version and evidence |

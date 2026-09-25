@@ -8,7 +8,7 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
-**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform (AWS migration blueprint)
+**Core Stack:** Kubernetes · Kafka · PostgreSQL · KEDA · Prometheus · Grafana · Argo CD · GitHub Actions · Terraform · OpenStack
 
 ## 30초 요약
 
@@ -18,6 +18,29 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 | 확장 효과와 API 지연의 trade-off | 고정 Worker 2개와 KEDA 2~4개 각 3회 비교 | backlog 처리율 `13.38%` 증가, API p95 `6.49%` 증가 |
 | PostgreSQL runtime 장애 | API 수락과 Worker persistence를 Kafka로 분리 | 복구 후 core·notification lag `0/0` |
 | 같은 stream 순서 보장 | `stream_id` partition과 DB commit 이후 offset commit | ordering `100/100`, missing·duplicate `0` |
+
+## Terraform 실환경 검증 — OpenStack, 2026-09-25
+
+OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
+빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
+2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
+| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
+| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
+| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
+| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
+| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
+| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
+
+검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
+사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
+검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
+두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
+
+[실행 구성](infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
 
 ## 아키텍처
 
@@ -110,7 +133,7 @@ Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통
 
 ## 이 프로젝트에서 보여주는 역량
 
-- **Cloud / Infrastructure:** stateful workload·persistent storage 구성, PostgreSQL 복제·복구 검증, AWS 이전 blueprint
+- **Cloud / Infrastructure:** stateful workload·persistent storage 구성, PostgreSQL 복제·복구 검증, OpenStack Terraform 생성·재구축·resize 검증
 - **DevOps / Platform:** CI 검증과 SHA image 게시, GitOps 배포 순서, workload별 확장 정책
 - **Reliability / Operations:** 지표 기반 병목 분석, 장애 주입과 처리·복구 검증, Agent 조사 권한 통제
 
