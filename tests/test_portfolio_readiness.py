@@ -73,7 +73,7 @@ class TestOperationalDocumentation:
             "p95 `80.65ms`",
             "API → Kafka → Worker → PostgreSQL",
             "Public Demo",
-            "Terraform (AWS migration blueprint)",
+            "Terraform · OpenStack",
             "Kafka ingress append 성공",
             "schema startup을 완료한 뒤",
             "Worker probe",
