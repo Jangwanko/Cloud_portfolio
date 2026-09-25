@@ -2,7 +2,7 @@
 
 Dev-kafka source candidate: UI `2.4.1`, API `2.1.0`
 
-Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
+Public demo-lite: [현재 관측과 미확인 범위](DEPLOYMENT_STATUS.md) — UI `2.5.0`, API `2.1.0` (2026-09-14 endpoint 확인)
 
 ## Purpose
 
@@ -20,7 +20,7 @@ Public demo-lite last verified: UI `2.4.1`, API `2.1.0` (2026-08-28)
 
 | Surface | URL | Use |
 | --- | --- | --- |
-| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.4.1` generic v2와 첫 화면에서 진입하는 recorded Investigation replay 시연 |
+| Deployed Demo UI | `https://vm118.js-banjiha.cloud/demo/order-dashboard.html` | demo-lite `2.5.0` generic v2와 첫 화면에서 진입하는 recorded Investigation replay 시연 |
 | Deployed Swagger | `https://vm118.js-banjiha.cloud/docs` | API contract 확인 |
 | Deployed Grafana | `https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s` | Kafka lag, Worker replica, persistence 지연 확인 |
 | Deployed Readiness | `https://vm118.js-banjiha.cloud/health/ready` | Kafka / PostgreSQL 상태 확인 |
@@ -37,20 +37,10 @@ Grafana 접근:
 
 Version boundary:
 
-- `dev-kafka` source candidate: UI `2.4.1`, API `2.1.0`, generic `/v2/streams/{stream_id}/events`, PostgreSQL read model, `/ops/summary`, sanitized Verified Incident Replay와 첫 화면 replay 진입부 사용
-- `dev-kafka` published GitOps target: UI `2.4.1`, API `2.1.0`, image `54ee42a2fb29`; local-ha runtime rollout은 이번 승격에서 미검증
-- 마지막 검증 local-ha runtime: image `a2b157f1283f`, UI `2.3.1`, API `2.1.0` (2026-08-12)
-- public demo-lite 2026-08-28: UI `2.4.1`, API `2.1.0`, release `2fc8649`, image `ece446d47370`, replay JSON `200`, readiness `ready`, Worker `1/1`, KEDA max `2`
+- 공개 demo-lite: [Deployment Status](DEPLOYMENT_STATUS.md)의 관측 시점과 범위 적용
+- full local-ha: [Outbox runtime 검증](TEST_RESULTS.md#local-ha-runtime-2026-09-11) 참조
+- UI version·API version·source commit·runtime imageID는 별도 식별자; profile별 차이 유지
 - `demo-dev` profile: Kafka `1`, PostgreSQL `1`, API·core Worker `1→2`, notification Worker fixed `1`
-- 검증 방법: 화면 `ver.` badge와 `/health/ready`의 `app_version`을 각각 확인
-
-API boundary:
-
-- shared auth/resource APIs: `POST /v1/auth/login`, `POST /v1/streams`
-- generic intake: `POST /v2/streams/{stream_id}/events`
-- generic read aliases: `GET /v2/event-requests/{request_id}`, `GET /v2/streams/{stream_id}/events`
-- demo batch summary: `GET /v1/streams/{stream_id}/persistence-summary`
-- operator summary: `GET /ops/summary` (Worker replica, 15초 cache)
 
 ## Quick Start
 

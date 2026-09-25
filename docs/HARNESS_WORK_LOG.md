@@ -2,6 +2,31 @@
 
 이 기록은 사람이 정한 범위에서 agent가 사용한 context, 검증 Gate, 실패 피드백과 남은 판단을 보존합니다. [작업 규칙](AI_ENGINEERING_WORKFLOW.md)을 실제 유지보수에 적용한 사례이며 생산성·비용 개선을 입증하는 비교 실험은 아닙니다.
 
+## H004 — 2026-09-26 유지보수 여섯 항목 마감
+
+- Problem: 배포 상태 문서 불일치, 중도 실패로 누락되는 상태 검사, 세션 중단 시 검증 결과 소실, hash 중 DB 연결 점유, 문서 변경의 전체 CI 비용, 기본 검증의 데이터 reset
+- Scope: 기존 `dev-kafka`의 문서·검증 script·CI·사용자 생성 경로 수정과 Docker cache 정리; 새 branch/worktree 생성 없음
+- Context: root 지침, AI Engineering Workflow, Quick Start, 배포·demo 문서, 해당 script·workflow·API와 관련 tests
+- Implementation: [반복 검증 절차](QUICK_START.md), [배포 상태](DEPLOYMENT_STATUS.md), [변경 요약](PATCH_NOTES.md)
+- Source: `036e003842e1a9cedc981996f0cdac0a4a5afead` 위 미커밋 변경; test source의 dirty 상태를 실행 기록에 보존
+
+| Gate | 관측 시점 / 결과 | 실행 근거 |
+| --- | --- | --- |
+| 전체 suite | 9월 26일 재개 후 `679 passed in 28.74s` | `20260925T151506Z-9a55fa50` |
+| 로컬 상태 점검 | 9월 14일 통과 | `20260913T190529Z-13f4e438` |
+| 기본 smoke·API contract | 9월 14일 reset 없이 통과, fixture 보존 | `20260913T190705Z-ebe11e0b` |
+| 공개 demo endpoint | 9월 14일 UI 2.5.0, API 2.1.0 ready | [관측 snapshot](harness/public-demo-20260914.json) |
+| 격리 실험 보호 | 기본 namespace에서 실행 전 차단 확인 | `-RunIsolatedExperiments -Context kind-messaging-ha`의 예상 exit 1 |
+
+Run ID는 UTC 기준이며 위 날짜는 한국 시각입니다. 로컬 원본은 `results/validation/<run ID>/summary.json`과 `output.log`에 보존합니다. 공유용 [검증 기록](harness/H004-validation.json)은 명령·source·종료 결과와 테스트 출력을 보존합니다.
+
+- Docker: 9월 14일 `until=168h` 조건의 build cache 정리로 19.04 MB + 35.88 MB 회수; active container·image·data volume 유지
+- Failure feedback: 명령 실패 exit 7, 실행 전 기록 생성과 실행 파일 부재 exit 127, 일부 scrape target down, 상태 조회 실패 후 다른 검사 계속 수집을 회귀 테스트로 확인
+- First-pass: 전체 작업 최초 Gate 결과·누적 실패 횟수 미측정; 9월 26일 재개 후 전체 suite 첫 실행 통과
+- Human intervention: 새 branch 생성 금지 지시와 중단 후 재개 지시 반영; 전체 turn·token·비용·생산성 개선 미측정
+- Limits: runtime 관측은 9월 14일 기록; 신규 hash 코드의 배포 검증 제외, 원격 CI와 actionlint 실행 대기
+- Decision: 여섯 항목 구현·로컬 검증 마감; commit/push/merge·이미지 게시·runtime rollout 미실행. 공통 문서의 master·demo 공유는 후속 요청 범위
+
 ## H001 — 2026-09-11 문서와 게시 상태 정합성
 
 ### Problem / Constraints

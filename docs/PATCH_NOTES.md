@@ -2,6 +2,17 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-09-26 유지보수 여섯 항목 마감
+
+- 공개 demo와 full-profile 배포 상태·관측 시점 분리, [상태 기준 문서](DEPLOYMENT_STATUS.md) 연결
+- 상태 점검에 명시적 context/profile, 독립 검사 계속 수집, 실패·미확인 구분과 JSON 기록 추가
+- 검증 명령의 시작·종료·source commit·exit code·로그 보존 도구 추가
+- 사용자 생성의 password hash를 DB connection 획득 앞으로 이동
+- 문서 전용 CI 경량 경로 추가; 코드·설정·불명확한 변경은 전체 검증 유지
+- 기본 smoke/API 검증에서 reset 제거; 장애·부하 실험은 명시적 격리 namespace와 context 요구
+- 9월 14일 Docker 오래된 build cache 약 55 MB 정리; 실행 container·image·data volume 보존
+- 9월 26일 전체 테스트 `679 passed in 28.74s`; [범위와 검증 기록](HARNESS_WORK_LOG.md#h004--2026-09-26-유지보수-여섯-항목-마감) 참조
+
 ## 2026-09-13 README 순서·밀도와 연락처 정리
 
 - 한·영 README의 요약·아키텍처 우선 배치, 발전 과정은 요약 뒤의 펼쳐진 독립 section으로 유지

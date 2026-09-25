@@ -122,3 +122,11 @@ Codex의 완료 보고를 완료 조건으로 사용하지 않습니다. 작업�
 - committed 변경은 대상 commit이 명확할 때 `git revert` 또는 명시된 baseline으로의 선택적 되돌리기를 우선 검토합니다. `git reset --hard`, 전체 `git checkout -- .`, `git clean` 같은 광범위한 삭제성 명령은 사용자가 명확히 승인한 경우에만 씁니다.
 - 사용자가 "4번째 패널 전", "5번 전"처럼 UI 기준을 말하면, 최근 patch notes / commit log / diff에서 그 기준점을 먼저 찾아 설명한 뒤 되돌립니다.
 - rollback 요청 중에는 기능 개선을 함께 섞지 않습니다. 요청한 상태로 되돌린 뒤 별도 수정이 필요하면 그 다음 단계에서 처리합니다.
+
+## 자동 실행 기록과 변경별 Gate
+
+검증 명령은 `scripts/run_validation.py`로 시작 기록을 먼저 저장하고, 종료 코드와 로그를 같은 run ID에 보존합니다. 원격 CI는 validation artifact를 14일 보존합니다. 수동 대화 기록과 달리 세션이 끊겨도 실행 결과를 다시 찾을 수 있지만, `running`은 통과가 아닙니다.
+
+문서 전용 CI는 README·AGENTS·docs의 Markdown과 docs/harness JSON만 허용 목록으로 분류합니다. 문서 contract·링크·충돌 검사를 실행하고 이미지 게시·Docker·Terraform·Helm 검증은 생략합니다. 코드·tests·의존성·workflow 변경, 코드→문서 rename, 비교 이력 불명확 상태는 full Gate입니다. 분류 job이 실패하면 validation도 성공으로 간주하지 않습니다.
+
+배포 상태는 [Deployment Status](DEPLOYMENT_STATUS.md)와 관측 JSON을 근거로 갱신합니다. 현재 변경은 dev-kafka에서 구현하며 master·demo 브랜치 전파와 실제 runtime 승격은 별도 요청 범위입니다.

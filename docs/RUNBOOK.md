@@ -13,7 +13,7 @@ Reliable Event Processing System 장애 대응 순서:
 0. 전체 상태 한 번에 확인
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha
 ```
 
 Argo CD를 설치하지 않은 `quick_start_all.ps1` profile에서는 `-SkipArgoCd` 사용.

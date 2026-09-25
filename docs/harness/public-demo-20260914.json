@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "kind": "portfolio-status",
+  "run_id": "20260913T190210Z-11bc048e",
+  "started_at": "2026-09-13T19:02:10.143413+00:00",
+  "status": "passed",
+  "source": {
+    "commit": "036e003842e1a9cedc981996f0cdac0a4a5afead",
+    "branch": "dev-kafka",
+    "dirty": true
+  },
+  "profile": "demo-lite",
+  "context": null,
+  "public_only": true,
+  "checks": [
+    {
+      "name": "API readiness",
+      "observed_at": "2026-09-13T19:02:10.273542+00:00",
+      "status": "passed",
+      "evidence": {
+        "app_version": "2.1.0",
+        "status": "ready",
+        "reason": [],
+        "kafka": {
+          "bootstrap_reachable": true
+        },
+        "postgres": {
+          "ha_mode": true,
+          "primary_reachable": true,
+          "standby_count": 0,
+          "sync_standby_count": 0,
+          "max_replication_delay_bytes": 0
+        }
+      }
+    },
+    {
+      "name": "Public UI",
+      "observed_at": "2026-09-13T19:02:10.529503+00:00",
+      "status": "passed",
+      "evidence": {
+        "ui_version": "2.5.0"
+      }
+    },
+    {
+      "name": "Operations summary",
+      "observed_at": "2026-09-13T19:02:10.612647+00:00",
+      "status": "passed",
+      "evidence": {
+        "app_version": "2.1.0",
+        "worker": {
+          "deployment": "worker",
+          "desired_replicas": 1,
+          "available_replicas": 1,
+          "hpa_desired_replicas": 1,
+          "max_replicas": 2,
+          "source": "prometheus",
+          "error": null
+        }
+      }
+    },
+    {
+      "name": "Cluster inspection",
+      "observed_at": "2026-09-13T19:02:10.675292+00:00",
+      "status": "skipped"
+    },
+    {
+      "name": "Prometheus inspection",
+      "observed_at": "2026-09-13T19:02:10.675292+00:00",
+      "status": "skipped"
+    }
+  ],
+  "finished_at": "2026-09-13T19:02:10.675292+00:00",
+  "scope": "public endpoints only"
+}

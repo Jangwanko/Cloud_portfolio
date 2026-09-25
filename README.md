@@ -106,7 +106,9 @@ Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통
 
 프로젝트 invariant와 task별 context routing을 `AGENTS.md`에 고정하고, 사람은 범위·설계·완료 기준을 정하며 Codex는 구현과 검증을 수행합니다. 완료 여부는 test/evidence Gate로 확인하고 실패한 Gate·로그·위반 계약을 다음 수정에 사용합니다. 이는 제품 기능인 Ops Agent와 구분되는 개발 작업 체계입니다.
 
-문서 정합성·runtime 검증·마감 점검의 유지보수 사례 3개를 기록했습니다. 생산성·정확도·비용 개선은 아직 비교 측정하지 않았습니다. [작업 규칙과 설계 이유](docs/AI_ENGINEERING_WORKFLOW.md) · [사용 기록](docs/HARNESS_WORK_LOG.md)
+검증 결과는 실행 시점·소스 커밋·종료 코드·로그와 함께 보존합니다. 기본 smoke 검증은 기존 데이터를 유지하며, 초기화와 장애 주입은 명시한 격리 환경에서 실행합니다.
+
+문서 정합성·runtime 검증·검증 자동화의 유지보수 사례를 기록했습니다. 생산성·정확도·비용 개선은 아직 비교 측정하지 않았습니다. [작업 규칙과 설계 이유](docs/AI_ENGINEERING_WORKFLOW.md) · [실제 작업·검증 기록](docs/HARNESS_WORK_LOG.md)
 
 ## 이 프로젝트에서 보여주는 역량
 
@@ -120,7 +122,7 @@ Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통
 - Worker crash·consumer rebalance 직후 offset recovery는 추가 장애 주입 대상입니다.
 - AWS 구성은 Terraform migration blueprint이며 실제 AWS stack을 배포하지 않았습니다.
 
-[전체 개선 우선순위](docs/IMPROVEMENT_ROADMAP.md)
+[배포 상태와 공개 데모의 검증 범위](docs/DEPLOYMENT_STATUS.md) · [전체 개선 우선순위](docs/IMPROVEMENT_ROADMAP.md)
 
 ## 프로젝트 발전 과정
 
@@ -259,7 +261,7 @@ powershell -ExecutionPolicy Bypass -File scripts/quick_start_all.ps1
 Windows에서는 Docker Desktop만 설치하면 되며, `quick_start_all.ps1`이 `scripts/bootstrap_tools.ps1`을 호출해 pinned kind·kubectl·Helm을 `tools/`에 준비합니다.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha -SkipArgoCd
 ```
 
 - Demo: `http://localhost/demo/order-dashboard.html`

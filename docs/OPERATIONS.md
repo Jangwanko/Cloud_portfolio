@@ -8,8 +8,8 @@
 
 | Profile | Purpose | Status command |
 | --- | --- | --- |
-| manual local full profile | kind에서 full stack 확인 | `check_portfolio_status.ps1 -SkipArgoCd` |
-| local GitOps | master revision과 Argo CD sync 확인 | `check_portfolio_status.ps1` |
+| manual local full profile | kind에서 full stack 확인 | `check_portfolio_status.ps1 -Context kind-messaging-ha -SkipArgoCd` |
+| local GitOps | master revision과 Argo CD sync 확인 | `check_portfolio_status.ps1 -Context kind-messaging-ha` |
 | demo-lite | 2코어급 demo flow | full HA / performance 증거에서 제외 |
 
 ## Runtime Secrets
@@ -83,13 +83,13 @@ powershell -ExecutionPolicy Bypass -File scripts/configure_postgres_sync.ps1 `
 Manual quick start:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -SkipArgoCd
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha -SkipArgoCd
 ```
 
 Argo CD bootstrap 완료 뒤:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check_portfolio_status.ps1 -Context kind-messaging-ha
 ```
 
 GitOps `local-ha`의 normalized read-only evidence 수집:

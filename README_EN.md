@@ -102,7 +102,9 @@ The Public Demo replays a verified past incident. The Scenario Lab tests whether
 
 Project invariants and task-specific context routing are defined in `AGENTS.md`. The human defines scope, design boundaries and acceptance criteria; Codex implements changes and runs evidence gates. Failed gates, logs and violated contracts guide the next iteration. This development workflow is separate from the product's Ops Agent.
 
-Three maintenance cases cover document consistency, runtime validation, and completion checks. Productivity, accuracy and cost improvements have not been comparatively measured. [Workflow and rationale](docs/AI_ENGINEERING_WORKFLOW.md) · [Maintenance work log](docs/HARNESS_WORK_LOG.md)
+Validation records preserve execution timestamps, source commits, exit codes and logs. Routine smoke checks preserve existing data; resets and fault injection require an explicitly selected isolated environment.
+
+Maintenance cases cover document consistency, runtime validation and validation automation. Productivity, accuracy and cost improvements have not been comparatively measured. [Workflow and rationale](docs/AI_ENGINEERING_WORKFLOW.md) · [Maintenance work log and evidence](docs/HARNESS_WORK_LOG.md)
 
 ## Skills demonstrated
 
@@ -116,7 +118,7 @@ Three maintenance cases cover document consistency, runtime validation, and comp
 - Offset recovery immediately after Worker crash or consumer rebalance remains a planned failure-injection test.
 - The AWS configuration is a Terraform migration blueprint; no AWS stack has been deployed.
 
-[Full improvement roadmap](docs/IMPROVEMENT_ROADMAP.md)
+[Deployment status and public demo scope](docs/DEPLOYMENT_STATUS.md) · [Full improvement roadmap](docs/IMPROVEMENT_ROADMAP.md)
 
 ## Project evolution
 

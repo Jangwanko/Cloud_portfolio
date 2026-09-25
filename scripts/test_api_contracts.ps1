@@ -67,9 +67,7 @@ function Wait-Ready() {
   throw "Timed out waiting for readiness"
 }
 
-if (-not $SkipReset) {
-  & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
-}
+# Data-preserving by default; -SkipReset remains a compatibility no-op.
 
 try {
   $health = Wait-Ready
@@ -257,7 +255,5 @@ try {
   Write-Host "API contract test passed: stream_id=$($stream.id) request_id=$requestId event_id=$($persisted.event_id)"
 }
 finally {
-  if (-not $SkipReset) {
-    & "$PSScriptRoot/reset_k8s_state.ps1" -BaseUrl $BaseUrl -Namespace $Namespace -DbDeployment $DbDeployment
-  }
+  # Keep uniquely named smoke fixtures for inspection; no automatic reset.
 }

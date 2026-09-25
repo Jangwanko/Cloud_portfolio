@@ -1,6 +1,6 @@
 # Validation Results
 
-이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite runtime 확인은 `2026-08-28`입니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
+이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite endpoint 확인은 `2026-09-14`입니다. [현재 배포 관측](DEPLOYMENT_STATUS.md)에서 접근 범위를 구분합니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Local-ha Runtime 2026-09-11
 
@@ -75,7 +75,7 @@ production 무중단 증거로 해석하지 않습니다. [조건과 결과](REL
 | Historical Kafka baseline | `31,676`, error `0.00%`, p95 `80.65ms` | legacy contract intake baseline |
 | PostgreSQL restore | dump `39,433,414` bytes, 10개 table·Alembic `0008`·row/sequence 일치 | object storage·cluster-loss restore 미검증 |
 | GitOps supply chain | validate → SHA image → overlay commit → Argo sync | dev image `5e8addfb10d0`, master image `74405259cefd` 게시 확인; dev local-ha sync·smoke 통과, master runtime 미검증 |
-| Public demo-lite | release `2fc8649`, image `ece446d47370`, UI `2.4.1`, API `2.1.0` | entry/replay `200`/`VALID`, readiness `ready`, Worker `1/1`, KEDA max `2` |
+| Public demo-lite | UI `2.5.0`, API `2.1.0` | 2026-09-14 endpoint 확인: readiness `ready`, Worker `1/1`, max `2`; [release/runtime 구분](DEPLOYMENT_STATUS.md) |
 
 ## Ops Agent Phase 5 Incident Lifecycle and Gate 2 - 2026-08-23
 

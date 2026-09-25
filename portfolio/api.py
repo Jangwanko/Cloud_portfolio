@@ -479,6 +479,7 @@ def _message_room_id_for_member(cur, message_id: int, user_id: int) -> int:
 
 @router.post("/users", response_model=UserResponse)
 def create_user(payload: UserCreate):
+    password_hash = hash_password(payload.password)
     try:
         with get_conn() as conn:
             with get_cursor(conn) as cur:
@@ -488,7 +489,7 @@ def create_user(payload: UserCreate):
                     VALUES (%s, %s)
                     RETURNING id, username
                     """,
-                    (payload.username, hash_password(payload.password)),
+                    (payload.username, password_hash),
                 )
                 row = cur.fetchone()
             conn.commit()
