@@ -1,0 +1,4 @@
+cloud          = "kolla-admin"
+key_pair       = "lab-key"
+ssh_public_key = "ssh-ed25519 REPLACE_WITH_WINDOWS_PUBLIC_KEY"
+operator_cidr  = "192.168.100.1/32"

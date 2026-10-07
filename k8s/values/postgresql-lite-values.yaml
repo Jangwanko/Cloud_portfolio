@@ -4,6 +4,37 @@ global:
 
 postgresql:
   replicaCount: 1
+  # Keep the chart's checks; isolate and remove each probe's NSS temporary files.
+  customLivenessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -ec
+        - &probeCleanup |
+          probe_tmp="$(mktemp -d /tmp/pg-probe.XXXXXXXXXX)"
+          trap 'rm -rf -- "$probe_tmp"' EXIT
+          export TMPDIR="$probe_tmp"
+          /bin/bash "$1"
+        - pg-probe
+        - /liveness-probe.sh
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  customReadinessProbe:
+    exec:
+      command:
+        - /bin/bash
+        - -ec
+        - *probeCleanup
+        - pg-probe
+        - /readiness-probe.sh
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
   image:
     registry: docker.io
     repository: bitnamilegacy/postgresql-repmgr

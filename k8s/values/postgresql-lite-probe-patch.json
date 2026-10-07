@@ -1,0 +1,45 @@
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "postgresql",
+            "livenessProbe": {
+              "exec": {
+                "command": [
+                  "/bin/bash",
+                  "-ec",
+                  "probe_tmp=\"$(mktemp -d /tmp/pg-probe.XXXXXXXXXX)\"\ntrap 'rm -rf -- \"$probe_tmp\"' EXIT\nexport TMPDIR=\"$probe_tmp\"\n/bin/bash \"$1\"\n",
+                  "pg-probe",
+                  "/liveness-probe.sh"
+                ]
+              },
+              "initialDelaySeconds": 15,
+              "periodSeconds": 10,
+              "timeoutSeconds": 5,
+              "failureThreshold": 6,
+              "successThreshold": 1
+            },
+            "readinessProbe": {
+              "exec": {
+                "command": [
+                  "/bin/bash",
+                  "-ec",
+                  "probe_tmp=\"$(mktemp -d /tmp/pg-probe.XXXXXXXXXX)\"\ntrap 'rm -rf -- \"$probe_tmp\"' EXIT\nexport TMPDIR=\"$probe_tmp\"\n/bin/bash \"$1\"\n",
+                  "pg-probe",
+                  "/readiness-probe.sh"
+                ]
+              },
+              "initialDelaySeconds": 5,
+              "periodSeconds": 10,
+              "timeoutSeconds": 5,
+              "failureThreshold": 6,
+              "successThreshold": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

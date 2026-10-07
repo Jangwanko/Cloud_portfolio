@@ -1,6 +1,29 @@
 # Demo Lite
 
-## 현재 상태 — 2026-08-24
+## Terraform 실환경 검증 — OpenStack, 2026-09-25
+
+OpenStack에서 Terraform으로 VM·네트워크 등 11개 리소스를 생성·삭제하고,
+빈 환경에서 데모라이트 서비스를 자동 재구축했습니다. 이후 기존 VM의 CPU를
+2 → 3 vCPU로 변경하고 데이터 보존과 서비스 복구까지 검증했습니다.
+
+| 검증 | 실제 결과 |
+| --- | --- |
+| 인프라 수명주기 | 11개 생성 → 11개 삭제 → 빈 state → 11개 재생성 |
+| 자동 설치 | 단일 실행 명령으로 k3s → DB·Kafka → migration → Worker → API → 이벤트 검사 |
+| 기존 VM 사양 변경 | 플레이버 1개 생성, VM 1개 in-place 수정, 삭제 0개 |
+| 데이터 보존 | 변경 전 이벤트를 동일 request ID로 조회; type·payload·metadata 일치 |
+| 변경 후 처리 | 새 이벤트 HTTP 202 → persisted → 조회 성공 |
+| 상태 일치 | 재구축 후와 resize 후 모두 terraform plan 종료 코드 0 |
+| 최종 사양 | 3 vCPU / RAM 4 GiB / 디스크 40 GiB; VM ID와 Floating IP 유지 |
+
+검증 대상은 기존 OpenStack 위에 생성한 단일 VM의 core demo-lite 구성입니다.
+사양 변경 중 서비스 재시작이 있었고 정상 복구됐습니다. 무중단·HA·Git 기반 CI/CD
+검증으로 해석하지 않습니다. 초기 실행기의 PowerShell·SSH 대기 문제를 수정한 뒤,
+두 번째 빈 환경 구축은 수동 보정 없이 통과했습니다.
+
+[실행 구성](../infra/terraform/envs/openstack-demo-lite/README.md) · [검증 기록](../infra/terraform/envs/openstack-demo-lite/VALIDATION.md)
+
+## 이전 public/source 상태 — 2026-08-24
 
 | 대상 | 상태 |
 | --- | --- |
@@ -23,6 +46,20 @@ Public runtime과 branch source는 UI badge, readiness `app_version`, runtime im
 Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니다. Full local HA의 broker·standby 구성과 성능 수치를 대체하지 않습니다.
 
 현재 candidate는 full source의 API cache·snapshot topic 3개 제거와 PostgreSQL read model을 그대로 사용합니다. 저사양 profile은 Kafka broker `1`, partition `3`, replication factor `1`, PostgreSQL single instance, core Worker `1→2`, notification Worker fixed `1`로 제한합니다. notification job을 쌓아 두지 않도록 최소 consumer `1`을 유지합니다.
+
+## PostgreSQL probe 임시 파일 정리 — 2026-10-07
+
+- 서버 관측: `/tmp` backing emptyDir의 파일 173,615개, 내용 약 7 MB, 디스크 약 684 MB
+- NSS wrapper가 probe 실행마다 passwd/group 임시 파일 생성; 반복 생성 경로에 정리 보완
+- `postgresql-lite-values.yaml` custom probe는 기존 `/liveness-probe.sh`, `/readiness-probe.sh`를 그대로 실행
+- 실행별 전용 디렉터리를 TMPDIR로 지정하고 EXIT trap으로 성공·실패 종료 뒤 해당 디렉터리만 제거; 기존 probe 주기·timeout·실패 기준 유지
+- SIGKILL·컨테이너 강제 종료 시 trap 실행 보장 없음; rollout 후 파일 증가 관측 필요
+- 기존 누적 파일과 메인 PostgreSQL 프로세스의 NSS 파일은 정리 대상 제외
+- 현재 서버용 패치: `k8s/values/postgresql-lite-probe-patch.json`. Helm values와 같은 probe 설정이며 앱 GitOps overlay와 별도 관리
+- 서버 적용 명령: `sudo k3s kubectl patch statefulset messaging-postgresql-ha-postgresql -n messaging-app --type=strategic --patch-file postgresql-lite-probe-patch.json`
+- Pod template 변경으로 단일 DB Pod 교체·일시 중단 가능; PVC 삭제 없음. Helm upgrade에도 수정 values를 사용해야 설정 유지
+- 검증: 성공/실패 종료 코드 유지, 반복 실행 임시 디렉터리 정리, 다른 파일 보존 테스트. 실제 서버 적용·검증 대기
+- Prometheus 저장소 한도 초과와 10월 2일 급증 원인은 별도 조사 범위
 
 ## Storage retention
 
