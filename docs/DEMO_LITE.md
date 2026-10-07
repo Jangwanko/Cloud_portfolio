@@ -47,6 +47,20 @@ Demo Lite 결과는 저사양 배포와 lag 기반 확장 동작의 증거입니
 
 현재 candidate는 full source의 API cache·snapshot topic 3개 제거와 PostgreSQL read model을 그대로 사용합니다. 저사양 profile은 Kafka broker `1`, partition `3`, replication factor `1`, PostgreSQL single instance, core Worker `1→2`, notification Worker fixed `1`로 제한합니다. notification job을 쌓아 두지 않도록 최소 consumer `1`을 유지합니다.
 
+## PostgreSQL probe 임시 파일 정리 — 2026-10-07
+
+- 서버 관측: `/tmp` backing emptyDir의 파일 173,615개, 내용 약 7 MB, 디스크 약 684 MB
+- NSS wrapper가 probe 실행마다 passwd/group 임시 파일 생성; 반복 생성 경로에 정리 보완
+- `postgresql-lite-values.yaml` custom probe는 기존 `/liveness-probe.sh`, `/readiness-probe.sh`를 그대로 실행
+- 실행별 전용 디렉터리를 TMPDIR로 지정하고 EXIT trap으로 성공·실패 종료 뒤 해당 디렉터리만 제거; 기존 probe 주기·timeout·실패 기준 유지
+- SIGKILL·컨테이너 강제 종료 시 trap 실행 보장 없음; rollout 후 파일 증가 관측 필요
+- 기존 누적 파일과 메인 PostgreSQL 프로세스의 NSS 파일은 정리 대상 제외
+- 현재 서버용 패치: `k8s/values/postgresql-lite-probe-patch.json`. Helm values와 같은 probe 설정이며 앱 GitOps overlay와 별도 관리
+- 서버 적용 명령: `sudo k3s kubectl patch statefulset messaging-postgresql-ha-postgresql -n messaging-app --type=strategic --patch-file postgresql-lite-probe-patch.json`
+- Pod template 변경으로 단일 DB Pod 교체·일시 중단 가능; PVC 삭제 없음. Helm upgrade에도 수정 values를 사용해야 설정 유지
+- 검증: 성공/실패 종료 코드 유지, 반복 실행 임시 디렉터리 정리, 다른 파일 보존 테스트. 실제 서버 적용·검증 대기
+- Prometheus 저장소 한도 초과와 10월 2일 급증 원인은 별도 조사 범위
+
 ## Storage retention
 
 - PostgreSQL logical dump: `Asia/Seoul` 일요일 03:00 생성, 7일 경과 파일 삭제, latest 8 secondary cap
