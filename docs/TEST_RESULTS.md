@@ -2,6 +2,167 @@
 
 이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite endpoint 확인은 `2026-09-14`입니다. [현재 배포 관측](DEPLOYMENT_STATUS.md)에서 접근 범위를 구분합니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
+## Runtime V3.5 Evidence Adapter 2026-10-30 KST
+
+- 실제 bundle·condition canonical replay를 검증하는 `FROZEN_PROJECTED` adapter·별도 실행기 추가
+- 기존 v3.5 execution identity·frozen source 유지, 네 controlled 사례의 wire payload 동등성 확인
+- 직전 정상 snapshot `ABSENT`, `--live`에도 GPT 0회; 과거 실제 22-bundle backlog source replay 일치
+- 과거 실제 snapshot의 모델/Runbook 단일 비교: 양쪽 `ABSTAIN`, 모델 최초 contract valid·repair 0회·API 4회
+- Stage 운영 baseline 부재와 설명문 fragment·혼합 문자 수동 검토 기록, causal truth·정확도 점수 미측정
+- Input/output `20,953 / 846` tokens, 도구 model 3개·Runbook 4개; controller 정책에 따른 범위
+- 전체 suite `871 passed in 50.38s`, 관련 `21 passed in 5.08s`
+- [경계·재현 명령·현재 결과](OPS_AGENT_RUNTIME_ADAPTER.md), [원문·projection·hash](../results/ops-agent/diagnosis/runtime-adapter-20261030-summary.json)
+
+## Read-only Runtime Observation 2026-10-29
+
+- 실제 local-ha 15초 간격 3회 수집, Kafka lag/slope 모두 `0/0`, Worker `2/2`, PG degradation `ABSENT`
+- 기존 sequence gate `CORE_BACKLOG_PRESSURE=ABSENT`, GPT·causal Runbook `NOT_RUN`, API 0회
+- Stage metric `MISSING/UNKNOWN` 보존, 전체 collection `PARTIAL`과 required backlog evidence usable 구분
+- 새 run overwrite 방지, 실패 capture 보존, frozen summary·conditions replay 및 inventory 18개 SHA 검증 완료
+- 전체 suite `850 passed in 41.23s`, 관련 gate/sequence `25 passed in 2.86s`; 실제 수집 wrapper exit `0`
+- v3.5 runtime adapter·실제 모델 비교 대기, 합성 평가 점수와 분리
+- [실행·현재 범위·다음 경계](OPS_AGENT_RUNTIME_OBSERVATION.md), [summary·inventory](../results/ops-agent/diagnosis/observation-20261029-summary.json)
+
+## Frozen V3.5 Second Synthetic Probe 2026-10-29
+
+- 기존 실행 코드·모델·정책·execution hash를 고정한 새 합성 조합 4개 × 2회 첫 평가 완료
+- Primary 모두 실패·stale 정상 PG·stale stage·stage/KEDA 누락 속 복합 장애에서 최초/최종 종합 `8/8`, repair `0`, Runbook `8/8`
+- 새 primary status/freshness/semantic flag 조합 4개가 이전 8개 사례와 비중복임을 오프라인 확인
+- 실제 요청 enum 36개·JSON 응답 8개 재검증, 목록 밖 ID `0`, 최소 조사 완료 `8/8`
+- 모델 도구 `28`회는 모두 필수 조회, Runbook `32`회; controller 정책 차이와 LLM 추가 가치 구분
+- API 36회, input/output `106,645 / 3,960` tokens, usage 전체 확보, exit `0`
+- 전체 suite `841 passed in 38.12s`, 관련 검사 `28 passed in 0.85s`
+- 작업자 작성 synthetic transfer probe 범위, 독립 외부 holdout·운영 일반화 주장 제외
+- [새 기대값·고정 범위·실제 결과](OPS_AGENT_V35_SECOND_PROBE.md), [최초/최종 출력·원본 hash](../results/ops-agent/diagnosis/v35-second-probe-20261029-summary.json)
+
+## V3.5 Supplied-ID Selection 2026-10-29
+
+- 요청별 초기·획득 ID의 enum을 관측·가설 지지/반박·문맥 citation에 적용, repair에서는 최초 인용과 교집합 유지
+- 기존 8개 사례 × 2회, 최초 contract·최초 종합·최종 contract·최종 종합 모두 `16/16`, repair `0`, Runbook `16/16`
+- 실제 72개 요청 schema·허용 집합·hash와 16개 JSON 응답을 재검증, 목록 밖 ID `0`, 최소 조사 완료 `16/16`
+- Model·base schema·semantic validator·scorer·최소 조사·repair 정책·catalog/rubric 유지
+- API 72회, input/output `216,590 / 8,458` tokens, 모델/Runbook 도구 `56/64`, usage 전체 확보, exit `0`
+- 전체 suite `828 passed in 34.76s`, 관련 검사 `71 passed in 3.93s`
+- 기존 회귀 set의 단일 결과, 독립 holdout·production 일반화·비용/속도 개선 주장 제외
+- [구현·의미 경계·실제 검증](OPS_AGENT_V3_CITATION_SELECTION.md), [원본 hash·요청별 enum·결과](../results/ops-agent/diagnosis/citation-v35-regression-20261029-summary.json)
+
+## V3.4 Minimum Investigation Gate 2026-10-29
+
+- Stage·PG·replica 최소 조회, Fresh/OK replica 부족 시 KEDA 추가 조회를 코드와 API tool choice로 강제
+- 16회 회귀 모두 최소 조사 완료, 최초·최종 종합 각각 `15/16`, 고정 Runbook `16/16`
+- 이전 복합 장애의 조기 종료 차단 확인, 실제 wire에서 필수 도구 `54`회·선택 도구 `1`회·미조회 상태 최종 수락 `0`회
+- 남은 1회는 evidence ID 오타와 repair의 `_` 대체 실패, 오류·권한 제한 보존; repair 1회·구제 0회
+- API 72회, input/output `195,810 / 9,778` tokens, 모델/Runbook 도구 `55/64`, usage 전체 확보, exit `1`
+- 전체 suite `813 passed in 32.71s`, 관련 검사 56개 통과·`3.53s`
+- Controller coverage와 모델 출력 품질 분리, 기존 회귀 set의 holdout 주장·추가 유료 반복 제외
+- [종료 조건·남은 인용 오류·검증](OPS_AGENT_V3_INVESTIGATION_GATE.md), [최초/최종 점수·wire audit·원본 hash](../results/ops-agent/diagnosis/investigation-v34-regression-20261029-summary.json)
+
+## V3.3 Evidence-Bound Repair Regression 2026-10-29
+
+- Fresh/OK 정상 상태를 직접 인용한 잘못된 양성 observation의 제거만 추가 허용, 새 관측·가설·citation·지지 상태 변경 금지 유지
+- 기존 8개 회귀 사례 × 2회 완료: 최초 contract `15/16`·종합 `14/16`, 최종 contract `16/16`·종합 `15/16`, Runbook `16/16`
+- 실제 repair 1회는 unknown citation 제거, 새 observation 제거 0회; 새 권한은 과거 실패 pair 재생·오프라인 검사로 확인
+- 남은 1회는 복합 장애에서 PG 확인 뒤 조기 종료, replica·KEDA 미조회; contract-valid 조사 누락을 종합 실패로 보존
+- API 75회, input/output `200,680 / 9,513` tokens, 모델/Runbook 도구 `58/64`, usage 전체 확보, exit `1`
+- 전체 suite `800 passed in 33.60s`, 관련 검사 `43 passed in 3.32s`
+- 과거 점수 유지·회귀 set의 holdout 주장 제외·결과 기반 추가 유료 반복 제외
+- [정책·한계·회귀 결과](OPS_AGENT_V3_REPAIR.md), [최초/최종 출력·점수·원본 hash](../results/ops-agent/diagnosis/repair-v33-regression-20261029-summary.json)
+
+## V3.2 Novel Synthetic Cases 2026-10-29
+
+- 기존 v3.2 prompt·모델·validator·scorer·normalizer·budget 고정, 새 합성 관측 조합 4개 × 2회 첫 평가 완료
+- 모델 최초·최종 contract·관측·원인 후보·종합 `7/8`, 조사 완결성 `8/8`; 고정 Runbook 모든 차원 `8/8`
+- 복합 장애·오래된 수치·원인 근거 없음 각 `2/2`, Stage·KEDA 관측 없음 `1/2`
+- 실패 1회에서 정상 PG를 저하 관측으로 보고; repair의 관측 제거는 기존 scope 금지로 최종 실패 유지
+- 모델/Runbook 도구 각각 `32`회, API `41`회, input/output `112,192 / 4,782` tokens, usage 전체 확보, exit `1`
+- 전체 suite `785 passed in 42.32s`, 관련 검사 `28 passed in 2.15s`; 합성 데이터의 frozen freshness·새 기대값 사전 기록
+- Prompt 재튜닝·추가 유료 재평가 제외, 독립 외부 holdout·production 일반화 주장 제외
+- [사전 사례·실패·repair 경계·실행 조건](OPS_AGENT_V3_NOVEL_CASES.md), [개별 출력·원본 hash](../results/ops-agent/diagnosis/pilot-v3-novel-20261029-summary.json)
+
+## V3 Fixed-Rubric Iteration 2026-10-29
+
+- 같은 모델·rubric·validator·catalog·budget·schedule로 첫 수정 회차 8회 완료, 최종 종합 `8/8` 달성 후 종료
+- 최초 contract `7/8`, repair 1회에서 context·signed 인용 중복 제거, 관측·원인 후보·조사 완결성 최종 모두 `8/8`
+- 이전 v3.1 종합 `5/8`·실패 원본 유지, 실행 지시에 공통 evidence-role 표·관측 완전성·최종 점검 추가
+- 모델 도구 `30`회·고정 Runbook `32`회, 비교군 종합 `8/8`; 현재 사례에서 LLM 추가 가치 입증 제외
+- API 39회, input/output `105,858 / 6,106` tokens, 평균 elapsed `12.70s`, usage 전체 확보, exit `0`
+- 전체 suite `775 passed in 30.02s`, 관련 오프라인 검사 `40 passed in 1.57s`
+- 동일 development set에서 처음 달성한 8/8 회차, holdout 일반화·반복 안정성 추정 제외
+- [수정·종료 조건·검증 범위](OPS_AGENT_V3_ITERATIONS.md), [개별 출력·원본 hash](../results/ops-agent/diagnosis/pilot-v3-iteration-r1-20261029-summary.json)
+
+## V3 Isolated Live Pilot 2026-10-29
+
+- 사전 rubric·execution/schema hash를 저장한 독립 v3 loop, 요청 모델 `gpt-5.6-luna`, 네 development fixture × 2회 완료
+- 최초·최종 contract `6/8`, 관측 `5/8`, 원인 후보·보류 `6/8`, 조사 완결성 `8/8`, v3 종합 `5/8`
+- 고정 Runbook 모든 차원 `8/8`; 두 arm 도구 호출 각각 `32`, LLM 추가 가치 미확인
+- Stage를 원인 지지로 승격한 실패 2회·replica 관측 항목 누락 1회, repair 2회 모두 실패 원본 보존
+- API `42`회, input/output `95,720 / 9,861` tokens, usage 전체 확보, 평균 elapsed `17.81s`; 실행 완료·품질 실패 exit `1`
+- 최종 전체 suite `773 passed in 30.57s`; `results/validation/20261029T132231Z-d1d8f382/`, 문서·JSON 검사 오류 `0`
+- V2와 vocabulary·평가 목표가 달라 과거 quality 대비 개선율 비교 제외
+- [조건·분모·실패와 repair 제약](OPS_AGENT_V3_EVALUATION.md), [재채점·원본 hash 요약](../results/ops-agent/diagnosis/pilot-v3-20261029-summary.json)
+
+## V3 Decision Contract Candidate 2026-10-29
+
+- 독립 v3 후보에서 observations·hypotheses·context·ABSTAIN 분리, 기존 v2 실행기·점수 유지
+- 직접 관측·인용 역할·부족한 근거·미제공 원인 telemetry·보류·권한 경계의 adversarial test 22개 통과
+- 전체 suite `756 passed in 30.44s`, 문서 링크·diff 검사 통과
+- 직접 작성한 예시 4개와 schema/instruction hash export; 실제 모델 정확도·API 호환성 호출 검증 미실행
+- [vocabulary 변경·검증 범위·실행 기록](OPS_AGENT_V3_CANDIDATE.md)
+
+## Offline Criteria Review 2026-10-29
+
+- 저장된 prompt v2 8회를 v1과 동일하게 재채점, 기존 통합 quality `1/8` 유지
+- Fixture label 일치 `5/8`, 조사 완결성 `6/8`, 보류 기준 `6/8`; 인용 규칙 일치 5회·검토 필요 3회 분리
+- KEDA 문맥·미정의 인용은 정답/오답 자동 확정 제외, 새 통합 합격률 미정의
+- 전체 suite `734 passed in 31.94s`, source 불변·덮어쓰기 거부·실패 분리 검증
+- 추가 모델 API 호출·rubric/validator 변경 없음
+- [차원별 원본 요약](../results/ops-agent/diagnosis/criteria-review-20261029-summary.json), [검토 판단·조건](OPS_AGENT_EVALUATION.md)
+
+## Prompt v2 Live Reevaluation 2026-10-29
+
+- 같은 요청 모델·4개 scenario × 2회·budget·catalog/rubric, scorer/validator/normalizer/tool hash 불변 확인
+- 최초 contract `7/8`, repair `1/8`, 최종 contract `8/8`; 이전 최종 `0/8`과 별도 run 보존
+- 통합 quality `1/8`, Runbook `8/8`; 미채점 인용 2회·KEDA 필수 조회 누락·복수 supported 가설·보류 불충족 분리
+- API 요청 `39`, input/output `82,920 / 6,393` tokens, 평균 elapsed `11.58s`; 8회·development fixture 범위
+- 8회 완료·usage 전체 확보, quality 실패 exit `1`; rubric 소급 변경·production 성능 주장 제외
+- [축약 원본·hash](../results/ops-agent/diagnosis/pilot-prompt-v2-20261029-summary.json), [결과 해석과 다음 검토](OPS_AGENT_EVALUATION.md)
+
+## Prompt v2 Offline Contract Regression 2026-10-29
+
+- 공통 status·gap·capability·stop 계약을 initial/repair prompt에 동일 제공
+- 관련 테스트 `52 passed in 2.99s`, 전체 suite `725 passed in 38.87s`
+- 한 번의 scripted repair에서 다중 계약 위반 해소 경로 확인, 재실패·가짜 citation·repair tool call 거부 유지
+- Contract-valid 관측 부족 오판은 기존 quality 평가에서 실패 유지; validator/rubric 완화 없음
+- 기존 8회 실제 pilot 원본 hash 보존, 추가 API 호출 없음; 실제 모델 개선 여부 미측정
+- [후보 범위·실행 기록·다음 비교 조건](OPS_AGENT_EVALUATION.md)
+
+## Live Controlled Diagnosis Pilot 2026-10-29
+
+- `gpt-5.6-luna`, 기존 development scenario 4개 × 2회, 이름을 가린 API 입력, 도구 최대 4회·repair 1회·transport retry 0
+- 실제 모델 contract·통합 quality `0/8`, 같은 조건의 고정 Runbook `8/8`; 실패 원본과 repair 모두 보존
+- API 요청 `47`, input/output tokens `85,942 / 11,837`, usage 응답 전부 확보, 조사·repair 포함 평균 `18.63s`
+- 최종 실패: `REBALANCE_GAP_REQUIRED` 7회, `CONFLICTED_REQUIRES_BOTH_CITATION_SIDES` 1회
+- 사후 raw supported-set exact match `4/8`; 검증된 진단 정확도와 분리, 관측 부족 2회 모두 rubric의 보류 기준 불충족
+- 전체 suite `717 passed in 29.12s`; 통합 품질 실패 exit `1`과 테스트 성공 분리
+- [축약 원본·hash](../results/ops-agent/diagnosis/pilot-20261029-summary.json), [조건·분석·다음 Gate](OPS_AGENT_EVALUATION.md)
+
+## Fixed Runbook Comparison 2026-10-29
+
+- 같은 frozen 관측·9개 allowlisted 도구·최대 4회 호출·quality rubric으로 두 deterministic 절차 비교
+- 고정 체크리스트와 기존 scripted 조사 모두 contract·quality 4/4 통과
+- 총 도구 호출 `16 / 10`, rubric 필수 집합 밖 호출 `6 / 0`
+- 전체 suite `709 passed in 30.87s`; network-free 실행·같은 evidence 반환·불일치 budget 거부·실패 분모 보존 검증
+- 실제 LLM 정확도·효과와 시간 개선율은 미측정; API·cluster 접근 없음
+- [실행 기록·비교 조건·한계](OPS_AGENT_EVALUATION.md)
+
+## Offline Diagnosis Evaluator 2026-10-29
+
+- Step 1 평가기 테스트 `19 passed in 0.82s`, 전체 suite `698 passed in 41.55s`
+- 기존 scripted scenario 기록 `4/4`의 contract·quality 통과; 실제 LLM 정확도 측정 제외
+- 잘못된 인용 의미·핵심 증거 누락·fixture/context 변조·판단 보류 실패와 실패 포함 집계 검증
+- 모델 API·cluster 접근 없음; runtime·성능 baseline 변경 없음
+- [실행 기록 경로·평가 계약·한계](OPS_AGENT_EVALUATION.md)
+
 ## Local-ha Runtime 2026-09-11
 
 `kind-messaging-ha`에서 Argo `dev-kafka` revision `9f3f2f9`가 `Synced / Healthy`, operation `Succeeded`임을 확인했습니다. Migration `0009_notification_outbox` 성공 후 API·core Worker·Outbox publisher·notification Worker 모두 `5e8addfb10d0` image와 실제 imageID, Ready 상태를 확인했습니다.

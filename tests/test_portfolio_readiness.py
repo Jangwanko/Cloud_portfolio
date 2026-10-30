@@ -10,7 +10,15 @@ def read_text(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
+def has_stale_test_count(text: str) -> bool:
+    return re.search(r"\b(?:44|56) passed\b", text) is not None
+
+
 class TestOperationalDocumentation:
+    def test_stale_test_count_matches_complete_numbers(self):
+        assert has_stale_test_count("`44 passed` and `56 passed`")
+        assert not has_stale_test_count("144 passed; 756 passed; 56 passed_extra")
+
     def test_service_requirements_define_user_slo_and_operating_purpose(self):
         requirements = read_text("docs/SERVICE_REQUIREMENTS.md")
         readme = read_text("README.md")
@@ -275,8 +283,6 @@ class TestOperationalDocumentation:
         blocked_terms = (
             "Kafka-only ingress path",
             "room sequence",
-            "44 passed",
-            "56 passed",
             "516f65fdebc5e244332fc8c02839563acb561afe",
             "ecf8f2f70cfc3778ff56d2e4957f3395f04c76ee",
             "저장소에 포함된 도구:",
@@ -284,6 +290,7 @@ class TestOperationalDocumentation:
         )
         for term in blocked_terms:
             assert term not in combined
+        assert not has_stale_test_count(combined)
         assert "cache-first" not in combined.lower()
 
         assert "Kafka append-first intake" in combined

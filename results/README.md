@@ -1,6 +1,39 @@
 # Validation Evidence
 
+2026-10-30 KST [runtime evidence adapter](../docs/OPS_AGENT_RUNTIME_ADAPTER.md):
+[one historical real snapshot replay](ops-agent/diagnosis/runtime-adapter-20261030-summary.json)
+with the live model and fixed runbook, both ABSTAIN. The model's first decision
+passed the contract with no repair; gap-text quality issues remain recorded.
+Current normal evidence skipped calls. Canonical source and acquisition digests,
+four request schemas, source hashes and raw response hashes were verified.
+
+2026-10-29 actual read-only observation: [capture/gate scope](../docs/OPS_AGENT_RUNTIME_OBSERVATION.md), [summary and verified file inventory](ops-agent/diagnosis/observation-20261029-summary.json).
+Three local-ha captures found backlog pressure ABSENT. Model and causal Runbook
+were NOT_RUN, with zero model calls. Source bundles/raw remain ignored under
+`results/ops-agent/shadow/20261029-observation-01/`; 18 hashes and frozen replay
+matched. Runtime adaptation was pending at that capture-only step; the follow-up
+record above preserves the subsequent historical comparison separately.
+
 이 디렉터리는 문서에 인용하는 로컬 검증 원본을 보관합니다. `latest` 파일은 마지막으로 완료된 실행의 원본이며, 새 측정이 기존 안정 기준선을 자동으로 대체한다는 뜻은 아닙니다.
+
+## Offline Diagnosis Quality Evaluation — 2026-10-29
+
+`ops-agent/quality-evaluation/`은 로컬 평가 원본 보관 경로입니다. 기존 ignore 정책을 유지합니다.
+Source 입력, catalog/rubric snapshot·hash, 시작 manifest, 개별 시도·실패와 summary를 함께 보존합니다.
+`SCRIPTED_SCORER_CHECK`는 채점기 검증이며 실제 LLM 진단 정확도나 성능 baseline으로 사용하지 않습니다.
+Step 2 `SCRIPTED_RUNBOOK_COMPARISON`은 고정 체크리스트와 기존 scripted 조사의 paired 비교입니다.
+두 arm의 원본·채점과 호출 수를 분리 보존하며 LLM의 효과나 시간 개선율로 인용하지 않습니다.
+Step 3 `LIVE_CONTROLLED_PILOT`은 이름을 가린 네 development scenario의 실제 모델 반복 실행입니다.
+요청·최초 출력·repair·최종 실패·usage coverage와 전체 schedule을 보존하고 미실행 수를 따로 표시합니다.
+Contract 실패와 원인 추정의 오답을 구분하며 일반화·production 성능 검증으로 사용하지 않습니다.
+V3 decision의 `OFFLINE_CONTRACT_CANDIDATE`와 `HAND_AUTHORED_OFFLINE_EXAMPLES_NOT_MODEL_INPUT`은
+계약 검토용 schema·지시와 작성 예시입니다. 모델 실행·과거 결과의 자동 성공 변환·새 품질 baseline으로 해석하지 않습니다.
+명령과 실패 집계 범위: [평가 계약](../docs/OPS_AGENT_EVALUATION.md).
+
+Step 8 `LIVE_CONTROLLED_DEVELOPMENT_PILOT`은 독립 v3 loop의 실제 모델 8회 평가입니다.
+관측·가설·문맥을 구분하는 새 vocabulary와 사전 rubric을 사용하며 v2 quality와의 개선율 비교는 제외합니다.
+최초 contract·최종 인용 역할·관측·원인 후보·조사 완결성과 고정 Runbook을 함께 보존합니다.
+조건과 분모: [v3 실행·평가](../docs/OPS_AGENT_V3_EVALUATION.md).
 
 ## Tracked Evidence
 
@@ -20,6 +53,16 @@
 - `ops-agent/negative-control/20260816T040746Z/`: frozen pressure candidate negative-control manifest, analysis, sanitized summary 3개
 - `ops-agent/sequence-validation/20260816T044352Z/summary.json`: actual positive/negative bundle sequence의 v2 replay ID, activation window, local output hash 요약
 - `ops-agent/diagnosis/golden-eval-v1.json`: scripted offline Phase 3 grounding/tool/stop evaluation 요약
+- `ops-agent/diagnosis/pilot-20261029-summary.json`: 실제 모델 8회 예비 실행의 실패 포함 집계·원본 hash·사후 raw label 검토; development fixture 범위
+- `ops-agent/diagnosis/pilot-prompt-v2-20261029-summary.json`: 같은 조건의 prompt v2 실제 8회, prompt identity·원본/이전 summary hash·개별 quality 실패; 미채점 인용과 오답 구분
+- `ops-agent/diagnosis/criteria-review-20261029-summary.json`: 같은 8회의 오프라인 차원별 검토, source/구현 hash·기존 1/8 보존·REVIEW_REQUIRED 분리; 새 모델 실행/통합 점수 아님
+- `ops-agent/diagnosis/pilot-v3-20261029-summary.json`: 사전 v3 rubric으로 실제 8회, 종합 5/8·고정 Runbook 8/8, 원본·turn hash와 개별 decision; 기존 v2 quality와의 직접 비교 제외
+- `ops-agent/diagnosis/pilot-v3-iteration-r1-20261029-summary.json`: 같은 v3 rubric·모델·budget의 첫 수정 8회, 최초 7/8·repair 1회 후 최종 종합 8/8; 회차 전체 원본·turn hash 보존, holdout 일반화 추정 제외
+- `ops-agent/diagnosis/pilot-v3-novel-20261029-summary.json`: frozen v3.2를 새 합성 조합 네 사례에 각 2회 적용한 최초 결과, 모델 7/8·Runbook 8/8, observation 오류·repair scope 실패와 원본 hash 보존
+- `ops-agent/diagnosis/repair-v33-regression-20261029-summary.json`: 제한된 관측 제거 정책의 16회 회귀, 최초 종합 14/16·최종 15/16·Runbook 16/16, 실제 관측 제거 0회·과거 pair 정책 재생 분리, 최초/최종 출력·scope audit·원본 hash 보존
+- `ops-agent/diagnosis/investigation-v34-regression-20261029-summary.json`: 최소 조사 gate의 16회 회귀, 모두 조사 완료·최초/최종 종합 15/16, 필수/선택 도구 호출 54/1·wire audit와 인용 ID 실패 보존
+- `ops-agent/diagnosis/citation-v35-regression-20261029-summary.json`: 제공된 ID enum 선택의 16회 회귀, 최초/최종 종합 16/16·repair 0, 요청 72개·JSON 16개의 enum membership·hash audit와 원본 보존
+- `ops-agent/diagnosis/v35-second-probe-20261029-summary.json`: v3.5 고정 후 새 합성 네 조합의 첫 8회, 최초/최종 종합 8/8·repair 0·Runbook 8/8, 미조회 ID 제외·요청 enum audit·사전 등록 hash 보존
 - `ops-agent/recovery-calibration/20260816T100600Z/`: Phase 4 A/B/C/E/F load-aware calibration manifest, analysis, compact summaries
 - `ops-agent/recovered-calibration/20260816T194023Z/`: Phase 4.2 E-04~06 supplemental manifest, combined E-01~06 analysis, compact summaries
 - `ops-agent/incident-e2e/`와 `ops-agent/incidents/`: Phase 5 workload bundle/raw, diagnosis, recovery, canonical incident; 현재 local-only, Git 추적 제외

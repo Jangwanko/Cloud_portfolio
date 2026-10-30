@@ -1,5 +1,21 @@
 # Read-only Operations Evidence Agent
 
+2026-10-30 KST [실제 evidence adapter와 모델/Runbook 비교](OPS_AGENT_RUNTIME_ADAPTER.md): canonical source replay를 검증한 `FROZEN_PROJECTED` 경로 구현, 과거 실제 backlog snapshot 단일 비교에서 양쪽 `ABSTAIN`, model 최초 contract valid·repair 0회입니다. 현재 정상 snapshot은 API 0회이며, 과거 재생과 현재 runtime 관측을 구분합니다.
+
+2026-10-29 [실제 observation 수집과 activation gate](OPS_AGENT_RUNTIME_OBSERVATION.md): 기존 collector로 3회 수집, backlog `ABSENT`, GPT 호출 0회입니다. v3.5 실제 증거 adapter와 모델/Runbook 진단 비교는 다음 단계이며, 이번 결과를 모델 정확도에 합산하지 않습니다.
+
+2026-10-29 진단 품질 평가·고정 Runbook 비교군·실제 모델 예비 실행기: [평가 계약과 로컬 실행](OPS_AGENT_EVALUATION.md).
+같은 관측·도구 제한·채점기로 비교하며, 실제 모델 예비 실행은 이름을 가린 controlled development scenario 8회 범위입니다.
+이후 `ops.diagnosis.prompt.v2` 공통 출력 계약을 추가하고 같은 조건의 실제 8회에서 최종 contract 8/8, 통합 quality 1/8을 확인했습니다. 인용 미채점·조사 완결성·보류 기준의 검토가 남아 있습니다.
+별도 오프라인 review v1은 원래 1/8 점수를 유지하며 가설 label·조사·보류·인용 문맥을 분해합니다. 미정의 인용과 KEDA 문맥은 REVIEW_REQUIRED로 보존하고 새로운 합격률로 바꾸지 않습니다.
+이 검토를 바탕으로 [관측·가설·문맥을 구분하는 v3 출력 후보](OPS_AGENT_V3_CANDIDATE.md)를 분리 구현했습니다. 후속 [v3 독립 실행·사전 평가 기준](OPS_AGENT_V3_EVALUATION.md)은 기존 v2 실행·점수와 구분합니다.
+V3 초기 실제 8회는 종합 `5/8`입니다. [동일 기준의 v3.2 반복](OPS_AGENT_V3_ITERATIONS.md)은 최초 7/8·repair 1회 뒤 최종 `8/8`을 달성했습니다. 고정 Runbook도 `8/8`이며 현재 네 development fixture에서 LLM 추가 가치는 별도 검증 대상입니다.
+V3.2를 고정한 [새 합성 조합 4개 × 2회](OPS_AGENT_V3_NOVEL_CASES.md)의 첫 결과는 모델 `7/8`, Runbook `8/8`입니다. 정상 PG의 잘못된 관측과 이를 제거하지 못하는 repair 범위를 구분해 보존했습니다.
+[V3.3의 근거에 제한된 관측 제거](OPS_AGENT_V3_REPAIR.md)는 기존 8개 사례의 16회 회귀에서 최초 종합 `14/16`·최종 `15/16`입니다. 남은 조기 종료 실패와 실제 관측 제거가 발생하지 않은 한계를 함께 기록합니다.
+[V3.4 최소 조사 gate](OPS_AGENT_V3_INVESTIGATION_GATE.md)는 16회 모두 조사 완료·최초/최종 종합 `15/16`입니다. 복합 장애의 미조회 종료를 코드로 차단했으며, 남은 evidence ID 오타는 별도 품질 실패로 유지합니다.
+[V3.5 제공된 ID 선택](OPS_AGENT_V3_CITATION_SELECTION.md)은 같은 16회에서 최초·최종 종합 `16/16`·repair 0회입니다. 요청별 enum과 실제 citation을 대조해 목록 밖 ID 0개를 확인했고, 기존 의미 검증과 조사 조건은 유지합니다.
+이후 v3.5를 고정한 [두 번째 새 합성 조합 4개 × 2회](OPS_AGENT_V35_SECOND_PROBE.md)도 최초·최종 종합 `8/8`·repair 0회입니다. Runbook도 `8/8`이며, 두 평가를 별도 실행으로 보존합니다.
+
 `ops_agent`는 Worker backlog 시나리오의 운영 신호를 `ops.evidence.v1` Evidence Bundle로 정규화합니다. 고정된 단일 bundle은 `ops.conditions.v1`, ordered bundle sequence는 calibrated `ops.conditions.v2` 결과로 평가합니다. `CORE_BACKLOG_PRESSURE=PRESENT` 이후에는 단일 Evidence-grounded Diagnosis Agent가 허용된 read-only tool을 선택합니다. 기존 frozen projection은 `ops.diagnosis.v1`, controlled acquisition과 확장된 원인 vocabulary는 `ops.diagnosis.v2`로 분리합니다. Recovery v1/v2의 deterministic output과 diagnosis를 Phase 5 `ops.incident.v1` lifecycle에 연결하되 runtime data path와 control plane은 변경하지 않습니다.
 
 ## Phase 경계

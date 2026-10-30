@@ -1,0 +1,326 @@
+{
+  "schema_version": "ops.diagnosis.pilot-summary.v1",
+  "classification": "LIVE_CONTROLLED_PILOT",
+  "observed_date_kst": "2026-10-29",
+  "model_requested": "gpt-5.6-luna",
+  "response_model_snapshot": "not_recorded",
+  "blinding_version": "opaque-scenario-id.v1",
+  "prompt_identity": {
+    "version": "ops.diagnosis.prompt.v2",
+    "sha256": "b87b4656a6c0b937059a75000e9886bae4b36481cccd2ce12bb63b3f075764bc"
+  },
+  "evaluation_identity": {
+    "catalog_sha256": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+    "rubric_sha256": "7f61b7d01e0be618effa2909afd842319fb079479d5a527cf3f10e276f02d6fa",
+    "scorer_version": "ops.diagnosis.quality.v1"
+  },
+  "source_commit": "047a8f18b97d23f9bb4479c0ef800694f13ed15f",
+  "source_dirty": true,
+  "implementation_sha256": {
+    "scripts/run_diagnosis_pilot.py": "5c5e186f92ead2b030d1bec542b2231b4fccd57382115149bdef3042192cb563",
+    "ops_agent/scenario_agent.py": "af2e49753cb49f8d06326f180d7817539319cf6a0cde4d42697e2ce6ea4cbf9e",
+    "ops_agent/scenario_contract.py": "981cf69d7a9efe171fe01cf19e3fc76c66c58ff85c70adfe73d0e7ac049d44ad",
+    "ops_agent/diagnosis_agent.py": "a58e18bb9420e9b716003c6222ffb549825f64012bff2d0eb41251931d241986",
+    "ops_agent/fixed_runbook.py": "9d3c6d969c4459c67ccc6bd2d3505a852f1ca822e8204e1e52030a5779641f6d"
+  },
+  "local_source_directory": "results/ops-agent/quality-evaluation/step4-prompt-v2-live-20261029",
+  "source_manifest_sha256": "7ce8f32cc3f741fd1b77eec509711a585ca07ae5218ab9b7a91bbe45fac9bd17",
+  "source_summary_sha256": "c55d4aca303fa7da4d5a2b0e1ad1fedc7b6a3c8e73c4ee451f12d898bc849980",
+  "summary": {
+    "scheduled_attempt_count": 8,
+    "executed_attempt_count": 8,
+    "unrun_attempt_count": 0,
+    "api_request_count": 39,
+    "live": {
+      "attempt_count": 8,
+      "execution_kind": "live",
+      "contract_success_rate": 1.0,
+      "quality_success_rate": 0.125,
+      "first_pass_contract_success_rate": 0.875,
+      "first_pass_unknown_count": 0,
+      "repaired_contract_success_count": 1,
+      "final_contract_failure_count": 0,
+      "telemetry": {
+        "elapsed_seconds": {
+          "known_attempt_count": 8,
+          "total_known": 92.67503710000074
+        },
+        "input_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 82920
+        },
+        "output_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 6393
+        }
+      }
+    },
+    "fixed_runbook": {
+      "attempt_count": 8,
+      "execution_kind": "scripted",
+      "contract_success_rate": 1.0,
+      "quality_success_rate": 1.0,
+      "first_pass_contract_success_rate": 1.0,
+      "first_pass_unknown_count": 0,
+      "repaired_contract_success_count": 0,
+      "final_contract_failure_count": 0,
+      "telemetry": {
+        "elapsed_seconds": {
+          "known_attempt_count": 8,
+          "total_known": 0.006668900000022404
+        },
+        "input_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 0
+        },
+        "output_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 0
+        }
+      }
+    },
+    "usage_coverage_complete": true
+  },
+  "prior_summary_sha256": "35eda1532240bc1fe16c60dcdbb956fa0c298bd8b1ae79e13664bd8f11f25c30",
+  "comparison_conditions": {
+    "same_policy": true,
+    "same_schedule": true,
+    "same_evaluation_identity": true,
+    "same_catalog_snapshot": true,
+    "same_rubric_snapshot": true
+  },
+  "initial_validation_failure_counts": {
+    "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES": 1
+  },
+  "failed_check_counts": {
+    "citation_semantics_pass": 3,
+    "required_evidence_acquired": 2,
+    "supported_hypotheses_match": 3,
+    "abstention_correct": 2
+  },
+  "raw_supported_set_exact_matches": 5,
+  "tool_call_count_total": 30,
+  "quality_failure_with_unscored_citations_count": 2,
+  "limitations": [
+    "Four development fixtures repeated twice; no held-out generalization result.",
+    "Quality metric uses the unchanged conservative rubric, including unscored citations and mandatory investigation tools.",
+    "Unscored citation relations require human review; they are not automatically proven false.",
+    "Elapsed times include API/network; eight trials do not establish a stable latency improvement.",
+    "Monetary cost and actual response model snapshot were not recorded."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "worker-db-path-pressure",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": true,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": false
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 1,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 1,
+      "initial_validation_error": null,
+      "elapsed_seconds": 13.007180300000073,
+      "source_state_sha256": "9f052f9a4b94d857591c39a6684e2014af4e93278c97686a158fc9985923912c"
+    },
+    {
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "worker-replica-shortfall",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": true,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": false,
+        "support_anchors_present": true,
+        "citation_semantics_pass": true
+      },
+      "missing_required_tools": [
+        "get_keda_status"
+      ],
+      "unscored_citation_count": 0,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 2,
+      "initial_validation_error": null,
+      "elapsed_seconds": 12.890580499999942,
+      "source_state_sha256": "33bc3f42a7a99f6b90702cd48ec468a98383e2dc3bd83375d0c38075c4e91826"
+    },
+    {
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "postgres-path-degradation",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": true,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "POSTGRES_PATH_DEGRADED_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": true,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": true
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 0,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 2,
+      "initial_validation_error": null,
+      "elapsed_seconds": 13.86056069999995,
+      "source_state_sha256": "65cecd8e174430f0abdd7a462da9b41c08c7fbfa77633241c21d770bebd787c1"
+    },
+    {
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "telemetry-unavailable",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": false,
+        "abstention_correct": false,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": false
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 0,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 2,
+      "initial_validation_error": null,
+      "elapsed_seconds": 9.855072800000016,
+      "source_state_sha256": "14dbb2403da1187754ae5bc1ab5e32932bbc127cf80c7b568cecd00bb3b66bc4"
+    },
+    {
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "worker-db-path-pressure",
+      "contract_pass": true,
+      "first_pass_contract": false,
+      "quality_pass": false,
+      "repair_used": 1,
+      "supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": true,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": false
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 1,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 1,
+      "initial_validation_error": "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES",
+      "elapsed_seconds": 16.4228777000003,
+      "source_state_sha256": "76af9b6f8eb8efab417dc83e4b9933ef8b3ef5a610e5a741f7c15683cf94d0c2"
+    },
+    {
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "worker-replica-shortfall",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": true,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": false,
+        "support_anchors_present": true,
+        "citation_semantics_pass": true
+      },
+      "missing_required_tools": [
+        "get_keda_status"
+      ],
+      "unscored_citation_count": 0,
+      "tool_call_count": 2,
+      "extra_tool_call_count": 0,
+      "initial_validation_error": null,
+      "elapsed_seconds": 6.214383800000178,
+      "source_state_sha256": "e41e8a0ac21a4711828beb8aeefa545029b10eebb4f118a5dd6c9e91fc2fed98"
+    },
+    {
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "postgres-path-degradation",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "POSTGRES_PATH_DEGRADED_SUSPECTED",
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": false,
+        "abstention_correct": true,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": true
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 0,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 2,
+      "initial_validation_error": null,
+      "elapsed_seconds": 9.173156900000322,
+      "source_state_sha256": "ffea3f9eb3d6f4ffe06f3d200ec18c4de76d0350501e23b5c610a9b790f92f59"
+    },
+    {
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "telemetry-unavailable",
+      "contract_pass": true,
+      "first_pass_contract": true,
+      "quality_pass": false,
+      "repair_used": 0,
+      "supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "checks": {
+        "supported_hypotheses_match": false,
+        "abstention_correct": false,
+        "abstention_gap_present": true,
+        "required_evidence_acquired": true,
+        "support_anchors_present": true,
+        "citation_semantics_pass": true
+      },
+      "missing_required_tools": [],
+      "unscored_citation_count": 0,
+      "tool_call_count": 4,
+      "extra_tool_call_count": 2,
+      "initial_validation_error": null,
+      "elapsed_seconds": 11.251224399999955,
+      "source_state_sha256": "7864b52e0d678b9dd1746e143bc992ac126c3daa75e1c12ac5c82831e439815b"
+    }
+  ]
+}

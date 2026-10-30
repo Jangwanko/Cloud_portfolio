@@ -1,0 +1,56 @@
+{
+  "schema_version": "ops.diagnosis.quality-rubric.v3.1",
+  "policy": "Unchanged v3 scorer/validator; exact positive observation and supported-cause sets. All executed attempts in denominators; completeness independent. Three primary discriminators required in every novel case; KEDA additionally required for fresh replica deficit. Author-created synthetic transfer probe, not independent production ground truth.",
+  "cases": {
+    "novel-01": {
+      "observations": [
+        "WORKER_REPLICA_SHORTFALL",
+        "POSTGRES_GUARDRAIL_DEGRADED"
+      ],
+      "supported_causes": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+        "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED"
+      ],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ]
+    },
+    "novel-02": {
+      "observations": [
+        "WORKER_STAGE_ELEVATED"
+      ],
+      "supported_causes": [],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status"
+      ]
+    },
+    "novel-03": {
+      "observations": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "supported_causes": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ]
+    },
+    "novel-04": {
+      "observations": [],
+      "supported_causes": [],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status"
+      ]
+    }
+  }
+}

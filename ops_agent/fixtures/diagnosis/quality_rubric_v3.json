@@ -1,0 +1,26 @@
+{
+  "schema_version": "ops.diagnosis.quality-rubric.v3.1",
+  "policy": "All executed attempts in denominator. Observation and supported-cause sets exact. Completeness separately scored. Joint pass requires contract, observations, causes, completeness. This task is not comparable to v2 quality.",
+  "cases": {
+    "worker-db-path-pressure": {
+      "observations": ["WORKER_STAGE_ELEVATED"],
+      "supported_causes": [],
+      "required_tools": ["get_worker_stage_latency", "get_postgres_health", "get_worker_replica_status"]
+    },
+    "worker-replica-shortfall": {
+      "observations": ["WORKER_REPLICA_SHORTFALL"],
+      "supported_causes": ["WORKER_CAPACITY_SHORTFALL_SUSPECTED"],
+      "required_tools": ["get_worker_stage_latency", "get_worker_replica_status", "get_keda_status"]
+    },
+    "postgres-path-degradation": {
+      "observations": ["WORKER_STAGE_ELEVATED", "POSTGRES_GUARDRAIL_DEGRADED"],
+      "supported_causes": ["POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED"],
+      "required_tools": ["get_worker_stage_latency", "get_postgres_health"]
+    },
+    "telemetry-unavailable": {
+      "observations": ["WORKER_STAGE_ELEVATED"],
+      "supported_causes": [],
+      "required_tools": ["get_worker_stage_latency", "get_postgres_health"]
+    }
+  }
+}

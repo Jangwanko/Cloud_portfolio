@@ -1,5 +1,73 @@
 # Ops Agent
 
+The [runtime v3.5 adapter](../docs/OPS_AGENT_RUNTIME_ADAPTER.md) now binds frozen
+operational bundles to a canonically replayed PRESENT activation. Four read-only
+projection tools preserve source IDs and digests; stage elevation requires a runtime
+baseline that is currently unavailable. One historical real snapshot replay with
+the live model and runbook produced ABSTAIN in both arms. The first model decision
+passed the contract without repair; fragmented gap text remains a separate quality
+issue. The latest normal snapshot skipped API calls. This is one historical replay.
+
+The [runtime observation capture](../docs/OPS_AGENT_RUNTIME_OBSERVATION.md)
+reuses existing collectors for three immutable local-ha snapshots and replays
+the unchanged activation gate. The 2026-10-29 capture found no backlog pressure;
+model and causal runbook execution were skipped. Runtime adaptation was pending
+at that capture-only step; the follow-up adapter above supplies the new path.
+
+Offline diagnosis scoring: [evaluation contract and local commands](../docs/OPS_AGENT_EVALUATION.md).
+The Step 1 scorer reads saved artifacts without credentials or model calls. Scripted
+replay scores validate the evaluator; live model accuracy remains unmeasured.
+Step 2 adds a fixed four-call checklist with the same observations, tool budget and
+scorer. Both deterministic procedures pass the current four cases; the comparison
+does not establish an LLM advantage.
+Step 3 provides an explicit `--live` eight-trial pilot, blinds cause-bearing
+fixture labels in model-visible history, and saves initial/repair responses and
+failures before evaluating both arms. API transport retries are disabled.
+The `ops.diagnosis.prompt.v2` candidate supplies a shared output/capability
+contract on initial and repair turns and saves a prompt identity/snapshot in new
+pilot runs. The same eight development trials reached 8/8 final contract passes
+and 1/8 integrated quality passes. Unscored citations, investigation completeness
+and abstention remain under review; generalization remains unmeasured.
+An offline `ops.diagnosis.review.v1` report separates fixture label alignment,
+investigation completeness, abstention and citation review. It preserves the
+original quality gate and reports no new integrated pass rate.
+An isolated [v3 decision candidate](../docs/OPS_AGENT_V3_CANDIDATE.md) separates
+observations, causal candidates and context, preserving stage observations while
+abstaining on causes. Its subsequent [isolated v3 loop and preregistered evaluation](../docs/OPS_AGENT_V3_EVALUATION.md)
+use a separate task/rubric. Existing v2 scores remain unchanged; cross-version quality
+improvement rates are not defined.
+The original v3.1 live pilot completed eight trials: 6/8 final contract/evidence-role passes,
+5/8 joint passes, versus 8/8 for the deterministic runbook. Both used 32 tool calls;
+these reused development fixtures do not establish an LLM advantage or generalization.
+The [v3.2 iteration](../docs/OPS_AGENT_V3_ITERATIONS.md) preserved the model, rubric,
+validator and budgets. Its first revised eight-trial batch reached 8/8 final joint
+passes, with 7/8 first-pass contracts and one allowed repair. Model output remained
+unmodified. The requested first-8/8 stopping rule was reached; no holdout claim is made.
+A [frozen v3.2 probe on four novel synthetic combinations](../docs/OPS_AGENT_V3_NOVEL_CASES.md)
+then scored 7/8, versus 8/8 for the runbook. One false PostgreSQL observation was
+removed during repair, but that change violated the unchanged repair scope. The
+first score and raw failure were preserved without further tuning or paid retries.
+[V3.3 repair](../docs/OPS_AGENT_V3_REPAIR.md) permits removing a false positive
+observation only when its original citations directly show a fresh, OK normal state
+for that same signal. Sixteen regression trials scored 14/16 first-pass joint and
+15/16 final joint, versus 16/16 for the runbook. One unknown citation was repaired;
+observation removal was exercised offline, not in these paid trials. The remaining
+failure stopped before investigating the second supported cause.
+[V3.4 minimum investigation](../docs/OPS_AGENT_V3_INVESTIGATION_GATE.md) enforces
+three primary queries and a conditional KEDA query before accepting a decision.
+All 16 regression trials completed coverage; first-pass and final joint scores were
+both 15/16. The remaining failure corrupted an evidence ID. Controller coverage and
+model output quality are reported separately, with wire-level selection audits.
+[V3.5 citation selection](../docs/OPS_AGENT_V3_CITATION_SELECTION.md) constrains all
+four citation arrays to IDs already supplied at each request. Repair choices remain
+within the original citations. Sixteen regression trials passed on the first
+decision, with no repairs or out-of-list IDs. All 72 request schemas were audited;
+semantic checks and the investigation gate remain unchanged. These are reused cases.
+A [second synthetic probe](../docs/OPS_AGENT_V35_SECOND_PROBE.md) froze v3.5 and
+introduced four new primary status/freshness/signal combinations. Both the model and
+runbook passed all eight first-evaluation trials, without repairs. The model's 28
+tool calls were all mandatory; no extra investigation-selection value is claimed.
+
 Phase 1 collection, the Phase 2 deterministic evaluators, the Phase 3
 Evidence-grounded Diagnosis Agent, Phase 4 deterministic recovery, and the
 Phase 5 incident lifecycle are implemented.

@@ -1,0 +1,988 @@
+{
+  "schema_version": "ops.diagnosis.runtime-compact.v1",
+  "classification": "HISTORICAL_RUNTIME_SNAPSHOT_REPLAY_WITH_LIVE_MODEL",
+  "evaluation_date_kst": "2026-10-30",
+  "source_capture_date": "2026-08-16",
+  "current_snapshot_gate": {
+    "schema_version": "ops.diagnosis.runtime-pair.v1",
+    "acquisition_mode": "FROZEN_PROJECTED",
+    "activation_state": "ABSENT",
+    "sequence_evaluation_id": "316740e0723ca24c4f961733857fd3c79ee5af81459de77698c5bd20a553ee04",
+    "source_bundle_digests": [
+      "b99e1dbe67218366c7dc610447216df8c3108350328fcca931e81ede5bfc9c3a",
+      "c17f82dd9182c012e0d9317f65a4d34abe5b22fbe746d742e04f2cc38bd8ecef",
+      "442045d200570a3c344d285845c6af6d8d92e69a9b0797940f33b6e301fead87"
+    ],
+    "adapter_status": "IMPLEMENTED",
+    "model_status": "NOT_RUN",
+    "model": null,
+    "client_request_count": 0,
+    "fixed_runbook_status": "NOT_RUN",
+    "comparison": "NOT_EVALUATED",
+    "causal_truth_verified": false,
+    "freshness_basis": "FROZEN_COLLECTION_TIME",
+    "status": "SKIPPED_NO_ACTIVATION"
+  },
+  "historical_prepare": {
+    "schema_version": "ops.diagnosis.runtime-pair.v1",
+    "acquisition_mode": "FROZEN_PROJECTED",
+    "activation_state": "PRESENT",
+    "sequence_evaluation_id": "9f4bb6e2ee3c623076bdfb15c95a40df1e65bdcbff7fdf564ffa92f511935c32",
+    "source_bundle_digests": [
+      "2932ce28527e1d3dc4b64e4591b717a55eb151e491f6cb9b1ab374b10e9a8a04",
+      "3e87c1ac0315f7f2ebc5ccee3ef3e85f94b2ee40c988bf28a360d9242857fe3d",
+      "250bae2e0dffd94d3263b1f634818409fe64b7e9f6db2ffabfb9ab7fd0012f88",
+      "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921",
+      "2153103f751ecdc33db712d9bcf05285fe815225d657485c02abe7de9214fa06",
+      "3596e484bc1b0827b4d72a03f3dcd32c91813c7d8d0d5939113df9b263f313a1",
+      "4b1b3fb255334599df10315e6582514cf0fc92875eecbb09ef5e147577baedbd",
+      "0accbc9f0ec23d14fee9f5f3314adcf0d0e21a173dc01f26fd1f132357d9970a",
+      "78bf4f20d1fe41501162d0cb6e3c285877d59880b0f2289ea13739a4abdf6236",
+      "c347b25fc353ccaa999f22a60022200c1fbe233604ae9a874946d73de33e41a7",
+      "dfc5003965b1b68d2b007706159fd27cf3cfb01c5556c28cbf6fd13a32ffe5ab",
+      "55f19f4f3862987d44f98942e78858ec0f3cb211e75366ef09e108083c2e0aad",
+      "3d7fa090807cf3e5f3c81d35987e49fbc2b2a7f3ced82404e4b70809fb273e1e",
+      "b8dabc822fd29ee8e81827f2dbf90db4a571f97fb846dcb6703b06812fa2aad7",
+      "e9d1263f414bae27985758854e3aa08cdee728c56434aab21f0538871fdd1472",
+      "63d44b9a4dc0070e431a897da4b4f2dddeb3ba02678565d9c36554baaad366de",
+      "01b5ce3ac9e392c8180177818e19a7850713510c4eb3423b19e35785f0d3399f",
+      "1c1a31097abdbeea025ad50426990f24e146f3f4d9e0c6a07616a3267e7ddfe8",
+      "7ec48b3d5302e249a815867fe5132085b989ab185b72fbc9f06819c2fd4b6644",
+      "18bd0421528e37d8aa919a0f1a4690b0390e9e793717fca3f74918ff6d67fbac",
+      "8493eb519acd2e116a3a5acac7df9ff34d1cd3eda12eea5f3eb56a18d138276b",
+      "7edd0e0da96259e2cc4765bb2fc2413b3e7589daa13766c7fde31e52a8d18999"
+    ],
+    "adapter_status": "IMPLEMENTED",
+    "model_status": "NOT_RUN",
+    "model": null,
+    "client_request_count": 0,
+    "fixed_runbook_status": "CONTRACT_VALID",
+    "comparison": "NOT_EVALUATED",
+    "causal_truth_verified": false,
+    "freshness_basis": "FROZEN_COLLECTION_TIME",
+    "status": "PREPARED",
+    "projection_bundle_sha256": "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921",
+    "projection_sequence_index": 3,
+    "evidence_gaps": [
+      "RUNTIME_STAGE_BASELINE_UNAVAILABLE"
+    ]
+  },
+  "historical_live": {
+    "schema_version": "ops.diagnosis.runtime-pair.v1",
+    "acquisition_mode": "FROZEN_PROJECTED",
+    "activation_state": "PRESENT",
+    "sequence_evaluation_id": "9f4bb6e2ee3c623076bdfb15c95a40df1e65bdcbff7fdf564ffa92f511935c32",
+    "source_bundle_digests": [
+      "2932ce28527e1d3dc4b64e4591b717a55eb151e491f6cb9b1ab374b10e9a8a04",
+      "3e87c1ac0315f7f2ebc5ccee3ef3e85f94b2ee40c988bf28a360d9242857fe3d",
+      "250bae2e0dffd94d3263b1f634818409fe64b7e9f6db2ffabfb9ab7fd0012f88",
+      "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921",
+      "2153103f751ecdc33db712d9bcf05285fe815225d657485c02abe7de9214fa06",
+      "3596e484bc1b0827b4d72a03f3dcd32c91813c7d8d0d5939113df9b263f313a1",
+      "4b1b3fb255334599df10315e6582514cf0fc92875eecbb09ef5e147577baedbd",
+      "0accbc9f0ec23d14fee9f5f3314adcf0d0e21a173dc01f26fd1f132357d9970a",
+      "78bf4f20d1fe41501162d0cb6e3c285877d59880b0f2289ea13739a4abdf6236",
+      "c347b25fc353ccaa999f22a60022200c1fbe233604ae9a874946d73de33e41a7",
+      "dfc5003965b1b68d2b007706159fd27cf3cfb01c5556c28cbf6fd13a32ffe5ab",
+      "55f19f4f3862987d44f98942e78858ec0f3cb211e75366ef09e108083c2e0aad",
+      "3d7fa090807cf3e5f3c81d35987e49fbc2b2a7f3ced82404e4b70809fb273e1e",
+      "b8dabc822fd29ee8e81827f2dbf90db4a571f97fb846dcb6703b06812fa2aad7",
+      "e9d1263f414bae27985758854e3aa08cdee728c56434aab21f0538871fdd1472",
+      "63d44b9a4dc0070e431a897da4b4f2dddeb3ba02678565d9c36554baaad366de",
+      "01b5ce3ac9e392c8180177818e19a7850713510c4eb3423b19e35785f0d3399f",
+      "1c1a31097abdbeea025ad50426990f24e146f3f4d9e0c6a07616a3267e7ddfe8",
+      "7ec48b3d5302e249a815867fe5132085b989ab185b72fbc9f06819c2fd4b6644",
+      "18bd0421528e37d8aa919a0f1a4690b0390e9e793717fca3f74918ff6d67fbac",
+      "8493eb519acd2e116a3a5acac7df9ff34d1cd3eda12eea5f3eb56a18d138276b",
+      "7edd0e0da96259e2cc4765bb2fc2413b3e7589daa13766c7fde31e52a8d18999"
+    ],
+    "adapter_status": "IMPLEMENTED",
+    "model_status": "CONTRACT_VALID",
+    "model": "gpt-5.6-luna",
+    "client_request_count": 4,
+    "fixed_runbook_status": "CONTRACT_VALID",
+    "comparison": {
+      "model": {
+        "observations": [],
+        "supported_candidates": [],
+        "conclusion": "ABSTAIN"
+      },
+      "fixed_runbook": {
+        "observations": [],
+        "supported_candidates": [],
+        "conclusion": "ABSTAIN"
+      },
+      "interpretation": "AGREEMENT_ONLY"
+    },
+    "causal_truth_verified": false,
+    "freshness_basis": "FROZEN_COLLECTION_TIME",
+    "status": "COMPLETED",
+    "projection_bundle_sha256": "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921",
+    "projection_sequence_index": 3,
+    "evidence_gaps": [
+      "RUNTIME_STAGE_BASELINE_UNAVAILABLE"
+    ],
+    "execution_mode": "LIVE_API",
+    "first_pass_contract": true,
+    "repair_used": 0
+  },
+  "model_run": {
+    "schema_version": "ops.diagnosis.runtime-run.v1",
+    "acquisition_mode": "FROZEN_PROJECTED",
+    "adapter_version": "ops.diagnosis.runtime-projection.v1",
+    "activation_sha256": "6d1531fd771b57cb9ae12650a59cf4c59d3cc42d43298ce64bca94ed1cd15473",
+    "execution_identity": {
+      "version": "ops.diagnosis.execution.v3.5",
+      "sha256": "313574caeb90c8ffe4ecd1b682b11f7368b4540e89428a59269e7bf329ebeae1"
+    },
+    "acquired_evidence": [
+      {
+        "evidence_id": "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+        "tool_id": "get_worker_stage_latency",
+        "status": "OK",
+        "observed_at": "2026-08-16T03:24:58.846095Z",
+        "freshness": {
+          "status": "FRESH",
+          "oldest_source_timestamp": "2026-08-16T03:24:53.160000Z",
+          "newest_source_timestamp": "2026-08-16T03:24:53.160000Z",
+          "max_age_seconds": null
+        },
+        "semantic_type": "normalized_get_worker_stage_latency_observation",
+        "summary": {
+          "context": {
+            "status": "OK",
+            "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+            "observation_count_delta": 1273,
+            "sum_seconds_delta": 19.18417258100021,
+            "mean_seconds": 0.015070049160251541,
+            "p95_finite_bucket_upper_bound_seconds": 0.1,
+            "count_series": 2,
+            "sum_series": 2,
+            "counter_decrease": false,
+            "source_timestamps": [
+              "2026-08-16T03:24:53.160000+00:00"
+            ],
+            "matching_evidence_items": 60,
+            "evidence_status_counts": {
+              "OK": 60
+            },
+            "freshness_status_counts": {
+              "FRESH": 60
+            }
+          },
+          "semantic_flag": "RUNTIME_STAGE_BASELINE_UNAVAILABLE",
+          "baseline_status": "UNAVAILABLE",
+          "commit_latency": "UNAVAILABLE",
+          "evidence_gap": "RUNTIME_STAGE_BASELINE_UNAVAILABLE",
+          "projection_sequence_index": 3,
+          "freshness_basis": "FROZEN_COLLECTION_TIME",
+          "adapter_version": "ops.diagnosis.runtime-projection.v1"
+        },
+        "provenance": {
+          "acquisition_mode": "FROZEN_PROJECTED",
+          "source_bundle_digests": [
+            "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+          ],
+          "source_evidence_ids": [
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.0c63e180dbfc",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.14f2ad100e75",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.19289e290156",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.1c681c69c1f4",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.1d25fc483f7d",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.22878cfd93b7",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.22e0ff8ccf32",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.284deaefa591",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3152d0009df3",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3354db76003a",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3b603b80f9df",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3ba284304a10",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3d851c71f8aa",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.3ebd2d724504",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.4955370a1585",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.51625613c1e3",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.525e1ff1d73e",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.52ea0f9454b7",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.548151b44c19",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.55d3332d77a8",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.57d31115ebd5",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.5fc632b2e2f5",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.6182b6b5196c",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.67eb28e46453",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.68a11ca4221e",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.6a187d0375c1",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.6a56ac616b1e",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.7209bea41ae7",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.7523efa368e3",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.78229ebc73be",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.78a09257c917",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.79a345a38f3c",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.7ec5b24580a9",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.7ec65af8f031",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.87a05a29f7bd",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.883c5c412910",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.892a14d9a5a2",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.ac60d5c91a35",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.af162a120bd6",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.b77fb2aefa49",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.b8bf612f4ca0",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.bc1d586c0389",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.c3c150245722",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.c3d21b726280",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.c3e18a5d2d25",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.c88bc8b39475",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.d6284a9b6301",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.dab9d8a35553",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.dba0c5c37219",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.de96b93c4341",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.e09c5bb80cb5",
+            "prometheus.messaging_worker_stage_latency_seconds_bucket.fa0678a291ef",
+            "prometheus.messaging_worker_stage_latency_seconds_count.517860baefee",
+            "prometheus.messaging_worker_stage_latency_seconds_count.6181301351bc",
+            "prometheus.messaging_worker_stage_latency_seconds_count.82412b6fdd96",
+            "prometheus.messaging_worker_stage_latency_seconds_count.ee398fcdd261",
+            "prometheus.messaging_worker_stage_latency_seconds_sum.2d41b83247a6",
+            "prometheus.messaging_worker_stage_latency_seconds_sum.533ce6b9b6c5",
+            "prometheus.messaging_worker_stage_latency_seconds_sum.5d5f5b3bbe67",
+            "prometheus.messaging_worker_stage_latency_seconds_sum.b8a052498d6c"
+          ]
+        },
+        "error_code": null
+      },
+      {
+        "evidence_id": "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+        "tool_id": "get_postgres_health",
+        "status": "OK",
+        "observed_at": "2026-08-16T03:24:58.846095Z",
+        "freshness": {
+          "status": "FRESH",
+          "oldest_source_timestamp": "2026-08-16T03:24:57.883998Z",
+          "newest_source_timestamp": "2026-08-16T03:24:57.883998Z",
+          "max_age_seconds": null
+        },
+        "semantic_type": "normalized_get_postgres_health_observation",
+        "summary": {
+          "facts": {
+            "observed": {
+              "ha_mode": true,
+              "primary_reachable": true,
+              "standby_count": 2,
+              "sync_standby_count": 2,
+              "max_replication_delay_bytes": 0
+            },
+            "readiness_status": "ready",
+            "readiness_reasons": [],
+            "local_ha_guardrails": {
+              "ha_mode_required": true,
+              "min_ready_standbys": 2,
+              "min_sync_standbys": 1,
+              "max_replication_delay_bytes": 1048576
+            }
+          },
+          "condition_state": "ABSENT",
+          "reason_codes": [
+            "NO_POSTGRES_DEGRADATION_REASON"
+          ],
+          "semantic_flag": "POSTGRES_PATH_HEALTHY",
+          "projection_sequence_index": 3,
+          "freshness_basis": "FROZEN_COLLECTION_TIME",
+          "adapter_version": "ops.diagnosis.runtime-projection.v1"
+        },
+        "provenance": {
+          "acquisition_mode": "FROZEN_PROJECTED",
+          "source_bundle_digests": [
+            "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+          ],
+          "source_evidence_ids": [
+            "application.application_postgres_runtime_observation.5356beb4e470",
+            "application.application_readiness_observation.f8594cc0592b"
+          ]
+        },
+        "error_code": null
+      },
+      {
+        "evidence_id": "diagnosis.get_worker_replica_status.4ecd68af5f07a2af98e76325",
+        "tool_id": "get_worker_replica_status",
+        "status": "OK",
+        "observed_at": "2026-08-16T03:24:58.846095Z",
+        "freshness": {
+          "status": "FRESH",
+          "oldest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+          "newest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+          "max_age_seconds": null
+        },
+        "semantic_type": "normalized_get_worker_replica_status_observation",
+        "summary": {
+          "facts": {
+            "generation": 329,
+            "observed_generation": 329,
+            "desired_replicas": 4,
+            "current_replicas": 4,
+            "available_replicas": 4,
+            "unavailable_grace_seconds": 120
+          },
+          "condition_state": "ABSENT",
+          "reason_codes": [
+            "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+          ],
+          "semantic_flag": "WORKER_CAPACITY_AVAILABLE",
+          "desired_replicas": 4,
+          "available_replicas": 4,
+          "grace_proven": false,
+          "projection_sequence_index": 3,
+          "freshness_basis": "FROZEN_COLLECTION_TIME",
+          "adapter_version": "ops.diagnosis.runtime-projection.v1"
+        },
+        "provenance": {
+          "acquisition_mode": "FROZEN_PROJECTED",
+          "source_bundle_digests": [
+            "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+          ],
+          "source_evidence_ids": [
+            "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+          ]
+        },
+        "error_code": null
+      }
+    ],
+    "tool_calls": [
+      "get_worker_stage_latency",
+      "get_postgres_health",
+      "get_worker_replica_status"
+    ],
+    "decisions": [
+      {
+        "raw": {
+          "schema_version": "ops.diagnosis.decision.v3",
+          "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+          "observations": [],
+          "hypotheses": [],
+          "context_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+            "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+            "diagnosis.get_worker_replica_status.4ecd68af5f07a2af98e76325",
+            "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+            "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+            "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+            "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+            "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+            "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+            "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+            "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+            "prometheus.kafka_consumergroup_lag.74f886940446",
+            "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+            "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+            "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+            "prometheus.kafka_consumergroup_lag.f87e00287552",
+            "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+            "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+            "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+            "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+            "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+            "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+            "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+            "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+          ],
+          "investigation_gaps": [
+            "Worker stage baseline is unavailable, so WORKER_STAGE_ELEVATED cannot be established.",
+            "Fresh replica status reports all desired replicas available and PostgreSQL guardrails are healthy; no directly supported causal\u5019",
+            "Other causal telemetry needed to discriminate hot key, poison record retry, sequence contention, or consumer rebalance causes is",
+            "unavailable."
+          ],
+          "conclusion": "ABSTAIN"
+        },
+        "contract_pass": true,
+        "failure_code": null
+      }
+    ],
+    "first_pass_contract": true,
+    "repair_used": 0,
+    "repair_scope_audit": null,
+    "investigation_audit": [
+      {
+        "turn": 1,
+        "pending_tools": [
+          "get_worker_stage_latency",
+          "get_postgres_health",
+          "get_worker_replica_status"
+        ],
+        "offered_tools": [
+          "get_worker_stage_latency",
+          "get_postgres_health",
+          "get_worker_replica_status"
+        ],
+        "tool_choice": "required"
+      },
+      {
+        "turn": 2,
+        "pending_tools": [
+          "get_postgres_health",
+          "get_worker_replica_status"
+        ],
+        "offered_tools": [
+          "get_postgres_health",
+          "get_worker_replica_status"
+        ],
+        "tool_choice": "required"
+      },
+      {
+        "turn": 3,
+        "pending_tools": [
+          "get_worker_replica_status"
+        ],
+        "offered_tools": [
+          "get_worker_replica_status"
+        ],
+        "tool_choice": "required"
+      },
+      {
+        "turn": 4,
+        "pending_tools": [],
+        "offered_tools": [
+          "get_keda_status"
+        ],
+        "tool_choice": "auto"
+      }
+    ],
+    "citation_selection_audit": [
+      {
+        "turn": 1,
+        "repair": false,
+        "allowed_evidence_ids": [
+          "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+          "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+          "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+          "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+          "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+          "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+          "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+          "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "prometheus.kafka_consumergroup_lag.74f886940446",
+          "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+          "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+          "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+          "prometheus.kafka_consumergroup_lag.f87e00287552",
+          "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+          "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+          "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+          "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+          "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+          "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+          "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+          "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+        ],
+        "schema_sha256": "fbd32466b8ca27e984e6be81cf001de1a0a3c7b4323b88c426f534040e9b1277"
+      },
+      {
+        "turn": 2,
+        "repair": false,
+        "allowed_evidence_ids": [
+          "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+          "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+          "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+          "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+          "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+          "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+          "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+          "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+          "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "prometheus.kafka_consumergroup_lag.74f886940446",
+          "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+          "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+          "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+          "prometheus.kafka_consumergroup_lag.f87e00287552",
+          "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+          "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+          "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+          "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+          "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+          "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+          "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+          "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+        ],
+        "schema_sha256": "7d4715563da534a7bba954dff0368baf6dad474705ad69dd928b316eab613860"
+      },
+      {
+        "turn": 3,
+        "repair": false,
+        "allowed_evidence_ids": [
+          "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+          "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+          "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+          "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+          "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+          "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+          "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+          "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+          "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+          "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "prometheus.kafka_consumergroup_lag.74f886940446",
+          "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+          "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+          "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+          "prometheus.kafka_consumergroup_lag.f87e00287552",
+          "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+          "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+          "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+          "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+          "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+          "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+          "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+          "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+        ],
+        "schema_sha256": "ccaa8dc4e36ee342db25c1168c41f0fe0fb79b828ad2dcef378b02ecbf82df15"
+      },
+      {
+        "turn": 4,
+        "repair": false,
+        "allowed_evidence_ids": [
+          "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+          "diagnosis.get_worker_replica_status.4ecd68af5f07a2af98e76325",
+          "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+          "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+          "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+          "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+          "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+          "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+          "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+          "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+          "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "prometheus.kafka_consumergroup_lag.74f886940446",
+          "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+          "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+          "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+          "prometheus.kafka_consumergroup_lag.f87e00287552",
+          "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+          "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+          "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+          "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+          "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+          "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+          "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+          "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+        ],
+        "schema_sha256": "64020c48516ade44c13c1c549e18ad8ec407c0c3851af56c25c5b1cd6c304509"
+      }
+    ],
+    "contract_pass": true,
+    "decision": {
+      "schema_version": "ops.diagnosis.decision.v3",
+      "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+      "observations": [],
+      "hypotheses": [],
+      "context_evidence_ids": [
+        "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+        "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+        "diagnosis.get_worker_replica_status.4ecd68af5f07a2af98e76325",
+        "prometheus.kafka_consumergroup_current_offset.0ed6a8a7236a",
+        "prometheus.kafka_consumergroup_current_offset.48771d947bee",
+        "prometheus.kafka_consumergroup_current_offset.58f0f78354f4",
+        "prometheus.kafka_consumergroup_current_offset.7f0f4f7ea4ed",
+        "prometheus.kafka_consumergroup_current_offset.8a2b83eaa3d4",
+        "prometheus.kafka_consumergroup_current_offset.8e4605b24000",
+        "prometheus.kafka_consumergroup_current_offset.b6385eb9f572",
+        "prometheus.kafka_consumergroup_current_offset.df583ae85a83",
+        "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+        "prometheus.kafka_consumergroup_lag.47658d42fc91",
+        "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+        "prometheus.kafka_consumergroup_lag.74f886940446",
+        "prometheus.kafka_consumergroup_lag.851c5226b6a7",
+        "prometheus.kafka_consumergroup_lag.bb0e62b0f003",
+        "prometheus.kafka_consumergroup_lag.df56ebf99b28",
+        "prometheus.kafka_consumergroup_lag.f87e00287552",
+        "prometheus.kafka_topic_partition_current_offset.08a9f63e7999",
+        "prometheus.kafka_topic_partition_current_offset.20f0f3d66ebb",
+        "prometheus.kafka_topic_partition_current_offset.2c855da5e26c",
+        "prometheus.kafka_topic_partition_current_offset.478fa770ffa8",
+        "prometheus.kafka_topic_partition_current_offset.5e718e3a267b",
+        "prometheus.kafka_topic_partition_current_offset.6277eda5b80b",
+        "prometheus.kafka_topic_partition_current_offset.be76c0c3a8f2",
+        "prometheus.kafka_topic_partition_current_offset.d73e6bf02886"
+      ],
+      "investigation_gaps": [
+        "Worker stage baseline is unavailable, so WORKER_STAGE_ELEVATED cannot be established.",
+        "Fresh replica status reports all desired replicas available and PostgreSQL guardrails are healthy; no directly supported causal\u5019",
+        "Other causal telemetry needed to discriminate hot key, poison record retry, sequence contention, or consumer rebalance causes is",
+        "unavailable."
+      ],
+      "conclusion": "ABSTAIN"
+    },
+    "failure_code": null
+  },
+  "frozen_projection": [
+    {
+      "evidence_id": "diagnosis.get_worker_stage_latency.35876816e7b1d333f4d7bd92",
+      "tool_id": "get_worker_stage_latency",
+      "status": "OK",
+      "observed_at": "2026-08-16T03:24:58.846095Z",
+      "freshness": {
+        "status": "FRESH",
+        "oldest_source_timestamp": "2026-08-16T03:24:53.160000Z",
+        "newest_source_timestamp": "2026-08-16T03:24:53.160000Z",
+        "max_age_seconds": null
+      },
+      "semantic_type": "normalized_get_worker_stage_latency_observation",
+      "summary": {
+        "context": {
+          "status": "OK",
+          "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+          "observation_count_delta": 1273,
+          "sum_seconds_delta": 19.18417258100021,
+          "mean_seconds": 0.015070049160251541,
+          "p95_finite_bucket_upper_bound_seconds": 0.1,
+          "count_series": 2,
+          "sum_series": 2,
+          "counter_decrease": false,
+          "source_timestamps": [
+            "2026-08-16T03:24:53.160000+00:00"
+          ],
+          "matching_evidence_items": 60,
+          "evidence_status_counts": {
+            "OK": 60
+          },
+          "freshness_status_counts": {
+            "FRESH": 60
+          }
+        },
+        "semantic_flag": "RUNTIME_STAGE_BASELINE_UNAVAILABLE",
+        "baseline_status": "UNAVAILABLE",
+        "commit_latency": "UNAVAILABLE",
+        "evidence_gap": "RUNTIME_STAGE_BASELINE_UNAVAILABLE",
+        "projection_sequence_index": 3,
+        "freshness_basis": "FROZEN_COLLECTION_TIME",
+        "adapter_version": "ops.diagnosis.runtime-projection.v1"
+      },
+      "provenance": {
+        "acquisition_mode": "FROZEN_PROJECTED",
+        "source_bundle_digests": [
+          "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+        ],
+        "source_evidence_ids": [
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.0c63e180dbfc",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.14f2ad100e75",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.19289e290156",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.1c681c69c1f4",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.1d25fc483f7d",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.22878cfd93b7",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.22e0ff8ccf32",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.284deaefa591",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3152d0009df3",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3354db76003a",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3b603b80f9df",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3ba284304a10",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3d851c71f8aa",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.3ebd2d724504",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.4955370a1585",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.51625613c1e3",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.525e1ff1d73e",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.52ea0f9454b7",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.548151b44c19",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.55d3332d77a8",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.57d31115ebd5",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.5fc632b2e2f5",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.6182b6b5196c",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.67eb28e46453",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.68a11ca4221e",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.6a187d0375c1",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.6a56ac616b1e",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.7209bea41ae7",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.7523efa368e3",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.78229ebc73be",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.78a09257c917",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.79a345a38f3c",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.7ec5b24580a9",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.7ec65af8f031",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.87a05a29f7bd",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.883c5c412910",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.892a14d9a5a2",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.ac60d5c91a35",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.af162a120bd6",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.b77fb2aefa49",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.b8bf612f4ca0",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.bc1d586c0389",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.c3c150245722",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.c3d21b726280",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.c3e18a5d2d25",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.c88bc8b39475",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.d6284a9b6301",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.dab9d8a35553",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.dba0c5c37219",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.de96b93c4341",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.e09c5bb80cb5",
+          "prometheus.messaging_worker_stage_latency_seconds_bucket.fa0678a291ef",
+          "prometheus.messaging_worker_stage_latency_seconds_count.517860baefee",
+          "prometheus.messaging_worker_stage_latency_seconds_count.6181301351bc",
+          "prometheus.messaging_worker_stage_latency_seconds_count.82412b6fdd96",
+          "prometheus.messaging_worker_stage_latency_seconds_count.ee398fcdd261",
+          "prometheus.messaging_worker_stage_latency_seconds_sum.2d41b83247a6",
+          "prometheus.messaging_worker_stage_latency_seconds_sum.533ce6b9b6c5",
+          "prometheus.messaging_worker_stage_latency_seconds_sum.5d5f5b3bbe67",
+          "prometheus.messaging_worker_stage_latency_seconds_sum.b8a052498d6c"
+        ]
+      },
+      "error_code": null
+    },
+    {
+      "evidence_id": "diagnosis.get_postgres_health.c9134da27335c204106d85a8",
+      "tool_id": "get_postgres_health",
+      "status": "OK",
+      "observed_at": "2026-08-16T03:24:58.846095Z",
+      "freshness": {
+        "status": "FRESH",
+        "oldest_source_timestamp": "2026-08-16T03:24:57.883998Z",
+        "newest_source_timestamp": "2026-08-16T03:24:57.883998Z",
+        "max_age_seconds": null
+      },
+      "semantic_type": "normalized_get_postgres_health_observation",
+      "summary": {
+        "facts": {
+          "observed": {
+            "ha_mode": true,
+            "primary_reachable": true,
+            "standby_count": 2,
+            "sync_standby_count": 2,
+            "max_replication_delay_bytes": 0
+          },
+          "readiness_status": "ready",
+          "readiness_reasons": [],
+          "local_ha_guardrails": {
+            "ha_mode_required": true,
+            "min_ready_standbys": 2,
+            "min_sync_standbys": 1,
+            "max_replication_delay_bytes": 1048576
+          }
+        },
+        "condition_state": "ABSENT",
+        "reason_codes": [
+          "NO_POSTGRES_DEGRADATION_REASON"
+        ],
+        "semantic_flag": "POSTGRES_PATH_HEALTHY",
+        "projection_sequence_index": 3,
+        "freshness_basis": "FROZEN_COLLECTION_TIME",
+        "adapter_version": "ops.diagnosis.runtime-projection.v1"
+      },
+      "provenance": {
+        "acquisition_mode": "FROZEN_PROJECTED",
+        "source_bundle_digests": [
+          "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+        ],
+        "source_evidence_ids": [
+          "application.application_postgres_runtime_observation.5356beb4e470",
+          "application.application_readiness_observation.f8594cc0592b"
+        ]
+      },
+      "error_code": null
+    },
+    {
+      "evidence_id": "diagnosis.get_worker_replica_status.4ecd68af5f07a2af98e76325",
+      "tool_id": "get_worker_replica_status",
+      "status": "OK",
+      "observed_at": "2026-08-16T03:24:58.846095Z",
+      "freshness": {
+        "status": "FRESH",
+        "oldest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+        "newest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+        "max_age_seconds": null
+      },
+      "semantic_type": "normalized_get_worker_replica_status_observation",
+      "summary": {
+        "facts": {
+          "generation": 329,
+          "observed_generation": 329,
+          "desired_replicas": 4,
+          "current_replicas": 4,
+          "available_replicas": 4,
+          "unavailable_grace_seconds": 120
+        },
+        "condition_state": "ABSENT",
+        "reason_codes": [
+          "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+        ],
+        "semantic_flag": "WORKER_CAPACITY_AVAILABLE",
+        "desired_replicas": 4,
+        "available_replicas": 4,
+        "grace_proven": false,
+        "projection_sequence_index": 3,
+        "freshness_basis": "FROZEN_COLLECTION_TIME",
+        "adapter_version": "ops.diagnosis.runtime-projection.v1"
+      },
+      "provenance": {
+        "acquisition_mode": "FROZEN_PROJECTED",
+        "source_bundle_digests": [
+          "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+        ],
+        "source_evidence_ids": [
+          "kubernetes.kubernetes_worker_deployment_observation.44c4f5a0f769"
+        ]
+      },
+      "error_code": null
+    },
+    {
+      "evidence_id": "diagnosis.get_keda_status.1f686cc32d20b831b03e718f",
+      "tool_id": "get_keda_status",
+      "status": "OK",
+      "observed_at": "2026-08-16T03:24:58.846095Z",
+      "freshness": {
+        "status": "FRESH",
+        "oldest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+        "newest_source_timestamp": "2026-08-16T03:24:58.145473Z",
+        "max_age_seconds": null
+      },
+      "semantic_type": "normalized_get_keda_status_observation",
+      "summary": {
+        "context": {
+          "scale_target_name": "worker",
+          "min_replicas": 2,
+          "max_replicas": 4,
+          "polling_interval_seconds": 5,
+          "cooldown_period_seconds": 120,
+          "conditions": {
+            "Ready": "True",
+            "Active": "True",
+            "Fallback": "False",
+            "Paused": "False"
+          }
+        },
+        "projection_sequence_index": 3,
+        "freshness_basis": "FROZEN_COLLECTION_TIME",
+        "adapter_version": "ops.diagnosis.runtime-projection.v1"
+      },
+      "provenance": {
+        "acquisition_mode": "FROZEN_PROJECTED",
+        "source_bundle_digests": [
+          "16904fff21d714855a705383dcc41b4b780804a512e2df1b796ec4dbb4ddf921"
+        ],
+        "source_evidence_ids": [
+          "kubernetes.kubernetes_worker_scaled_object_observation.15913a9b7b2f"
+        ]
+      },
+      "error_code": null
+    }
+  ],
+  "usage": {
+    "input_tokens": 20953,
+    "output_tokens": 846,
+    "requests": 4
+  },
+  "verification": {
+    "canonical_source_replay": true,
+    "canonical_acquired_evidence": true,
+    "request_schemas_and_citation_audits": 4,
+    "v35_frozen_sources_unchanged": true,
+    "runtime_plan_source_hashes_match": true
+  },
+  "manual_review": {
+    "category": "GAP_EXPLANATION_TEXT_DEGRADED",
+    "details": "A causal-discriminator gap ends with an unexpected CJK character and another sentence is fragmented across entries. Raw model output preserved; not repaired by the contract validator.",
+    "accuracy_score": "NOT_EVALUATED"
+  },
+  "source_directory": "results/ops-agent/shadow/20261030-runtime-adapter-historical-live",
+  "source_file_sha256": {
+    "ops_agent/__init__.py": "e32a23426fefc2c508be7c83e3d62c86277d00f92af77bc151eeb105de4049d1",
+    "ops_agent/__main__.py": "d3688b8ff4a2f0e2fd88a510daf200fa42a33a88fb7721fe59fc8c867b7f6afe",
+    "ops_agent/artifacts.py": "79bf96cd9053973772b54ad366b4af387e950abe9491a456762925573737c9c5",
+    "ops_agent/calibration.py": "1f09dce1eb0623e2e4e9aa9f90cf4f1975d02b4318fc090dc77768bd084da885",
+    "ops_agent/citation_selection_v3.py": "eb98e41a58a545e268812a3708f56ceb8a12a038164e30b1468aad22a3f22de8",
+    "ops_agent/cli.py": "7dd934e644b0d206357390a3bced2a8d5877b53ebfce322f1cdb9a19dd2f8786",
+    "ops_agent/controller.py": "255031aff14af9fc793fdaa64c3fde9f63283181ce837f454d00c7192ec52f4f",
+    "ops_agent/diagnosis_agent.py": "a58e18bb9420e9b716003c6222ffb549825f64012bff2d0eb41251931d241986",
+    "ops_agent/diagnosis_evals.py": "6dfb45ac74eca0455aa4a3e5affaf24b7182e6b384df543f77eb13aeefaed2c0",
+    "ops_agent/diagnosis_models.py": "c1b26163f75eff2b39aa2d61b7c759086edacfe28cafb39d1fc5aa763f4c09d6",
+    "ops_agent/diagnosis_quality.py": "b39a601592214fb26879463ae7682b023098fe2a78c1b22bf354abc8f480388e",
+    "ops_agent/diagnosis_quality_v3.py": "8723b56813c75fe8e0d3b36fdb4fad3ea63bdd2b10f32f6855b1764e744b5a8c",
+    "ops_agent/diagnosis_repair_v3.py": "34a2acb8c8d67d6e0dd8d07851505e50050db6266fe102d3805abe3034506e04",
+    "ops_agent/diagnosis_review.py": "9bbbe87b48c2401ed70300b42aaecbe910599c1b405cdaea19bf295bf004d7d9",
+    "ops_agent/diagnosis_scenarios.py": "8bfb4c387be2d9724af68540b85752292b810a8054f754ccea1aeaccebbeba5b",
+    "ops_agent/diagnosis_tools.py": "160c6ff2cd796bf0fd6c4f612840f1ea0dce2bb668a9a007ce5ef1774d119aff",
+    "ops_agent/diagnosis_v2_models.py": "3bbd9129c738019f023694cfa9c4778d34ec0317670ca0e07890277d6aba2443",
+    "ops_agent/diagnosis_v2_validator.py": "7d3676a4ec52669e86542e329d23d6bfca11f3f28e6cf4dd71c1661919851b52",
+    "ops_agent/diagnosis_v3_contract.py": "8ca4f985bb3db2c3db4ef68718ed89f527506490068183fa1856d33199c978dc",
+    "ops_agent/diagnosis_v3_models.py": "afc356ec28e9d5136832eb61772fd4d8676690280a003f9f28015476d1773650",
+    "ops_agent/diagnosis_v3_validator.py": "0171fc8eb0ec28396b7fce4be1718ceace59c87a5d8c2c813e3b18605392a534",
+    "ops_agent/diagnosis_validator.py": "1b127cd4dd0eb0217d76a54f8a11d300225ce8dc1f41fc6f27cfbd1294aad025",
+    "ops_agent/endpoint_provenance.py": "b0a5b469d4c9aa6c9072ca2f8bdea5530687250f92aa80da9f2b22e5cc9f0ee4",
+    "ops_agent/evaluation_models.py": "f5cb2ca8cd6c3023d57fa2039f157cfbb9531cc8a6ad943cc45592467994c64b",
+    "ops_agent/evaluator.py": "8b922874df25ee43f442c18ded9030162071b59ea639adfc2596c0f23334527f",
+    "ops_agent/fixed_runbook.py": "9d3c6d969c4459c67ccc6bd2d3505a852f1ca822e8204e1e52030a5779641f6d",
+    "ops_agent/incident_lifecycle.py": "ad031405fcd0e0c5aae7ceaeb3a5657b8cb7d52dfe866bd3592dad846ab11db9",
+    "ops_agent/incident_models.py": "ffc079938fc7fef56a501c8bdb36c72119175faa487ef84d9f4702d631597e48",
+    "ops_agent/investigation_gate_v3.py": "66818b7b6f9baf5aeb8e7c9ffd4a79a6126137183381ee3a1f83b03f79f60988",
+    "ops_agent/models.py": "2eb6907924cbacca8a063811327d553bb8f906a826d769cc3963c23cda1965e8",
+    "ops_agent/observation.py": "8eb02be0271ea4f47820fea1ff0cd5dce1a93e096fa58c64d460d595aef5c7e7",
+    "ops_agent/recovered_calibration.py": "923879fb263d98317ebca3103a73eed043b94cbb29cdb7f484ff6cd5000cfa9b",
+    "ops_agent/recovery_calibration.py": "b8a4e7dd71178efcfd9b32f4de707b48b94b792dc4cc46ff5d80a8890eca3d48",
+    "ops_agent/recovery_evaluator.py": "fe1cedc884e26d4910f03657ea70cf47a3b8962bf8ceebd64e58fca012eab581",
+    "ops_agent/recovery_models.py": "eb99a67ace3bd2c0d656bcc1ce6873d581745e82e53869640722996a519c3088",
+    "ops_agent/runtime_agent_v3.py": "ee2dfb0952cd7e797e7f57c67d57014cb9fb42df37276bdd778154320ca61651",
+    "ops_agent/runtime_evidence_v3.py": "19c10336d37aafc8adc02bb785abb85e5fe8594d9cd53d21f02d7ed5e643fd09",
+    "ops_agent/scenario_agent.py": "af2e49753cb49f8d06326f180d7817539319cf6a0cde4d42697e2ce6ea4cbf9e",
+    "ops_agent/scenario_agent_v3.py": "41664a8fa69565a0a46bc104bfe2dc39e02ebaee40f5e0af1e0cc8bc95b924b2",
+    "ops_agent/scenario_contract.py": "981cf69d7a9efe171fe01cf19e3fc76c66c58ff85c70adfe73d0e7ac049d44ad",
+    "ops_agent/sequence_evaluator.py": "a61cbb3d91a625c2433f02f0150530ccfdf5e03ddd4ff1596aa7f6672ac42295",
+    "ops_agent/sequence_models.py": "bbda1b616fe14002b9ec618e74bbc9a66b23c8900a316188d56741b65c83e9e5",
+    "scripts/run_runtime_diagnosis_v3.py": "d9146cc5404b61a1826e542f5aa5bd650e62a53d02240498a9a0b3d502c928ad"
+  },
+  "artifact_sha256": {
+    "activation.json": "c411d28665ca19bd9d524d7eb97aa763752e5d5c4e37d93cf0647dc47cc01e34",
+    "bundles/sample-001.json": "b22057710971381c0ceb06dd627a1bc04b3622ab4b96c6677b91e43bb7eeb8e1",
+    "bundles/sample-002.json": "e651f001eff5026036b4d6e8105e31d76688ebac1a1a62d2b7ad1a37d2c71b1f",
+    "bundles/sample-003.json": "1759a34901f3a2dfa54e5323f78f6f76232284a6d5839c3c2f2cea3fffd7bf23",
+    "bundles/sample-004.json": "42b5acbf58984929867287d7a8bbf8e536ea7f817fcf4a13258b38a4ed838154",
+    "bundles/sample-005.json": "6d6d11e2e3416c07175645e10539004dd5df300443fcae13e7312c58363c540e",
+    "bundles/sample-006.json": "a0e5f88cfd1471d279884505246cab658ec17c0a59f56c6bc08ab01485918136",
+    "bundles/sample-007.json": "132583a9ab26715f0e013d78bd6e6e87367e9aba426510ea35c57c50ca0328db",
+    "bundles/sample-008.json": "c0a027c516610b93598d4afd3352fe9bd1af800bcc4d2138183c003f3e26f8b1",
+    "bundles/sample-009.json": "529e24403ed768091483573c6c878842e09b047397715e1de18b256602c13023",
+    "bundles/sample-010.json": "62e7e89d811d2a3256d2e5cb5b15092882e4545d1eb5e58e3c5a730b82d81126",
+    "bundles/sample-011.json": "bafd61b381ef36ef6311dedb28eda6829e36979b9678a1424747fbbe6370aa7c",
+    "bundles/sample-012.json": "4bac21aeff206624e6d6e2e5e902e7357e2591128216d709b761559e9c137d47",
+    "bundles/sample-013.json": "67a2b22cc20ced47b76a9ab5cb12162d8327cc3df9b95820bf54469ccc99d0ad",
+    "bundles/sample-014.json": "33677b67eb6f69a8753d52ab2946df67c492ba24eaaecb5ac5e5a628c0e6b45d",
+    "bundles/sample-015.json": "09c452d723d4f6c27d8683b1bbbec31cf8f26dfdb7cb890f8eba23a73a19cf1e",
+    "bundles/sample-016.json": "c2343898ee0b6448d0869501e515aa2d691220c43a27960c68c9d757466292df",
+    "bundles/sample-017.json": "4f76f1e7bbcc3413ebe5709ca3db786deb35695ccf36f0eb1b77459cbce167fa",
+    "bundles/sample-018.json": "6fa5ca8d2d3022b28d437aae7394bbe5d2c045fedc251acb3b82b7870778d0ff",
+    "bundles/sample-019.json": "f78228d49bb7dd25b2d2e60ca92bf334b9275c3d346b501b40c313cdda9a489f",
+    "bundles/sample-020.json": "c48efd70c2f337ba23bd1ca2fba5cd43df02edb504fbef86c6eaf5ced26df2e9",
+    "bundles/sample-021.json": "4c09f575f6f6608f134effc8369fa2ed4b0b0bbb2548cd32a56eac76e03a6dc3",
+    "bundles/sample-022.json": "4dd4a538cf3a97167a96492c5c966558436338a449d3f8bb0686012b30b2c80b",
+    "conditions.json": "2fda28ad1c732f70afefe33c584ea43836806ee0345b8d94f1e77750930372bd",
+    "fixed-runbook.json": "13f996b95c2609bb7e880b510b1dc46a75117a55446c806aaa0b45ec74051353",
+    "model-plan.json": "6019b3196ec90929802a24006408bd9c6c379914696efa5c296fb39400ae6db9",
+    "model-run.json": "5c0e45a4d7c21bc719c531dfff0b8a1278a584b4667628d6256b89ebd66a8ef0",
+    "plan.json": "ac5eb8a7a0995ad9b45eb2e455e23228e0bb4f78fcd40b0fa3769d342a5d2ffe",
+    "projection.json": "3bce75e41a5971ff6690edcc1562e882a1f9fcf764affa91cb51d96d448b46ad",
+    "report.json": "c0f490b8f74f4ab287ae808f01ce3442b16459bf3ff5a1b9edb792825e20b7e4",
+    "wire/request-01.json": "6f16a212312c2b474265abb5892a3594b78e49781254b14d59ec1afd4a43e0f5",
+    "wire/request-02.json": "a3edf6509ea361a2c8d20214062ca6b7c7f181b46b3e77db738b209593e86bfc",
+    "wire/request-03.json": "8f44efb49c1f8959055db39635ca7c6c4abe895a1223c220c428d6a0e64cd10d",
+    "wire/request-04.json": "45a122b4f5300fab6e6bcbc37fdbb0a90a9d157e99085ecc6776386643546a52",
+    "wire/response-01.json": "1a2e6af9d0aa07f2ea1d21428df482d8baadd0c8a19a425eb16dae70bec667c4",
+    "wire/response-02.json": "5b1f7018fa4c22f77ab0590a9a03a9f5d5050b6b9814145c00e20c285714db0a",
+    "wire/response-03.json": "ccd6bbcc742b97e29ee1837095e3bd7123da2f124a6ec38d39ba00457dacbd05",
+    "wire/response-04.json": "2dba6922696396f5d3a702bb8e7c3e8a61d62eaa0ead596d03fd2b2da0064d11"
+  },
+  "validation": {
+    "full_suite": "871 passed in 50.38s",
+    "adapter_tests": "21 passed in 5.08s"
+  },
+  "limits": [
+    "One historical snapshot replay; not a current incident or runtime accuracy rate.",
+    "Model/runbook label agreement is not independent causal truth.",
+    "Baseline unavailable; no Worker-stage elevation claim."
+  ]
+}

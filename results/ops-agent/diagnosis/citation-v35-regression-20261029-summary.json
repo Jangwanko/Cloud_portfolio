@@ -1,0 +1,2921 @@
+{
+  "classification": "PAID_FIXED_REGRESSION_NOT_HOLDOUT",
+  "source_directory": "results\\ops-agent\\quality-evaluation\\step13-citation-enum-20261029\\evaluation",
+  "execution_identity": {
+    "version": "ops.diagnosis.execution.v3.5",
+    "sha256": "313574caeb90c8ffe4ecd1b682b11f7368b4540e89428a59269e7bf329ebeae1"
+  },
+  "model": "gpt-5.6-luna",
+  "source_sha256": {
+    "manifest.json": "a5dfbc11dfe0220dfb569da0b9568f2438d739fb65226d352cdcccc2f15ea3c6",
+    "execution-contract.json": "10e2c71faf0a1b6e946cbc2963fd01e8d13f2bd60485c53940ea060acde656b3",
+    "summary.json": "d93406897e9ec93aba8fc8d2ad108526de911a59cf0699e8ba8272c2090991d0",
+    "attempts.json": "c5c5a141d4ab21f6d628d36b9e3e68169dfa10eea8a5586d3d3fa9f77da66232"
+  },
+  "historical_citation_replay_sha256": "b2b5c0df9c2eabe23cff9e6458f691601ebb97adb7ac546a8d29f8da3de7cfc3",
+  "historical_citation_replay": {
+    "classification": "OFFLINE_RECORDED_ID_MEMBERSHIP_CHECK_NOT_NEW_LLM_RESULT",
+    "old_state_sha256": "d3f2922df5177bf923bc78e38ee7349aea8ad6ff4696f37d0dfcbd67763b8b8b",
+    "old_final_score": {
+      "contract_pass": false,
+      "observations_pass": false,
+      "causes_pass": false,
+      "completeness_pass": true,
+      "joint_pass": false,
+      "first_pass_contract": false,
+      "repair_used": 1,
+      "tool_call_count": 3,
+      "failure_code": "V3_REPAIR_REDIAGNOSIS_FORBIDDEN"
+    },
+    "old_score_unchanged": true,
+    "checks": [
+      {
+        "turn_kind": "initial",
+        "allowed_ids": [
+          "diagnosis.get_postgres_health.c73e9fd56f27dcd46e993c8c",
+          "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+          "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "selection_error": "V3_CITATION_SELECTION_OUTSIDE_ENUM"
+      },
+      {
+        "turn_kind": "repair",
+        "allowed_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "selection_error": "V3_CITATION_SELECTION_OUTSIDE_ENUM"
+      }
+    ],
+    "api_requests": 0
+  },
+  "summary": {
+    "schema_version": "ops.diagnosis.repair-regression-summary.v1",
+    "scheduled_attempt_count": 16,
+    "executed_attempt_count": 16,
+    "unrun_attempt_count": 0,
+    "first_pass_contract_pass": 16,
+    "first_pass_joint_pass": 16,
+    "final_contract_pass": 16,
+    "final_joint_pass": 16,
+    "fixed_runbook_joint_pass": 16,
+    "repair_used": 0,
+    "repaired_final_pass": 0,
+    "observation_removal_attempt_count": 0,
+    "api_request_count": 72,
+    "input_tokens": 216590,
+    "output_tokens": 8458,
+    "elapsed_seconds": 190.9357915000037,
+    "usage_coverage_complete": true
+  },
+  "selection_verification": {
+    "api_requests_verified": 72,
+    "json_messages_verified": 16,
+    "outside_selection_ids": 0,
+    "coverage_completed": 16,
+    "mandatory_tool_calls": 54,
+    "optional_tool_calls": 2
+  },
+  "request_selection_audits": [
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "worker-db-path-pressure",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c8283c9dbc8a617ecebd61c61c267562c3ec2cca5cbdc6a8036e9c6322e06926"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a55b1ced3fd2cab661eb437e",
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "5b4c16983fc3f4c4663734bfafeff31d64b5791abb279a3e3255da0689303a9f"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a55b1ced3fd2cab661eb437e",
+            "diagnosis.get_worker_replica_status.01cb532d4038e4c53513601a",
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "231270958bb070fea35c8d91702ee3a670a431632da9d9ab31a846db2ca37a94"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "worker-replica-shortfall",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "87e4c0e905876508515dd550243525b3868734a1eb669dde7b96be72d993c1dc"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "629e8a56bba395e219886953fce9ec1924d47edeff26995079e60b074d484a8e"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "b3cdc8bc1b034689644b5bd2ba54931cc7bce3a862cd0f2417a69bf0ec1161e9"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.20b613c4b6ffa80688b13799",
+            "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "456f9fcd9d11b9f27cf6cceca0e02c758b97f78ed522e95694473a3e1145386b"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "postgres-path-degradation",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "d78293b4ca06ed6c3a95f51485180b0aa33b66cd9f795508b501b4d277f349a8"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53",
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "77ac490d0985805f6226b13dee9def5dfbd114de3b8295b79c82e3e00468a812"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.438cea86974175db5bce7dda",
+            "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53",
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "6baf812226303eb5d57bf1ac5cd63836fc91cf098ff074d032f7496542a7256a"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "telemetry-unavailable",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "479201a9e0f86fee2f110d7f72a10419a424ab71b9035708941f6caad8260756"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+            "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "e6df6c07627b5d223ba9e980a4e07a1c36d0e76a5bfc01e155a3bd79d025d939"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.c73e9fd56f27dcd46e993c8c",
+            "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+            "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "9c9061eaafb44d07c6b4c6820544045e14d1f1d7f8f09a90ac6ad9e81f5afcf7"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "worker-db-path-pressure",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c8283c9dbc8a617ecebd61c61c267562c3ec2cca5cbdc6a8036e9c6322e06926"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.01cb532d4038e4c53513601a",
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "3d5b58fe85820da584490d6b9bdefa54713c6b2d5aa1f5448979974a3aa241e3"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a55b1ced3fd2cab661eb437e",
+            "diagnosis.get_worker_replica_status.01cb532d4038e4c53513601a",
+            "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "231270958bb070fea35c8d91702ee3a670a431632da9d9ab31a846db2ca37a94"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "worker-replica-shortfall",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "87e4c0e905876508515dd550243525b3868734a1eb669dde7b96be72d993c1dc"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "629e8a56bba395e219886953fce9ec1924d47edeff26995079e60b074d484a8e"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "b3cdc8bc1b034689644b5bd2ba54931cc7bce3a862cd0f2417a69bf0ec1161e9"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.20b613c4b6ffa80688b13799",
+            "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+            "diagnosis.get_worker_replica_status.4d013fee816e455743580683",
+            "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "456f9fcd9d11b9f27cf6cceca0e02c758b97f78ed522e95694473a3e1145386b"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "postgres-path-degradation",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "d78293b4ca06ed6c3a95f51485180b0aa33b66cd9f795508b501b4d277f349a8"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.438cea86974175db5bce7dda",
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "43d75f67e52671d8ceb7e19f0b7c3be2ef6366b5b7ce836359423dffdb2c7c1a"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.438cea86974175db5bce7dda",
+            "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53",
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "6baf812226303eb5d57bf1ac5cd63836fc91cf098ff074d032f7496542a7256a"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.d859b16486763c2de12c181a",
+            "diagnosis.get_postgres_health.438cea86974175db5bce7dda",
+            "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53",
+            "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "7d3b4483574f5c655b9c5efd2cdb776f0675c5dcd217b77bea506ef7453b824f"
+        }
+      ]
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "telemetry-unavailable",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_replica_status",
+        "get_worker_stage_latency",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "b51f0f7ccd326cdfc28fbb483fc9ffc107c70b96e15e0337bc8427c81e104ad0"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+            "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "e6df6c07627b5d223ba9e980a4e07a1c36d0e76a5bfc01e155a3bd79d025d939"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.c73e9fd56f27dcd46e993c8c",
+            "diagnosis.get_worker_replica_status.7e1bf29aaf9e4fab2972439c",
+            "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "9c9061eaafb44d07c6b4c6820544045e14d1f1d7f8f09a90ac6ad9e81f5afcf7"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "novel-01",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "d891f53fbe842251659fb5b4002c56a63b6ac043f783d3f42849d7c975b4c6c2"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "715d48cfc62f8ff55a3499354908207e9250d4c69c6a82ba4ad4aa713814763b"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88",
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "0e2185f2311f6044238be2f31764be670165d7d4e08a4b817ff9987d9fbd5bdb"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c",
+            "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88",
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "63821ba40c783448525ab3ef4b105046b82f86b8572ffe0707736ed697d0590c"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "novel-02",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "28cb485af432f1c004487680507568693883cd5c717304d37d40aadbb2296c99"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4",
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "19e1dda0e1cdb9fa7f048469f6701aa5f36e5f6675bce8ae4a7f178eda2ef091"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+            "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4",
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c654a04988ee0dd6581760c205a97f7e70c9e7fcc09b15e420ecbdb93ad2d432"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "novel-03",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "aba5f5e733098e8507d4654250bbf17e658eb02b06131030b23921c8a09039af"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c90df24dee749221fcb6fefe065fbf43a137e848181d97be307cbe967f580d1d"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "5e2fe0e5c175f9ec9dae4af0ce7f3c17ee6d10b33f76d6d0cf39fbb7a527176d"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.58dc6e79ac9be4092654b904",
+            "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "e97636b05684cc4c729beb2b5fe8065b7c4f678bf6757c4b0cb03f8761585601"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "novel-04",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.3d7fc198a7711b27218bd699",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "b90d6afff8d57da936b595a9b9ec320224d04415cc816e28532097696a14f754"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.9c8981bae46140581da1f1b1",
+            "diagnosis.get_worker_stage_latency.3d7fc198a7711b27218bd699",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "7a683260bfb2f8b0f7d7f10a29b895b5a2640084b1f33a20a81b30aab0def4fb"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.e9ee1e6c5a36a459f28307b3",
+            "diagnosis.get_worker_replica_status.9c8981bae46140581da1f1b1",
+            "diagnosis.get_worker_stage_latency.3d7fc198a7711b27218bd699",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "eca65a2a0bc85961cc5ae47bee6d5d82da58a36d2b6884d2f3a48d4b424dd46d"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "novel-01",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_replica_status",
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "3e0ff5701a1036885ce21a624fdd58bf64e260761ba1c647820590c3b36e5de2"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "715d48cfc62f8ff55a3499354908207e9250d4c69c6a82ba4ad4aa713814763b"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88",
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "0e2185f2311f6044238be2f31764be670165d7d4e08a4b817ff9987d9fbd5bdb"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c",
+            "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88",
+            "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3",
+            "diagnosis.get_worker_stage_latency.6f18eb0475ad4d112af585a8",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "63821ba40c783448525ab3ef4b105046b82f86b8572ffe0707736ed697d0590c"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "novel-02",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "28cb485af432f1c004487680507568693883cd5c717304d37d40aadbb2296c99"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "b359c2ef8032b066ccaf223e6d2f7f89f898d4c8cb40bc0317ae2e5f8ee11949"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+            "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4",
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c654a04988ee0dd6581760c205a97f7e70c9e7fcc09b15e420ecbdb93ad2d432"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.8d7fe2eb170689b942817941",
+            "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+            "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4",
+            "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "88b818f59912f212450929283d80a9cdbf8976ab89748eb4d870b7b2332be93a"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "novel-03",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_worker_replica_status",
+        "get_postgres_health",
+        "get_keda_status"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "aba5f5e733098e8507d4654250bbf17e658eb02b06131030b23921c8a09039af"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c90df24dee749221fcb6fefe065fbf43a137e848181d97be307cbe967f580d1d"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "5e2fe0e5c175f9ec9dae4af0ce7f3c17ee6d10b33f76d6d0cf39fbb7a527176d"
+        },
+        {
+          "turn": 5,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_keda_status.58dc6e79ac9be4092654b904",
+            "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+            "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8",
+            "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "e97636b05684cc4c729beb2b5fe8065b7c4f678bf6757c4b0cb03f8761585601"
+        }
+      ]
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "novel-04",
+      "coverage_completed": true,
+      "tool_calls": [
+        "get_worker_replica_status",
+        "get_worker_stage_latency",
+        "get_postgres_health"
+      ],
+      "citation_selection_audit": [
+        {
+          "turn": 1,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "c354f4ebe2fad9cceb00bbbce12a7ee9903192c1cddd2c59d7e098fdfaecdddb"
+        },
+        {
+          "turn": 2,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.9c8981bae46140581da1f1b1",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "9003500e077a2f3d33758f36e324b9503c4e60bac614f53234151bbbd4178260"
+        },
+        {
+          "turn": 3,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_worker_replica_status.9c8981bae46140581da1f1b1",
+            "diagnosis.get_worker_stage_latency.3d7fc198a7711b27218bd699",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "7a683260bfb2f8b0f7d7f10a29b895b5a2640084b1f33a20a81b30aab0def4fb"
+        },
+        {
+          "turn": 4,
+          "repair": false,
+          "allowed_evidence_ids": [
+            "diagnosis.get_postgres_health.e9ee1e6c5a36a459f28307b3",
+            "diagnosis.get_worker_replica_status.9c8981bae46140581da1f1b1",
+            "diagnosis.get_worker_stage_latency.3d7fc198a7711b27218bd699",
+            "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+            "prometheus.kafka_consumergroup_lag.47658d42fc91",
+            "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+          ],
+          "schema_sha256": "eca65a2a0bc85961cc5ae47bee6d5d82da58a36d2b6884d2f3a48d4b424dd46d"
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "development",
+      "exit_code": 0,
+      "summary": {
+        "schema_version": "ops.diagnosis.pilot-summary.v3.1",
+        "scheduled_attempt_count": 8,
+        "executed_attempt_count": 8,
+        "unrun_attempt_count": 0,
+        "api_request_count": 35,
+        "live": {
+          "attempt_count": 8,
+          "first_pass_contract": 8,
+          "contract_pass": 8,
+          "observations_pass": 8,
+          "causes_pass": 8,
+          "completeness_pass": 8,
+          "joint_pass": 8,
+          "repair_used": 0,
+          "tool_call_count": 27
+        },
+        "fixed_runbook": {
+          "attempt_count": 8,
+          "first_pass_contract": 8,
+          "contract_pass": 8,
+          "observations_pass": 8,
+          "causes_pass": 8,
+          "completeness_pass": 8,
+          "joint_pass": 8,
+          "repair_used": 0,
+          "tool_call_count": 32
+        },
+        "elapsed_seconds": 82.49194659999921,
+        "input_tokens": 104552,
+        "output_tokens": 4025,
+        "usage_coverage_complete": true,
+        "comparison_limit": "New v3 task and joint score; not comparable to v2 quality scores. Four reused development fixtures; no generalization claim."
+      },
+      "compact_sha256": "7ac5dfb7b9378b7423dc57a4c69bdbe1519cf3d2745ec14f4d215536d83b1cb7",
+      "manifest_sha256": "af8df84b0f7248d257912ebe1e41f31922f39d5ab603a8675400d65d1d64f6c9"
+    },
+    {
+      "name": "novel-now-regression",
+      "exit_code": 0,
+      "summary": {
+        "schema_version": "ops.diagnosis.pilot-summary.v3.1",
+        "scheduled_attempt_count": 8,
+        "executed_attempt_count": 8,
+        "unrun_attempt_count": 0,
+        "api_request_count": 37,
+        "live": {
+          "attempt_count": 8,
+          "first_pass_contract": 8,
+          "contract_pass": 8,
+          "observations_pass": 8,
+          "causes_pass": 8,
+          "completeness_pass": 8,
+          "joint_pass": 8,
+          "repair_used": 0,
+          "tool_call_count": 29
+        },
+        "fixed_runbook": {
+          "attempt_count": 8,
+          "first_pass_contract": 8,
+          "contract_pass": 8,
+          "observations_pass": 8,
+          "causes_pass": 8,
+          "completeness_pass": 8,
+          "joint_pass": 8,
+          "repair_used": 0,
+          "tool_call_count": 32
+        },
+        "elapsed_seconds": 108.44384490000448,
+        "input_tokens": 112038,
+        "output_tokens": 4433,
+        "usage_coverage_complete": true,
+        "comparison_limit": "Frozen v3 execution on four author-created synthetic combinations. Expected sets fixed before model calls; no result-driven tuning or population generalization claim."
+      },
+      "compact_sha256": "db30af496a461fdb4e7d5a1d69ec0394c2210a0dff1e11b283f2ba21c4ef91e2",
+      "manifest_sha256": "85e7cfd368bfa4ba56ce7f80da6dc3b203417fe15ce4e8c03e6a92d8a3ea0dc6"
+    }
+  ],
+  "attempts": [
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "worker-db-path-pressure",
+      "state_sha256": "02f5d66111547c0a418b151c3af4032c345ffdf35b273e356f5b47a8e4ab8551",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct worker replica shortfall was measured; worker capacity remains a possible but unsupported cause.",
+          "PostgreSQL guardrails were healthy, so no PostgreSQL guardrail pressure support was found; query and commit latency telemetry is",
+          "unavailable.",
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry are unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct worker replica shortfall was measured; worker capacity remains a possible but unsupported cause.",
+          "PostgreSQL guardrails were healthy, so no PostgreSQL guardrail pressure support was found; query and commit latency telemetry is",
+          "unavailable.",
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry are unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "worker-replica-shortfall",
+      "state_sha256": "aa974b701e573c1f543ebcb6d8db8683a5265439b8da111c5c40099feb53b3bf",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+          "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+          "diagnosis.get_keda_status.20b613c4b6ffa80688b13799"
+        ],
+        "investigation_gaps": [
+          "Other causal telemetry, including hot-key, poison-record retry, sequence contention, and consumer rebalance signals, is not tele",
+          "metry available."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+          "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368",
+          "diagnosis.get_keda_status.20b613c4b6ffa80688b13799"
+        ],
+        "investigation_gaps": [
+          "Other causal telemetry, including hot-key, poison-record retry, sequence contention, and consumer rebalance signals, is not tele",
+          "metry available."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "postgres-path-degradation",
+      "state_sha256": "131493b5c9d4c75bb1cf5efecec07835724666523939a9d2565ba1366b50ebcb",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker stage commit latency is unavailable, so elevated stage latency is not attributed to a specific causal mechanism.",
+          "No direct hot-key telemetry is available.",
+          "No direct poison-record retry telemetry is available.",
+          "No direct sequence-contention telemetry is available.",
+          "Consumer rebalance telemetry is unavailable."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker stage commit latency is unavailable, so elevated stage latency is not attributed to a specific causal mechanism.",
+          "No direct hot-key telemetry is available.",
+          "No direct poison-record retry telemetry is available.",
+          "No direct sequence-contention telemetry is available.",
+          "Consumer rebalance telemetry is unavailable."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "telemetry-unavailable",
+      "state_sha256": "347f9dbeb281849d70c19a22a6add19bfc58a2c72cc76ad63d6bf1010a86cac1",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker replica status showed capacity available, so no direct support for a worker capacity shortfall was established.",
+          "PostgreSQL health telemetry was unavailable due to a Prometheus timeout, so PostgreSQL guardrail pressure could not be assessed.",
+          "Other causal telemetry, including hot-key, poison-record retry, sequence contention, and consumer-rebalance signals, is not­­‌⁢⁢"
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker replica status showed capacity available, so no direct support for a worker capacity shortfall was established.",
+          "PostgreSQL health telemetry was unavailable due to a Prometheus timeout, so PostgreSQL guardrail pressure could not be assessed.",
+          "Other causal telemetry, including hot-key, poison-record retry, sequence contention, and consumer-rebalance signals, is not­­‌⁢⁢"
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "worker-db-path-pressure",
+      "state_sha256": "fe1f911925aaf445164324a2082a890b89726060e46f60e761d6980337468bbc",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal telemetry is available for hot keys, poison-record retries, sequence contention, or consumer rebalances.",
+          "Worker replicas are available and PostgreSQL guardrails are healthy, but these observations do not identify a causal candidate."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.32fd4c1b7be0b6475bdfe9dc"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal telemetry is available for hot keys, poison-record retries, sequence contention, or consumer rebalances.",
+          "Worker replicas are available and PostgreSQL guardrails are healthy, but these observations do not identify a causal candidate."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "worker-replica-shortfall",
+      "state_sha256": "208a03dbe0da86a954b9c40ccd3d1628573fa6da8752096c1e31fcc40c4c4345",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.20b613c4b6ffa80688b13799",
+          "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+          "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency was within scenario baseline; PostgreSQL guardrails were healthy; other causal telemetry (including hot-key",
+          "poison-record retry",
+          "sequence contention",
+          "and consumer rebalance telemetry) was unavailable."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.4d013fee816e455743580683"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.20b613c4b6ffa80688b13799",
+          "diagnosis.get_worker_stage_latency.caf60d363ff9f00d76b8edc5",
+          "diagnosis.get_postgres_health.de52f574d9fbf7f310a2b368"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency was within scenario baseline; PostgreSQL guardrails were healthy; other causal telemetry (including hot-key",
+          "poison-record retry",
+          "sequence contention",
+          "and consumer rebalance telemetry) was unavailable."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "postgres-path-degradation",
+      "state_sha256": "e02099536f7f335772d946e33f1ed4960f542a2fcbcd3224c38869ef2c3148dc",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "Query and commit latency telemetry is unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.d859b16486763c2de12c181a",
+          "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53"
+        ],
+        "investigation_gaps": [
+          "No direct telemetry is available for hot keys, poison-record retries, sequence contention, or consumer rebalances.",
+          "The worker replica status shows capacity available, so worker capacity shortfall is not directly supported."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.07f86b076e05379bba5981c0"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.438cea86974175db5bce7dda"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "Query and commit latency telemetry is unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.d859b16486763c2de12c181a",
+          "diagnosis.get_worker_replica_status.371f80a0a8cc75c3cf9cdc53"
+        ],
+        "investigation_gaps": [
+          "No direct telemetry is available for hot keys, poison-record retries, sequence contention, or consumer rebalances.",
+          "The worker replica status shows capacity available, so worker capacity shortfall is not directly supported."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "development",
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "telemetry-unavailable",
+      "state_sha256": "153d229e2df6c45c345544af7e241f5607e03a67a7994c18b522be5f5e768137",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support for worker capacity shortfall: fresh worker replica status reported WORKER_CAPACITY_AVAILABLE.",
+          "PostgreSQL guardrail health was unavailable due to PROMETHEUS_TIMEOUT, so PostgreSQL guardrail pressure cannot be assessed.",
+          "Other causal telemetry, including rebalance, hot-key, poison-record retry, and sequence-contention signals, is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.d2334e31556034c52a5049a1"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support for worker capacity shortfall: fresh worker replica status reported WORKER_CAPACITY_AVAILABLE.",
+          "PostgreSQL guardrail health was unavailable due to PROMETHEUS_TIMEOUT, so PostgreSQL guardrail pressure cannot be assessed.",
+          "Other causal telemetry, including rebalance, hot-key, poison-record retry, and sequence-contention signals, is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "novel-01",
+      "state_sha256": "975c17f5773f71a481f454920be1ade2ee680d58e9cacd271cb41d791643868d",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry were not available.",
+          "Worker stage latency was within the scenario baseline and does not provide direct causal support."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry were not available.",
+          "Worker stage latency was within the scenario baseline and does not provide direct causal support."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "novel-02",
+      "state_sha256": "728d026afa04e01ba1d6ed0ac7cccca5edf225fc18baa63df52d7ba3f8477375",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker replica status reported a capacity shortfall but was stale, so it cannot provide direct causal support.",
+          "PostgreSQL health reported degraded guardrails but was stale, so it cannot provide direct causal support.",
+          "Direct causal telemetry for hot keys, poison-record retries, sequence contention, and consumer rebalances is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker replica status reported a capacity shortfall but was stale, so it cannot provide direct causal support.",
+          "PostgreSQL health reported degraded guardrails but was stale, so it cannot provide direct causal support.",
+          "Direct causal telemetry for hot keys, poison-record retries, sequence contention, and consumer rebalances is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "novel-03",
+      "state_sha256": "5b43ff5f61b05f85e8573ec98ec28680724300391c9a158f237db4f63cbe56ff",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "Worker stage latency telemetry was unavailable.",
+              "KEDA status telemetry was unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+          "diagnosis.get_keda_status.58dc6e79ac9be4092654b904"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency telemetry was unavailable, so WORKER_STAGE_ELEVATED could not be assessed.",
+          "KEDA status telemetry was unavailable.",
+          "PostgreSQL guardrail pressure was not supported; the fresh PostgreSQL health result was healthy."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "Worker stage latency telemetry was unavailable.",
+              "KEDA status telemetry was unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+          "diagnosis.get_keda_status.58dc6e79ac9be4092654b904"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency telemetry was unavailable, so WORKER_STAGE_ELEVATED could not be assessed.",
+          "KEDA status telemetry was unavailable.",
+          "PostgreSQL guardrail pressure was not supported; the fresh PostgreSQL health result was healthy."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "novel-04",
+      "state_sha256": "eb989a6cb9ddeb8e8007d086a893d858c975d3763ba1643a064facacad685d2f",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support was found for worker capacity shortfall or PostgreSQL guardrail pressure; other causal telemetry is not",
+          "available.",
+          "Consumer rebalance, hot-key, poison-record retry, and sequence-contention telemetry is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support was found for worker capacity shortfall or PostgreSQL guardrail pressure; other causal telemetry is not",
+          "available.",
+          "Consumer rebalance, hot-key, poison-record retry, and sequence-contention telemetry is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "novel-01",
+      "state_sha256": "ddc2c16fc37112f80275f76f2e9e07a20c54db176126acbd965dcf7a1d859c83",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Worker commit latency was unavailable; other causal telemetry, including hot-key, poison-record retry, sequence contention, and–"
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Worker commit latency was unavailable; other causal telemetry, including hot-key, poison-record retry, sequence contention, and–"
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "novel-02",
+      "state_sha256": "5328bfbdd210f4aa052bc3f45ac860d11ad843a6f202fa7c66556889b6a80875",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.8d7fe2eb170689b942817941",
+          "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+          "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4"
+        ],
+        "investigation_gaps": [
+          "Fresh causal evidence is unavailable: worker replica status and PostgreSQL health results were stale, so neither worker capacity",
+          " nor PostgreSQL guardrail pressure can be directly supported or conflicted.",
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry are unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.8d7fe2eb170689b942817941",
+          "diagnosis.get_postgres_health.a052ec6c4f2182c0072d124d",
+          "diagnosis.get_worker_replica_status.6fd4c76b621a7f67379578f4"
+        ],
+        "investigation_gaps": [
+          "Fresh causal evidence is unavailable: worker replica status and PostgreSQL health results were stale, so neither worker capacity",
+          " nor PostgreSQL guardrail pressure can be directly supported or conflicted.",
+          "Hot-key, poison-record retry, sequence contention, and consumer-rebalance telemetry are unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "novel-03",
+      "state_sha256": "6daed79c072ddf19914b946e8cb451d05e436ea13f273c70f1d81e0dc6a0d8c9",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "KEDA status was unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+          "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+          "diagnosis.get_keda_status.58dc6e79ac9be4092654b904"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency measurement was unavailable.",
+          "KEDA status measurement was unavailable.",
+          "No direct telemetry was available for hot keys, poison record retries, sequence contention, or consumer rebalances."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": [
+              "KEDA status was unavailable."
+            ]
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_worker_stage_latency.d74c1ed92cd3aac1b2eb97d7",
+          "diagnosis.get_postgres_health.4d1dea6b7efeb08a09f61300",
+          "diagnosis.get_keda_status.58dc6e79ac9be4092654b904"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency measurement was unavailable.",
+          "KEDA status measurement was unavailable.",
+          "No direct telemetry was available for hot keys, poison record retries, sequence contention, or consumer rebalances."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      }
+    },
+    {
+      "group": "novel-now-regression",
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "novel-04",
+      "state_sha256": "3968c60fd25d359952dd867a818129bcddd3914d0881167dc6fcf997b160bb2b",
+      "first_pass_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "final_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 3,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "repair_scope_audit": null,
+      "initial_failure_code": null,
+      "initial_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support was found for worker capacity shortfall or PostgreSQL guardrail pressure: worker replicas are available",
+          "PostgreSQL reachability and HA guardrails are healthy",
+          "Worker stage latency is within the scenario baseline; commit latency is unavailable",
+          "Telemetry for hot keys, poison-record retries, sequence contention, and consumer rebalances is unavailable"
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "final_decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "No direct causal support was found for worker capacity shortfall or PostgreSQL guardrail pressure: worker replicas are available",
+          "PostgreSQL reachability and HA guardrails are healthy",
+          "Worker stage latency is within the scenario baseline; commit latency is unavailable",
+          "Telemetry for hot keys, poison-record retries, sequence contention, and consumer rebalances is unavailable"
+        ],
+        "conclusion": "ABSTAIN"
+      }
+    }
+  ]
+}

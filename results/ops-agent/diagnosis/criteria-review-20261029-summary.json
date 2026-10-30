@@ -1,0 +1,176 @@
+{
+  "schema_version": "ops.diagnosis.criteria-review-summary.v1",
+  "classification": "POST_HOC_REVIEW_NO_NEW_MODEL_RUN",
+  "review_version": "ops.diagnosis.review.v1",
+  "evaluation_identity": {
+    "catalog_sha256": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+    "rubric_sha256": "7f61b7d01e0be618effa2909afd842319fb079479d5a527cf3f10e276f02d6fa",
+    "scorer_version": "ops.diagnosis.quality.v1"
+  },
+  "source_pilot": "results\\ops-agent\\quality-evaluation\\step4-prompt-v2-live-20261029",
+  "source_pilot_files_sha256": {
+    "manifest.json": "7ce8f32cc3f741fd1b77eec509711a585ca07ae5218ab9b7a91bbe45fac9bd17",
+    "catalog.json": "ce86a00b3345445c221d5fc05a42b2de87983d1e3e38490d7cdcf890c756f891",
+    "rubric.json": "db0de70f3d1dc9e287d3702cf07da8af7c3db996d0e0298b4b178848ee70c896",
+    "live-attempts.json": "eb7215cda0f558e79d742b4d462048e5eed545ca35a78ed368217ce4373b4743",
+    "summary.json": "c55d4aca303fa7da4d5a2b0e1ad1fedc7b6a3c8e73c4ee451f12d898bc849980",
+    "live/manifest.json": "455e64bcc87a69efdfaa26fef91ee09d09a13f65cc9b764f3c2dddaa9636595f"
+  },
+  "reviewed_pilot_summary_sha256": "e10a17e0bdc1d564769cac691feb0f683ea2b119848fd7634ddf0c7a593856b3",
+  "review_implementation_sha256": {
+    "scripts/review_diagnosis_pilot.py": "ed002d15e4239cd64993bb4827c34ad043886ac6056672a7c685bd2ded655736",
+    "ops_agent/diagnosis_review.py": "9bbbe87b48c2401ed70300b42aaecbe910599c1b405cdaea19bf295bf004d7d9",
+    "ops_agent/diagnosis_quality.py": "b39a601592214fb26879463ae7682b023098fe2a78c1b22bf354abc8f480388e"
+  },
+  "review_json_sha256": "c693065b248837c0550da4fb0994b0338159b02691db458b6ffc2507ffa63fcc",
+  "summary": {
+    "review_version": "ops.diagnosis.review.v1",
+    "attempt_count": 8,
+    "legacy_quality_pass_count": 1,
+    "dimensions": {
+      "fixture_label_alignment": {
+        "PASS": 5,
+        "FAIL": 3
+      },
+      "investigation_completeness": {
+        "PASS": 6,
+        "FAIL": 2
+      },
+      "abstention": {
+        "PASS": 6,
+        "FAIL": 2
+      },
+      "citation_relations": {
+        "REVIEW_REQUIRED": 3,
+        "PASS": 5
+      }
+    },
+    "review_flag_counts": {
+      "CITATION_RULE_REVIEW_NEEDED": 3,
+      "KEDA_INVESTIGATION_INCOMPLETE_NOT_LABEL_ERROR": 2,
+      "SUPPORTED_PATH_WITH_MISSING_POSTGRES_DISCRIMINATOR": 2,
+      "SYMPTOM_AND_EXPLANATION_BOTH_SUPPORTED": 1
+    },
+    "new_integrated_pass_rate": null
+  },
+  "additional_model_api_requests": 0,
+  "limitations": [
+    "Post-hoc analysis of the same eight development trials.",
+    "Original v1 quality gate and archived scores remain unchanged.",
+    "Fixture label alignment and signed relation matches do not establish causal truth.",
+    "REVIEW_REQUIRED is neither correct nor incorrect; no new integrated score is defined."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "worker-db-path-pressure",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "PASS",
+        "investigation_completeness": "PASS",
+        "abstention": "PASS",
+        "citation_relations": "REVIEW_REQUIRED"
+      },
+      "review_flags": [
+        "CITATION_RULE_REVIEW_NEEDED"
+      ]
+    },
+    {
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "worker-replica-shortfall",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "PASS",
+        "investigation_completeness": "FAIL",
+        "abstention": "PASS",
+        "citation_relations": "PASS"
+      },
+      "review_flags": [
+        "KEDA_INVESTIGATION_INCOMPLETE_NOT_LABEL_ERROR"
+      ]
+    },
+    {
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "postgres-path-degradation",
+      "legacy_quality_pass": true,
+      "dimensions": {
+        "fixture_label_alignment": "PASS",
+        "investigation_completeness": "PASS",
+        "abstention": "PASS",
+        "citation_relations": "PASS"
+      },
+      "review_flags": []
+    },
+    {
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "telemetry-unavailable",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "FAIL",
+        "investigation_completeness": "PASS",
+        "abstention": "FAIL",
+        "citation_relations": "REVIEW_REQUIRED"
+      },
+      "review_flags": [
+        "SUPPORTED_PATH_WITH_MISSING_POSTGRES_DISCRIMINATOR",
+        "CITATION_RULE_REVIEW_NEEDED"
+      ]
+    },
+    {
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "worker-db-path-pressure",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "PASS",
+        "investigation_completeness": "PASS",
+        "abstention": "PASS",
+        "citation_relations": "REVIEW_REQUIRED"
+      },
+      "review_flags": [
+        "CITATION_RULE_REVIEW_NEEDED"
+      ]
+    },
+    {
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "worker-replica-shortfall",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "PASS",
+        "investigation_completeness": "FAIL",
+        "abstention": "PASS",
+        "citation_relations": "PASS"
+      },
+      "review_flags": [
+        "KEDA_INVESTIGATION_INCOMPLETE_NOT_LABEL_ERROR"
+      ]
+    },
+    {
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "postgres-path-degradation",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "FAIL",
+        "investigation_completeness": "PASS",
+        "abstention": "PASS",
+        "citation_relations": "PASS"
+      },
+      "review_flags": [
+        "SYMPTOM_AND_EXPLANATION_BOTH_SUPPORTED"
+      ]
+    },
+    {
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "telemetry-unavailable",
+      "legacy_quality_pass": false,
+      "dimensions": {
+        "fixture_label_alignment": "FAIL",
+        "investigation_completeness": "PASS",
+        "abstention": "FAIL",
+        "citation_relations": "PASS"
+      },
+      "review_flags": [
+        "SUPPORTED_PATH_WITH_MISSING_POSTGRES_DISCRIMINATOR"
+      ]
+    }
+  ]
+}

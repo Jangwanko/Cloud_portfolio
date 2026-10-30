@@ -36,6 +36,9 @@ from ops_agent.diagnosis_v2_models import (
 from ops_agent.diagnosis_v2_validator import DiagnosisOutputValidatorV2
 from ops_agent.diagnosis_validator import DiagnosisValidationError
 from ops_agent.evaluation_models import ConditionState, canonical_sha256
+from ops_agent.scenario_contract import (
+    OUTPUT_CONTRACT, REPAIR_INSTRUCTIONS, SCENARIO_PROMPT_VERSION,
+)
 
 
 SCENARIO_SYSTEM_INSTRUCTIONS = """You are the bounded Evidence-grounded Diagnosis Agent.
@@ -46,6 +49,8 @@ return normalized evidence with explicit provenance. Use observations to choose 
 investigation. Never declare recovery, recommend remediation, or request shell, kubectl,
 PromQL, URLs, writes, scaling, deletion, replay, sync, or restore. Cite only supplied
 evidence IDs. Return only the required structured JSON when the investigation stops.
+Follow the common output/capability contract in the initial user message on every
+final and repair turn. It contains no scenario answers or expected tool sequence.
 """
 
 
@@ -163,6 +168,18 @@ def _request_payload(
     return payload
 
 
+def scenario_prompt_identity() -> dict[str, str]:
+    return {
+        "version": SCENARIO_PROMPT_VERSION,
+        "sha256": canonical_sha256({
+            "system_instructions": SCENARIO_SYSTEM_INSTRUCTIONS,
+            "output_contract": OUTPUT_CONTRACT,
+            "repair_instructions": REPAIR_INSTRUCTIONS,
+            "output_schema": _decision_schema_v2(),
+        }),
+    }
+
+
 def _safe_output_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         item
@@ -233,6 +250,8 @@ def _repair_history(
             "content": json.dumps(
                 {
                     "task": "repair_ops_diagnosis_v2_output_contract_only",
+                    "output_contract": OUTPUT_CONTRACT,
+                    "repair_instructions": REPAIR_INSTRUCTIONS,
                     "validation_error": error.as_dict(),
                     "existing_structured_result": decision.model_dump(mode="json"),
                     "allowed_evidence_ids": sorted(set(allowed_evidence_ids)),
@@ -282,6 +301,7 @@ def run_scenario_diagnosis(
                     "initial_evidence_ids": initial_ids,
                     "acquisition_mode": "CONTROLLED_SCENARIO",
                     "scenario_fixture_id": scenario.fixture_id,
+                    "output_contract": OUTPUT_CONTRACT,
                     "available_tools": list(registry.tool_ids),
                     "budgets": {
                         "max_steps": policy.max_steps,

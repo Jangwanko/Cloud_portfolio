@@ -2,6 +2,165 @@
 
 Kubernetes 이벤트 처리 운영 플랫폼의 주요 구현, 검증, 튜닝 기록입니다. Kafka event system은 운영 설계를 검증하는 workload입니다.
 
+## 2026-10-30 KST Ops Agent runtime evidence adapter
+
+- 실제 source bundle·activation replay 검증, collection freshness·provenance를 보존하는 v3.5 projection 구현
+- 별도 bounded 실행기와 API opt-in·wire trace·원본 보존·canonical acquisition 확인 추가
+- 실제 정상 snapshot API 0회, 과거 실제 backlog snapshot 모델/Runbook 단일 비교에서 양쪽 `ABSTAIN`
+- 모델 최초 contract valid·repair 0회, 설명문 품질 문제 별도 보존
+- 운영 stage 기준선 부재·causal truth 미검증 명시, 기존 v3.5 frozen source 유지
+- 전체 suite `871 passed in 50.38s`, 관련 `21 passed in 5.08s`
+- [구현·검증과 남은 범위](OPS_AGENT_RUNTIME_ADAPTER.md)
+
+## 2026-10-29 Ops Agent 실제 observation 수집과 activation gate
+
+- 기존 collector·condition evaluator를 재사용한 3회 read-only 수집 runner 추가
+- 새 run 전용 출력·고정 시작 간격·실패 capture 보존·파일 inventory·재현 요약 추가
+- 실제 Kafka lag `0`, Worker `2/2`, PG guardrail 정상; backlog `ABSENT`에 따른 GPT 호출 0회
+- stage metric 누락 보존, v3.5 실제 adapter와 causal 진단 비교 대기 명시
+- 전체 suite `850 passed in 41.23s`, 관련 검사 `25 passed in 2.86s`, 실제 raw/bundle/summary 18개 hash 일치
+- [범위·실행·모델 선택 기준](OPS_AGENT_RUNTIME_OBSERVATION.md)
+
+## 2026-10-29 Ops Agent v3.5 고정 후 두 번째 새 사례 평가
+
+- 기존 8개와 primary 관측 조합이 겹치지 않는 새 합성 4개·사전 rubric·작성 provenance 추가
+- v3.5 실행 코드·prompt·정책·모델 고정, 새 8회 최초·최종 종합 `8/8`·repair 0회·Runbook `8/8`
+- 조회 실패·stale 정상 수치·관측 누락과 복합 장애 검증, 36개 요청 enum과 실제 8개 응답의 목록 일치 확인
+- 모델 도구 28회 모두 필수 조회, LLM의 도구 선택 추가 가치 주장 제외
+- 전체 suite `841 passed in 38.12s`, API 36회·input/output `106,645 / 3,960` tokens·첫 결과 보존
+- [새 사례·조건·검증과 해석 범위](OPS_AGENT_V35_SECOND_PROBE.md)
+
+## 2026-10-29 Ops Agent v3.5 제공된 증거 ID 선택
+
+- 매 요청까지 제공된 ID의 공유 enum을 네 citation 배열에 적용, 새 ID 생성·미조회 ID 노출 차단과 로컬 membership 검사 추가
+- Repair 선택 목록을 제공된 ID와 최초 인용의 교집합으로 제한, 기존 근거 의미·최소 조사·수정 권한 유지
+- 회귀 16회 최초·최종 종합 모두 `16/16`, repair 0회·Runbook `16/16`, 목록 밖 ID 0개
+- 실제 요청 72개의 enum/source hash와 JSON 응답 16개 재검증, canonical evidence·최초/최종 점수 보존
+- API 72회, input/output `216,590 / 8,458` tokens, 전체 suite `828 passed in 34.76s`
+- 새로운 holdout·운영 일반화·LLM 추가 가치·비용 절감 주장 제외
+- [선택 정책·테스트·실제 회귀 결과](OPS_AGENT_V3_CITATION_SELECTION.md)
+
+## 2026-10-29 Ops Agent v3.4 판단 종료 전 최소 조사
+
+- 공통 primary 3개와 Fresh/OK replica 부족 시 KEDA를 필수 조회로 지정, 필수 도구만 제시·required 호출·선택 범위 검사 추가
+- 조기 최종 JSON·예산 부족·제시하지 않은 도구를 로컬 거부, 도구 순서 선택과 기존 도구 4회·repair 1회 제한 유지
+- 실제 16회 모두 조사 완료, 최초·최종 종합 각각 `15/16`, Runbook `16/16`
+- 복합 장애 두 반복 모두 PG·replica 후보 보고, 필수 wire 호출 54회·선택 1회·미조회 최종 수락 0회 확인
+- 남은 evidence ID 오타·repair 실패 보존, 새 인용 허용으로 scope 확대 제외
+- API 72회, 전체 suite `813 passed in 32.71s`, 관련 검사 56개 통과
+- [정책·실제 audit·결과와 한계](OPS_AGENT_V3_INVESTIGATION_GATE.md)
+
+## 2026-10-29 Ops Agent v3.3 제한된 관측 제거·16회 회귀
+
+- 원래 인용이 같은 지표의 Fresh/OK 정상 상태를 직접 측정할 때만 잘못된 양성 관측 제거 허용
+- 새 관측·가설·citation 추가·지지 상태 변경·true positive 삭제 거부, 제거 근거 audit와 명시적 scope 오류 코드 추가
+- 최초 종합과 최종 종합을 분리한 16회 사전 회귀 driver·최대 API 96회 제한 추가
+- 실제 결과 최초 `14/16`·최종 `15/16`, Runbook `16/16`; unknown citation repair 1회, 관측 제거 0회
+- 과거 실패 pair는 새 제거 정책으로 통과 확인, 과거 공식 점수 유지·새 권한의 실제 개선 효과 주장 제외
+- 남은 복합 장애의 조기 종료·미조회 원인 누락 보존, API 75회·최초/최종 응답 및 hash 기록
+- 전체 suite `800 passed in 33.60s`, 관련 검사 `43 passed in 3.32s`
+- [정책·검증·회귀 한계·다음 조사 종료 조건](OPS_AGENT_V3_REPAIR.md)
+
+## 2026-10-29 Ops Agent v3.2 새 사례 첫 평가
+
+- 복합 장애·stale 장애 수치·Stage/KEDA 조회 불가·직접 원인 근거 없음의 합성 사례 4개와 사전 rubric 추가
+- Catalog/rubric CLI 선택과 외부 경로 hash 기록 지원, 기존 모델 실행 지시·채점·도구 제한 유지
+- 새 8회에서 모델 종합 `7/8`·Runbook `8/8`, 정상 PG를 저하 관측으로 보고한 실패와 repair scope 거부 보존
+- Repair JSON의 직접 validator 통과는 별도 사후 설명으로 분리, 공식 점수 `7/8` 유지
+- API 41회, 도구 양 arm 각각 32회, 추가 prompt 조정·유료 재평가 제외
+- 전체 suite `785 passed in 42.32s`, 작성 예시 재현·stale 지지 거부·복합 후보 누락·경로 처리 검증
+- [새 사례와 최초 결과·제약](OPS_AGENT_V3_NOVEL_CASES.md)
+
+## 2026-10-29 Ops Agent v3.2 고정 기준 8/8 반복 개선
+
+- 사용자 요청의 종료 기준을 완전한 8회 batch 종합 `8/8`로 기록, 첫 수정 회차에서 달성·추가 유료 호출 종료
+- 공통 tool/flag 근거 연결 규칙·양성 관측 전체 보고·가설과 관측의 독립 보고·최종 자기 점검 지시 추가
+- 기존 모델·schema·validator·scorer·rubric·도구/repair 제한 유지, 모델 응답의 코드 보정 제외
+- 최초 contract `7/8`, 기존 제한의 repair 1회 후 모든 최종 차원 `8/8`; 이전 `5/8` 실패 원본 보존
+- API 39회, input/output `105,858 / 6,106` tokens, 도구 30회, 고정 Runbook 종합 `8/8`·도구 32회
+- 전체 suite `775 passed in 30.02s`, 원본 재채점·hash·고정 조건 일치 확인
+- 반복한 development fixture의 첫 8/8 결과, holdout 일반화·LLM 추가 가치 입증 제외
+- [실행 변경·전체 결과·종료 조건](OPS_AGENT_V3_ITERATIONS.md)
+
+## 2026-10-29 Ops Agent v3 독립 실행·실제 평가
+
+- 관측·가설·문맥을 분리하는 독립 tool loop와 사전 rubric·별도 채점 구현
+- 최대 도구 4회·repair 1회·API 48회 제한, repair의 관측명·가설명·지지 상태·인용 범위 유지
+- 실제 8회에서 contract `6/8`, 관측 `5/8`, 원인 후보·보류 `6/8`, 조사 완결성 `8/8`, 종합 `5/8`
+- 고정 Runbook `8/8`, 두 arm 도구 각각 `32`회; LLM 추가 가치 미확인
+- API 42회·repair 2회 최종 실패 포함, 재채점·원본 hash 검증과 축약 결과 보존
+- 최종 전체 suite `773 passed in 30.57s`, 문서·JSON 검사 오류 `0`
+- 문서 stale-count 검사에서 `756`을 `56`으로 읽은 부분 문자열 오탐 수정·회귀 검증
+- 기존 v2 prompt·구현 hash 유지, cross-version 점수 개선율·배포·Git 원격 변경 제외
+- [실행·해석 범위·후속 설계 과제](OPS_AGENT_V3_EVALUATION.md)
+
+## 2026-10-29 Ops Agent v3 출력 계약 후보
+
+- 관측 신호·원인 후보·문맥 근거·보류 결론을 별도 decision schema로 분리
+- Stage 상승을 causal enum에서 분리, PostgreSQL 후보를 실제 guardrail 관측 범위로 명시
+- 직접 측정·인용 역할·근거 부족·capability 경계와 22개 오프라인 테스트 추가
+- 전체 suite `756 passed in 30.44s`, 문서 링크·diff 검사 통과
+- 공통 지시/schema hash와 직접 작성한 예시 4개 export; 모델 API·기존 점수 변환 제외
+- [후보 범위·새 vocabulary·미검증 경계](OPS_AGENT_V3_CANDIDATE.md)
+
+## 2026-10-29 Ops Agent 기존 결과의 기준 검토·분리 보고
+
+- 별도 review v1에서 fixture label·조사 완결성·보류·인용 관계 분리, 기존 v1 점수 1/8 유지
+- 미정의 인용과 KEDA 상태의 문맥 의존성을 REVIEW_REQUIRED로 보존, 새 통합 합격률 제외
+- 저장된 schedule/hash/summary와 재계산 일치 검증, 원본 불변·새 디렉터리 출력
+- 전체 suite `734 passed in 31.94s`, 추가 모델 API 호출 없음
+- [검토 기준·검증](OPS_AGENT_EVALUATION.md), [차원별 요약](../results/ops-agent/diagnosis/criteria-review-20261029-summary.json)
+
+## 2026-10-29 Ops Agent prompt v2 실제 재평가
+
+- 기존 요청 모델·입력·budget·rubric을 유지한 8회 재실행과 별도 원본 보존
+- 최초 contract 7/8, repair 1/8, 최종 contract 8/8; 통합 quality 1/8, Runbook 8/8
+- API 39회, input/output 82,920/6,393 tokens, 미실행 0·usage 전체 확보
+- 인용 미채점·KEDA 조회 누락·복수 가설·관측 부족의 보류 실패를 구분, rubric 변경 없이 기존 Gate 실패 유지
+- [축약 결과·hash](../results/ops-agent/diagnosis/pilot-prompt-v2-20261029-summary.json), [해석·검토 과제](OPS_AGENT_EVALUATION.md)
+
+## 2026-10-29 Ops Agent prompt v2 후보·오프라인 repair 검증
+
+- 공통 상태·인용·관측 한계·보류·stop 계약을 초기/repair prompt에 동일 제공
+- 첫 validation error 뒤의 다른 위반도 점검하도록 repair 지시 보강, 추가 도구·가짜 근거 금지 유지
+- 정답·임계값·기대 경로 주입 없이 공통 계약 version/hash와 향후 pilot snapshot 추가
+- 기존 validator/rubric·4-tool/1-repair 제한과 실제 8회 실패 원본 보존
+- 관련 오프라인 테스트 `52 passed in 2.99s`; 실제 모델 재평가·추가 API 호출 제외
+- 전체 suite `725 passed in 38.87s`, 문서 링크·diff 검사 통과; 기존 pilot manifest·summary·state hash 일치
+- [후보 범위·검증 해석](OPS_AGENT_EVALUATION.md)
+
+## 2026-10-29 Ops Agent 실제 모델 예비 실행 기반
+
+- 4개 controlled scenario × 2회 schedule과 요청·응답·실패·repair·token trace 보존
+- 모델 입력의 시나리오 이름을 조사별 opaque alias로 변환, 기대 가설·분기 정답 노출 거부
+- 최대 48 API 요청, 조사당 도구 4회·repair 1회, transport retry 0, API/runtime 오류 시 batch 중단
+- 실패와 미실행을 분리하고 같은 rubric·Runbook으로 pair 평가
+- 오프라인 관련 테스트 `38 passed`, 전체 suite `717 passed in 29.12s`
+- 실제 8회 완료: 모델 contract·quality `0/8`, Runbook `8/8`, API 47회, 모든 repair·실패 보존
+- 필수 gap 코드·CONFLICTED 인용 계약 실패와 관측 부족의 보류 불충족 확인; [축약 결과](../results/ops-agent/diagnosis/pilot-20261029-summary.json) 추적
+- [실행 조건·평가 해석](OPS_AGENT_EVALUATION.md); source/runtime 배포와 commit/push/merge 제외
+
+## 2026-10-29 Ops Agent 고정 Runbook 비교군
+
+- Stage → PostgreSQL → replica → KEDA 고정 체크리스트와 관측 기반 가설·판단 보류 규칙 추가
+- 정답·기대 분기 접근 없이 같은 catalog/normalizer/tool allowlist와 최대 4회 호출 사용
+- 같은 평가기로 두 arm을 pair 채점하고 입력·원본·실패 포함 집계·비교표 보존
+- Runbook과 scripted 조사 모두 4/4 quality 통과, 총 호출 16회/10회; 실제 LLM 효과 측정 제외
+- 전체 suite `709 passed in 30.87s`, 문서 링크·diff 검사 통과
+- 로컬 함수 시간과 replay 미측정 시간을 구분, API·cluster 접근 없이 실행
+- [실행 조건·결과·한계](OPS_AGENT_EVALUATION.md); 실제 모델 예비 실행은 후속 범위
+
+## 2026-10-29 Ops Agent 오프라인 진단 평가 기반
+
+- 네 controlled scenario의 기대 가설·필수 도구·핵심 인용을 versioned rubric에 고정
+- 저장된 v2 artifact의 계약·fixture 정합성과 supporting/conflicting 인용 의미 별도 채점
+- 지정 분기 일치와 필수 증거 확보 분리; 실패 포함 분모와 최초 통과·repair 후 성공 구분
+- 입력 원본·catalog/rubric·source/코드 hash·개별 결과·요약 보존, 합성 replay 시간의 지연 집계 제외
+- 모델 API·cluster 접근 없는 Step 1 범위; Runbook 비교군·실제 모델 실행은 후속 작업
+- 평가기 테스트 `19 passed`, 전체 suite `698 passed`; scripted 기록 `4/4` 채점기 점검 통과
+- dev-kafka 변경; master·demo 브랜치 공유와 commit/push/merge는 후속 승인 범위
+- [평가 기준·명령·한계](OPS_AGENT_EVALUATION.md)
+
 ## 2026-09-26 유지보수 여섯 항목 마감
 
 - 공개 demo와 full-profile 배포 상태·관측 시점 분리, [상태 기준 문서](DEPLOYMENT_STATUS.md) 연결
