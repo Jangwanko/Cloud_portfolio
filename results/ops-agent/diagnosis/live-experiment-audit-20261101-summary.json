@@ -1,0 +1,122 @@
+{
+  "scope": "offline review of live watch, Worker fault and PostgreSQL recovery; historical synthetic model scores not rerun",
+  "cluster_mutations": 0,
+  "model_calls": 0,
+  "worker": {
+    "hash_integrity": {
+      "checked": 12,
+      "mismatches": []
+    },
+    "wire": {
+      "requests": 2,
+      "delivered_tools": [
+        "get_readiness",
+        "get_worker_status",
+        "get_worker_logs",
+        "get_kafka_lag"
+      ],
+      "tool_output_mismatches": [],
+      "initial_input_contains_worker_fault_module": false,
+      "contains_private_plan_filename": false
+    },
+    "accepted_unique": 20,
+    "observed_http_statuses": [
+      404
+    ],
+    "recovered_request_ids_match": true,
+    "recovered_unique_event_ids": 20,
+    "recovered_statuses": [
+      "persisted"
+    ]
+  },
+  "postgres": {
+    "hash_integrity": {
+      "checked": 58,
+      "mismatches": []
+    },
+    "wire": {
+      "requests": 2,
+      "delivered_tools": [
+        "get_pg_pods",
+        "get_pg_events",
+        "get_pg_logs",
+        "get_pg_configuration",
+        "get_probe_implementation",
+        "get_change_history"
+      ],
+      "tool_output_mismatches": [],
+      "initial_input_contains_worker_fault_module": false,
+      "contains_private_plan_filename": false
+    },
+    "samples": 19,
+    "healthy_suffix_samples": 13,
+    "healthy_suffix_all_healthy": true,
+    "sampled_span_seconds": 183.498482,
+    "largest_sample_gap_seconds": 15.678465,
+    "pod_uids_saved_in_samples": false,
+    "pre_correction_timestamp": "2026-10-31T16:34:56.077542+00:00",
+    "verification_plan_timestamp": "2026-10-31T16:36:01.489480+00:00",
+    "raw_traffic_poll_responses_saved": false,
+    "accepted_files": 20,
+    "accepted_unique": 20,
+    "traffic_summary": {
+      "run_id": "observation-20261031T164037Z",
+      "target": "http://127.0.0.1",
+      "max_events": 20,
+      "maximum_rate_per_second": 1,
+      "status": "COMPLETE",
+      "accepted_count": 20,
+      "persisted_count": 20,
+      "model_calls": 0,
+      "data_reset": false,
+      "stream_id": 5003
+    }
+  },
+  "unfinished_watch": {
+    "checks": 98,
+    "first": "2026-10-31T06:47:38.931359+00:00",
+    "last": "2026-10-31T07:11:53.951159+00:00",
+    "summary_exists": false,
+    "completed_batches": 19,
+    "persisted_in_completed_batches": 1140,
+    "accepted_files": 1181
+  },
+  "counterexamples": {
+    "null_http_status": "TypeError",
+    "null_http_status_real_evaluators": "TypeError",
+    "empty_model_output_recorded_as_completed": {
+      "model": "offline-test",
+      "calls": 1,
+      "tool_trace": [],
+      "text": null
+    },
+    "stall_gate_rejects_by_http_status": {
+      "401": false,
+      "404": false,
+      "503": false
+    },
+    "pg_gate_accepts_only_primary_with_ready_health": true,
+    "watchdog_marks_restored_without_field_verification": true,
+    "duplicate_request_id_probe": {
+      "exit_code": 0,
+      "summary": {
+        "run_id": "observation-20261101T012355Z",
+        "target": "http://127.0.0.1",
+        "max_events": 3,
+        "maximum_rate_per_second": 1,
+        "status": "COMPLETE",
+        "accepted_count": 3,
+        "persisted_count": 1,
+        "model_calls": 0,
+        "data_reset": false,
+        "stream_id": 2
+      }
+    }
+  },
+  "source_sha256": {
+    "scripts/audit_live_experiments.py": "3c50294d777ba753c35113d7eab6c9a89b91043e120aea85c9c2f09891fd1941",
+    "scripts/run_worker_fault_diagnosis.py": "d3bd1c044c171ffeadf49d9bba6f75ac9a0ade237ebf15f0879044d510c47202",
+    "scripts/watch_local_until_error.py": "c12be21d27f5bf5a49b54279c460a5ac1f3b345f55d2dde0679e1b17a93924bd",
+    "scripts/run_local_event_probe.py": "621ab1c9ea77e2476b8c57645e788ce6ca686bfeb12cbfb2fe17058c1c5852b0"
+  }
+}

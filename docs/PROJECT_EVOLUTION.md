@@ -241,7 +241,7 @@ OpenAI API나 runtime source를 호출하지 않으며, `LIVE_READ_ONLY` connect
 **배운 점:** AI를 붙이는 것과 운영 권한을 주는 것은 별개다. 이 Agent는 runtime을 임의 수정하지 않으며,
 장애·복구 판정도 LLM의 자유 판단에 맡기지 않는다.
 
-근거: [Ops Agent 설계·실험](OPS_AGENT.md), [검증된 incident 요약](../results/README.md#ops-agent-phase-5-verified-incident---2026-08-23),
+근거: [Ops Agent 설계·실험](OPS_AGENT.md), [검증된 incident 요약](OPS_AGENT_EVALUATION.md#model-evidence),
 [8월 단계별 기록](PATCH_NOTES.md).
 
 ## 10. 2026-09-05 — 배포와 저장 사이의 실패 지점을 직접 검증하다

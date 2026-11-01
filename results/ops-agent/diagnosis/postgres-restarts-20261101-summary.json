@@ -1,0 +1,344 @@
+{
+  "schema_version": "ops.postgres_restart_recovery.v1",
+  "date_kst": "2026-11-01",
+  "model": "gpt-5.6-luna",
+  "model_calls": 2,
+  "tool_trace": [
+    "get_pg_pods",
+    "get_pg_events",
+    "get_pg_logs",
+    "get_pg_configuration",
+    "get_probe_implementation",
+    "get_change_history"
+  ],
+  "first_answer": {
+    "root_cause": "로컬 Docker 재시작 이후 PostgreSQL standby 복구·재클론 시간이 현재 liveness probe의 초기 유예 및 타임아웃 조건을 초과했고, 그 결과 probe가 복구 중인 replica를 반복적으로 강제 재시작한 것이 주된 원인이다. 특히 replica-1과 replica-2는 standby clone이 진행 중인 상태에서 liveness probe 실패 및 재시작이 발생했다. 384Mi 메모리 제한과 exit code 137은 보조 요인 또는 결과일 가능성이 있으나, 현재 증거만으로 메모리 부족을 주원인으로 단정할 수 없다.",
+    "evidence_ids": [
+      "P0",
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5"
+    ],
+    "alternatives": [
+      {
+        "cause": "메모리 제한 부족 또는 OOM kill",
+        "assessment": "가능성 있음",
+        "evidence": "replica-1과 replica-2가 exit code 137로 종료되었고 메모리 limit은 384Mi이다(P1, P4).",
+        "why_not_primary": "동일 시점에 Kubernetes 이벤트가 liveness probe 실패 후 컨테이너를 재시작했다고 명시하며, standby clone 진행과 probe 실패가 반복된 사실이 확인된다(P2, P3). 실제 OOMKilled 상태나 노드 메모리 압박 증거는 없다."
+      },
+      {
+        "cause": "로컬 Docker 재시작 자체에 따른 pod sandbox 재생성",
+        "assessment": "촉발 요인",
+        "evidence": "세 PostgreSQL pod에서 SandboxChanged 이벤트가 16:17:11에 발생했다(P2).",
+        "why_not_primary": "sandbox 재생성 이후 standby들이 정상적으로 복구될 시간을 얻지 못하고 probe에 의해 반복 재시작된 것이 지속 장애의 직접 원인으로 보인다."
+      },
+      {
+        "cause": "복제 네트워크 또는 primary 장애",
+        "assessment": "가능성 낮음",
+        "evidence": "primary 로그에서 standby 연결 끊김과 재연결은 확인된다(P3).",
+        "why_not_primary": "primary는 기동 후 ready 상태였고, replica들은 primary를 자동 탐지한 뒤 실제로 clone 및 WAL streaming을 시작했다(P1, P3). 지속적인 primary 장애를 입증하는 증거는 없다."
+      },
+      {
+        "cause": "probe 스크립트 자체의 과도한 검사 비용 또는 timeout",
+        "assessment": "기여 요인",
+        "evidence": "liveness probe는 pg_isready뿐 아니라 repmgr_check_status까지 수행하며 timeout은 5초이다(P4, P5). primary에서도 readiness/liveness command timeout 이벤트가 발생했다(P2).",
+        "why_not_primary": "replica 재시작의 시간적·내용적 패턴은 standby clone 중 liveness 실패와 직접 일치한다."
+      }
+    ],
+    "recommended_action": "변경은 probe 설정에 한정하는 것이 가장 안전하다. PostgreSQL 컨테이너에 startupProbe를 추가하여 초기 기동 및 standby clone 동안에는 livenessProbe가 실행되지 않도록 하고, startupProbe에는 clone·복구가 완료될 수 있는 충분한 허용 시간(예: 최대 5분)을 부여한다. readinessProbe는 clone 중 pod를 계속 NotReady로 유지해야 하므로 제거하거나 완화하지 않는다. livenessProbe의 5초 timeout을 무조건 늘리거나, 장애 중인 replica를 수동 삭제하거나, PVC를 초기화하는 조치는 피한다. startupProbe가 현재 liveness 스크립트를 그대로 호출하면 clone 중 계속 실패할 수 있으므로, startupProbe는 clone 상태를 정상적인 초기화 상태로 취급하고 PostgreSQL 기동 완료 여부만 확인하는 별도 검사를 사용해야 한다. 메모리 limit 증설은 아래 검증에서 실제 OOM이 확인될 때만 2차 조치로 검토한다.",
+    "verification_steps": [
+      "변경 전후 StatefulSet의 probe 설정과 rollout revision을 기록하고, 실제로 startupProbe가 적용되었는지 확인한다.",
+      "복구 또는 pod 재생성 후 standby clone 진행 중인 replica가 readiness에서는 NotReady이지만 liveness에 의해 종료되지 않는지 확인한다.",
+      "각 replica의 container restartCount, termination reason, exit code가 증가하지 않는지 최소 한 번의 전체 clone·WAL streaming 주기 동안 관찰한다.",
+      "replica 로그에서 clone 완료, PostgreSQL read-only accept, WAL streaming 시작, repmgr 정상 모니터링 메시지를 확인한다.",
+      "primary 로그에서 standby가 연결된 상태로 유지되고 unexpected EOF가 반복되지 않는지 확인한다.",
+      "실제 OOM 여부를 확인하기 위해 termination reason이 OOMKilled인지, 노드 메모리 압박 이벤트가 있는지, 컨테이너 memory usage가 384Mi limit에 도달하는지 확인한다.",
+      "PostgreSQL durable read source에서 복구 전후 애플리케이션 이벤트의 존재 여부와 처리 지연을 검증한다. Kafka offset, API 202 응답, Worker 상태를 별도로 확인하며, 현재 자료만으로 데이터 유실이나 Worker 복구를 주장하지 않는다.",
+      "세 replica 중 필요한 수가 Ready가 되고, PostgreSQL primary 및 복제 상태가 안정된 뒤에만 서비스 영향과 이벤트 처리 지연을 재평가한다."
+    ],
+    "uncertainty": "현재 스냅샷은 반복 재시작과 probe 강제 종료를 강하게 보여주지만, exit code 137이 liveness에 의한 종료인지 실제 OOM kill인지 완전히 분리하지 못한다. 또한 Kafka backlog, Worker replica 상태, PostgreSQL의 실제 이벤트 건수 및 데이터 유실 여부에 대한 증거는 제공되지 않았다. 따라서 현재 결론은 '복구 중 standby에 대한 probe 정책이 반복 재시작을 유발한 것이 가장 유력한 원인'이며, 메모리 부족은 검증이 필요한 대안 원인이다."
+  },
+  "assessment": "CAUSE_AND_REMEDY_SUPPORTED_BY_BOUNDED_RECOVERY",
+  "assessment_method": "Operator evidence review; not an automated model accuracy score or isolated A/B experiment",
+  "verification": {
+    "status": "STABLE",
+    "stable_seconds": 183.5,
+    "capture_count": 19,
+    "traffic_exit": 0,
+    "at": "2026-10-31T16:40:57.722703+00:00"
+  },
+  "traffic": {
+    "run_id": "observation-20261031T164037Z",
+    "target": "http://127.0.0.1",
+    "max_events": 20,
+    "maximum_rate_per_second": 1,
+    "status": "COMPLETE",
+    "accepted_count": 20,
+    "persisted_count": 20,
+    "model_calls": 0,
+    "data_reset": false,
+    "stream_id": 5003
+  },
+  "final_state": {
+    "at": "2026-10-31T16:41:02.567274+00:00",
+    "pods": [
+      {
+        "name": "messaging-postgresql-ha-postgresql-0",
+        "created_at": "2026-07-20T19:58:54Z",
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:17:15Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-07-20T19:58:54Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:17:48Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:17:48Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-07-20T19:58:54Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containers": [
+          {
+            "name": "postgresql",
+            "ready": true,
+            "restartCount": 23,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-31T16:17:15Z"
+              }
+            },
+            "lastState": {
+              "terminated": {
+                "containerID": "containerd://377862d8a3eafb69028df92c7a8d84a483cc8d22bad7e26eb1ae13ce7ee899b7",
+                "exitCode": 255,
+                "finishedAt": "2026-10-31T16:17:05Z",
+                "reason": "Unknown",
+                "startedAt": "2026-10-31T06:25:14Z"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "messaging-postgresql-ha-postgresql-1",
+        "created_at": "2026-10-31T16:36:43Z",
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:36:45Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:36:43Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:37:24Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:37:24Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:36:43Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containers": [
+          {
+            "name": "postgresql",
+            "ready": true,
+            "restartCount": 0,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-31T16:36:44Z"
+              }
+            },
+            "lastState": {}
+          }
+        ]
+      },
+      {
+        "name": "messaging-postgresql-ha-postgresql-2",
+        "created_at": "2026-10-31T16:35:01Z",
+        "phase": "Running",
+        "conditions": [
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:35:02Z",
+            "status": "True",
+            "type": "PodReadyToStartContainers"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:35:01Z",
+            "status": "True",
+            "type": "Initialized"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:36:12Z",
+            "status": "True",
+            "type": "Ready"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:36:12Z",
+            "status": "True",
+            "type": "ContainersReady"
+          },
+          {
+            "lastProbeTime": null,
+            "lastTransitionTime": "2026-10-31T16:35:01Z",
+            "status": "True",
+            "type": "PodScheduled"
+          }
+        ],
+        "containers": [
+          {
+            "name": "postgresql",
+            "ready": true,
+            "restartCount": 0,
+            "state": {
+              "running": {
+                "startedAt": "2026-10-31T16:35:02Z"
+              }
+            },
+            "lastState": {}
+          }
+        ]
+      }
+    ],
+    "health": {
+      "app_version": "2.1.0",
+      "status": "ready",
+      "reason": [],
+      "grace_remaining_seconds": null,
+      "queue_backend": "kafka",
+      "kafka": {
+        "bootstrap_reachable": true
+      },
+      "postgres": {
+        "ha_mode": true,
+        "primary_reachable": true,
+        "standby_count": 2,
+        "sync_standby_count": 2,
+        "max_replication_delay_bytes": 0
+      }
+    },
+    "primary_uid_and_restart_count_preserved": true,
+    "unchanged_liveness_readiness_resources_image": true,
+    "updateStrategy": {
+      "rollingUpdate": {
+        "partition": 1
+      },
+      "type": "RollingUpdate"
+    },
+    "currentRevision": "messaging-postgresql-ha-postgresql-76786d85bb",
+    "updateRevision": "messaging-postgresql-ha-postgresql-57dbc9569c"
+  },
+  "runtime_scope": "standbys 1 and 2 only; partition 1 retained; primary startup probe not rolled out",
+  "source_scope": "uncommitted Helm values candidate; runtime patch, not Helm upgrade",
+  "validation": {
+    "pytest": "914 passed in 54.51s",
+    "targeted": "11 passed in 0.77s",
+    "helm_lint": "1 chart linted, 0 failed",
+    "statefulset_render": "passed",
+    "diff_check": "passed"
+  },
+  "evidence_directory": "results/ops-agent/shadow/20261101-postgres-restarts-01",
+  "artifact_sha256": {
+    "before-correction.json": "39f0cdc4ddecf08c085a3cd3d12ed147739cae25299e2b0d1bf55c1d5be8c262",
+    "collector-source.py": "b77c656496cee06624cbac3a49bbe0c3a84f2053c1b77aa082ede565d7d9b017",
+    "correction-patch.json": "55f6b30e290db721d9940e423acd920a1b93b4120bc378c9e9d9641f7a818e76",
+    "diagnosis-runner-source.py": "9628890125bf687baf4921d3d28db03d68c54055dd55d10f03512203f73bc694",
+    "evidence.json": "03b30aca3661b50ab92fae4388e5010244172585d5b27b40008c3e72cc6146b0",
+    "export_summary.py": "3a196d259303cd517468ecdba8ce8de57a0b4135fe871a69747895a6f21c67e7",
+    "final-state.json": "5f8a8f5a9a4e8fd9c07c82f87a207e9ca406781cd926eed3e0450e1cb9705e18",
+    "model-result.json": "c22c22d72804d0af4bfc02462081a2418dafa213711613aa5f7b8c00d8c644cc",
+    "plan.json": "b9c6ef636fb9a8c8fbf3c138d9b3e35e09d6c3b4417e7eea16c4ff22982af28b",
+    "rendered-statefulset.yaml": "bbbce3853762332b94ea8bf66d9bb18d77806e7dd2945d60caae0920ce097ccb",
+    "verification-plan.json": "dc429de2c75418a54a05fc23321075e57c6f62623659edc29de5814d4c4f5d1a",
+    "verification-summary.json": "221d350749f5aa4b3b850bed3cc60b62beff12dee45fb708d5cbe2beaec1c222",
+    "verify_recovery.py": "da765f6eff6fb1fcd01661a0d2b7cc7b1c251337d8f02b508c1b2eb5f5ebb903",
+    "model/0-request.json": "823cd4188fef1229544d5750b984588a1e6c3e0fb385c5087ffe5c8eea403f7e",
+    "model/0-response.json": "1321528f8d338ccb4714f6d2c3786159f82b5bb64109cb0eb22c5179a78a9bc8",
+    "model/1-request.json": "120dda22cb3b93cf03bb8fddf2d29b7dbc84740665cc92abc8a1a1412d51f67c",
+    "model/1-response.json": "9a74e029da8652c449dc08191eb639a6abaa41ea2410211284eb102f99a4be1a",
+    "recovery-traffic/plan.json": "ea73ff28a52861b11ebd2a2ad6b71c280d8c4894815bea88bcd69a20adeaf3cf",
+    "recovery-traffic/summary.json": "41c83d45642da3590d01719cf7367484ed64efb82ee4768c8e75d7581eed6973",
+    "recovery-traffic/accepted/000.json": "5071edaf6151d4676e892b0f31f910fc1db2201ffcc4759071209a61748ea798",
+    "recovery-traffic/accepted/001.json": "817b30de0faf91bc438804e509a90afdccb3522c68950745c491f32c7bc07c40",
+    "recovery-traffic/accepted/002.json": "dfb210db9245aa098032d836fae6f54a439c36b69e28e952d1a0f7ed8ea9a62d",
+    "recovery-traffic/accepted/003.json": "4c2e93732c0b7d09c85c45f446ff94d4a4a89ad8df102ac02aef1a0b55bda6c0",
+    "recovery-traffic/accepted/004.json": "6af255ef2871760f2060c3063543787a60997c5ab4ff08c3d2c239a1be0d91e5",
+    "recovery-traffic/accepted/005.json": "3829022cd68939311023b91a5c5df86bfeb6dc676bab1ed83f404fe0a9aaf11c",
+    "recovery-traffic/accepted/006.json": "895533f75cd2606cfc050146fb9c2373fb93d4108c46c9b496d2940f176c6b6f",
+    "recovery-traffic/accepted/007.json": "163318b683b0f0b148ff8a18fe313c7005b336d8f84db41d9a03d1c64fcdabc5",
+    "recovery-traffic/accepted/008.json": "11f994ae35d704590f59ce947e8026438786572fb0e4aaf598fc0ef7d52cfdd2",
+    "recovery-traffic/accepted/009.json": "072663c6380830a6bdb5de5e79c054a931c4f361f7f3fcc6c2ce813074a0bb51",
+    "recovery-traffic/accepted/010.json": "9a788d91abb500c8cc65bc0a722e27aa09441d5e07f9c1f7dac4861694f64c06",
+    "recovery-traffic/accepted/011.json": "6cc38266f1af2a3a87a8e5249bbe6d48a627a4c989ce7dd7ed581ce47bd87629",
+    "recovery-traffic/accepted/012.json": "c7e716b0fe275379b82a67d46d5b0fbf1766fa302c0a199b0cc512e431aaf2e4",
+    "recovery-traffic/accepted/013.json": "c4f820c2527a1b0e7191cc6018064d6c4541dc8dbd4f7f177c576b34a4b8116c",
+    "recovery-traffic/accepted/014.json": "55cd95b069775adcffa20f4f1c79138a09cd436e8bd5dfa8f902306a82577285",
+    "recovery-traffic/accepted/015.json": "9ea93cf3abb4675ff63b3b62582cc4d0c274ca9b2e9745e39cf6aa5ed958e0e0",
+    "recovery-traffic/accepted/016.json": "1b763b662415d0eebf62783cbe4f17f1e4dcf99d5c1a39f9f7dfffd25bc15cfa",
+    "recovery-traffic/accepted/017.json": "6ff18d627b671b88e28afd71b74f21139971839b6b21ef0f9837df485d557c46",
+    "recovery-traffic/accepted/018.json": "57889a5edba5f5a885c2eb855223bc9b7666cb41917c80df9db1fd9d02225cd7",
+    "recovery-traffic/accepted/019.json": "96a806850220192f0facda1feb4c71b880b4de2d329c26500fe332b69a787ac7",
+    "verification/000.json": "f5004324e07439f31d5830feb1de974e6937d1316dff4e37e349e689f480cb6c",
+    "verification/001.json": "d51491f4db7646a75b36a9a4cda9768aecdc6e4d291ed99216a19c5b6a17d91a",
+    "verification/002.json": "a56c138bbb315bc7767034eff428d405dbdfbdc99494f0cef235c239ef0f28e4",
+    "verification/003.json": "d2e25ac0a1facdc20cc0691f1e99a262e3404ba566bb3b0d0977b8fa56801821",
+    "verification/004.json": "956bda2cd4ed69f3e418943fcf74261ce4fcf212400c5e692fb5b47f368218b1",
+    "verification/005.json": "f0a89dd60d42a8fdcaacc655b0df01398f35c0b9ebfe1ec5896fef50004b0719",
+    "verification/006.json": "1b2573d7ac238c580d3b17016eb3456a7319a8944f850fdd7d159f370baa9b0a",
+    "verification/007.json": "51e96a9cc2729b54584c9e2ad07e305a56308b59996e687ec10f020259ede762",
+    "verification/008.json": "5d5685dee0136727507511d99469a5a4185a6713921de9ac276a956ba36e415a",
+    "verification/009.json": "c90c6a47b226543ed596c9915b8c6a790e2b92d7ff1954ba0da232252f2ad8f7",
+    "verification/010.json": "0600b17befa35fb478007f2d390080900d04f917a78760b3e4b50e8c04a50bc2",
+    "verification/011.json": "aea078ba3d199c803d07c24a35eb54c5e26b22cacf5e0866804d91d41ac36f21",
+    "verification/012.json": "f825d11c3e1e058fd295a81a02d7445eedc86d4f18406ff9f02d2881e4aa2683",
+    "verification/013.json": "3074ac3dc4a93a637112a2c982dd3dcf4c6928125b49e803a9a8294e2674efec",
+    "verification/014.json": "eb73c69efe3737543115cee1a9664767903124fac58030c2e5feff05b2e94314",
+    "verification/015.json": "417dbad207fd6cb60527c4837935844b788d91b057ea5c8fd7dcd480d1f82968",
+    "verification/016.json": "16528812127f5d99f1b86a7e7971c8b876427ac45777b43d562c2a83ed8bb446",
+    "verification/017.json": "7bdd28d6a702ae5c8201a45a3f719e41f438bb785ab4df3ed5d949c79da22663",
+    "verification/018.json": "98e3449572510dafabad0873a3f98b066296bf4e1bdda66558a8dd2c80b2cc12"
+  }
+}

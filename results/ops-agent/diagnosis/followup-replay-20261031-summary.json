@@ -1,0 +1,1823 @@
+{
+  "schema_version": "ops.diagnosis.followup-replay.validation.v1",
+  "date_kst": "2026-10-31",
+  "runs": [
+    {
+      "run_number": 1,
+      "activation_end": 10,
+      "status_counts": {
+        "ELIGIBLE": 42,
+        "BLOCKED": 20
+      },
+      "first_blocked_source_index": 53,
+      "first_boundary": {
+        "post_activation_index": 42,
+        "state": "WORKER_BACKLOG_UNKNOWN",
+        "reason_codes": [
+          "KAFKA_PARTITION_2_NEGATIVE_LAG",
+          "KAFKA_PARTITION_3_NEGATIVE_LAG",
+          "KAFKA_PARTITION_6_NEGATIVE_LAG",
+          "NEGATIVE_EXPORTER_LAG_INVALID",
+          "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+          "REQUIRED_NEGATIVE_VALUE",
+          "REQUIRED_SEMANTIC_ANOMALY"
+        ]
+      },
+      "fixed_conclusions": {
+        "ABSTAIN": 42
+      },
+      "plan_sha256": "2b04ac93336a724b04e70248f04e128365514bd0ffc1f7ffd58b26a8381b6c91",
+      "summary_sha256": "2486bd35d84ac7a67e15e98669318b917ea11e363bdb38a6d5af0edaf1fa0dac",
+      "steps": [
+        {
+          "source_index": 11,
+          "status": "ELIGIBLE",
+          "step_sha256": "1ce30eec98ac2b2fe4aeb637b530cb3df358fc22f754b7dde479c9e8989461f1",
+          "source_file_sha256": "1b0cf2445e14a645a53bd98a90dd357816fcc3e9f4ad2f50b101fc8aff9877af",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 12,
+          "status": "ELIGIBLE",
+          "step_sha256": "925ef59fadd9f2732a8dae13b4028049cea5aa3f156c44283f460a667cb655f7",
+          "source_file_sha256": "5a2907be28dedc0d7194bc73f0818af94993b8b7c37b600bac48d0faf9dea222",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 13,
+          "status": "ELIGIBLE",
+          "step_sha256": "1447b6fe7524d4cbd607f50a1622d62695e8983c18cdc6bdde0137bd1283fba0",
+          "source_file_sha256": "95cf4b243694132bfc17a77a8837f98e7c644d4f828fc6e69801fe05d821ede0",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 14,
+          "status": "ELIGIBLE",
+          "step_sha256": "72312d6c86a120f2d21abcec933b0ef65d777b78547db3d61a7b21cfa8727b81",
+          "source_file_sha256": "bb2a7e01a598b2cc06e787713a2398db9b7818c612aa6bffc8805cf07e95721f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 15,
+          "status": "ELIGIBLE",
+          "step_sha256": "131b5b606f81c674f6a04b9a3d30bb8d4592fa1eab862bec9c4d7b7709a5e611",
+          "source_file_sha256": "afaea4583667883fa9686de72f7132be52b1f36287cabe2964bc57cd36b66ad0",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 16,
+          "status": "ELIGIBLE",
+          "step_sha256": "662090c0bf847f32824203aa40412f49ed49f0070790a891391db80792fd51fe",
+          "source_file_sha256": "1011abcb94d9a269c49241a0b1e2fb258d9df7e7950e42af24bac318dd50d8f8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 17,
+          "status": "ELIGIBLE",
+          "step_sha256": "fded5120de9e8a64a6591f5732b7d506c7ce5306db308107fcc646895a200e8f",
+          "source_file_sha256": "11fe09522fcdc3f73eb6cfc5e065e0071424600df146580d808b36bbd2ba828b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 18,
+          "status": "ELIGIBLE",
+          "step_sha256": "aac10cf458b87f67e904865955bb10ec656b9c1302f47e0674e2a1a5eecacf02",
+          "source_file_sha256": "7c5cd72416c7a42db101efa1eb00449c462ace87c6d6fb4dda6d407bed6d274c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 19,
+          "status": "ELIGIBLE",
+          "step_sha256": "c144e634a1eb43f79ebfc3114fd658a043a8164e9802444030e246074f34eb37",
+          "source_file_sha256": "6b2631e0365104dfb2cc951ba3f33b4bda5f2b84fc2acf318f5ec75eb5cfb46d",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 20,
+          "status": "ELIGIBLE",
+          "step_sha256": "8e896705ecec3d560c91c6a63461b4a46e5e6d0cddbe13c73d0259e37c02b1e1",
+          "source_file_sha256": "8031028d8c613fa32ddcb863728c24d491a5c7f745e24918ff1d74ca76d2dcef",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 21,
+          "status": "ELIGIBLE",
+          "step_sha256": "ca2129f231a39b5f8c0e29bf2d8577407ad045b14cbf4acae8709b1f125d4494",
+          "source_file_sha256": "2e0b832d521828c27a8ab86243563ce1027fe67b65bd994066abf7127d5ee1df",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 22,
+          "status": "ELIGIBLE",
+          "step_sha256": "03d30c3ceb55678aafc0f7120a584a13ede482bfadf7dc8322dace9347f9002a",
+          "source_file_sha256": "f7b42d5594b1dffbb1085cd7212226de9ffe3169dbbb61ef9f08478a59ff12a2",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 23,
+          "status": "ELIGIBLE",
+          "step_sha256": "17d104c6abd0176cf4eea0a8a69b5b680d97380f2279f47777b10d122a8ee43d",
+          "source_file_sha256": "d57897f228612c656f44b130825d1c75f4f3e7e61f8f6b716e08d920e95bd9c2",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 24,
+          "status": "ELIGIBLE",
+          "step_sha256": "605583502704ba0032b30f609d848bddf6bb135817ad6b1e48e4c5e6e801c55f",
+          "source_file_sha256": "59aae30ffad3480120c1eeb5a5b3a108a8abfb3f5ff4af31c3ceddf453e52a4f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 25,
+          "status": "ELIGIBLE",
+          "step_sha256": "f728f69a6c6dec869ef38ed71f2fefe0949a7d8d22d50f363aabba3920c242a1",
+          "source_file_sha256": "ffffeea9454f0d7abb423a96480e5b73982ccdd610c04f258e61e610b13c06cf",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 26,
+          "status": "ELIGIBLE",
+          "step_sha256": "b7c1bbe6ff13de460021708613c2e7b5e89a743be2467b1cde7f073b615c199f",
+          "source_file_sha256": "602dc305c075a7b761f435cf83573a99697213ba7edda9dfb2db15b44843d9be",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 27,
+          "status": "ELIGIBLE",
+          "step_sha256": "290d51b76ee03c7f0b83b48d58af80b2be1334a4e8bc32875f5d469a8e83955b",
+          "source_file_sha256": "c76ee200efdf59130b72da5bd58203b509ca09a0868ca6788f2bd8e50fccd3b5",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 28,
+          "status": "ELIGIBLE",
+          "step_sha256": "dd2b7d1998524e4d28a1f798be160fc7043f09bf47707309bcd20afbf36dfb2b",
+          "source_file_sha256": "1e262df04d21ad5633ad99c17f0ebf1f5090080b9f99b973c857dc656a957bd4",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 29,
+          "status": "ELIGIBLE",
+          "step_sha256": "2ec00e4f0ddd7821509e7a60aef68e52265fcab49325bff86b6f5f18c0011363",
+          "source_file_sha256": "b66644a995e7de872e0869c6d879eb8aa3a80080c72d9f8571408af1a8f94942",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 30,
+          "status": "ELIGIBLE",
+          "step_sha256": "68e404989558f9340b5df85cac29124c766e19e7b5fa3f3e3874b59be5cd021b",
+          "source_file_sha256": "d469566bbd54aeb8e690b0f4065f31d00f0bbdef1a1094e147ebbbd6f7e1385a",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 31,
+          "status": "ELIGIBLE",
+          "step_sha256": "1ddca46ad8e1b1c4c959f5edd7fbc9805320f58835533a08d882508f917a5bdf",
+          "source_file_sha256": "1133688410886c2b31b4de3beb47ecefe0c09aea4f7c0f0885ea29481dbf79db",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 32,
+          "status": "ELIGIBLE",
+          "step_sha256": "1eb0da1be0fa3281fbaabf5c715f3b7405dbd5b68a5db90d4111a10bc88a2172",
+          "source_file_sha256": "a58f6519b10a455a66c83d94195ac522289c97d74be370bcdf19b9bbd3665c44",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 33,
+          "status": "ELIGIBLE",
+          "step_sha256": "3a0bff58c6803ae51ab982e4021bb3916c9ba44e1635b4754424378bb924d03b",
+          "source_file_sha256": "18e2a9b1d08f38451c9dbfa1e6da36de67eb5f1dd86748eeeac2a41adf852db7",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 34,
+          "status": "ELIGIBLE",
+          "step_sha256": "7388b6b3602fe466feac306ab4a9802604e1e2b351619fa2f9000efbb48256f5",
+          "source_file_sha256": "1e32095f6a4d7b0e1fb8892b6bb209bc35e5686a0b5576590b1effed46349784",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 35,
+          "status": "ELIGIBLE",
+          "step_sha256": "f715c5060e7f08f7eba6cac80bc1376148d9ba7dfc206c342c6a8d38ba3fd3fb",
+          "source_file_sha256": "288f8b191bafaad0161b4895c62a17dca3182c23848ad0cd993b992e39586772",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 36,
+          "status": "ELIGIBLE",
+          "step_sha256": "398c3410010e3be23be11b26280ced393e67d8c81c2882dd93849919f0878415",
+          "source_file_sha256": "9c4779749b4d4488c0ba9ce7cee8084260360077fbd743d789e822813044ed3c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 37,
+          "status": "ELIGIBLE",
+          "step_sha256": "397c3eb0252ec51a058c76a148de249851ca317c2108d5921322c6e62cd912fb",
+          "source_file_sha256": "30fa53e66d9e23e5f51df51f3d7f86d04f8f64f3561a811211e129fe8c3682aa",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 38,
+          "status": "ELIGIBLE",
+          "step_sha256": "0b65f216b81537bf7f730fad0b053f7e9e7e7631f374342cda1eca9c9a6bda02",
+          "source_file_sha256": "806ac9a51c7fba468f242d2cdb4b55cb5b1ecc0387dc64e4174374c82242c712",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 39,
+          "status": "ELIGIBLE",
+          "step_sha256": "f1aedd387a32092bea9bb0a6a92a9487662b743af820124a71766d7d5fc9bfad",
+          "source_file_sha256": "46d939e859ca3724ea10544ccb1cb60c098afb180ce6fd986037c10785018258",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 40,
+          "status": "ELIGIBLE",
+          "step_sha256": "12622b31938c57fd2a9e87db2e1e49630d8c1890b3355cd8b588aa1bd91d79ae",
+          "source_file_sha256": "875f7eec7a8783783e792f7caba10e6ad8d477fe1d0e918c4a23f397ff672543",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 41,
+          "status": "ELIGIBLE",
+          "step_sha256": "d98abdf94e90400d35c38bdea0a4b2349b4a745cd9e4780c5da5e7ea1c2b0c67",
+          "source_file_sha256": "c9cd5fe9e4a6d87e41ad19e09fbc9b21366b2eec277fa780e1803bbd1a7a8fb3",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 42,
+          "status": "ELIGIBLE",
+          "step_sha256": "5734e9e7526375efc9f55a0f1a8a2c194cce454319e0176f1ed72f4375cb027c",
+          "source_file_sha256": "a394d02a0a69db77da3e9000ba22bc82e1eb4941c130a077f30a0314a3c79a9c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 43,
+          "status": "ELIGIBLE",
+          "step_sha256": "5d9903abc8e382e2994079d1a67ff9556e59182030c89dd2ace7e42f18d5a53b",
+          "source_file_sha256": "06f1478a56c84a94dba90760b211c09855c84020f3d33c1d9009d8fa318704f4",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 44,
+          "status": "ELIGIBLE",
+          "step_sha256": "b2df170c77bdffb0f6ee83b3f74307adb9dd455253a8b4a1927038a1db05e99d",
+          "source_file_sha256": "624fa3ff58cda96268006c5b9779e6c67b104d4f2dc60dc9bf49a251a50a71a3",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 45,
+          "status": "ELIGIBLE",
+          "step_sha256": "78d8cdb04994feffc77e7ef7c92841aa307dfda6575e7fb3cf82552cace5b6bb",
+          "source_file_sha256": "9c4df9ed63d1e111c78ca75016e18f34ff66c047a645d79022a7c4a8732b353c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 46,
+          "status": "ELIGIBLE",
+          "step_sha256": "d4f4a75d9ec31716575becf8c87c02b2b9de981fa0e48b874a4184721f79198e",
+          "source_file_sha256": "132251d0975a37641085834199cc9672d658bc4c43ebbf3d62348e94b2b3f987",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 47,
+          "status": "ELIGIBLE",
+          "step_sha256": "eaa7725d275fd7d09f892417de6e948aeba1687377cec07e72af456b37a090a4",
+          "source_file_sha256": "a6b2dd219524dc5f2cd2c78cdccdca5cc1463f71eea30eecee34b1b5d72f0193",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 48,
+          "status": "ELIGIBLE",
+          "step_sha256": "c04ebde9ef43943e7145936a0db4ec51a15e13a43f6046f2d558c2020be0e50d",
+          "source_file_sha256": "08e3f2086a34c3e41953ac75176553d39d6e93f739e9a23b65abb7def8b63606",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 49,
+          "status": "ELIGIBLE",
+          "step_sha256": "647a0ffb41793dad564d2717ad1bfc83582550364961626993a368f20af4bba7",
+          "source_file_sha256": "ea3f16181539a1b72508af0aa671e1ad01ff0ecde2d71f26447c38115448daa2",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 50,
+          "status": "ELIGIBLE",
+          "step_sha256": "34f52bdce3317de96976a8efb4fa102dbb4c2e8b42adc1d3c51f1023fe10944a",
+          "source_file_sha256": "f52a68bb2e42833283bcb7a9c47ec5010aaf54719abc928497c658c46349223c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 51,
+          "status": "ELIGIBLE",
+          "step_sha256": "9d70e21a88d29b41396fa4dc0f400329ef452c5f6ee58639d118e6e47164fffb",
+          "source_file_sha256": "893c011f563f593df789d4af83e28ab81449d6f53ff6a36a3a803c9cd16e632a",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 52,
+          "status": "ELIGIBLE",
+          "step_sha256": "aa8efdde0442c52877492d165ee4fb785fa16be3245c6273ab7180fe9ba8dceb",
+          "source_file_sha256": "c86c864d78cebb9bdef6564f73708b1013eea77016d4ff4bcf5dea31dc6956a1",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 53,
+          "status": "BLOCKED",
+          "step_sha256": "dfaa2782546c3be42f31ee484b7a074d518b3efea92f5a2909348a3cf032d5a9",
+          "source_file_sha256": "aeba00b9a30a2ea288037d8e581f3fad35ee2e203bf7364db7b822a6fcc4d202",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 54,
+          "status": "BLOCKED",
+          "step_sha256": "faa455a2e0e396013e5db9178afa82a63a3cb4e34d37f764e8ef1f4daed9ed4e",
+          "source_file_sha256": "fd9636c16647846ad2323710c378b1fcbf2a7e84404fdd4ea75b3e00a86191eb",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 55,
+          "status": "BLOCKED",
+          "step_sha256": "713d3a73141092de802ba2a3318a18c43c2ba669d0cf7d3afaf7052fd4e5bc19",
+          "source_file_sha256": "5d5da349b969089e76eee020c4f9452bc30597d34847029669a22cf678370546",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 56,
+          "status": "BLOCKED",
+          "step_sha256": "403afa83574a31f9ae7adaee49f6357c88ad38da2640efe91536b5e5b35cafb1",
+          "source_file_sha256": "8702d0ace69629794e1f3152509964b1fa2be6234f68d7038a8dcbf1f50af6eb",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 57,
+          "status": "BLOCKED",
+          "step_sha256": "49e6fcf54325d6fdfb5faa12353beff2fe22254e0c0a940b722c0e6be64896b7",
+          "source_file_sha256": "4f11e50243b7e4750f090c3f8c00222ac5293abd42b50292bfaf6aaa1ba9bab4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 58,
+          "status": "BLOCKED",
+          "step_sha256": "ed02ec963d949561c72ab3dd82c8d43ec457ec211f993df08aedbf246f35ceb8",
+          "source_file_sha256": "28a869848a72fa2d9160e1c7ae6d835d59ad0764e0ba44c1daac1b575d01dfbf",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 59,
+          "status": "BLOCKED",
+          "step_sha256": "e471935b69f4ae748c12aaffe8f79af55a873d1e822545bb6227a64cb10f8475",
+          "source_file_sha256": "448a3a4cfc60c921382716a63e16bfc33bf7344565bceddb54f238ce120d24e7",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 60,
+          "status": "BLOCKED",
+          "step_sha256": "e7fdc9014f1d6087b764c28fcc5ddeb55156e70b8a64867ea24401e7fd2ac1bf",
+          "source_file_sha256": "2304451ba033f3cac02c10446c5ef0e38900a4e488fb950aeb0953cac78397b4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 61,
+          "status": "BLOCKED",
+          "step_sha256": "7f51e58d46a07216626a25d9eb60127a1a2c153ca04f722f596d405ea3816bc7",
+          "source_file_sha256": "621924beee0a5971373f26e66bdecf37aa793543d9918a5ff7fbafa7a43e7335",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 62,
+          "status": "BLOCKED",
+          "step_sha256": "a3d78e99d27d57f1fcc426986009773d4cc08744ed87468763279e7211a6e49a",
+          "source_file_sha256": "d9123cbab2559673e6f087d97571de27aad94223f1df86df169e5ee6212dda10",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 63,
+          "status": "BLOCKED",
+          "step_sha256": "351f06fc1f01d2edf2c79bdab5cc1edc1f4dcd87ee1a5725f27382ac6a4287ad",
+          "source_file_sha256": "e28f036766017a1429976185a093a77277d53a74642364f42952a0aeafbd27ae",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 64,
+          "status": "BLOCKED",
+          "step_sha256": "4e393e786385a0adc6ab535b73f02bb71bd761424f2c276461b46cca8265c2aa",
+          "source_file_sha256": "956a589de84f4bd4ac4c47ed949f349f5f998fe462560d11b538cb71008d5869",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 65,
+          "status": "BLOCKED",
+          "step_sha256": "cfac2ecd07016e3b49ebf66837587520a10f02080c1d3dbbef7441f65ff3206d",
+          "source_file_sha256": "752ea4e344b6b60dcf61025534645e82c524b9524d39fee2151860de4bf1c1dd",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 66,
+          "status": "BLOCKED",
+          "step_sha256": "d653565b9cb1ede8d44274fe0bbdffd79d1f65d36dc213ef656c7b6318e6b5a0",
+          "source_file_sha256": "fdeab800e478c4d072ced0a4db978291f2d6c9a50ab9c9f4de6f24f1fded4958",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 67,
+          "status": "BLOCKED",
+          "step_sha256": "b99949ffb3635bbef97e2521e4d68415fa71d04ff6a863a04ddd7956f731285c",
+          "source_file_sha256": "bbd97caa3d8bd12c60350b3edc9a8acf17306a7fc1fc73182022cf4e4543c211",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 68,
+          "status": "BLOCKED",
+          "step_sha256": "0359c58ba8173ce861c2a24fd96b2f537e5176841167325b7b32d559ffe19114",
+          "source_file_sha256": "4d2154d4581ccdc24f6109af3a111810b12bb283e383898943e0aeaf51286e43",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 69,
+          "status": "BLOCKED",
+          "step_sha256": "b703e8127a4c38d3884debd45e9bbd39fe00357cae6008af6ad0697279afc774",
+          "source_file_sha256": "934637f91f5888dd7b82f780f4b13a5856d195431c4d49ef57755f0241f67f2a",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 70,
+          "status": "BLOCKED",
+          "step_sha256": "6d8798e585799e870b870a83c1223da5c62cf9e2ab4871c152052737a8a777c2",
+          "source_file_sha256": "91ab90b7c33aa6b967d2e4b88d8208280c800a5a6353e97f87270732a809a8ba",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 71,
+          "status": "BLOCKED",
+          "step_sha256": "4b6c82f85a92ea0d640dd42e75663d6cb3600fe53f19e3f37059af61adf15569",
+          "source_file_sha256": "194844255e134057917f047e507d93787ce3162b9f6af11099f08780c0a59933",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 72,
+          "status": "BLOCKED",
+          "step_sha256": "2641d0dbe02de30ce1c0ec134187c8a82b5d81a8733b981780ed130309385bdf",
+          "source_file_sha256": "2fa2b942b1cc20cadd2c56a2bda680699dfc6b082223f2406a8a894f6fb8a4fc",
+          "fixed_contract_valid": null
+        }
+      ]
+    },
+    {
+      "run_number": 2,
+      "activation_end": 11,
+      "status_counts": {
+        "ELIGIBLE": 33,
+        "BLOCKED": 28
+      },
+      "first_blocked_source_index": 45,
+      "first_boundary": {
+        "post_activation_index": 33,
+        "state": "WORKER_BACKLOG_UNKNOWN",
+        "reason_codes": [
+          "KAFKA_PARTITION_0_NEGATIVE_LAG",
+          "NEGATIVE_EXPORTER_LAG_INVALID",
+          "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+          "REQUIRED_NEGATIVE_VALUE",
+          "REQUIRED_SEMANTIC_ANOMALY"
+        ]
+      },
+      "fixed_conclusions": {
+        "ABSTAIN": 33
+      },
+      "plan_sha256": "821eadbffa252519e5ba7460e3ebb4f4bff585042107a58199867866dc1823df",
+      "summary_sha256": "d1c266547080221c21d52eff0b38383533098635083a2b211d21559c28bb698b",
+      "steps": [
+        {
+          "source_index": 12,
+          "status": "ELIGIBLE",
+          "step_sha256": "07450049ed5cafc9825e1c3840d029256d30a76adb10c3abff4a43ed43c81c91",
+          "source_file_sha256": "45955b27b8a54ee04145e6fcc360cbcbd0ccbf0324497762f462611142067377",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 13,
+          "status": "ELIGIBLE",
+          "step_sha256": "8a0f5830c75426cebf31fa26951cca4115bae98b41c4cb2b7921e4923a8d121b",
+          "source_file_sha256": "bc7480359152c9d6e07c96580885ccccac8a33e3f07849305cba361687bbea88",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 14,
+          "status": "ELIGIBLE",
+          "step_sha256": "48eef73efc22b22c2e5fffd4b8a7efd8c91e6dc38ab9a3927e61dd75124cf819",
+          "source_file_sha256": "40da95ac7485db6b46d6e21771ceb0b300cb504ab4b4b75b8bdb3ed782fc35d9",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 15,
+          "status": "ELIGIBLE",
+          "step_sha256": "790573c8b8d3d59173e14334f64e53526daa06e397b02baa9a38d2d375868adb",
+          "source_file_sha256": "5a2b6b7796e9087162032352234b4b8de9db0b026d0b2af3169a08a2dc433f7b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 16,
+          "status": "ELIGIBLE",
+          "step_sha256": "c8ebb3e4a2ee77d49a609e4ea201ed4e0a1e5b3846254fac72f1e4cfba324cb9",
+          "source_file_sha256": "94dc0fd419cdb8f9fc95f177000bb467b0ac4bd1e6987e620967a995ec60c1ef",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 17,
+          "status": "ELIGIBLE",
+          "step_sha256": "dad7f35d363382ccaa0caec90912badf2841d74ca2061a743b86457d968d79c5",
+          "source_file_sha256": "28f95c775ea0c78eaa4dc897e1ab5a54f6a205dffe67ea0ec4e27f3b63ffd9c6",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 18,
+          "status": "ELIGIBLE",
+          "step_sha256": "d260717c932c06f6f3149756845809def2b936a51133af8349d5c6834f597217",
+          "source_file_sha256": "01b28e1b69e41f6b7e4dfd6956f7bcdd86ead0a33e7af7e83571f39a1e698f95",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 19,
+          "status": "ELIGIBLE",
+          "step_sha256": "656d143372e38861bf09664b4377c761b34850ab4f06cc5b2deb451d54296d82",
+          "source_file_sha256": "773d90b00a71567a35a30e85a04ccd6dcb0c12be5ad013f2042fb9acad81b069",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 20,
+          "status": "ELIGIBLE",
+          "step_sha256": "5939ade0b6380d1955f025a409d83467fc7467de9722964bc863ab82aea1b236",
+          "source_file_sha256": "393ae7c37b9dcb76f82b2b53d04aa5490653423eb5b66166c62f30f3fa7d3caf",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 21,
+          "status": "ELIGIBLE",
+          "step_sha256": "ff4fdb2ae7781a7c48a2ac1cde8b4b23393cc47cc62e9d5aeb53a440b85f9b96",
+          "source_file_sha256": "bf0ac97a5906c6978045b7096cf8528e459b6be862a7ed94b116b5787df859c4",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 22,
+          "status": "ELIGIBLE",
+          "step_sha256": "d351ba683a443f00f37f7863fa9a556e7ff7fdd961cc3a9b97783d1b91c83833",
+          "source_file_sha256": "73f6e6d5dc31d856a937f2c5851a90a29c1a7c1c25aeb79e98694bb5d28966dd",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 23,
+          "status": "ELIGIBLE",
+          "step_sha256": "accff5ca7bd096ab7c44caf8af9a174810e699b96d5df32542c7ea2b8ea0c718",
+          "source_file_sha256": "fe9d035c58afeb9e5cf213074d321fd0af19cea7ed7c68272a30134f5a8e4ed8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 24,
+          "status": "ELIGIBLE",
+          "step_sha256": "7408d69eec2b37d584dbd5261cc9a34e478da0ff9728adeb5cfa6419a5e528f1",
+          "source_file_sha256": "d7d3c380c1c284ab98511282b98cec26660ec76db8e1b3d09ebb59405f4b6326",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 25,
+          "status": "ELIGIBLE",
+          "step_sha256": "e81a53bbe0672b1caf9f91f7da03c69d1853cbe3d57ef0429e28afc923b699fc",
+          "source_file_sha256": "d1d9461bd4b16eea2975666d59cc6fbee56bfce265f61b57e91fb7665e9f6d98",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 26,
+          "status": "ELIGIBLE",
+          "step_sha256": "414f281b0d6176b66611b204e3eb6cd3334926cdffa4fa60fda21f9cea167e06",
+          "source_file_sha256": "b8869c384b1d713087019c603a845345bda47d2564bfe8f8b85c37d97a032c54",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 27,
+          "status": "ELIGIBLE",
+          "step_sha256": "5d9edcd8eb29e0754ea9900e1c67d98546ea42169b50f2c35297028e2117ac9d",
+          "source_file_sha256": "7608e9b6a5605909d1db455a7738213430f0e3cdf0d9b712df6f1d5ac00a9bc4",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 28,
+          "status": "ELIGIBLE",
+          "step_sha256": "7341dad44349883309e37987da13759fc20e25e407a80b70ba542596fb8c46ea",
+          "source_file_sha256": "7461918c492e23be9c7b3352dba85bf0de401f3e102912b21f44db8ed8ecad06",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 29,
+          "status": "ELIGIBLE",
+          "step_sha256": "dd307d7d768c515b30b2de724e3c988f4af1eb4022c356eb48a0091909e703f0",
+          "source_file_sha256": "502bf68090cd5e5722526d21c2ef381925e9a59bf8523b3c108aee9c62962a11",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 30,
+          "status": "ELIGIBLE",
+          "step_sha256": "7a7022c8ee49d83d4b44badfd46677083930a66c76c58202b6a767f794053b75",
+          "source_file_sha256": "3a26ea6c521c6012785e0de876dffa22324d6efab490502949145122461c49e6",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 31,
+          "status": "ELIGIBLE",
+          "step_sha256": "40dfa020e83f416168c30bbf2758dcdf3027377eb51ee0781c66651c2bf9306c",
+          "source_file_sha256": "af53d1d14d1b2bc515de3f388a85529416db9c939c3df268303d0ec88cb81698",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 32,
+          "status": "ELIGIBLE",
+          "step_sha256": "b77a225c45aab051b210846b69852617b1b0f2cc18b3517bbd11ca9045b709cb",
+          "source_file_sha256": "98b5b5d8066993d6f236a87058d4cfd7575c56f1905538f4045b0b9337262532",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 33,
+          "status": "ELIGIBLE",
+          "step_sha256": "dad2cb168cb163bd805d1032cc59cc5b5477cdacb56311742255b7fba788849f",
+          "source_file_sha256": "33f39b6aa462fe2c8701d70d1fbc21c0c0ef514d19f146c71d15c430cc615907",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 34,
+          "status": "ELIGIBLE",
+          "step_sha256": "47625fc4c66a45d60a1bcbb172b461e94b11b320829ce069a1f08c5a91bdf2a3",
+          "source_file_sha256": "491a67fa5ff15d831058558701137eed6f817f215ea8d371a455614ce7d0f00b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 35,
+          "status": "ELIGIBLE",
+          "step_sha256": "69b20d0def9a3c7480f58af7462df306f47327dad1b56823952810bef577e9bc",
+          "source_file_sha256": "24a47329e6dd8dae8ec82bc0c0537695c1f0219689c74c1fa9c4998a206677c9",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 36,
+          "status": "ELIGIBLE",
+          "step_sha256": "2a7d98953b72060090bf37372d4d5834dda39e0fbe03c1fbed0bcd5805fc6481",
+          "source_file_sha256": "81afe68136c574d09ded633c2b95c10c5cc3bfcdbd7879e55c27541b7cd174cb",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 37,
+          "status": "ELIGIBLE",
+          "step_sha256": "90f820af9ee4287fa85aabcf7de3ee405afc0ecff4f6490c354edf3eb029159b",
+          "source_file_sha256": "d5c789fe6b0c061711169fe3efd937c98afa30b5e7da1f95c89d08e89de6eae2",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 38,
+          "status": "ELIGIBLE",
+          "step_sha256": "21e934c4bbae25a759093bdf5d270bfef5286bf6543d6b49fb13e0b15c9b092c",
+          "source_file_sha256": "1dcaefdc1483fb9d5e650ced2922eb5a538bae37fa308bdd4218a5ff4396c402",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 39,
+          "status": "ELIGIBLE",
+          "step_sha256": "bdb6bc02d815561c598ecd1dd6834a6dce00e8d25c817801084397903eb20676",
+          "source_file_sha256": "29df70f6c0260efd122649d8a6c00e3ff9bea1f0bc6d8162a88fb28bed371d4b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 40,
+          "status": "ELIGIBLE",
+          "step_sha256": "777682adf412d8371a778f84b183210bbf0b6941ed199f924fd12fbe75ce7174",
+          "source_file_sha256": "6647e06df849621e9effdc74cdf8c94ea5fd873aaa47e86c1c133d42539422ff",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 41,
+          "status": "ELIGIBLE",
+          "step_sha256": "85df20280a8dd127c2dd03cf38b28f4e8def7c3e86db60b553676b877c415424",
+          "source_file_sha256": "0c7bce9916d35375adfa6c027e5734398dbadc9e6423b86ea3f7a27ea438f5f1",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 42,
+          "status": "ELIGIBLE",
+          "step_sha256": "9fe1fea89539938cb894b3377c5ea3f96f1b991241a5bbc76d8be5c6f72bf977",
+          "source_file_sha256": "fbaca7a45dbde13f8c8bab8fc90a046d00b70fbc8bc4818981cf12011460654f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 43,
+          "status": "ELIGIBLE",
+          "step_sha256": "2b69b8a4944224cfc25743f735be75bb3f92bcb388c3db3e99ed01ce9f8c1905",
+          "source_file_sha256": "ee0eefeccd99101855887350204843209339be5c25bc57d4b8506a3afee5fc70",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 44,
+          "status": "ELIGIBLE",
+          "step_sha256": "317b7f80c2158b34714ea2206025dbaa3f9bf5dddb5834e2e7057c285a6f9374",
+          "source_file_sha256": "d42928a3579cabf556a458f7befdb7c8044c65dc2b239fcd2100e7efe92036f8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 45,
+          "status": "BLOCKED",
+          "step_sha256": "37e913bf256c0365bcbfc4b5d979e4b0f7d803410db71421a25ddc0be74e8c0e",
+          "source_file_sha256": "4fbb87d7be1082e3d908948e493925c28a86fdae0f0d3092fdeca58e5b05c900",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 46,
+          "status": "BLOCKED",
+          "step_sha256": "f6e62bb10e6e06498aaddac88ea3a45c1bd544a06575e671cbf4b66f66fee458",
+          "source_file_sha256": "da1d0fac310c17d407e5b69274432b22ac52b17a1d97c4f64b85dd5a15621bdf",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 47,
+          "status": "BLOCKED",
+          "step_sha256": "db259a5885726a401550082a7ad979b242f1996c23932cc50d426012b3c8fa67",
+          "source_file_sha256": "697ea9e7b1f4b295116774eb84577bcfefa7845316da6023700cf6ef210d3879",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 48,
+          "status": "BLOCKED",
+          "step_sha256": "4c8f6ef6559914ddffd3a720dd506a14a9cd465ba02d56df46b181eed083a088",
+          "source_file_sha256": "e49dcac16f1af69c73aaec2f8eca6153149600a22adac91e3b3c8be12dbee4f1",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 49,
+          "status": "BLOCKED",
+          "step_sha256": "312322fdcf16f80875dd7084bc484fb24f073067d8155d56a89853726172e873",
+          "source_file_sha256": "78a93dfcf9b4dc5e90f2f7ff475d486ea58ffd875aed27cb46172ff10bba4bba",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 50,
+          "status": "BLOCKED",
+          "step_sha256": "2765830aada45ee76e7748b622f7a77dacdc1aaee9fef5ade5041073fd08bfc6",
+          "source_file_sha256": "58b292baf15849682b1a397dbbd079338a0a936263966afae07920da167e29cd",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 51,
+          "status": "BLOCKED",
+          "step_sha256": "0c44f1e21c3ba50b903ba7be4931bdfe1401cf46d4645f6ef71902714a2299f8",
+          "source_file_sha256": "1327e5eb5bc306005ed68ed25bb8a509ad4cab13b21e1be47ef8d9064fec218a",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 52,
+          "status": "BLOCKED",
+          "step_sha256": "8922c7cb2678c361d8ede8c3c43dfbe7d4765ac94e45f40c45b6e6413a11bca4",
+          "source_file_sha256": "a8f3c3261498273d8842fdc9b6ce02701ec89917e80cb3823356965b3ea8222c",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 53,
+          "status": "BLOCKED",
+          "step_sha256": "47f4ddc8ec2238da9345142ac2281e2ae5a8c72f4f620300899ee2119dd6d595",
+          "source_file_sha256": "478b5292e0feebce66406840149072fc7582a8405fb54060f650b557676e9479",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 54,
+          "status": "BLOCKED",
+          "step_sha256": "7ef1b598a83da3b76adf2921bc285d1eccfecfeee7ce0bd486d1bb26c2dd1cfe",
+          "source_file_sha256": "50c4f7608a22e3e71a9cab5f821d82ad087c714ffeeba0513140c57f69b6db0b",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 55,
+          "status": "BLOCKED",
+          "step_sha256": "31536980e8cba5a9d238e1604c3673c86e3d014e6039774b29dead67ae3c3b25",
+          "source_file_sha256": "3422d1cc0739d344bfa9341ec0a5d6a16d83e04f37002e410a40c032fdb8975c",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 56,
+          "status": "BLOCKED",
+          "step_sha256": "67af731f3fd5cc78b73e4ced8162f46a128379c30ce54cce91b3702a45346a47",
+          "source_file_sha256": "bf34744e369e610f370900040c699e93eb7b7dd3a38a4e831ddcb40b80e8c63d",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 57,
+          "status": "BLOCKED",
+          "step_sha256": "5ce952afb3422c6b510ae7fa00fc292323da9293ba8f803d4611f2ea81146711",
+          "source_file_sha256": "6cd25fe5d56ea23687d4e89198c346b35db21011ff6e2b7bd3a1587e87f5d0d3",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 58,
+          "status": "BLOCKED",
+          "step_sha256": "ef8c4fe175eb547c937232e69238f3bfd6ecc0a5bf369efe40f3cd07c0a5ebc3",
+          "source_file_sha256": "98fd7de817ca5a31035c3275cd7fc03ddf4e6a37478e34d64ce5ce0c61d070bd",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 59,
+          "status": "BLOCKED",
+          "step_sha256": "21a2fdbdb564fc811496ff9b4370df20b4bc11aab27b623f096ff10c174f4d7c",
+          "source_file_sha256": "d17e653281bf0336b5898c6783d152030e6f91280d2808c26d8a66d2520c8f6e",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 60,
+          "status": "BLOCKED",
+          "step_sha256": "c5ea69a32e42fa4f7d9e538d6dfccf17a00c3f426bbd10e17a6e227c5cd23db3",
+          "source_file_sha256": "3b292fe3d56b7046aef25d79c3862d453521d6885e8bca59dfca5a181797d811",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 61,
+          "status": "BLOCKED",
+          "step_sha256": "434fde107a11470ebb26151abefad024d9b6a37522966f5472956c89da8f9e63",
+          "source_file_sha256": "be6689dff6cbec90dd0917e722f595a9339c2d96740925111a6112ee959722f7",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 62,
+          "status": "BLOCKED",
+          "step_sha256": "a1b3095aec0dab23751bda725a69d0c49fe3bb3446584621c5f244e522ae522b",
+          "source_file_sha256": "21b360789bc39144503b2cfab24a39878284d7589a06360fa4f62c1dd454e6ae",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 63,
+          "status": "BLOCKED",
+          "step_sha256": "45c84446303ed1f8cd7ad2c20a1efcfa66caccb32acb3b1001e66c8d4a638e5f",
+          "source_file_sha256": "4823bbe7be71a2a8de440014d173f69884eac23e9dfc782b00c33c2af2c09088",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 64,
+          "status": "BLOCKED",
+          "step_sha256": "8be3e4b8abcb39af888f0d486ca97749882eb25a2acca36d45f5ef31b4a3b804",
+          "source_file_sha256": "954c9788ae4563aada5302b6b28e1d867092cf20ea2464134a56db57818788e4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 65,
+          "status": "BLOCKED",
+          "step_sha256": "b427bb671f3b1013557c7568c162d374495b0bafa1a05d8569ca3920d51d0287",
+          "source_file_sha256": "7a8d8ed4fdc0497bf1dc8fe2af46ff26748eb63001dba5a63c202b833a343540",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 66,
+          "status": "BLOCKED",
+          "step_sha256": "33070a7ed915fc4dbb5ae98bf0a886622f750508206d01cc57c22937ca45be3f",
+          "source_file_sha256": "7f6542c24df6225e3ae0d0ad598a4f78b10463c0de166d0264d40d3e9077fe89",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 67,
+          "status": "BLOCKED",
+          "step_sha256": "89676e889c1d40a4b2b2ecf3bad77eda920082833cc01d46a1930a33d244d662",
+          "source_file_sha256": "3661f52288dd38c5fd0142bdf29353faf2c6b683645fae5ec1dcfbcbd8cf727c",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 68,
+          "status": "BLOCKED",
+          "step_sha256": "c21d13f694cdf58a12893878e41e8b3f29383c3aae1c97f0db1efee95cef8441",
+          "source_file_sha256": "33f97d9fe4bdca95ce1e66da36d9421252b0d3fdcea9d2207d3c84f4599630be",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 69,
+          "status": "BLOCKED",
+          "step_sha256": "61c07f94d58349e62572903ef47a24c1b57f457a6b89b76200a093d04a4859d2",
+          "source_file_sha256": "8507a472530f2c662b42a1d0c511144001494e21df4f38698e29a86335ef3f29",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 70,
+          "status": "BLOCKED",
+          "step_sha256": "46ef8939e872dc579f7305717269d02832c080bc03a48ab320435668b77f40d4",
+          "source_file_sha256": "87f26f2d1f0690fff9a7d3fdb662b7fab6310bc785385b0ca45b38378a3bf1b1",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 71,
+          "status": "BLOCKED",
+          "step_sha256": "d66970f629be715abc8086c0e3c034c7c2fbbd3b2af578f1d0d092a91b788d1c",
+          "source_file_sha256": "2c4420b7228ca11ab54711901bf847f50a7116b333096bd093a998e0c928298e",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 72,
+          "status": "BLOCKED",
+          "step_sha256": "c189f8c62339f967e2fc1251e6696138ad8eeab126edf71344243c7d9af2d03c",
+          "source_file_sha256": "028d6b0515b0e85df47dee61b29b405d9b8c8afd0a32247f6b5b7619036b88ce",
+          "fixed_contract_valid": null
+        }
+      ]
+    },
+    {
+      "run_number": 3,
+      "activation_end": 10,
+      "status_counts": {
+        "ELIGIBLE": 51,
+        "BLOCKED": 71
+      },
+      "first_blocked_source_index": 62,
+      "first_boundary": {
+        "post_activation_index": 51,
+        "state": "WORKER_BACKLOG_UNKNOWN",
+        "reason_codes": [
+          "KAFKA_PARTITION_6_NEGATIVE_LAG",
+          "NEGATIVE_EXPORTER_LAG_INVALID",
+          "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+          "REQUIRED_NEGATIVE_VALUE",
+          "REQUIRED_SEMANTIC_ANOMALY"
+        ]
+      },
+      "fixed_conclusions": {
+        "ABSTAIN": 51
+      },
+      "plan_sha256": "03be0df34555e29fea742bec4e7c84c57b46361aa46117487619d9b119f32ddb",
+      "summary_sha256": "edb6fc54bf1f1360c1e7f79b1f2a5ef0ea9d099129da513a83e4f961f74e9d7e",
+      "steps": [
+        {
+          "source_index": 11,
+          "status": "ELIGIBLE",
+          "step_sha256": "55fb7e3f0d338316e3c759bec114ddfc8286cd92055bb03789c90563d2681f42",
+          "source_file_sha256": "579d94e668f199eda5537c868f7e730b2355a4b9b51f3c7d07d54ca2c8f40fa1",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 12,
+          "status": "ELIGIBLE",
+          "step_sha256": "73621ee33c542e59b17c34dcd35eb78a73de25079229196c338507168b628cba",
+          "source_file_sha256": "1f0865ef54b6f2fc93aea2111e4c47a40027756b8952513ddbd515a759ba57cc",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 13,
+          "status": "ELIGIBLE",
+          "step_sha256": "ac354df2f550cdab9db83d57aea8dd1f526f66ad683483f540422fd3721a39e5",
+          "source_file_sha256": "1a53ba7fc06d7b1c9fb6d21d3dab04f45a2091384f09bac5d2a365be34838083",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 14,
+          "status": "ELIGIBLE",
+          "step_sha256": "6c8ee4ac433505b39e38356ad8a6adbdf2792e6ba4dbd5601c6db627c345f6ee",
+          "source_file_sha256": "1581edff7f9a4905cd05c4b9662b9b159f12828ed6530787ad92e0d46dff17ae",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 15,
+          "status": "ELIGIBLE",
+          "step_sha256": "d9edbf2ec14e3f29e9e554160a961bb9ad57c2d22ff75ff83abbbbcfa3cd8abd",
+          "source_file_sha256": "e0d610cd18a1c7c6c8ba062fc082196fa78c31d2a1ae1ca04d65d50552a5e97e",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 16,
+          "status": "ELIGIBLE",
+          "step_sha256": "94ba2474bec1dd384be0b0ac751bac4459b8643b91725ac72d9e96b33e17dc8b",
+          "source_file_sha256": "3ad9646a83990818646de64f972f09627af3126fd8056b2c61a8155caa4dc934",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 17,
+          "status": "ELIGIBLE",
+          "step_sha256": "9f502e6145c2ebcf994b4eabaa4ba27feac809239e08dc2e3bd098b9c415777c",
+          "source_file_sha256": "e8aa98c900f36f5e9500e0a0325e9b22014ca43365ca1860b4c920a68f1162d7",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 18,
+          "status": "ELIGIBLE",
+          "step_sha256": "06d449d95d9b6d6ec1971f7edcc839c833fad9177ecaa9456284034c49c79b33",
+          "source_file_sha256": "c855972c73313ddfd3cd5958de412cb12138f7c7d25917dc39f82f0cadecc515",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 19,
+          "status": "ELIGIBLE",
+          "step_sha256": "ee808d65699e694f93247edfaac05b27d9c669f2a18dabc18e193cef62b1294e",
+          "source_file_sha256": "a62edac40d3cfeb7d9299db4388ddb8171b6a07870001cb2a601468a437a64fa",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 20,
+          "status": "ELIGIBLE",
+          "step_sha256": "214cde6d35b21162f3a57e42cda60a7d6991e5426e474957505551ebeba61a66",
+          "source_file_sha256": "32b1f6fda19adbf60e66b4ee05354aeb1f98ebdc6a03edcc63c9d54887f36e6b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 21,
+          "status": "ELIGIBLE",
+          "step_sha256": "cae366ed55a0ec1f436f55aca4499871807ed013cf1d28d1bc90770b5683e414",
+          "source_file_sha256": "8e1278daecba89d4e765839ce85e1f56ba7b44d95a809fe01bce05e7007350c5",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 22,
+          "status": "ELIGIBLE",
+          "step_sha256": "7a47f09c593420edf23bfb49f07bf806a4678bf3706dcc52a3f342a68b5fcf0a",
+          "source_file_sha256": "87b17cef55d87bd0d00fd429cac25f478c1961650d5e3797e84fbc3dc0d122d8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 23,
+          "status": "ELIGIBLE",
+          "step_sha256": "386f1ee3c10f029266b7f57cacc4b6d5e750a917e79ec4c33fa4997aa3beb1d3",
+          "source_file_sha256": "af780f01afd0a02d0e98eadecdebf5c60894aff29cb52b0477b2e4a370c5523f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 24,
+          "status": "ELIGIBLE",
+          "step_sha256": "b25481840397a37d8a242a9f0892aa3a78e66180fd37dd2bca79d35d48bbcba6",
+          "source_file_sha256": "535262fac1711bd63245c1b8e203668d0811931cb071170d91cddd684a4d5f35",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 25,
+          "status": "ELIGIBLE",
+          "step_sha256": "01aa490422761698d1070ff1446cb5c53c815619ecda0010e183e9350af6f0c2",
+          "source_file_sha256": "66e2e80082064c25df48a15ca1add156c51949583ea4f424ee4c2d992cef542c",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 26,
+          "status": "ELIGIBLE",
+          "step_sha256": "b4dce7256a0ec4aba702a4fc23ddac826f47977adee8697770acd305910583fb",
+          "source_file_sha256": "6166a9f48435cbacf21593717d16c28cf80b4e9c90d6d7e97ac65b03a15d34be",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 27,
+          "status": "ELIGIBLE",
+          "step_sha256": "c0894ae8f2d3b085d5a89b4f54712e7dbd8e37373038e7f997ee65a3d104e5e3",
+          "source_file_sha256": "fbab26dd932b3eb9c472307b59ffdabc0d8f70ba2ad0cf047f27d9e31ce2abe8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 28,
+          "status": "ELIGIBLE",
+          "step_sha256": "515777bd3e022c9390e8cffdd5a0380ae2057fcb70c0862ff81ebfe351e246f1",
+          "source_file_sha256": "c99171f47a944842fa842e86fec1dedf251ad5f24588bbad2dd69d1814efffc8",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 29,
+          "status": "ELIGIBLE",
+          "step_sha256": "8799376ff3967323c5b890d486b81accf9526bd7f9a6cc5f0591d765297aad8a",
+          "source_file_sha256": "ece8fa84a8483d8b552fd50370c9d14f3e7156b72b0b8ed4246bb84475b265b1",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 30,
+          "status": "ELIGIBLE",
+          "step_sha256": "9e858f4652eebfdaf43f34caeedc9a51248ff2e753cfaaecac6b7dda45d6214e",
+          "source_file_sha256": "ff4a63ed0f76812fca8f89b042fcd1b710ed81d16a92d150fcd5fa1072065fe9",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 31,
+          "status": "ELIGIBLE",
+          "step_sha256": "8c5eabf0e8a622724e07d1f589e9a42de22887b252b4d2c408184cfeb8d469ba",
+          "source_file_sha256": "c25f3c558fa11a042938e27a32f07683ac179fd90d271ab80c219996a1648896",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 32,
+          "status": "ELIGIBLE",
+          "step_sha256": "7de56fe819b4e5460eeb06ab9e12d766b76ae40f9adb3b11afd0ddeb79bdb291",
+          "source_file_sha256": "cba5933b6c7286192647e776836c19878a09113a3682d866e067ffb2801ce940",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 33,
+          "status": "ELIGIBLE",
+          "step_sha256": "9be5e833e9b56c6c68ad0c0281ec00aaea587cf4c12400880a61d848e7bbeb6d",
+          "source_file_sha256": "ec0337f5680380b60261be94f593e163efe19e95d751967f5eea8f68d2a2a36e",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 34,
+          "status": "ELIGIBLE",
+          "step_sha256": "d2e9fe5df0f3f6158d450923a7cd5d95a6290f66e1c0d20962e168e18bd1d3ff",
+          "source_file_sha256": "33b8932fcc3b29d79ecf76d5ff87e7e7e9ccdf36bdba3c9fc83336a32997a8e4",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 35,
+          "status": "ELIGIBLE",
+          "step_sha256": "a07ab3405faeef97b88d2921d0b1a4d80aaeb7d77f33629fe35b7d30e35e4d7a",
+          "source_file_sha256": "6e563c2bfaddd8615278cb972c6aee758542a4afa2e76f35b6ada3fc215be37e",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 36,
+          "status": "ELIGIBLE",
+          "step_sha256": "c1cc162320c2d6f137eb8ea3bc653f654e1d9cbc77182079c7462eaa4b1f9a93",
+          "source_file_sha256": "00cc38e8d7ddc973db2b9087417266e00aef1682690c6ae4a7d01df6fddbafb6",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 37,
+          "status": "ELIGIBLE",
+          "step_sha256": "6edaf2cbedfeabf1f841c88278deba13c8f0e9199cf11b78b369496e25efad31",
+          "source_file_sha256": "e259ceb7f05ad4a988774176d20c8687e4501cb2433af6c60359765022b32b65",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 38,
+          "status": "ELIGIBLE",
+          "step_sha256": "31ab62ddfed624f9bbfb238d4cfe81dba59c4e919d988655b0ee991c41acb314",
+          "source_file_sha256": "c369018ffbfd2ee5c6ba0b2ab242e068378378117b269a9346d306a036552060",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 39,
+          "status": "ELIGIBLE",
+          "step_sha256": "7ce9ce3be870a6076dec3d2524d2c1550b04fcc5dbbe1d667d02ce4bf5a844f5",
+          "source_file_sha256": "bae869a8c2b91c0c55f6028220602445c1b2423e92749657c153425ff857624d",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 40,
+          "status": "ELIGIBLE",
+          "step_sha256": "9a502e16cdefed8593340961e8f7cd92f98d289f6f741ed5971786c40a7fddd7",
+          "source_file_sha256": "bd83896df764970571be60f8e440270219d045edcd9a9f2579b5827a8e866268",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 41,
+          "status": "ELIGIBLE",
+          "step_sha256": "1cd9ea4980d07d7156db9d13073371f11af2b7a90985ae4d2adddf8eba068e6e",
+          "source_file_sha256": "6c950ab247c29129d26e6135a6583f4d1c052e20898fb65e1f6af3f915c64c00",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 42,
+          "status": "ELIGIBLE",
+          "step_sha256": "6d941dc5dd7a55981fd0a45c58eaef448580f63a8c7c6b5483ac2a826d62090e",
+          "source_file_sha256": "1c654c0fee86aebd55fc836b1c1149d0b99018cfb6a4c86f4798b1193d824c5e",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 43,
+          "status": "ELIGIBLE",
+          "step_sha256": "9a47209bc7d82b5ced60066f2c391857991e2270bb19313ea101e00a44357423",
+          "source_file_sha256": "07cd9b33da0043e77d589c32c857c67ba772b34f3fa17b8f5a2fc48c80b81217",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 44,
+          "status": "ELIGIBLE",
+          "step_sha256": "8673e360236f0a07958c372c79472eabca741f151fe966f7ec2db33e77cbfe87",
+          "source_file_sha256": "01e0a5293b79c55b70725882d43db33f61387a543a140fdcdb20f712f03c48dc",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 45,
+          "status": "ELIGIBLE",
+          "step_sha256": "101e686d18446020e72e1ec61d5dafa4f7361423ab3aa2b3ddb9cc0139f05835",
+          "source_file_sha256": "e2ae7e2660e45427ff39513a9cf8a87097a07624212b920118fac2f4b8833b87",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 46,
+          "status": "ELIGIBLE",
+          "step_sha256": "9c63b6fafcdcbd56434339a94d10fe111fa001bcb699b38f03b5ba8cd0a82e1e",
+          "source_file_sha256": "64f4afe347983ce2b79c95c19509ebabf4d88b6c931445eba1917fb9cb68e50e",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 47,
+          "status": "ELIGIBLE",
+          "step_sha256": "f9cdfc5830df715b54cf643ccaeb5f3e5b94c912436901ee3bd4d15edefaf980",
+          "source_file_sha256": "b7f3121456cdeb4e90165e9884e9a015146d65733c78e0276042d69ddd842292",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 48,
+          "status": "ELIGIBLE",
+          "step_sha256": "f69bdab0087a4f653ac30adafcee329a783f12d45bfcc00a1f427d35f0f64354",
+          "source_file_sha256": "6e552e8dd03beda9707376672dc8926a70d9ee658743c69470cc0850082b0969",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 49,
+          "status": "ELIGIBLE",
+          "step_sha256": "c39e886e1753e9b8f3ddb83285c92c2027ec217de4424d4c0512253979b503dd",
+          "source_file_sha256": "fa600d5b3c12d1e0ff77363c9238405140eb334a485d11a3e664475824087e91",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 50,
+          "status": "ELIGIBLE",
+          "step_sha256": "9f5c5a54afee114c72d98ededffb345a9722ee32710f2c4606b2fccbf9ed6790",
+          "source_file_sha256": "6d39b8c3e434ec9b303921114b1b04939371426aa9890ce301d2700894c47e58",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 51,
+          "status": "ELIGIBLE",
+          "step_sha256": "3f68ccacb63bc26e6e98a089af9193f9f172bd8118dd9a4144b6965ebc77680a",
+          "source_file_sha256": "b2c0790d9c41a354ce437f991fc97f6c0d8af747c4d78572fbea0b9b90746300",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 52,
+          "status": "ELIGIBLE",
+          "step_sha256": "c07294404e22b80779105fcad56901a23a634221f51a9743952e6d90808478f0",
+          "source_file_sha256": "0ff2730bcd9b558e686d00080d324aca15a5d6b84bae36efd7f8868e9b7f6b05",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 53,
+          "status": "ELIGIBLE",
+          "step_sha256": "54b5cfe0751531efc5db439f82213cc71f05e038b5bfbf64b7acc71fefe7026f",
+          "source_file_sha256": "6d57feeab730e5a804acd68d4b1905f561bf32986d3b8bcc674faa97b195040b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 54,
+          "status": "ELIGIBLE",
+          "step_sha256": "87473b53a78a0b8a123244a3018a6f3a22ea3772c71e331a77b300ee3d743f9c",
+          "source_file_sha256": "ed698e112c9559ca499f0f340b2e06e881e6b14de3669f1b47862ac1610db498",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 55,
+          "status": "ELIGIBLE",
+          "step_sha256": "74b178bd6a6c4050a3f0cd793babdd1abfe75d3e2dc0b3d09ab5fd751a8eba05",
+          "source_file_sha256": "23c07c5dbcd6a26cd75d72e6a21079d622a94ff12182b79b9a9bacf1e3690d9f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 56,
+          "status": "ELIGIBLE",
+          "step_sha256": "db690b1a0719c5fdd43cafa7eb02b3c9545201ba144c72d9a402d4c74d10f834",
+          "source_file_sha256": "b588761d928a22bf79f0ab19acf04f691c827ace690d2ead3efcec637245153f",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 57,
+          "status": "ELIGIBLE",
+          "step_sha256": "f73f25ed9f4b68a402a749832b63470f9ddd514f8095feb04a50b47c8f012980",
+          "source_file_sha256": "29d539d24806ebf68458c08a7ec60e504890c4094d90d0a901557708e3b0b826",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 58,
+          "status": "ELIGIBLE",
+          "step_sha256": "2eff675eb99e697a049f04485299d337e2e94ea934b072ae58d41b4939241aff",
+          "source_file_sha256": "9ee4ce30339def748658afb938d48a8e1d144691279c7981cceda3261df5a5f9",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 59,
+          "status": "ELIGIBLE",
+          "step_sha256": "bdbc7c351d38488c68975092c0cb70b8c82497ee10e72ffd72a5e21c1732ec13",
+          "source_file_sha256": "2a9df3453d6969193010f0bffbef08cd42d05336bc5fc2ed4f15e282e8d425a6",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 60,
+          "status": "ELIGIBLE",
+          "step_sha256": "27defab481342ef04899d624e9045ace90777ee364a851122432de80626afef6",
+          "source_file_sha256": "20e19586e722a38ac21b83b04bad16d618a9c8451853ec70ffe3dbedf5d10951",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 61,
+          "status": "ELIGIBLE",
+          "step_sha256": "7a23ebb5226051db8437006feed3b8a68d564d01ac8b98594716d58ca16b7065",
+          "source_file_sha256": "34a11796db44c37878111d416559c46b1deab94277bd0340282dc7262895803b",
+          "fixed_contract_valid": true
+        },
+        {
+          "source_index": 62,
+          "status": "BLOCKED",
+          "step_sha256": "c09ee9a774cbf2ae033c1f1098e35a0170af782de7c5efb6674ce3ec6ed36c0e",
+          "source_file_sha256": "b92c622a28424aed070e3d5801c08a3fe93b8e139f4d124fdfab840e2cf6bbeb",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 63,
+          "status": "BLOCKED",
+          "step_sha256": "255b51fad3bf868fd48f93f1909cea2e55608996b3dbbfec84beaff1cc7a470f",
+          "source_file_sha256": "85baa98a7d308536c3cc989cd6ed57948701acb45cefd252087bb888de055303",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 64,
+          "status": "BLOCKED",
+          "step_sha256": "c9974205720d69bfcfd034596bc32be2ddae8fda1b68f098b12e5777e764cc20",
+          "source_file_sha256": "70412c4477c968f5fd184bcd8c0de566869dd48673f539d4b660b028b283a051",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 65,
+          "status": "BLOCKED",
+          "step_sha256": "8e31138a647f1d2021b8c5279337ab403ea931879c4e2b2deea3db3f9b630ff5",
+          "source_file_sha256": "58f5340000426138b34b32cf1633849f639461310b06970dd357d24b24b6194f",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 66,
+          "status": "BLOCKED",
+          "step_sha256": "f1a1c5c1bb93e48a0e4903409d5196ef9a63fd2a9e67b89e5c2d61e25e282e9f",
+          "source_file_sha256": "0ffb203655e63fbce547e078f280b5f0d134564ed4d29d4ef6ea63b1766edf3d",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 67,
+          "status": "BLOCKED",
+          "step_sha256": "e9b42a15197d2b072bd1620c9a63c0a4c2db14d676041642548e4b30a632309a",
+          "source_file_sha256": "f4c5ac94ad357ae106bc38c7a258a204af85e94f245a7cf46537b1bc7906b07b",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 68,
+          "status": "BLOCKED",
+          "step_sha256": "c823c9914e0364c7897143f54bc0d7f1d7c9de33eaf38219ca0f53e5465c52a8",
+          "source_file_sha256": "ac521f97cea732252aac3a0c9b558634d9a25a4368a7663df70b124cc509b485",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 69,
+          "status": "BLOCKED",
+          "step_sha256": "e4f05b31649196d3d6c344b6008a8dd63443ac5517adc886493469832f52e18b",
+          "source_file_sha256": "244b1af5ba1c276c259bc916d34a0b949191182476a64e7fad1490acd7d5d900",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 70,
+          "status": "BLOCKED",
+          "step_sha256": "ee30b84124b45be0f71debd58e1621610272e9ea0924edf06a8284e783b1741c",
+          "source_file_sha256": "20e7c3c7b9385c838ae57aeaaf05d02f0b5c50aa883fd608638ac6e841c4af63",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 71,
+          "status": "BLOCKED",
+          "step_sha256": "b41a49b2804e8852b7c664216c2f1858cb3b013fac78f5b8f594ad0b1a0e86ab",
+          "source_file_sha256": "6ff7d5248d57de66f982a4c06dc38600b65b84f0db1c968dadbf1a0dcbe51255",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 72,
+          "status": "BLOCKED",
+          "step_sha256": "90e957dfdcc8b4bf9dbc276a555bf0d3b07acc21333596c0b971de417c84c965",
+          "source_file_sha256": "0c65a8c2b51a6b6c49ea2734b48ad4018f60eb23f73569fadc70b7ee02cb1e3b",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 73,
+          "status": "BLOCKED",
+          "step_sha256": "f2578d865a16450e5f9154fa864ee84a5f5f85df5fb205c2a1ffd381eb5b9ba6",
+          "source_file_sha256": "7c6cae6803d95052ce722ee8b89573c7f5dfca3a1bbe663a3bc06e07edc13fee",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 74,
+          "status": "BLOCKED",
+          "step_sha256": "aba298c6ec5f20ff1c6452eb540df67f69137d1e8d93f7607a0e37ff66aeffbd",
+          "source_file_sha256": "1dd220fd43fb6f8d2b098629d44e9c6c59b3a911a11c610c443ed9bdc44cbd4a",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 75,
+          "status": "BLOCKED",
+          "step_sha256": "4712eeeb9034eb6f1c6e56565df0cb7ad3a142f5e8179ca3bd51238403440f44",
+          "source_file_sha256": "053bf7b36324024f0d813182466645ba0163ead75ea40bf25d4c28ce301bbc4c",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 76,
+          "status": "BLOCKED",
+          "step_sha256": "99dcc1b51c99f92e8716c316c596557f3eac02503ec2a6f8da1c7b979c6778b6",
+          "source_file_sha256": "ee2c84aba2fef80ebd21a4bd46687c7623bda1e4ba2caa7c2aa68d849160d8b0",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 77,
+          "status": "BLOCKED",
+          "step_sha256": "fc5d8015639e7c0cd47a964adce74ce1eb8955d3b1a8f91cc22655eb8a02bd88",
+          "source_file_sha256": "1d8094b9d80ab93633358ec58a6806deb04686784463b22ca60f870f7677a039",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 78,
+          "status": "BLOCKED",
+          "step_sha256": "1ac565125829c35a94b1ad6a273bf9a44ecf20ff7649aef3dc641e38e97ec390",
+          "source_file_sha256": "495b6632311cd541c041c3a83ae79aa00c42afd5e9f933188ee2afe87e933aa5",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 79,
+          "status": "BLOCKED",
+          "step_sha256": "dd4654a951bf9392077983fef55b9e9da6b087132082a871209ab4878d051d04",
+          "source_file_sha256": "b2c8c40e5cd5d9f49c7ea5ecc99293ce58924852abb7845e5b841c42b0c41f09",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 80,
+          "status": "BLOCKED",
+          "step_sha256": "8b7e660ca0a2b0e36a1c9d9c95595ae869f9a8ac1d8f37ebb8b0539eef468414",
+          "source_file_sha256": "c257ef7ff0231b7987f4c2a7f79710aa3fd2b9a377a1ef918efada848a86f996",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 81,
+          "status": "BLOCKED",
+          "step_sha256": "0889854d3ab449f2d4f0175d01cb9bf9444371457033ed9067d15dc9b83e6690",
+          "source_file_sha256": "4a7ac584213939b251ab20ee8378549836cbfd68388d2fb8f25dbe4bdcbc137a",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 82,
+          "status": "BLOCKED",
+          "step_sha256": "ea8480827019f71a5dbdf41260df88b6f9df4f6d891398727b29963b9163e956",
+          "source_file_sha256": "3a62a56647c41e79eb8da2a61a37d72e3211dd58e608a8070aed74351bd4c427",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 83,
+          "status": "BLOCKED",
+          "step_sha256": "ed2038e09b1f5701ac4bc9c9054a934641c1706643a7ace8c6384b41a1dc6a2a",
+          "source_file_sha256": "583d56e8c1a3184b2f2ffa7f7f51bff1b5c141d3b6d47b548fd728702a2e60c8",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 84,
+          "status": "BLOCKED",
+          "step_sha256": "cd01c2d5df092780390c85c9e49565944ee15af60a9cc1f3ee142b3a1d3f66b1",
+          "source_file_sha256": "0d2294e3697625bbd8c8fdca12f046a723b6906ec53f608f47a97aa535794f4f",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 85,
+          "status": "BLOCKED",
+          "step_sha256": "cb6456a25b45c5596f61097169b96d774381764d01ac47b766c668d23ec21b7c",
+          "source_file_sha256": "2b374b444aa99d4118328247fe06d0628ad951a37ad73f12066fc69a993064ec",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 86,
+          "status": "BLOCKED",
+          "step_sha256": "ede3145c3faa6da6ddf0a217b6ea5eace4256b8178d81757112f9fcfcf2638d6",
+          "source_file_sha256": "d570cea5e9ad311b412c67b09b06759e38334091f091df1a1a5d1176742f705d",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 87,
+          "status": "BLOCKED",
+          "step_sha256": "cf9fafbe5d8bb56232a5d5dbbdee8636f5c600822f3cc4bd1d0124afa73c925b",
+          "source_file_sha256": "7649cc2064be457873d6f73da2d6cb34edc42b919f0562a94ceaa6c052a8ba99",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 88,
+          "status": "BLOCKED",
+          "step_sha256": "f64e7c7aeda554aa2e98d5e1065bb777a5bc94df6a78c62857d43a3db4c8ad65",
+          "source_file_sha256": "fcb6ea643e5fff7af37102021a9ba6d80f0167bf2dc74558f097aa47c8972b02",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 89,
+          "status": "BLOCKED",
+          "step_sha256": "c50c0eebd0d6fdde0c6b1aa1a009d10f8457d6fb1caea4f0ff993897a26a9397",
+          "source_file_sha256": "7124af9b75484138ae0e0026a4712bef59eece2874965a6228dc8a724f485f93",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 90,
+          "status": "BLOCKED",
+          "step_sha256": "6a360620cc54a4f5b105896199b95776822035ce28a2042a64d5e9e164bfcc21",
+          "source_file_sha256": "c6ec76862478db2709381cd846a15df8524a78e054c216aabb3d25c6184220b0",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 91,
+          "status": "BLOCKED",
+          "step_sha256": "725ad58c006013e280be8458380f2984052458e2ebffa9377b3d5a01c0c97fca",
+          "source_file_sha256": "4b4aac9ead778b09a9d484188e405cda8d5cbddfbf4099bb515ef07e4ae1a8bf",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 92,
+          "status": "BLOCKED",
+          "step_sha256": "ef105e67232fffa2261f2e0975b53f28a3be5a5bbabad5b1ebddcc96685992a7",
+          "source_file_sha256": "61999df4b17256383ee22cb7360c60bbbf26870b011fba23fc0ee65e875223f9",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 93,
+          "status": "BLOCKED",
+          "step_sha256": "7f09fdd8a230bfb769123ed20567a94760000edbe7cffb589122bf8d2e96326c",
+          "source_file_sha256": "d6dcc0e6d5b5c7cd2d8666c849625037fcc9050a75768d77fd0ffa1a1494adbd",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 94,
+          "status": "BLOCKED",
+          "step_sha256": "158f3b0640904b6cb3d6fae917addc2b9e41fa8d251ebf0b3a70eac9ad5adc5e",
+          "source_file_sha256": "0a6645d2233433952873f54cc769b71af2e9e4ca66a9e9f0e597163e4c4aad62",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 95,
+          "status": "BLOCKED",
+          "step_sha256": "f1d019b846c22b610b15ba9d590a586b4c65786cc9cdf3bf2da8e8ab63afec75",
+          "source_file_sha256": "ee069902e33517652d6b5aed40d27b155df1c52a68cc9fd450b76b3bf3871953",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 96,
+          "status": "BLOCKED",
+          "step_sha256": "4c6c09bda8b04595a6833c797994e04386bf9c58294252be2fc0c02e89b81506",
+          "source_file_sha256": "a006ecfac0e0bb3b1e1299aea4c0cb3234fa5ad7d2a2c4b8c7fe9ca7451d0634",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 97,
+          "status": "BLOCKED",
+          "step_sha256": "3a29903fdfb9a1fd969e1742f9b423e9ff397daea91012f7e2caa532ff3958a8",
+          "source_file_sha256": "fa44733d24f80b74ddd655b66bda91885cbaae6c654e6e3c1762281cf57c9ee4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 98,
+          "status": "BLOCKED",
+          "step_sha256": "c7b61714c0975163a7f08553f8e8a2abe72b3a41b605aad842f485e6deaa8473",
+          "source_file_sha256": "e28c19f7f5b31a5fdb0a92aa76ffc6f9330a1ced7abcfda6ce61229b41055613",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 99,
+          "status": "BLOCKED",
+          "step_sha256": "4c481906c927092bddeaf49a8fda1b94248a95906f6649fd8decb16c094e9c3f",
+          "source_file_sha256": "b4f084cedbdc603307b8276f572b74df7bc13949b7738df2e885a1a5be771f33",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 100,
+          "status": "BLOCKED",
+          "step_sha256": "4bca20a5f398dff9d6d80c4220e3f33c17bc37bd9d4004d53bf7bd4e146a329f",
+          "source_file_sha256": "1b131bd72f2af0f09c400b523a745cdd97e8921aebabfe161df5f5a5003753ab",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 101,
+          "status": "BLOCKED",
+          "step_sha256": "497d4d621db119b87773256cc0b8724993f328df7127d4476fbab92adfb7b95d",
+          "source_file_sha256": "3e2d2ab8e8d67975743de1e261d1b23515dcc2d774036e757c02b1081dcad4e0",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 102,
+          "status": "BLOCKED",
+          "step_sha256": "79fd5a4053eb87de32ec92dd02e02ea4b9d506cbd61ebbf879012bd2dc13e867",
+          "source_file_sha256": "bf2ed9bdc8b315e11aae7783bd34306afb27b49e99d1efa44eeb5add91bb2070",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 103,
+          "status": "BLOCKED",
+          "step_sha256": "eca309eb177b51039e01fd2feccca33a033209c2b0eb1dc803c1bd649bfc24e2",
+          "source_file_sha256": "9293b1fffdd39ceb057e545e19ddfb7cd51666993df0f755b7bb51de25b578f9",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 104,
+          "status": "BLOCKED",
+          "step_sha256": "b0752f8a15498b221a95fe6d936d504755d36eb3a2720d3c739ed0f90c7e1af4",
+          "source_file_sha256": "da9238ad922b171a2f21eaaf05f9cae3cf81cd60a2676fc9bd1856012ea3c108",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 105,
+          "status": "BLOCKED",
+          "step_sha256": "3b5b36adde1910255a59f7732e1996573c08011d66e69c364b427be7207ad2d9",
+          "source_file_sha256": "28d41ec4001d62d0f0c5e3f6f239931309f3aa58adb01314022a07d6a78b3f8e",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 106,
+          "status": "BLOCKED",
+          "step_sha256": "6cb74058241f8fc7afc63359fcc851d8cd88498bad9b4a7289917aadb4ed34b7",
+          "source_file_sha256": "a73ca685c38051285fbb1e9c3faf16efe3e0e82b9480c11f71cc8bdcedd2a014",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 107,
+          "status": "BLOCKED",
+          "step_sha256": "3185371fb0ab5bf882fa8ee8d3942669526f3cead5cde5865e0e1ff5a1fdf3b9",
+          "source_file_sha256": "721e6e011a1113276a68b84cb8e1d236b5007c272e91dd1a9e13ae525d5e4357",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 108,
+          "status": "BLOCKED",
+          "step_sha256": "ea226bd928f12af01c90054292ea9296c222b13e1ee6503dfb0d22f8fc3a01a8",
+          "source_file_sha256": "c761591ef7486b2134ff73c9b67689b57d4c8bcb12ff89c4c172d6b7c5cb8f73",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 109,
+          "status": "BLOCKED",
+          "step_sha256": "3e0ad680a319c50352819a3a0a28a21b8afb7d24bb75a8be6d355ed3c017fdea",
+          "source_file_sha256": "422235e04c4d1b24b66555c4d7418c53a2fd0836bb39a4a8d78ef9e670321be0",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 110,
+          "status": "BLOCKED",
+          "step_sha256": "94b3e61de4e324040734ab40c7c2d0af0c23222571e8bfa06f860d2dcd1ab8be",
+          "source_file_sha256": "6c0078b8c6ca2ec369d8d457577ccdfdc3fb96fd4594a2a4d692a19acf43667e",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 111,
+          "status": "BLOCKED",
+          "step_sha256": "0787539daea1123a67cac5c40ecb4ca326690fede781c716cf97183c9eff07c1",
+          "source_file_sha256": "f0422c41d99b300cbedea10fc581082a9dd9e65bc1fb097991e10ccd8e897082",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 112,
+          "status": "BLOCKED",
+          "step_sha256": "cdeba97fd861465b4d1d869ff7dbff12a9141db520a9077e149bb77640e19c0e",
+          "source_file_sha256": "3d735c1532f26956e6c75f966ba32cd0b2d873102b27dc4df388fc4ebaf8e29b",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 113,
+          "status": "BLOCKED",
+          "step_sha256": "1329fee4a07322866356ee9d750a6548844d5ba40d0124001ba5f72cee05d466",
+          "source_file_sha256": "e4e4d666a862fae2f15600fe144845417052677f1222fe8404ba2ea5d04a4188",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 114,
+          "status": "BLOCKED",
+          "step_sha256": "2ddb746916a74a056e3a316ce44ba7762ce19180224e8c3a7b31a4138faa2f09",
+          "source_file_sha256": "4f5167f3baf1e999eace3153273bd7fd7ebb21a8761af93b4548a05d7382257f",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 115,
+          "status": "BLOCKED",
+          "step_sha256": "6787912d8c88aff561368283a606eae3755493804e54e8d1688ab5dee2603886",
+          "source_file_sha256": "00df708badcd9a6bca20ab49a3f73418f293ad3253eb1623060cf813bf0bbba4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 116,
+          "status": "BLOCKED",
+          "step_sha256": "7fb12f473c35ded5ea8d3927e79f5ad590e447fafaf7a087bc7ea1a98500924c",
+          "source_file_sha256": "ed5c47f855652943866e4aba2f00397784b75f96376b52bafaa312a32f4ace1c",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 117,
+          "status": "BLOCKED",
+          "step_sha256": "2b251f716a995b4ebd32f2ff2d4040bc89dba0fc1324985197b424174fe2802a",
+          "source_file_sha256": "6caa355b93d6e37eafd2a2dd20f569b5cefa6ab42fab893641dba9e360321b7e",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 118,
+          "status": "BLOCKED",
+          "step_sha256": "fa67f830720982195f1a3d9061fd41ccd32ebde0c98d6500b945e602ec789613",
+          "source_file_sha256": "2dc57b6bf2515af849e399c991913cb0566f96f8a271d6d72e7bed945c98eaa4",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 119,
+          "status": "BLOCKED",
+          "step_sha256": "9149ae4b9d49e16cb6eb5e00c8a8632ee3a4e848addef83856d8761b4e80b149",
+          "source_file_sha256": "74d617bcb44f597362eaa43fa9176e2626fdfea5b41121011a3eabae2ae92c75",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 120,
+          "status": "BLOCKED",
+          "step_sha256": "25e4a3bed1385bdf73c3c87ce2bf106b8b90c38bb9847b7be3153f98ebdfe9e0",
+          "source_file_sha256": "ec91b34a6c70c518dc0dd59393872761c7608f7b47523856508879450986e454",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 121,
+          "status": "BLOCKED",
+          "step_sha256": "dfe73d2c4b6bc2cbc93e9d1950907d62089d563abed69cf36423021413eaa810",
+          "source_file_sha256": "d126bb7e536854bbcd3801c0fe9994356d9066a473d509ba42185e7edbab8277",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 122,
+          "status": "BLOCKED",
+          "step_sha256": "9ba4e53258954a1d9faa903796218ad7c967e80dfe81eb090428303483eea220",
+          "source_file_sha256": "1e99d145e82372af818e84f7725fab496af11e559fab2166a2bb3fab07e03b85",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 123,
+          "status": "BLOCKED",
+          "step_sha256": "58de2cdd543d7434427d1847a25035b169a6e0533b87a3bec79b9a9ff02783f1",
+          "source_file_sha256": "65f3836a710e18a9b2866a4f0b809e49659237cd0eb4ee0ca77aeb8cbdfb7a06",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 124,
+          "status": "BLOCKED",
+          "step_sha256": "589f9553fa91058af960475b79a918c00b3bb02a94fecbd65c9c4f0a2b92eaaa",
+          "source_file_sha256": "3db658e1523b9d89db6c464fa463e8549a7dfe97bdf969ad05c5baba891ad9d5",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 125,
+          "status": "BLOCKED",
+          "step_sha256": "f19a15414306be357d138e8521ddaf3efbf8f1208f9ce957cec1be2b465dde83",
+          "source_file_sha256": "ec2952f503f82692ce16cb2735b6699b058c20c0e7a789b88d14b9a2644febf8",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 126,
+          "status": "BLOCKED",
+          "step_sha256": "c644bc17da0e130dee42b87f32df1ada98f4ae8e10fefb5e761daee43c2d820a",
+          "source_file_sha256": "3cddc5a26b60e225e12740a14911911b87faeebf473237e019379005378b4d50",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 127,
+          "status": "BLOCKED",
+          "step_sha256": "81ccf9a58a18a4a007dbb206cdee91a14417ff7fdddcf1e196249f86efa0742f",
+          "source_file_sha256": "127ffd40527d1c664ffed12943b155b0f753b37c312cdb330a734cf34544ee04",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 128,
+          "status": "BLOCKED",
+          "step_sha256": "66175ee265467f271d8c32e8185e5c5331f87cc68cc915b698689c3e6b586d3a",
+          "source_file_sha256": "04d25c8723d6337a8804e35d5fbfb2cce27b363fac9a6310ba6be4e4ad44bf51",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 129,
+          "status": "BLOCKED",
+          "step_sha256": "b7eba7e0d47905047855d73d4e539eb13900a1ffcd655fc42a6f1eb1931e3a13",
+          "source_file_sha256": "a98b8ac0b3aecd97748ebde9ae9a4d1d50a9f003fef5440643074284866f8d68",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 130,
+          "status": "BLOCKED",
+          "step_sha256": "8d9ccd3dc248d9a15a3fa77c917721870fb4365620841b4621f608463d6b880c",
+          "source_file_sha256": "8d73a784b9b15ec6a9c12b8410c2c8c765c89cc0cae7f1625ecb94ee6635fa31",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 131,
+          "status": "BLOCKED",
+          "step_sha256": "2dbecf89f1031effa42d55f28241337529b0075121b1fc094919b2ba7f594d77",
+          "source_file_sha256": "481ff26b3537959e78adeae24d4e7ea5b0aa3cda38ef5729f115de612e2f3860",
+          "fixed_contract_valid": null
+        },
+        {
+          "source_index": 132,
+          "status": "BLOCKED",
+          "step_sha256": "384a786c2a0a34115f6e907ef49cf7938af9a937ff2596a0d1e79d95b1929ea9",
+          "source_file_sha256": "f7900d2061932c450c9f3145e0a24a05dc00f71c1f7ffeea32470e1974c7c37b",
+          "fixed_contract_valid": null
+        }
+      ]
+    }
+  ],
+  "model_calls": 0,
+  "cluster_writes": 0,
+  "causal_truth_verified": false,
+  "source_code_sha256": {
+    "ops_agent/followup_replay.py": "99bbea6f6cb872031a8569420dfa55d042908c9f56bf087624e7730f98a625f1",
+    "ops_agent/runtime_evidence_v3.py": "19c10336d37aafc8adc02bb785abb85e5fe8594d9cd53d21f02d7ed5e643fd09",
+    "ops_agent/recovery_evaluator.py": "fe1cedc884e26d4910f03657ea70cf47a3b8962bf8ceebd64e58fca012eab581",
+    "scripts/replay_followup_diagnosis.py": "8ce5d961bc9e8ab2da8fd2288e0312407cabd555e5401013ba576f2e09fb3591"
+  },
+  "tests": {
+    "targeted": "35 passed in 11.16s",
+    "full": "903 passed in 63.86s"
+  },
+  "limits": [
+    "Offline replay, not live monitoring or LLM quality measurement.",
+    "Unknown permanently blocks this session; later recovery is deliberately not used retroactively.",
+    "Runbook input_condition PRESENT refers to historical activation, not current pressure.",
+    "Closure/regrowth and altered future content are tested with synthetic inputs."
+  ]
+}

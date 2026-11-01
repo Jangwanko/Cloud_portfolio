@@ -1,0 +1,115 @@
+{
+  "model": "gpt-5.6-luna",
+  "accepted": 20,
+  "persisted_after_restore": 20,
+  "restored": true,
+  "failure_type": null,
+  "model_output_recorded": true,
+  "model_executed_remediation": false,
+  "schema_version": "ops.worker_fault_drill.summary.v1",
+  "date_kst": "2026-11-01",
+  "context": "kind-messaging-ha",
+  "ground_truth": "wrong startup module in Worker command",
+  "diagnosis": {
+    "root_cause": "Worker \ubc30\ud3ec \uc544\ud2f0\ud329\ud2b8 \ub610\ub294 \uc2e4\ud589 \uc124\uc815\uc5d0 `worker.consumer` \ubaa8\ub4c8\uc774 \ud3ec\ud568\ub418\uc9c0 \uc54a\uc544 \ubaa8\ub4e0 Worker \ud30c\ub4dc\uac00 \uc2dc\uc791 \uc9c1\ud6c4 \uc885\ub8cc\ub418\uace0 \uc788\ub2e4. \uadf8 \uacb0\uacfc Kafka \uc18c\ube44\uc640 PostgreSQL \uc601\uc18d\ud654\uac00 \uc911\ub2e8\ub418\uc5c8\ub2e4.",
+    "evidence_ids": [
+      "E4",
+      "E3",
+      "E5",
+      "E1",
+      "E2"
+    ],
+    "alternatives": [
+      {
+        "hypothesis": "Kafka \ub610\ub294 PostgreSQL \uc7a5\uc560",
+        "assessment": "\uac00\ub2a5\uc131 \ub0ae\uc74c",
+        "reason": "Readiness\uc5d0\uc11c Kafka bootstrap\uacfc PostgreSQL primary\uac00 \ubaa8\ub450 \uc5f0\uacb0 \uac00\ub2a5\ud558\uace0, PostgreSQL \ubcf5\uc81c \uc9c0\uc5f0\ub3c4 0\ubc14\uc774\ud2b8\uc774\ub2e4(E2)."
+      },
+      {
+        "hypothesis": "Worker\uc758 \uc678\ubd80 \uc758\uc874\uc131 \uc5f0\uacb0 \uc2e4\ud328",
+        "assessment": "\uac00\ub2a5\uc131 \ub0ae\uc74c",
+        "reason": "\ub450 \ud30c\ub4dc \ubaa8\ub450 \ub3d9\uc77c\ud558\uac8c `/usr/local/bin/python: No module named worker.consumer`\ub85c \uc885\ub8cc\ud55c\ub2e4(E4)."
+      },
+      {
+        "hypothesis": "API \ub77c\uc6b0\ud305 \ub610\ub294 \uc694\uccad ID \uc624\ub958",
+        "assessment": "\uc8fc\ub41c \uc6d0\uc778\uc73c\ub85c \ubcf4\uae30 \uc5b4\ub824\uc6c0",
+        "reason": "20\uac1c \uc694\uccad\uc774 \ubaa8\ub450 202\ub85c \uc218\ub77d\ub41c \ub4a4 \uc870\ud68c\uc5d0\uc11c 404\uac00 \ubc1c\uc0dd\ud588\ub2e4\ub294 \uac83\uc740 \uc18c\ube44\uc790 \ubbf8\ucc98\ub9ac \uc99d\uc0c1\uacfc \ubd80\ud569\ud558\uc9c0\ub9cc, API \uc790\uccb4\uc758 \ub77c\uc6b0\ud305 \ubb38\uc81c\ub9cc\uc73c\ub85c\ub294 Worker\uc758 \ubaa8\ub4c8 import \uc624\ub958\ub97c \uc124\uba85\ud560 \uc218 \uc5c6\ub2e4(E1, E4)."
+      }
+    ],
+    "recommended_action": "\ubcc0\uacbd \uc218\ud589 \uc804 \ubc30\ud3ec \uc774\ubbf8\uc9c0\uc640 Worker \uc2e4\ud589 \uba85\ub839\uc744 \uc810\uac80\ud558\uace0, `worker.consumer` \ubaa8\ub4c8\uc774 \ud3ec\ud568\ub41c \uac80\uc99d\ub41c \uc544\ud2f0\ud329\ud2b8\ub85c Worker Deployment\ub97c \uc218\uc815\ud558\uc5ec \uc7ac\ubc30\ud3ec\ud55c\ub2e4. Kafka\uc758 \ubbf8\ucc98\ub9ac \uba54\uc2dc\uc9c0\ub97c \uc0ad\uc81c\ud558\uac70\ub098 \uc624\ud504\uc14b\uc744 \uc784\uc758\ub85c \uc774\ub3d9\ud558\uc9c0 \ub9d0\uace0, \ubcf5\uad6c \ud6c4 \uae30\uc874 consumer group\uc774 \uc815\uc0c1\uc801\uc73c\ub85c \uc7ac\uac1c\ud558\ub3c4\ub85d \ud55c\ub2e4. \uc7ac\ubc30\ud3ec \uc804\ud6c4\ub85c \uc911\ubcf5 \ucc98\ub9ac \uac00\ub2a5\uc131 \ubc0f PostgreSQL\uc758 idempotency \uc81c\uc57d\ub3c4 \ud655\uc778\ud55c\ub2e4.",
+    "verification_steps": [
+      "Worker Deployment\uc758 desired replicas\uc640 available replicas\uac00 \uc77c\uce58\ud558\uace0 \ubaa8\ub4e0 Worker \ud30c\ub4dc\uac00 Ready\uc778\uc9c0 \ud655\uc778\ud55c\ub2e4.",
+      "Worker \ub85c\uadf8\uc5d0\uc11c `No module named worker.consumer`\uac00 \uc0ac\ub77c\uc9c0\uace0 \uc815\uc0c1\uc801\uc778 Kafka consumer \uc2dc\uc791 \ubc0f PostgreSQL \uc5f0\uacb0 \ub85c\uadf8\uac00 \ub098\ud0c0\ub098\ub294\uc9c0 \ud655\uc778\ud55c\ub2e4.",
+      "message-worker consumer lag\ub97c \ud655\uc778\ud558\uc5ec partition 0\uc758 lag 20\uc774 \uac10\uc18c\ud558\uace0 \uc804\uccb4 lag\uac00 \uc548\uc815\uc801\uc73c\ub85c 0\uc5d0 \uc218\ub834\ud558\ub294\uc9c0 \uad00\ucc30\ud55c\ub2e4.",
+      "E1\uc758 20\uac1c request_id\ub97c PostgreSQL\uc758 durable read source\uc5d0\uc11c \uc870\ud68c\ud558\uc5ec \uc2e4\uc81c \uc601\uc18d\ud654 \uc5ec\ubd80\ub97c \ud655\uc778\ud55c\ub2e4.",
+      "\ud574\ub2f9 request_id \uc870\ud68c\uac00 200\uc73c\ub85c \uc804\ud658\ub418\ub294\uc9c0\uc640 \uc2e0\uaddc \uc774\ubca4\ud2b8\uac00 \uc218\ub77d \ud6c4 \uc815\uc0c1\uc801\uc73c\ub85c PostgreSQL\uc5d0 \ubc18\uc601\ub418\ub294\uc9c0 \ud655\uc778\ud55c\ub2e4.",
+      "\uc7ac\ucc98\ub9ac \uacfc\uc815\uc5d0\uc11c \uc911\ubcf5 \ud589\uc774\ub098 \uc911\ubcf5 \ubd80\uc791\uc6a9\uc774 \ubc1c\uc0dd\ud558\uc9c0 \uc54a\uc558\ub294\uc9c0 PostgreSQL\uc758 idempotency \uae30\uc900\uc73c\ub85c \uac80\uc99d\ud55c\ub2e4."
+    ],
+    "uncertainty": "Worker \uc7a5\uc560\uc640 20\uac1c \uc774\ubca4\ud2b8\uc758 \ubbf8\ucc98\ub9ac \uc0c1\ud0dc\ub294 \uac15\ud558\uac8c \ub4b7\ubc1b\uce68\ub41c\ub2e4. E5\uc758 lag 20\uc740 partition 0\uc758 \ubbf8\ucc98\ub9ac \uba54\uc2dc\uc9c0 \uc218\ub97c \ubcf4\uc5ec\uc8fc\uc9c0\ub9cc, \uadf8\uac83\uc774 E1\uc758 20\uac1c request_id\uc640 \uc815\ud655\ud788 \uc77c\uce58\ud55c\ub2e4\ub294 \uc99d\uac70\ub294 \uc5c6\ub2e4. \ub610\ud55c \ud604\uc7ac \uc99d\uac70\ub9cc\uc73c\ub85c \ud574\ub2f9 \uc774\ubca4\ud2b8\uc758 \ub370\uc774\ud130 \uc190\uc2e4\uc774\ub098 \ubcf5\uad6c \uc644\ub8cc\ub97c \uc8fc\uc7a5\ud560 \uc218 \uc5c6\ub2e4. Readiness\uac00 Worker \uc0c1\ud0dc\ub97c \uac80\uc0ac\ud558\uc9c0 \uc54a\uc73c\ubbc0\ub85c E2\uc758 ready \uc751\ub2f5\uc740 \uc804\uccb4 \uc774\ubca4\ud2b8 \ucc98\ub9ac \uacbd\ub85c\uc758 \uc815\uc0c1 \uc0c1\ud0dc\ub97c \uc758\ubbf8\ud558\uc9c0 \uc54a\ub294\ub2e4."
+  },
+  "model_calls": 2,
+  "tool_trace": [
+    "get_readiness",
+    "get_worker_status",
+    "get_worker_logs",
+    "get_kafka_lag"
+  ],
+  "assessment": {
+    "root_cause": "STARTUP_FAILURE_IDENTIFIED",
+    "exact_remediation": "PARTIAL_REVIEW_REQUIRED",
+    "reason": "Recommended artifact containing missing module; actual correction restores original command.",
+    "v3_benchmark_score": null,
+    "automatic_score": false
+  },
+  "final_readiness": {
+    "app_version": "2.1.0",
+    "status": "degraded",
+    "reason": [
+      "postgres_sync_standbys_below_minimum"
+    ],
+    "grace_remaining_seconds": 0,
+    "queue_backend": "kafka",
+    "kafka": {
+      "bootstrap_reachable": true
+    },
+    "postgres": {
+      "ha_mode": true,
+      "primary_reachable": true,
+      "standby_count": 4,
+      "sync_standby_count": 0,
+      "max_replication_delay_bytes": 0
+    }
+  },
+  "followup_probe": {
+    "accepted": 3,
+    "original_result": "FAILED_HTTP_404",
+    "late_statuses": [
+      "persisted",
+      "persisted",
+      "persisted"
+    ],
+    "late_verification_at": "2026-10-31T16:29:54.730517+00:00",
+    "late_verification_sha256": "cbe439d67fecc35efa350546f021511b7996c6f4e7a61110e0008ed399864ec1"
+  },
+  "unresolved": "PostgreSQL standby liveness/restart instability observed before and after Worker drill",
+  "evidence_dir": "results/ops-agent/shadow/20261101-worker-startup-fault-01",
+  "hashes": {
+    "baseline-event.json": "03b26efb4bebe6a06e8054e0fc846f5dd2e6c7fbe19318da4d25dd1edf4f7e06",
+    "baseline.json": "e57687e5425dfbbb780e00ca7979bd8cebd35f1b5cc4b19adb7c7b6ebded6bbf",
+    "evidence.json": "b61926851330f3d80e264b753e8caa3913eb04281bc27be2f302dd42a8e04dac",
+    "final-health.json": "670487e0c39f2f1d19963e190b7586ef09d75e0f3007f91291e5cd69dc268961",
+    "model-result.json": "bf0298782d7a49374a68f896819cb4f7630f7a9fb01cc700ebb0dee8348e6f4e",
+    "plan-private.json": "50479b78e3fad7d9a4e1ee705d53fbd4f5eb27b682045a29b3aa691c2903488c",
+    "postgres-followup.json": "7ceb90e91d8ff136a9d36846f5df4da25b374cf5cbdacad18d59442765730888",
+    "recovery.json": "47aabe6560ebdda89b5b704f8ee76730d4b924347e60f52fdf6555ceb9afa6f6",
+    "restored.json": "7932b2d24c1c63805b2fbce4020a6a9c75129db94d1f3aece490c4873ae325b1",
+    "rollback.json": "28030419849303d9659e571f2e4f697f5613bdacc85defa565f3fd4febe45faa",
+    "summary.json": "2e9fce2b721b3a03ab3564dc84b2286a6802c3264bc0ea383fa53b0110356c5d",
+    "symptom.json": "83e7c1ebffcedaa5c3a020b5a01e3864139af6c481de01e5b0dd9ecb9746d0d7"
+  },
+  "validation": {
+    "full_suite": "913 passed in 63.70s",
+    "targeted_after_final_probe_change": "10 passed in 0.67s",
+    "diff_check": "passed"
+  }
+}

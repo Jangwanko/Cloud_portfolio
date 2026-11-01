@@ -1,0 +1,44 @@
+{
+  "version": "ops.runbook-catalog.v1",
+  "entries": [
+    {
+      "id": "RB-KAFKA-INTAKE",
+      "heading": "Kafka Intake 장애",
+      "terms": ["kafka", "intake", "broker", "produce", "수락"],
+      "scope": "messaging-app Kafka append-first event intake",
+      "conditions": [
+        {"id": "intake_failure", "description": "Current event POST fails with Kafka unavailable or produce timeout, or Kafka readiness is directly failing. A generic HTTP 503 without endpoint/error details is insufficient. Current successful appends plus healthy Kafka contradict this intake-failure condition."}
+      ],
+      "checks": ["Kafka Pod readiness and recent logs", "topic bootstrap job status and logs"],
+      "action_boundary": "Investigation procedure only. A matching symptom does not authorize restart or topic changes.",
+      "verification": ["Kafka readiness recovers", "event acceptance and downstream persistence checked separately"],
+      "validation_scope": "Indexed repository runbook, not proof of the current cause or a newly validated recovery"
+    },
+    {
+      "id": "RB-PG-HEALTH",
+      "heading": "PostgreSQL / Pgpool 장애",
+      "terms": ["postgresql", "postgres", "pgpool", "database", "db", "persistence", "저장"],
+      "scope": "messaging-app PostgreSQL HA / Pgpool persistence path",
+      "conditions": [
+        {"id": "db_failure", "description": "Current PostgreSQL/Pgpool readiness, connectivity, or database persistence error directly identifies a database-path problem. Queued requests or lag alone are insufficient. Healthy readiness alone does not exclude database lock contention."}
+      ],
+      "checks": ["PG/Pgpool Pod states and logs", "primary reachability and standby readiness/replication", "Worker persistence error context"],
+      "action_boundary": "Read-only diagnosis. Sync changes, restarts and primary rollout require separate operator decisions. Preserve local RollingUpdate partition=1.",
+      "verification": ["database readiness and required standby checks", "accepted request IDs actually persist"],
+      "validation_scope": "Repository procedure; historical startup-probe evidence covers local standbys only, not primary rollout or general failover"
+    },
+    {
+      "id": "RB-WORKER-LAG",
+      "heading": "Worker Consumer Lag 증가",
+      "terms": ["worker", "lag", "consumer", "backlog", "지연", "적체"],
+      "scope": "messaging-app message-worker Kafka consumer",
+      "conditions": [
+        {"id": "accepted_delayed", "description": "Known requests were accepted with 202 but persistence is delayed, supported by valid consumer lag or persistence latency evidence. Invalid/negative lag and an unrelated HTTP error do not establish this condition."}
+      ],
+      "checks": ["Worker replicas and logs", "KEDA ScaledObject and external metrics", "PostgreSQL persistence path when lag persists"],
+      "action_boundary": "Applicable means investigate this symptom. Do not infer insufficient replicas or recommend scaling from lag alone; partition retry may preserve ordering.",
+      "verification": ["known accepted requests persist", "consumer lag returns to an observed stable range", "ordering checks where relevant"],
+      "validation_scope": "Repository investigation procedure; calibrated backlog activation remains a separate deterministic policy"
+    }
+  ]
+}

@@ -157,6 +157,7 @@ results/ops-agent/diagnosis/*
 !results/ops-agent/diagnosis/v35-second-probe-20261029-summary.json
 !results/ops-agent/diagnosis/observation-20261029-summary.json
 !results/ops-agent/diagnosis/runtime-adapter-20261030-summary.json
+!results/ops-agent/diagnosis/runtime-case-audit-20261031-summary.json
 !results/ops-agent/raw/
 results/ops-agent/raw/*
 !results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/
@@ -219,4 +220,20 @@ tools/helm-home/
 tools/downloads/
 
 # Local command/status evidence (sanitized selected snapshots live in docs/harness).
+!results/ops-agent/diagnosis/incident-followup-audit-20261031-summary.json
+!results/ops-agent/diagnosis/negative-lag-review-20261031-summary.json
+!results/ops-agent/diagnosis/followup-replay-20261031-summary.json
+!results/ops-agent/diagnosis/live-observation-20261031-summary.json
+!results/ops-agent/diagnosis/continuous-watch-20261031-summary.json
 results/validation/
+
+!results/ops-agent/diagnosis/worker-startup-fault-20261101-summary.json
+tools/helm-render/
+!results/ops-agent/diagnosis/postgres-restarts-20261101-summary.json
+!results/ops-agent/diagnosis/live-experiment-audit-20261101-summary.json
+!results/ops-agent/diagnosis/experiment-validation-fixed-20261101-summary.json
+!results/ops-agent/diagnosis/paired-investigation-20261101-summary.json
+!results/ops-agent/diagnosis/runbook-assistance-20261101-summary.json
+!results/ops-agent/diagnosis/local-burst-20261101-summary.json
+!results/ops-agent/diagnosis/row-lock-20261101-summary.json
+!results/ops-agent/diagnosis/model-selected-20261101-summary.json

@@ -1,0 +1,223 @@
+{
+  "at": "2026-11-01T01:49:00.939501+00:00",
+  "model": "gpt-5.6-luna",
+  "synthetic": true,
+  "first_attempt_only": true,
+  "source_sha256": "77a97adce6ff7bbc8953bc43b4cd602dc9f7d6387bd0dc809efec688cccd6980",
+  "rows": [
+    {
+      "case_id": "case-17",
+      "expected": "STARTUP_FAILURE",
+      "runbook": {
+        "cause_code": "STARTUP_FAILURE",
+        "evidence_ids": [
+          "E2"
+        ],
+        "tool_trace": [
+          "worker_status",
+          "worker_logs"
+        ],
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      },
+      "model": {
+        "decision": {
+          "cause_code": "STARTUP_FAILURE",
+          "evidence_ids": [
+            "S0",
+            "E1",
+            "E2"
+          ],
+          "recommended_action": "Worker 배포 아티팩트와 시작 명령을 점검하여 worker.consumer 모듈이 포함되고 올바르게 로드되도록 수정한 뒤 재배포하십시오.",
+          "verification_steps": [
+            "Worker 컨테이너 로그에서 모듈 로딩 오류가 사라지는지 확인",
+            "ready replica가 2개가 되고 재시작이 증가하지 않는지 확인",
+            "새 요청의 상태 GET이 persistence 이후 404가 아닌 결과를 반환하는지 확인",
+            "Kafka committed offset과 consumer lag가 정상적으로 진행되는지 확인"
+          ],
+          "uncertainty": "시작 실패 원인은 직접 확인되었으나, 모듈 누락의 빌드·패키징 또는 시작 명령 세부 원인은 추가 증거가 없습니다."
+        },
+        "tool_trace": [
+          "worker_status",
+          "worker_logs"
+        ],
+        "input_tokens": 1725,
+        "output_tokens": 611,
+        "api_seconds": 10.187000000005355,
+        "api_calls": 3,
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      }
+    },
+    {
+      "case_id": "case-42",
+      "expected": "DB_LOCK_CONTENTION",
+      "runbook": {
+        "cause_code": "DB_LOCK_CONTENTION",
+        "evidence_ids": [
+          "E2",
+          "E3"
+        ],
+        "tool_trace": [
+          "worker_status",
+          "worker_logs",
+          "db_activity"
+        ],
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      },
+      "model": {
+        "decision": {
+          "cause_code": "DB_LOCK_CONTENTION",
+          "evidence_ids": [
+            "E2",
+            "E3",
+            "E4",
+            "E1",
+            "S0"
+          ],
+          "recommended_action": "messages 테이블을 차단하는 PostgreSQL 세션(pid 910)의 미완료 트랜잭션을 소유 팀이 조사하고 정상적으로 종료 또는 커밋/롤백하도록 조치한 뒤 Worker 처리를 관찰하십시오.",
+          "verification_steps": [
+            "pid 910의 트랜잭션 상태와 잠금 보유 원인을 확인한다.",
+            "messages에 대한 Lock 대기가 해소되는지 확인한다.",
+            "Worker INSERT 완료 및 Kafka committed offset 증가를 확인한다.",
+            "해당 요청의 status GET이 404에서 정상 상태로 전환되는지 확인한다."
+          ],
+          "uncertainty": "잠금 경합은 직접 확인되었으나 pid 910이 idle in transaction 상태가 된 근본 원인과 이미 누락된 이벤트의 존재 여부는 확인되지 않았습니다."
+        },
+        "tool_trace": [
+          "worker_status",
+          "kafka_progress",
+          "worker_logs",
+          "db_activity"
+        ],
+        "input_tokens": 3669,
+        "output_tokens": 863,
+        "api_seconds": 12.96799999999348,
+        "api_calls": 5,
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      }
+    },
+    {
+      "case_id": "case-83",
+      "expected": "ABSTAIN",
+      "runbook": {
+        "cause_code": "ABSTAIN",
+        "evidence_ids": [
+          "E2",
+          "E3",
+          "E4"
+        ],
+        "tool_trace": [
+          "worker_status",
+          "worker_logs",
+          "db_activity",
+          "kafka_progress"
+        ],
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      },
+      "model": {
+        "decision": {
+          "cause_code": "ABSTAIN",
+          "evidence_ids": [
+            "S0",
+            "E1",
+            "E2",
+            "E3",
+            "E4"
+          ],
+          "recommended_action": "변경을 실행하지 말고, 워커 로그와 PostgreSQL 활동 정보에 대한 읽기 권한을 확보해 원인을 조사합니다.",
+          "verification_steps": [
+            "워커 로그에서 소비·저장 오류와 재시도 상태를 확인",
+            "PostgreSQL 연결 제한, 활성 트랜잭션, 잠금 대기를 확인",
+            "소비자 커밋 오프셋이 증가하고 lag가 감소하는지 재확인"
+          ],
+          "uncertainty": "파티션 할당 상태에서 오프셋이 전혀 증가하지 않고 lag가 증가한 것은 처리 정체를 지지하지만, Kafka 연결 장애·DB 문제·워커 내부 오류를 직접 구분하지 못했습니다."
+        },
+        "tool_trace": [
+          "worker_status",
+          "db_activity",
+          "worker_logs",
+          "kafka_progress"
+        ],
+        "input_tokens": 3660,
+        "output_tokens": 1080,
+        "api_seconds": 13.765999999974156,
+        "api_calls": 5,
+        "cause_matches": true,
+        "required_evidence_cited": true,
+        "free_text_quality": "requires human review; not automatically scored"
+      }
+    }
+  ],
+  "artifact_sha256": {
+    "case-17/0-checkpoint.json": "26e21f3b3ecb94edacddcee693f540494853958073f77df305b0af8f901c7829",
+    "case-17/0-request.json": "ae3bf67ec2e974780b1d2e037461224b94bb50199421fb2d578379f37091a93e",
+    "case-17/0-response.json": "d7aa79a26c6b990d1d4624ac3b8719600a6eb467a8998b519739fc397dcf1983",
+    "case-17/1-checkpoint.json": "3c47828b6951d28644c5fb6c378621a9071bcb06eb4367634d38e26262f1b810",
+    "case-17/1-request.json": "eba20131c9edf4c1ff34ea0758ffa436e0189315b45de81c5a24324a2d6be509",
+    "case-17/1-response.json": "468462d91a1832c6c9c5e45532e12159d824f483eb0386f7df713aa2ffdfa0c0",
+    "case-17/2-checkpoint.json": "ca6013a29f0d7f952f6c8a7a9375930b0da4c0871314082f0451771976fc40b8",
+    "case-17/2-request.json": "4a006b7a5881b7509c90afb6d9f80407524be06bd6f3f1a938f6d384850328a0",
+    "case-17/2-response.json": "eac3c540e248e796825ce63898a510565d40bd85ee669c5ccb33e15e86d116f6",
+    "case-17-result.json": "27dd6da2cabdf179b5f89b2898ccb71cb89b8a5883717dcc0d5c7221137b5804",
+    "case-42/0-checkpoint.json": "8339082b74f3c8a4916926455eab04ba3f6e26a23f2fc342d54a650affa26c24",
+    "case-42/0-request.json": "ae3bf67ec2e974780b1d2e037461224b94bb50199421fb2d578379f37091a93e",
+    "case-42/0-response.json": "f42c774c9a40538c529b6e9ee8ea2114fae1e06d12a022d767b3a1165dc586fc",
+    "case-42/1-checkpoint.json": "79d1496812ee86f17c734df6f41d62817f2705bee7c74747ca02d07863430e4c",
+    "case-42/1-request.json": "bd8361283277f5104451c5e1bce61493edf6c4e85259dd0fcdb188c7aa617e54",
+    "case-42/1-response.json": "a50595e05d6ca9b17b12d9415d6f5d24f9f42b305f105b7f77bc4ba0904f1cdc",
+    "case-42/2-checkpoint.json": "51177edaa17580f9be468d9f690d33c09a11fdf647b8470d0b84107ce8efb66d",
+    "case-42/2-request.json": "437e7029ea858ea02d5a5d6672b27c3742f844036a02a1d8f666e2a5d79993c2",
+    "case-42/2-response.json": "d47fb3acd05602a477fa5388fd98e4013a7f188992b2745241af713f1f0dbd1b",
+    "case-42/3-checkpoint.json": "582dca93aaca5014f6fd4b4cd12fef9bb856c5a157132d5c9ab589d51aa4f6bb",
+    "case-42/3-request.json": "4d54be00833688e2345437815d3114306bd163562c09f578d69fe39ac9a5b5da",
+    "case-42/3-response.json": "5f40bad321911e18352264d6dce13c7b308605be6e3caf80984de7dc8d8933cb",
+    "case-42/4-checkpoint.json": "7190d6a998e86ff24ce34acfb81d4695361f2e7b73b0a9847b09a88e8e84af57",
+    "case-42/4-request.json": "d92bbb70a9875e68e8c86184f798c7e3160681660fc59453b9defe4ff4694422",
+    "case-42/4-response.json": "b1212273b45d35e6b0258fcf4671f27101ac140015f1eed000418e48f56a6912",
+    "case-42-result.json": "b9f9daa643c79bbcfbf6111b2b962cfd878bd7a0d9b056cc1db322abc377ee9d",
+    "case-83/0-checkpoint.json": "ab144a5ade655412f9e1b452cfdaf2d8cfbd3d98845475180ff479ecb90fbc7a",
+    "case-83/0-request.json": "ae3bf67ec2e974780b1d2e037461224b94bb50199421fb2d578379f37091a93e",
+    "case-83/0-response.json": "4728be84450633ad86c08d77b07054a5f7e90696a01d8f2696084a5c21a51aec",
+    "case-83/1-checkpoint.json": "84e94a5cedb910869cfa7907ec6f1a459125b1cbe912df05cbb680c27fecff8c",
+    "case-83/1-request.json": "db84cd5eac0d1eff5f3911388772755c6ab57db35b5f2b002642dc9d98dcc023",
+    "case-83/1-response.json": "44fee2064d03bea7cfe4222c23876efa1e159561d1d4a568547e2d7bf2fb1339",
+    "case-83/2-checkpoint.json": "0fe908d6075dc9081f90b7b9fb6ba6b8a9c6a3f539b8628fe69a954816427b3f",
+    "case-83/2-request.json": "62f261f34e8f56dcc08c23d9f7490922508b85fe6bf03d6016f550daa215063e",
+    "case-83/2-response.json": "eebc3100c06bd1cf73276fc24bd725742ba60231c15c5f263d0b74698fb0a086",
+    "case-83/3-checkpoint.json": "c703dff8ff2071118445550133689588ec91de4c0dc185f083f12b0323d12a09",
+    "case-83/3-request.json": "1966f717c149060690b646f86fa421cac5c1e67f7508e025b645516a51cba32b",
+    "case-83/3-response.json": "5c034d4e6fafd507d77e97473fbaf62492f70a0da796c9147bcf9866fde6c09f",
+    "case-83/4-checkpoint.json": "0c359d7684ca11255da23a7dc59ebde57ff021857641cca5b928e107f403b81a",
+    "case-83/4-request.json": "1b7e1303788932bf815d294bf66a3bf838d53b1e249f5f2117799a83fe1512c1",
+    "case-83/4-response.json": "2116a4f9a0b0ae81c53d7be1278652a4b9fe823fcb32dbf27742915c4a8bad2a",
+    "case-83-result.json": "3c370d506be41df7b81c26a57de70c235aeb6d621d29ac16a868fef628324fc8",
+    "plan-private.json": "007a78730cd7bd37041da6c9623d58f19a5c404230e6a7fcd25b00694ef88d4b",
+    "runner-source.py": "77a97adce6ff7bbc8953bc43b4cd602dc9f7d6387bd0dc809efec688cccd6980"
+  },
+  "raw_directory": "results/ops-agent/shadow/20261101-paired-investigation-01",
+  "scope": "Authored synthetic closed-catalog development pilot, one attempt per case; no live service observation",
+  "aggregate": {
+    "model_tools": 10,
+    "runbook_tools": 9,
+    "api_calls": 13,
+    "api_seconds": 36.92099999997299,
+    "input_tokens": 9054,
+    "output_tokens": 2554
+  },
+  "post_run_review": {
+    "reviewer": "Codex; not independent human adjudication",
+    "classification_and_required_citations": "3/3 for both methods",
+    "finding": "No demonstrated model accuracy or query-efficiency advantage in these three cases",
+    "prose_limit": "DB answer unnecessarily refers to already missing events without evidence of loss; classification score does not certify prose",
+    "live_pg_reverification": false
+  }
+}
