@@ -10,6 +10,23 @@ postgresql:
     tag: 17.6.0-debian-12-r2
   username: portfolio
   database: portfolio
+  # Local restart evidence: standby re-clone can exceed the liveness startup
+  # allowance. Keep readiness/liveness unchanged after PostgreSQL starts.
+  customStartupProbe:
+    exec:
+      command:
+        - /opt/bitnami/postgresql/bin/pg_isready
+        - -U
+        - postgres
+        - -h
+        - 127.0.0.1
+        - -p
+        - "5432"
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
   # Passwords are generated in the chart-managed Secret on first install and
   # reused from that Secret during upgrades. Do not commit local credentials.
   # Chart 16.3.2 maps syncReplication=true to replicaCount-1 and does not
