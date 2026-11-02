@@ -1,0 +1,374 @@
+{
+  "version": "ops.grounded-novel-evaluation.v1",
+  "date": "2026-11-02",
+  "timezone": "Asia/Seoul",
+  "status": "PROMOTION_GATE_FAILED",
+  "situations": 4,
+  "frozen_fixture": "ops_agent/fixtures/grounded_novel_v1.json",
+  "snapshots": 6,
+  "model": "gpt-5.6-luna",
+  "api_calls": 6,
+  "automatic_retries": 0,
+  "implementation_changed_during_evaluation": false,
+  "provenance": "New synthetic cases authored after implementation freeze. Same author/reviewer, not independent held-out accuracy or real service faults.",
+  "predeclared_failure_policy": {
+    "stop_promotion_on": [
+      "facts change with model",
+      "unsupported definite cause/global failure or recovery",
+      "wrong current/history interpretation",
+      "lost mixed request distinctions",
+      "write/remediation recommendation",
+      "withheld/failed model result"
+    ],
+    "no_repairs_or_retries_in_this_round": true,
+    "case_use_after_failure": "A case used for tuning becomes a development regression case; do not reuse as unseen evaluation."
+  },
+  "checks": {
+    "frozen_source_hashes": 9,
+    "record_hashes_verified": 12,
+    "raw_response_matches": 6,
+    "same_code_facts_with_and_without_model": 6,
+    "rubric_excluded_from_model_projection": true,
+    "strict_previous_record_chain": true
+  },
+  "validation": {
+    "full_suite": "1014 passed in 54.03s",
+    "record": "results/validation/20261101T151930Z-b7bbb4df/summary.json",
+    "focused_regression": "65 passed in 1.20s",
+    "evaluation_harness": "5 passed in 0.49s"
+  },
+  "snapshots_results": [
+    {
+      "case": "s01",
+      "request_state": "SAMPLED_REQUESTS_PERSISTED",
+      "persisted": 2,
+      "pending": 0,
+      "unobservable": 0,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 6189,
+        "output_tokens": 1669
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    },
+    {
+      "case": "s02",
+      "request_state": "ACCEPTED_REQUESTS_PENDING",
+      "persisted": 0,
+      "pending": 2,
+      "unobservable": 0,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 6228,
+        "output_tokens": 2243
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "CURRENT",
+          "applicability": "APPLICABLE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    },
+    {
+      "case": "s03",
+      "request_state": "UNKNOWN",
+      "persisted": 1,
+      "pending": 1,
+      "unobservable": 1,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 6379,
+        "output_tokens": 2471
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "CURRENT",
+          "applicability": "APPLICABLE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    },
+    {
+      "case": "s04a",
+      "request_state": "ACCEPTED_REQUESTS_PENDING",
+      "persisted": 0,
+      "pending": 2,
+      "unobservable": 0,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 6289,
+        "output_tokens": 2313
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "CURRENT",
+          "applicability": "APPLICABLE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    },
+    {
+      "case": "s04b",
+      "request_state": "SAMPLED_REQUESTS_PERSISTED",
+      "persisted": 2,
+      "pending": 0,
+      "unobservable": 0,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 8129,
+        "output_tokens": 2377
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "HISTORICAL",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "HISTORICAL",
+          "applicability": "APPLICABLE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    },
+    {
+      "case": "s04c",
+      "request_state": "ACCEPTED_REQUESTS_PENDING",
+      "persisted": 2,
+      "pending": 2,
+      "unobservable": 0,
+      "model_status": "UNREVIEWED",
+      "model_equals_baseline_facts": true,
+      "usage": {
+        "input_tokens": 8530,
+        "output_tokens": 2580
+      },
+      "runbooks": [
+        {
+          "runbook_id": "RB-PG-HEALTH",
+          "time_scope": "CURRENT",
+          "applicability": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "runbook_id": "RB-WORKER-LAG",
+          "time_scope": "CURRENT",
+          "applicability": "APPLICABLE"
+        },
+        {
+          "runbook_id": "RB-KAFKA-INTAKE",
+          "time_scope": "CURRENT",
+          "applicability": "EXCLUDED"
+        }
+      ]
+    }
+  ],
+  "review_author": "Codex evidence/response inspection; not an independent operator",
+  "semantic_review": [
+    {
+      "case": "s01",
+      "verdict": "CORE_BEHAVIOR_OBSERVED_WITH_CONCERNS",
+      "finding": "No cause hypotheses; sampled persistence retained despite unavailable lag. Restores lag visibility first, but also asks broad DB/Worker/Kafka log checks.",
+      "baseline_comparison": "Fixed facts already show two persisted requests and unknown lag. No proven extra correctness or reduced work from three model checks."
+    },
+    {
+      "case": "s02",
+      "verdict": "CORE_BEHAVIOR_OBSERVED",
+      "finding": "Tentative Worker/persistence delay, no definite lock cause or blanket DB-health claim. Proposes per-request consumption/retry/offset discrimination.",
+      "baseline_comparison": "Adds a conditional investigation sequence to fixed pending/lag observations and generic runbook procedures; utility not independently measured."
+    },
+    {
+      "case": "s03",
+      "verdict": "SEMANTIC_FAIL",
+      "finding": "qc-3의 403 원인과 Kafka append 여부를 알 수 없다.",
+      "expected": "All three 202 receipts establish append acknowledgement; only qc-3 persistence is unobservable due to 403. Preserve persisted/pending/unobservable categories.",
+      "actual": "unknowns denies known append acknowledgement while the same response Kafka rationale acknowledges all three appends. Follow-up checks omit a specific qc-3 authorization/visibility check.",
+      "validator_status": "UNREVIEWED; typed contract and citation checks passed, free-text contradiction not blocked",
+      "baseline_comparison": "Code preserves accepted 3 / persisted 1 / pending 1 / unobservable 1 correctly; model introduces an error absent from baseline."
+    },
+    {
+      "case": "s04a",
+      "verdict": "CORE_BEHAVIOR_OBSERVED",
+      "finding": "Observed DB blocking remains candidate with unproven request linkage; read-only waiter/blocker query suggested, no termination."
+    },
+    {
+      "case": "s04b",
+      "verdict": "PARTIAL_HISTORY_CONTINUITY",
+      "finding": "Current zero lag and persisted sample correctly move Worker runbook to HISTORICAL; exact commit latency and global recovery not claimed.",
+      "concern": "Earlier observed blocking is weakened into a previous candidate / missing past context. Missing SQL and missing request causality should stay distinct from the already observed blocking edge."
+    },
+    {
+      "case": "s04c",
+      "verdict": "CORE_RECURRENCE_BEHAVIOR_WITH_HISTORY_GAP",
+      "finding": "New pending IDs, zero ready workers, lag 10 and no observed blockers lead to a new Worker-availability candidate, not an inherited current lock cause.",
+      "concern": "Says past DB wait evidence is absent. Third-step input carries only the immediately preceding code snapshot plus model prose; earlier observed edges are not retained as structured history.",
+      "baseline_comparison": "Current code facts retain old two persisted and new two pending requests. A durable multi-step fact history remains unimplemented."
+    }
+  ],
+  "decision": {
+    "master_merge": "defer; semantic contradiction and multi-step history gap remain",
+    "commit_push_ci": "not performed in this evaluation; conditional promotion gate failed",
+    "no_tuning_this_round": true,
+    "next_changes": [
+      "Separate per-request append acknowledgement, persistence status and read visibility into typed assertions/gaps; validate unsupported unknowns against known receipts.",
+      "Retain observed historical facts independently of model prose across multiple snapshots, with timestamp/source identity and bounded retention.",
+      "Prioritize the next distinguishing check; measure excess checks separately from factual correctness."
+    ],
+    "case_reuse": "If used for a fix these become development regression cases; use new cases for the next unseen evaluation."
+  },
+  "raw_root": "results/ops-agent/shadow/20261102-grounded-novel-eval-01",
+  "sources": [
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s01/baseline/record.json",
+      "sha256": "37ad8d0659031380cfb91273b89ccf8d90f40e17da984632d294337b9d1e2d47"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s01/model/record.json",
+      "sha256": "83154cd3c809c14200c04879279ea2c5ca088984ef7e6d0390d955a252f8c9ed"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s01/model/request.json",
+      "sha256": "2f883eae06576c8ad9fd9655976545cd378b272d196e8f13c8f047c73cc61ee4"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s01/model/response.json",
+      "sha256": "939cfb96e0aeda25943e09cf7dc01bb3a9b03102dc8e63460313f65e458f0b41"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s02/baseline/record.json",
+      "sha256": "53c5e7c31ca3e824084f03ec00145a6fa36beaf961e288b79560a7399fe5bb19"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s02/model/record.json",
+      "sha256": "25fa8960a4731f98c3db2f67f2b13165a4150fe9b0b08b57400f493788040f7c"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s02/model/request.json",
+      "sha256": "3e9abdb77523b4a0e6c9d33a805d6316c1514efde0a44f93082ac9b2623996fd"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s02/model/response.json",
+      "sha256": "b90165e4ae1bf0e718a4f30915db7b6bcf9308ecb86c36a7ea8741b445b861ad"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s03/baseline/record.json",
+      "sha256": "0e3ebfb5a24e6edea2de991981a73455261de16864bc01485ea5a8d47b00cc1f"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s03/model/record.json",
+      "sha256": "da778fd9e9c58982042aca86047ae18627405c929832eed5c27b6a7b265c8962"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s03/model/request.json",
+      "sha256": "7144ec959a6e031bf49e99b4ae1ff4dfbac668f8e642967791115c55d2d0a3dc"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s03/model/response.json",
+      "sha256": "bd4fff190b896cf684c1286be4a11459cd363c28feedb76c32e14e374dba1f2f"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04a/baseline/record.json",
+      "sha256": "69b6db896194de630ba93c0a40e332ffc6fc2be0396b3b226db96ffdbcd51b96"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04a/model/record.json",
+      "sha256": "b9dda915d09c7cca08dfa13797b9290c84cfd3c453c1804dbb488ec4ef687a06"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04a/model/request.json",
+      "sha256": "e1468bcdbfc49aeeee383ae90b9b29500746e7fa1cacaa1053f6dbc8ee2672ed"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04a/model/response.json",
+      "sha256": "00e5b1b1aeeab9823b3be1ecc4b28b318eceef8a212537aa09457c57b579afd9"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04b/baseline/record.json",
+      "sha256": "970f02dc38e5e5ae8ae7fb71ba7b60cf0695944149f4c9c960895167928a3ebe"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04b/model/record.json",
+      "sha256": "3abbb34348ce213177adba9e531b6cdf909d660f26c033cde22c29e5043c2f25"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04b/model/request.json",
+      "sha256": "da07a1faa467565e766443b6675e23eb99f068da0222f5e896de9e58cb64a8d5"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04b/model/response.json",
+      "sha256": "804b5281a0291f06c712e83357cb3686cfe7ff457877bdbae31b5b78d8de2d0b"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04c/baseline/record.json",
+      "sha256": "c596445af399e3cc5dbbd7503f5b52a7a7baaefbf7f4301e1d35dbb6e13ad28b"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04c/model/record.json",
+      "sha256": "355811648eb2ce116cac095c0ff9f1fbd39719d07bfffc090f8d2f47b85e0698"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04c/model/request.json",
+      "sha256": "1f06480f4e2a3dbe12fbdc255d731968ef639b68ebce515d803c35662474f5a7"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-novel-eval-01/s04c/model/response.json",
+      "sha256": "14d0ab039f1f214d857404665de092deff293ab71a6378ef0c72956e79835c53"
+    }
+  ]
+}

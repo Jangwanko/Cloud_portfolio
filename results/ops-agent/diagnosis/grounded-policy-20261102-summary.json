@@ -1,0 +1,212 @@
+{
+  "version": "ops.grounded-policy-evaluation.v1",
+  "date": "2026-11-02",
+  "status": "TARGETED_INVESTIGATION_REPAIR_VERIFIED_TEMPORAL_PROSE_FAILURE_REMAINS",
+  "record_schema": "ops.grounded-assistance.v4",
+  "model": "gpt-5.6-luna",
+  "evaluation_class": "Development exact-input repeats; frozen code-only history; not unseen or live sequence evaluation.",
+  "api_calls": 8,
+  "automatic_retries": 0,
+  "budget": {
+    "snapshots": 4,
+    "repeats_per_snapshot": 2,
+    "max_output_tokens_per_call": 6000,
+    "timeout_seconds_per_call": 45,
+    "history_mode": "Identical frozen code-only predecessors; no previous model answers."
+  },
+  "changes": [
+    "Code owns bounded CURRENT PG investigation relevance from blocking edges or explicit primary reachability failure; no confirmed causality or global health inference.",
+    "Code supplies required read-failure, desired>0/ready=0 Worker availability and DB-blocking investigation targets with evidence IDs.",
+    "Missing targets, foreign IDs, wrong supporting citations or contradicted fixed conditions withhold model output without repair.",
+    "Version 4 explicitly separates the new contract from preserved version 3 artifacts."
+  ],
+  "structural_results": {
+    "unreviewed": 8,
+    "failed_or_withheld": 0,
+    "identical_request_pairs": 4,
+    "records_verified": 12,
+    "facts_history_policy_equal_to_baseline": 8
+  },
+  "comparisons": [
+    {
+      "case": "s03",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04a",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04b",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04c",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    }
+  ],
+  "semantic_review_author": "Codex inspection of all eight raw model outputs, not independent operator review.",
+  "semantic_review": [
+    {
+      "case": "s03",
+      "finding": "Both responses now explain a read-only qc-3 403 authentication/authorization/visibility investigation, preserve append acknowledgement and avoid claiming persistence failure. Broader unobserved gateway/service arrangements are proposed possibilities, not verified infrastructure."
+    },
+    {
+      "case": "s04a",
+      "finding": "Both responses propose reading the observed waiter/blocker transaction/query/lock details and correlating them with qd-1/qd-2 Worker persistence records. The fixed CURRENT PG result is code policy compliance, not model-discovered accuracy."
+    },
+    {
+      "case": "s04b",
+      "finding": "Both preserve historical blocking and sampled persistence versus global recovery. Both still recommend broad Kafka intake rechecks despite an EXCLUDED assessment; operator-effort improvement is not established."
+    },
+    {
+      "case": "s04c",
+      "finding": "Both now use Worker ready=0 as an uncertain availability candidate and propose readiness/startup/scheduling/log checks without scaling authority. However BOTH merge earlier pending-request facts with the later lag=0 snapshot: that cited lag=0 snapshot already had qd-1/qd-2 persisted. Current observations are unchanged, but historical prose is false."
+    }
+  ],
+  "decision": "Targeted code-policy/next-check repair is reviewable. General semantic consistency and stable operational promotion remain unproven; do not report 8/8 diagnosis accuracy.",
+  "remaining": [
+    "Historical prose needs a check against the exact cited snapshot; existing valid history IDs do not verify its contents.",
+    "Useful next-check prioritization outside mandatory targets remains variable and may create unnecessary operator work.",
+    "No independent held-out, live sequential, remote CI or production-readiness result in this round."
+  ],
+  "limits": [
+    "Two repeats of reused development cases; no statistical reliability estimate.",
+    "PG applicability stability and required-target inclusion are code-owned constraints, not evidence of improved underlying model ability.",
+    "A counterexample test shows unrelated prose with correct target IDs still passes structural validation.",
+    "Policy supports named saved observation shapes; missing/stale/partial/unsupported inputs stay unknown.",
+    "No automatic execution, source publication, runtime rollout or stable baseline promotion."
+  ],
+  "validation": {
+    "full_suite": "1071 passed in 54.20s",
+    "full_suite_record": "results/validation/20261102T121406Z-eab39708/summary.json",
+    "focused": "127 passed in 2.38s",
+    "focused_record": "results/validation/20261102T121326Z-d0d8e197/summary.json"
+  },
+  "usage": {
+    "input_tokens": 67206,
+    "output_tokens": 13408
+  },
+  "raw_directory": "results/ops-agent/shadow/20261102-grounded-policy-repeat-01",
+  "raw_summary_sha256": "c80ec4fef106dd5e40655f8d57d83579332328b26197e5f9db8dd1cb6c9b4729",
+  "source_sha256": {
+    "ops_agent/grounded_assistant.py": "d6dca09fdff8d4e73f8efb54b01185d44fab4cc8f816929792040c9ed5731518",
+    "ops_agent/observation_facts.py": "cd981dc1459419e55eb0f54a6b382ad04890cc37e83a2614675e7c796be28f35",
+    "ops_agent/observation_history.py": "6efcd8fa04fb60682d0b2984a1fce10ec985a95cf53e75a253523df21d3d21fa",
+    "ops_agent/investigation_policy.py": "d12e0716dc5e55aa415779e67be2d9ed95e843fc83cfb8881455973acb6e05b6",
+    "ops_agent/runbook_assistant.py": "696def108d3ffbcd41d11dfe887f093b9db46c080e065521de3886cc3997b39a",
+    "ops_agent/diagnosis_agent.py": "4a9ef5d3fc8b29798919c89046176e68721acf5e578c8e6c76ee246d6f0e8a40",
+    "ops_agent/models.py": "2eb6907924cbacca8a063811327d553bb8f906a826d769cc3963c23cda1965e8",
+    "ops_agent/evaluation_models.py": "f5cb2ca8cd6c3023d57fa2039f157cfbb9531cc8a6ad943cc45592467994c64b",
+    "ops_agent/runbook_catalog.json": "98dcdc1f1e266460c0d033a988b8ae5e797d8f6d0bdf701a11212970e0883ffb",
+    "docs/RUNBOOK.md": "97ab390111590f00c547821e49e522610bc69f167d93010470413746902309e8",
+    "scripts/evaluate_grounded_assistance.py": "a09739c17a50f8acbef7de4b2770c0b21fdcaeda6256df6ea1f550f2cc397ba3"
+  },
+  "responses": [
+    {
+      "case": "s03",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "652b7356f4f6b006cab8c2e27cc6e90c58cc6675d3c492052cda56d7bceff138",
+      "request_sha256": "fe62deada64e645cd0b10b3ebbdc1cce5e1c4c53bea68d3dda2426a78b251fbc",
+      "required_targets": [
+        "check:status-read"
+      ],
+      "response_file_sha256": "08c0babb5665387ba83ec686b59b2805040e6c23976d332498d321478d20d14f"
+    },
+    {
+      "case": "s03",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "439e269e433207cb314b2e4fd4254c90c95fc46ea90cb63298370617e482ce1f",
+      "request_sha256": "fe62deada64e645cd0b10b3ebbdc1cce5e1c4c53bea68d3dda2426a78b251fbc",
+      "required_targets": [
+        "check:status-read"
+      ],
+      "response_file_sha256": "017db659472f67d7d55292d023ab91657827de2f490561d20e597250dd393191"
+    },
+    {
+      "case": "s04a",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "decf8ae88da97a851d1ae47250bc9a2d1bd9a876d44516ecb25d364dd8ad8129",
+      "request_sha256": "c43b7bf181f75162109db9651c1fcdd2225338b9d04c6a278bc6dcc6f42092ca",
+      "required_targets": [
+        "check:db-blocking"
+      ],
+      "response_file_sha256": "c817a397e452994f9c5589b1062ec27f5164f73b146955eac3fd606c962ad55c"
+    },
+    {
+      "case": "s04a",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "86e30022d8235537d308b043b58afe6d7e0972b75cc301d62189b2c13473a145",
+      "request_sha256": "c43b7bf181f75162109db9651c1fcdd2225338b9d04c6a278bc6dcc6f42092ca",
+      "required_targets": [
+        "check:db-blocking"
+      ],
+      "response_file_sha256": "b1580b1820b37333d9c7a1fc5804bf010fb0d10a95c05c1add4c3499b6880426"
+    },
+    {
+      "case": "s04b",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "685a58f61b98fd807fed180575f6bf7f4ffc934e0d0f2b7dc18f94e5150f6f67",
+      "request_sha256": "462a0fd4044dde6e194d258cddb7d1e57eb3c2f7a0fa8872266ea65502a7d774",
+      "required_targets": [],
+      "response_file_sha256": "5870eac11bf0250b83dd1f8939b4dae4d4d7b7402a3a7c0c48a7db6a23d01211"
+    },
+    {
+      "case": "s04b",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "441dcfeca74a4579ab403d29263af4a0112d338970ed43096dca8149ba202426",
+      "request_sha256": "462a0fd4044dde6e194d258cddb7d1e57eb3c2f7a0fa8872266ea65502a7d774",
+      "required_targets": [],
+      "response_file_sha256": "76b0ac76de257a19ae432110881c458b5462a289f9d5b8ee91b418148961659c"
+    },
+    {
+      "case": "s04c",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "57a083c456c558d015de2492265e2c4e3f1a29f60320ba5c5616a9b22fde4c49",
+      "request_sha256": "b0f30350885a90b36f704650ff36dfda6a5c623fbacb602b0c22b0736b33b070",
+      "required_targets": [
+        "check:worker-availability"
+      ],
+      "response_file_sha256": "ce9ba421a71515639bc2fcbef803b4b1ee1a446fde374cf516147d3df383ef9d"
+    },
+    {
+      "case": "s04c",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "record_sha256": "78fcc33670bbd8965e759eaa1d5c14bf108afb49caa3f59fbc927ba35fd27421",
+      "request_sha256": "b0f30350885a90b36f704650ff36dfda6a5c623fbacb602b0c22b0736b33b070",
+      "required_targets": [
+        "check:worker-availability"
+      ],
+      "response_file_sha256": "0b2121038e1a3d8138fed28022d68147a95195bfc4e9b4822137a9c3e5ce524f"
+    }
+  ],
+  "git_boundary": "dev-kafka working tree only; no commit, push, merge or remote CI."
+}

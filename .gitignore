@@ -237,3 +237,8 @@ tools/helm-render/
 !results/ops-agent/diagnosis/local-burst-20261101-summary.json
 !results/ops-agent/diagnosis/row-lock-20261101-summary.json
 !results/ops-agent/diagnosis/model-selected-20261101-summary.json
+!results/ops-agent/diagnosis/grounded-assistance-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-novel-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-v3-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-strict-repeat-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-policy-20261102-summary.json

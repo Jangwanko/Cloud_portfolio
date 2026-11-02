@@ -8,17 +8,18 @@ tools; they do not grant the model cluster write access.
 
 ## Evidence and runbook assistance
 
-The new CLI retrieves three indexed sections of `docs/RUNBOOK.md`, compares their
-conditions with current evidence, and records suggested read-only checks. It retains
-source versions, requests/responses and prior-record hashes. APPLICABLE means the
-investigation procedure fits; it does not grant permission to execute its commands.
+The default CLI computes code-owned observations before optionally asking Luna for
+investigation. It retrieves three indexed sections of `docs/RUNBOOK.md` and retains
+source versions, requests/responses and prior-record hashes. Model output has no
+current-summary/severity field and cannot replace the deterministic observation object.
+APPLICABLE means investigation relevance, not a proven cause or permission to act.
 
 ```powershell
-# Offline: prepare projected evidence and retrieved sources; no diagnosis claim.
+# Offline: save fixed observations and retrieved sources; no model call.
 .venv\Scripts\python.exe scripts\assist_incident.py --example similar `
   --output-dir results/ops-agent/shadow/<new-prepared-directory>
 
-# One API call per step; the second uses only the earlier recorded answer.
+# One API call per step; follow-ups retain earlier code observations separately.
 .venv\Scripts\python.exe scripts\assist_incident.py --example similar --live `
   --output-dir results/ops-agent/shadow/<new-first-directory>
 .venv\Scripts\python.exe scripts\assist_incident.py --example similar --step 1 --live `
@@ -33,11 +34,106 @@ metadata, and keep the same incident ID, scope and profile for follow-ups. Input
 are limited to 2 MiB and projected content to 90 KB. Freshness is relative to the
 saved observation time; this CLI does not collect a new live snapshot.
 
-Without `--live`, only input/plan are saved. With `--live`, one request is allowed,
-with at most 6,000 output tokens, 45-second timeout and no repair/retry. Contract failures
-retain the response and failure marker, without a completed record. Validators
-check references, condition coverage/consistency and usable evidence, not the truth
-of free text. No automated actions, lifecycle closure or runbook update is performed.
+The default saves `input.json`, `observations.json`, `history.json`, `plan.json` and `record.json` even
+without a model call. Code reports only the listed requests as pending/persisted/unknown,
+latest lag separately from historical peak, and observed DB blocking edges. Unsupported,
+stale or incomplete data stays UNKNOWN; the older examples use custom metrics and may
+produce UNKNOWN facts. Read errors do not prove stalled writes. Poll intervals are not
+exact commit latency. DB server time is retained separately from collector freshness.
+
+With `--live`, one request is allowed, at most 6,000 output tokens, 45-second timeout
+and no repair/retry. Model transport errors produce FAILED; invalid output or a typed
+contract conflict produces WITHHELD, with raw response/failure retained and CLI exit 1.
+Both keep code observations in the record and standard output. Valid model analysis
+remains UNREVIEWED: references/structured checks do not verify the truth or safety of
+all prose. Runbook assessments declare CURRENT or HISTORICAL; historical peak cannot
+establish current sampled-request delay after persistence with latest lag zero.
+No automatic action, lifecycle closure or runbook update is performed.
+
+The default request uses strict JSON Schema through Responses API `text.format`.
+All fields are required on the wire (an unrelated next check uses `runbook_id: null`),
+and current evidence, history, runbook and unknown IDs are restricted to this input.
+Hypotheses require usable current evidence; empty available sets allow only empty lists.
+The local semantic/relationship validators still run after generation. Refusal or
+incomplete output is WITHHELD even if an included JSON fragment parses. There is no
+unstructured fallback or retry. The per-call plan records the actual schema hash.
+The earlier strict-output change preserved v3 records. The new investigation policy
+and required check targets use v4; older artifacts remain with their archived sources.
+
+The current record schema is `ops.grounded-assistance.v4`. Previous records must use
+the same version, incident/scope/profile/provenance and an earlier observation time;
+failed-model records can still provide earlier code observations. Legacy records are
+not migrated implicitly. Use `--legacy-assistance` for the original model-authored
+state/impact experiment, or `--investigate` for optional model-selected reads. These
+comparison modes retain their earlier contracts; the new fixed-fact boundary is the
+default path only. `--format text` labels code facts and unreviewed model text separately.
+
+Per-request facts separate `append`, `persistence`, `status_read` and their observation
+times. `unknowns` selects IDs from the code-generated `unknown_catalog`; it accepts
+neither arbitrary prose nor invented IDs. For a known 202 receipt with a 403/503
+status read, persistence/read visibility may be unknown but append acknowledgement
+is retained. `selected_unknowns` provides deterministic wording scoped to each
+request. Other model prose is still UNREVIEWED; the catalog is bounded, and needs
+outside it can only be proposed as unreviewed next checks.
+
+`observation_history` retains up to eight earlier code snapshots, even after a
+WITHHELD/FAILED model result. Observation times, source-record/content hashes and
+incident scope are preserved; `updates.history_ids` is separate from current
+`evidence_ids`. Duplicate/future/foreign histories are rejected. `dropped_entries`
+exposes eviction from the model input; original records remain on disk. No automatic
+summary or silent trimming bypasses the 90 KB projected-input limit. v2/v3 records
+are not implicitly migrated; replay original bundles in a new directory for v4.
+
+`investigation_policy` is code-owned and saved before calling the model. For the
+retrieved PG runbook, a current observed blocking edge or explicit primary reachability
+failure makes CURRENT investigation applicable. With no supported positive signal it
+remains UNKNOWN/NEEDS_MORE_EVIDENCE; healthy readiness/empty waits cannot establish
+global DB health. This bounded rule supports the saved DB wait and application
+readiness observation shapes, not arbitrary persistence logs. Causal linkage to request
+IDs remains unproven; earlier DB signals belong in model updates, not a switched scope.
+
+Required targets cover unavailable request-status reads (including each request and
+HTTP result), Worker desired>0/ready=0, and current DB blocking. Worker counts require
+a unique, fresh, complete typed observation; intentional desired=0 is not a zero-ready
+failure target. No global severity or restart/scaling authority follows from a target.
+Each model next check supplies `target_ids` and the corresponding evidence IDs, with
+at most three checks; targets may share a check. Missing targets or mismatched citations
+withhold the whole model response, preserving facts and the visible code policy.
+Target tags do not prove useful prose: a counterexample test deliberately passes an
+unrelated sentence with valid tags. Human/explicit evaluation review is still required.
+
+```powershell
+# Four synthetic development cases; freezes baseline and rubric before any calls.
+# Omit --execute for zero API calls. Maximum four calls, no retries.
+.venv\Scripts\python.exe scripts\evaluate_grounded_assistance.py --execute `
+  --output-dir results/ops-agent/shadow/<new-grounded-evaluation>
+```
+
+This compares the same fixed observations/retrieved runbooks with optional Luna
+interpretation. The evaluator reports structural results and requires a separate
+semantic review; it does not score operator usefulness or held-out accuracy automatically.
+
+For exact-input variability checks, add `--repeat 2` (allowed 1–3, maximum 16 total
+calls). Repeated requests use the same frozen code-only predecessor, including the
+same history and no prior model analysis. Request hashes must match within each
+case. This tests repeated snapshots, not propagation of model answers through a
+live sequence. Every response/failure is saved separately. Runbook decisions and
+selected-gap equality are reported separately from prose, whose consistency and
+usefulness require review. Repeats never stop at the first success.
+
+Use `--fixtures <frozen-cases.json>` for a separate evaluation set (1–8 selected
+snapshots). The evaluator saves source copies and hashes before calls, checks source
+stability before each snapshot and at completion, validates predecessor order, and
+never sends private `review` criteria as model input. Preserve first outputs and
+record semantic findings separately; a zero exit status only means structural checks
+and fixed-fact equality passed. The latest new-case evaluation found a prose
+contradiction despite those checks passing; see [the evaluation record](../docs/OPS_AGENT_EVALUATION.md).
+Its frozen synthetic input and private rubric are retained in
+[grounded_novel_v1.json](fixtures/grounded_novel_v1.json). Reusing it for a fix or
+rerun does not constitute another unseen-case evaluation.
+Pass `--regression` when reusing such cases; it explicitly labels the plan and summary
+as development regression. The v3 repair run used `--case s03 --case s04a --case s04b
+--case s04c` and preserved one withheld response without retrying or repairing it.
 
 The bounded synthetic pilot reuses the existing evaluation runner:
 

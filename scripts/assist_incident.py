@@ -11,6 +11,8 @@ from ops_agent.diagnosis_agent import OpenAIResponsesClient, load_openai_configu
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--bundle", type=Path)
@@ -21,7 +23,9 @@ def main():
     parser.add_argument("--previous", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--live", action="store_true", help="Use existing model configuration (bounded calls)")
-    parser.add_argument("--investigate", action="store_true", help="Model chooses recorded observation reads and runbook search; up to five calls")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--investigate", action="store_true", help="Experimental model-selected recorded reads; up to five calls")
+    mode.add_argument("--legacy-assistance", action="store_true", help="Original model-authored state/impact experiment for comparison")
     parser.add_argument("--format", choices=["json","text"], default="json", help="Text displays model wording without editorial rewriting")
     args = parser.parse_args()
     if args.example:
@@ -39,12 +43,16 @@ def main():
     if args.live:
         key, model = load_openai_configuration(ROOT)
         client = OpenAIResponsesClient(api_key=key, timeout_seconds=45, max_retries=0)
-    runner=run
+    from ops_agent.grounded_assistant import run as grounded_run, public_result, render
+    runner=run if args.legacy_assistance else grounded_run
     if args.investigate:
         from ops_agent.investigation_assistant import investigate
         runner=investigate
     result = runner(document, question, provenance, args.output_dir,
         previous=read_json(args.previous) if args.previous else None, client=client, model=model)
+    if runner is grounded_run:
+        print(render(result) if args.format == "text" else json.dumps(public_result(result), ensure_ascii=False, indent=2))
+        return 1 if result["model_status"] in {"FAILED", "WITHHELD"} else 0
     if "advice" in result:
         if args.format=="text":
             from ops_agent.investigation_assistant import render_explanation
@@ -59,4 +67,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

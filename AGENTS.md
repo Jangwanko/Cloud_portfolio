@@ -20,6 +20,7 @@
 - 작업 흐름: Problem → Context → Constraints → Implementation → Validation → Evidence → Decision
 - 상세 역할·실패 피드백·측정 구조·문서 작성·rollback 규칙: [AI Engineering Workflow](docs/AI_ENGINEERING_WORKFLOW.md)
 - Ops Agent 작업은 [확정 목적](docs/OPS_AGENT.md#design-direction)과 [구현 순서](docs/OPS_AGENT.md#implementation-priorities)를 따른다. 현재 사건의 지속 조사와 과거 사례·런북 검색·적용 조건 확인·검증된 지식 축적을 함께 구현한다. 각 작업은 해결할 빈틈과 완료 조건을 명시하고, 경미·중대 오류의 정확성·일관성·판단 갱신·운영자 부담을 평가한다. 단일 사례 정답률이나 반복 만점으로 목적을 대체하지 않는다.
+- 하네스 변경은 [범위·종료 규칙](docs/AI_ENGINEERING_WORKFLOW.md#harness-scope-and-stop)을 따른다. 사전 완료 조건 충족 후 새 실험·검증기를 관성적으로 추가하지 않으며, 실험 기능 병합과 안정 운영 승격 기준을 분리한다. 코드가 지정한 답의 준수를 모델 능력 개선으로 보고하지 않는다.
 
 ## Core Invariants
 

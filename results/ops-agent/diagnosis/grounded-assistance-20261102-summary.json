@@ -1,0 +1,159 @@
+{
+  "version": "ops.grounded-assistance-evaluation.v1",
+  "date": "2026-11-02",
+  "timezone": "Asia/Seoul",
+  "status": "FACT_ISOLATION_VERIFIED_MODEL_INTERPRETATION_UNREVIEWED",
+  "provenance": {
+    "new_model_inputs": "four synthetic development cases; not held out",
+    "recorded_replay": "three previously captured row-lock snapshots, zero API calls, no new fault"
+  },
+  "api_calls": 6,
+  "validation": {
+    "full_suite": "1009 passed in 58.20s",
+    "record": "results/validation/20261101T151103Z-14052031/summary.json",
+    "recorded_replay": "results/validation/20261101T151239Z-cf8944ea/summary.json"
+  },
+  "automatic_retries": 0,
+  "trials": [
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01",
+      "calls_attempted": 4,
+      "model": "gpt-5.6-luna",
+      "fixed_facts_equal": true,
+      "record_version": "ops.grounded-assistance.v1",
+      "cases": [
+        "lock-observed",
+        "lock-cleared",
+        "worker-unavailable",
+        "unobservable"
+      ]
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02",
+      "calls_attempted": 2,
+      "model": "gpt-5.6-luna",
+      "fixed_facts_equal": true,
+      "record_version": "ops.grounded-assistance.v2",
+      "cases": [
+        "lock-observed",
+        "lock-cleared"
+      ]
+    }
+  ],
+  "deterministic_findings": [
+    "Same fixed facts with and without model in all six calls; model cannot replace observations.",
+    "Recorded requests pending -> pending with DB blocking edges -> all sampled requests persisted, latest lag 0, historical peak 15.",
+    "Malformed/contradictory structured response withheld; transport failure preserves facts and follow-up eligibility.",
+    "503 status-read failure remains unknown, not evidence of stalled writes or data loss."
+  ],
+  "review_author": "Codex source/response inspection, not an independent operator or automatic truth oracle",
+  "model_review": [
+    {
+      "case": "lock-observed",
+      "finding": "Candidate DB blocking with explicit missing request-to-session link; proposed blocker transaction/log correlation."
+    },
+    {
+      "case": "worker-unavailable",
+      "finding": "Zero ready workers used for a different candidate despite similar pending/lag symptoms; requested Worker status/logs. v1 trial only."
+    },
+    {
+      "case": "unobservable",
+      "finding": "No cause hypotheses; 503 does not establish stored/not-stored; proposed status/DB visibility checks. v1 trial only."
+    },
+    {
+      "case": "lock-cleared",
+      "finding": "Initial v1 retained APPLICABLE Worker lag without explicit time scope. v2 labels it HISTORICAL and distinguishes 80-second polling bound from exact commit latency."
+    }
+  ],
+  "remaining_gaps": [
+    "Free text can contradict correct structured fields; all model prose remains UNREVIEWED.",
+    "Runbook wording/application still needs review: final Kafka EXCLUDED was scoped to the accepted request, not proof of globally healthy Kafka or all catalog predicates.",
+    "Model suggests several broad checks; no demonstrated reduction in operator work, check count or response cost versus the fixed observations/runbook baseline.",
+    "Only lock/recovery were called with final v2 protocol; other cases have deterministic regression coverage and earlier v1 model evidence.",
+    "No unseen-case accuracy, automatic semantic approval, sustained live monitoring, operational SLO or production-readiness claim."
+  ],
+  "first_failures_preserved": [
+    "Focused CLI test initially exposed Windows stdout encoding mismatch; explicit UTF-8 fixed it.",
+    "First recorded fact replay rejected DB graph because server clock was about 1.7 seconds ahead of collector clock. Fixed collector freshness with separate server timestamp; original failed output retained.",
+    "v1 model output retained; time-scope correction was a new two-call trial, not overwritten success."
+  ],
+  "comparison": "Fixed observations plus retrieved runbooks already supply facts/procedures. Luna added candidate linkage and discriminating queries in these cases; superiority is not established.",
+  "sources": [
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-observed/baseline/record.json",
+      "sha256": "aa5b0647a0279e21798444bfa9bc77e3cd760682fe6c7ab7cb0afbb188578ec7"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-observed/model/record.json",
+      "sha256": "d82db56d7fc15a756fc7a2ff6a70c07f00b458440a52bc3cde62d3672911f3ee"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-observed/model/response.json",
+      "sha256": "df61d6d217fb0f2f9ba0294b72d79b1fbc9e5f2a3fc5f1429359fe1ed62dc266"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-cleared/baseline/record.json",
+      "sha256": "df1d2b6016af8b04570bb33216774e4581c1e85074739bccb00df300350e0ede"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-cleared/model/record.json",
+      "sha256": "0e24da2798c86c78e7bdb4de9e9c631cdbd4f3261cd6717bffae85291d06c10e"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/lock-cleared/model/response.json",
+      "sha256": "a4e7eeaac412e010f1d36b9ad71f1bc5fd9d9e78956ff8f62c960860661a3318"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/worker-unavailable/baseline/record.json",
+      "sha256": "c803c972bc8e3c99d49c9620671f207eb2499b877ed6af55f282d4b2c217ceb4"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/worker-unavailable/model/record.json",
+      "sha256": "d5a742aaf9eef827c4137e5957e41de21515da484ba49b5ea70990cc44e5a8a7"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/worker-unavailable/model/response.json",
+      "sha256": "99e9e459e113316a3545e2dc9d2fd521b953f61cf20299d443feda56991f4990"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/unobservable/baseline/record.json",
+      "sha256": "d00d9e10c57f7f470500747d4ed55bd6eda7352027463efa78791d76bd601186"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/unobservable/model/record.json",
+      "sha256": "3d5d79c4e26301f29ccb7edf8490917bf9dabef9505210515e27118a7c15c4c0"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-01/unobservable/model/response.json",
+      "sha256": "0c3c7cb07d5854bca246d688e0f5dcb21e609901ac38a70596cd2db7b9a0638c"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-observed/baseline/record.json",
+      "sha256": "59a2bcdb775e2c5cc2a13314ce04c0a7a47916229062d690b137886b0012c0e9"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-observed/model/record.json",
+      "sha256": "20133490affb7076f0a3bd43d3e9d18ebed840f4c517008f9b375feb4dd40ed9"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-observed/model/response.json",
+      "sha256": "93373541a93d1d1d69cbe95cc437b5f6ae94a8d10de1793c49d825e5a28b8acc"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-cleared/baseline/record.json",
+      "sha256": "9b40d620398886433257bb11234ff91c48e51f591367c587d669061caddcaf43"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-cleared/model/record.json",
+      "sha256": "bf8b7192373591dd63a5b73e009fdd0803f2528bb2f9b794a7e6e903f5166ef0"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-pilot-02/lock-cleared/model/response.json",
+      "sha256": "71197b3209e72e480ded7221d325b87306ce944ca9c4ca3a895308f9d17920f4"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-recorded-03/summary.json",
+      "sha256": "6a1f84b65e2e8f8db9967251421b2446719edd4fab7d6452ad8be7863f49fe54"
+    }
+  ]
+}

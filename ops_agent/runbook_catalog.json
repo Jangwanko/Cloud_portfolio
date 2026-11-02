@@ -20,7 +20,7 @@
       "terms": ["postgresql", "postgres", "pgpool", "database", "db", "persistence", "저장"],
       "scope": "messaging-app PostgreSQL HA / Pgpool persistence path",
       "conditions": [
-        {"id": "db_failure", "description": "Current PostgreSQL/Pgpool readiness, connectivity, or database persistence error directly identifies a database-path problem. Queued requests or lag alone are insufficient. Healthy readiness alone does not exclude database lock contention."}
+        {"id": "db_failure", "description": "Investigation relevance, not a proven request root cause: a current blocking edge or explicit PostgreSQL primary reachability failure warrants DB-path investigation. Queued requests, lag or generic HTTP 503 alone are insufficient. Absent waits and healthy readiness alone do not exclude DB-path problems. The grounded path supplies a bounded code-owned CURRENT constraint; discuss earlier blocking separately as history."}
       ],
       "checks": ["PG/Pgpool Pod states and logs", "primary reachability and standby readiness/replication", "Worker persistence error context"],
       "action_boundary": "Read-only diagnosis. Sync changes, restarts and primary rollout require separate operator decisions. Preserve local RollingUpdate partition=1.",

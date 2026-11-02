@@ -153,6 +153,8 @@ class ModelResponse:
     input_tokens: int
     output_tokens: int
     total_tokens: int
+    status: str | None = None
+    incomplete_details: dict[str, Any] | None = None
 
 
 class DiagnosisModelClient(Protocol):
@@ -262,6 +264,8 @@ def _parse_model_response(value: dict[str, Any]) -> ModelResponse:
         input_tokens=int(usage.get("input_tokens", 0) or 0),
         output_tokens=int(usage.get("output_tokens", 0) or 0),
         total_tokens=int(usage.get("total_tokens", 0) or 0),
+        status=str(value.get("status", "unknown")),
+        incomplete_details=value.get("incomplete_details"),
     )
 
 
