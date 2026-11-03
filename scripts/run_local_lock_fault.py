@@ -128,12 +128,12 @@ def preflight():
     return primaries[0]
 
 
-def run(directory, live=False):
+def run(directory, live=False, incident_id=None):
     directory=directory.resolve()
     directory.mkdir(parents=True,exist_ok=False)
     primary, pg = preflight()
     session="ops_session_"+secrets.token_hex(6)
-    incident="local-observation-"+secrets.token_hex(6)
+    incident=incident_id or "local-observation-"+secrets.token_hex(6)
     plan={"at":now(),"incident_id":incident,"primary":primary,"database":pg,
         "fault":"50-second FOR UPDATE lock on one newly-created stream sequence row",
         "rollback":"server-side pg_sleep(50) then ROLLBACK; statement_timeout 55s, idle transaction timeout 60s",
@@ -208,12 +208,21 @@ def run(directory, live=False):
             'note':'404 only means no durable request row yet for this known accepted ID. No data-loss conclusion.'}
         at=now(); save(path/'requests.json',request_value)
         db=sql(primary,WAIT_SQL); db_at=now(); save(path/'database-waits.json',db)
+        logs = None
+        if include_db:
+            pods = kube('get', 'pods', '-l', 'app=worker', '-o', 'json')['items']
+            logs = [{'pod': p['metadata']['name'], 'text': kube('logs', p['metadata']['name'],
+                '-c', 'worker', '--tail=30', json_output=False)} for p in pods]
+            save(path / 'worker-logs.json', logs)
+            logs_at = now()
         bundle=collect_bundle(policy=policy,incident_id=incident,artifact_root=path/'raw',cluster_context='kind-messaging-ha')
         full=bundle.model_dump(mode='json'); save(path/'bundle-full.json',full)
         selected=[e for e in full['evidence'] if e['metric']['name'] in METRICS]
         selected.append(supplemental('event_acceptance_and_persistence',request_value,at,full['collection']['completed_at'],path/'requests.json'))
         if include_db:
             selected.append(supplemental('postgres_blocking_activity',db,db_at,full['collection']['completed_at'],path/'database-waits.json'))
+            selected.append(supplemental('worker_runtime_logs', logs, logs_at,
+                full['collection']['completed_at'], path / 'worker-logs.json'))
         projected={**full,'evidence':selected}
         EvidenceBundle.model_validate(projected)
         save(path/'bundle-model.json',projected)

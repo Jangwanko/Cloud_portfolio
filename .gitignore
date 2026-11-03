@@ -242,3 +242,4 @@ tools/helm-render/
 !results/ops-agent/diagnosis/grounded-v3-20261102-summary.json
 !results/ops-agent/diagnosis/grounded-strict-repeat-20261102-summary.json
 !results/ops-agent/diagnosis/grounded-policy-20261102-summary.json
+!results/ops-agent/diagnosis/mvp-20261103-summary.json

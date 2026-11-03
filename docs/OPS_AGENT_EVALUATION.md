@@ -4,6 +4,25 @@
 
 **현재 판단:** 모델이 운영 증거를 설명하고 일부 실제 장애에서 유용한 원인 후보·복구안을 제안한 것은 확인했다. 성공 판정 결함 6종을 보강하고 반례로 재검증했다. 첫 순차 조사 비교에서는 모델·Runbook의 결론이 같았고 모델의 조회 횟수가 더 많았다. 일반적인 원인 정확도, 고정 Runbook 대비 추가 가치, 자율 복구는 아직 입증하지 않았다.
 
+## 통제된 로컬 MVP 완료 — 2026-11-03
+
+기존 수집기·상태 판정·런북 검색·PG/Worker 주입기를 연결했다. 새 구현은 과거 재서술의 기본 출력 제외, 근거가 있는 반대 증거·승인 필요 복구 제안 필드, Worker 표준 Bundle 연결, 설정 복원 검증과 사건 경험 저장·검색이다. 루프백 `kind-messaging-ha` preflight와 사용자 승인 후 두 실험을 각 한 번 실행했다. 원격 운영·공개 데모·기존 데이터 삭제·PG rollout 변경은 수행하지 않았다.
+
+| 실제 실험 | 관측과 복구 | 최초 Luna 판단·한계 |
+| --- | --- | --- |
+| PG 행 잠금 | 새 stream 행 최대 50초 잠금. 수락 21건 중 장애 중 저장 5건, waiter 1건, lag 20→16. 해제 후 21/21 저장·owned session 0·lag 0 연속 3회 | 실제 waiter/blocker로 DB blocking 후보 제시, 요청 연결은 미확인. PG 조사 관련성은 코드 정책 준수. rebalance는 과거 로그를 포함한 미확인 추가 후보. 복구 제안은 빈 목록 |
+| Worker 기동 실패 | 잘못된 시작 모듈로 CrashLoopBackOff. 장애 중 수락 20건 대기, lag 20. 원래 command/strategy와 Argo 정책 복원 후 20/20 저장·Worker 2/2·API ready | `No module named worker.consumer` 로그로 기동 실패 식별. Worker lag 런북은 증상 조사에 적용. 복구 제안 보류. 정상 seed가 이미 저장됐는데 소량 lag 1로 런북을 과하게 적용한 한계 |
+
+두 실험 모두 Worker/PG 설정 hash, PG UID/restart, Argo 자동 정책 일치를 확인했다. Luna `gpt-5.6-luna`는 **정상·장애 시점 각 1회, 총 4회** 호출했다. 승인 상한 6회, 호출당 6,000 출력 토큰·45초·재시도 없음이다. 안전한 rollback 이후 저장 증거를 재생했고 **복구 snapshot·주입 계획·정답·평가 기준은 전달하지 않았다.** 복구는 코드 전용 세 번째 기록이다. 네 최초 응답은 형식·인용 검사를 통과했으며 수정·재호출하지 않았다. 새 `updates`는 빈 목록으로 제한하고 기본 JSON/text와 후속 모델 문맥에서 제외하며 원본은 보존한다.
+
+같은 Incident ID의 정상·장애·복구 Bundle, 실제 로그/메트릭/Pod 상태, 모델 입력·응답, 승인·주입·롤백·설정 비교를 `results/ops-agent/shadow/20261103-mvp-{lock,worker}-01`에 보존했다. 각 `incident-record.json`과 `runbook-draft.json`을 생성하고 모델 없이 검색·현재 사건 제외·artifact 변조 거부를 검증했다. 이는 `ops.incident-experience.v1` sidecar이며 작은 실험에 calibrated backlog IncidentRecord를 임의 생성하지 않는다. 복구 증거 검증과 운영자 의미 검토/PENDING을 분리하며 런북을 자동 게시하지 않는다. Kubernetes가 readyReplicas를 생략하면 UNKNOWN을 유지하고 실제 non-ready 컨테이너를 별도 장애 근거로 사용한다.
+
+런북 세 상황은 [기존 Luna 평가](../results/ops-agent/diagnosis/runbook-assistance-20261101-summary.json)를 재사용하고 현재 검색을 재검증했다: matching→PG, similar→Kafka, unmatched→빈 목록. 런북 없이 추가 확인을 제공하는 회귀도 유지한다. 이를 현재 모델의 새 독립 정확도 결과로 계산하지 않았다.
+
+전체 테스트 **1,080개 통과(57.77초)**. 집중 회귀와 여섯 시점 연결·원본 hash·네 응답 대응·복구 정보 비공개·사건 검색 검증 완료. 최초 집중 검증의 Windows UTF-8 읽기 실패도 validation log에 보존했다. [완료 증거·검토·테스트/원본 경로](../results/ops-agent/diagnosis/mvp-20261103-summary.json). 복구 제안 유용성, 과한 런북 적용, 넓은 조회는 후속 품질 과제로 남기며 이 한계로 MVP를 무기한 확장하지 않는다.
+
+실험용 MVP로 병합 검토 가능한 범위다. 로컬 committed ref의 읽기 전용 merge-tree에서 `docs/OPS_AGENT.md`, `docs/TEST_RESULTS.md` 충돌을 확인했다. 미커밋 MVP 변경은 예측에 포함되지 않으므로 병합 전 재검토가 필요하다. 원격 CI·master 병합·공개 README 수정·원격 배포는 수행하지 않았다. PG primary rollout·Helm reconciliation을 이번 복구 성공으로 검증했다고 해석하지 않는다.
+
 **작업 범위 조정 — 2026-11-02:** 최근 세 회차는 동일 네 관측에 총 20회 호출한 개발 회귀다. PG 판단·필수 조사 대상의 일관성은 코드가 지정한 조건 준수로 집계한다. 알려진 과거 설명 오류는 보존하되, 다음 작업은 기본 출력 범위를 줄이는 최소 변경으로 한정한다. 아래 실패마다 새로운 검증기와 모델 호출을 추가하거나 실험 기능 병합에 운영 수준의 완성을 요구하지 않는다. 변경별 종료·병합·승격 기준은 [하네스 규칙](AI_ENGINEERING_WORKFLOW.md#harness-scope-and-stop)과 [현재 완료 조건](OPS_AGENT.md#implementation-priorities)을 따른다. 이 조정으로 과거 실패가 통과로 바뀌거나 병합이 승인된 것은 아니다.
 
 ## 조사 기준 고정과 필수 확인 누락 검사 — 2026-11-02

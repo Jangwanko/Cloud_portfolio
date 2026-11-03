@@ -164,8 +164,8 @@ def diagnose(directory, evidence, symptom, client, model, descriptions=None):
     raise ValueError("no model conclusion")
 
 
-def run(directory):
-    key, model = load_openai_configuration(ROOT)
+def run(directory, live=True, capture=None):
+    key, model = load_openai_configuration(ROOT) if live else (None, None)
     directory.mkdir(parents=True, exist_ok=False)
     opener = build_opener(ProxyHandler({}))
     token = None
@@ -219,6 +219,7 @@ def run(directory):
     token = login["access_token"]
     _, stream = http("POST", "/v1/streams", {"name": "bounded-diagnosis", "member_ids": [user["id"]]})
     accepted = []
+    receipts = {}
 
     def send_event(sequence):
         code, ack = http("POST", f"/v2/streams/{stream['id']}/events",
@@ -226,10 +227,11 @@ def run(directory):
              "metadata": {}}, {"X-Idempotency-Key": secrets.token_hex(16)})
         if code != 202 or ack.get("schema_version") != 2:
             raise ValueError("event acceptance failed")
+        receipts[ack['request_id']] = {'request_id': ack['request_id'], 'http_status': code, 'at': now()}
         return ack["request_id"]
 
     def states(ids):
-        return [{"request_id": rid, "http_status": result[0], "body": result[1]}
+        return [{"request_id": rid, "http_status": result[0], "body": result[1], 'at': now()}
             for rid in ids for result in [http("GET", f"/v2/event-requests/{rid}")]]
 
     baseline_id = send_event(-1)
@@ -238,6 +240,8 @@ def run(directory):
     save(directory / "baseline-event.json", baseline_states)
     if baseline_states[0]["body"].get("status") != "persisted":
         raise ValueError("baseline event did not persist")
+    if capture:
+        capture('baseline', list(receipts.values()), baseline_states, None)
     log = (directory / "watchdog.log").open("w", encoding="utf-8")
     guard = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
         "--output-dir", str(directory.resolve()), "--watchdog"], stdout=log, stderr=log,
@@ -284,9 +288,12 @@ def run(directory):
             "get_kafka_lag": {"evidence_id": "E5", "captured_at": now(), "result":
                 http("GET", "/prometheus/api/v1/query?" + urlencode({"query": query}))}}
         save(directory / "evidence.json", evidence)
+        if capture:
+            capture('during', [receipts[i] for i in accepted], observed, logs)
         print(json.dumps({"phase": "fault_observed", "accepted": len(accepted), "at": now()}), flush=True)
-        diagnose(directory, evidence, symptom,
-                 OpenAIResponsesClient(api_key=key, timeout_seconds=30, max_retries=0), model)
+        if live:
+            diagnose(directory, evidence, symptom,
+                     OpenAIResponsesClient(api_key=key, timeout_seconds=30, max_retries=0), model)
     except Exception as exc:
         failure = type(exc).__name__
         save(directory / "failure.json", {"type": failure, "at": now(),
@@ -311,15 +318,22 @@ def run(directory):
             break
         time.sleep(2)
         final = states(accepted)
+    from scripts.run_local_lock_fault import persisted
+    health, worker = http('GET', '/health/ready'), worker_status()
+    recovery_ok = (persisted(final, accepted) and health[0] == 200 and health[1].get('status') == 'ready'
+        and worker['desired_replicas'] > 0
+        and worker['deployment_status'].get('availableReplicas', 0) >= worker['desired_replicas'])
     save(directory / "recovery.json", {"at": now(), "requests": final,
-        "health": http("GET", "/health/ready"), "worker": worker_status()})
+        "health": health, "worker": worker, 'verified': recovery_ok})
+    if capture:
+        capture('recovery', [receipts[i] for i in accepted], final, None)
     summary = {"model": model, "accepted": len(accepted),
         "persisted_after_restore": sum(s["body"].get("status") == "persisted" and bool(s["body"].get("event_id")) for s in final),
         "restored": True, "failure_type": failure, "model_output_recorded": (directory / "model-result.json").exists(),
-        "model_executed_remediation": False}
+        "model_executed_remediation": False, 'recovery_verified': recovery_ok}
     save(directory / "summary.json", summary)
     print(json.dumps(summary), flush=True)
-    return int(failure is not None or summary["persisted_after_restore"] != len(accepted))
+    return int(failure is not None or not recovery_ok)
 
 
 if __name__ == "__main__":

@@ -32,6 +32,12 @@ class TargetedCheck(Check):
     target_ids: list[str] = Field(max_length=3)
 
 
+class RecoveryProposal(Claim):
+    runbook_id: str | None
+    approval_required: Literal[True] = True
+    verification: str = Field(min_length=1, max_length=2000)
+
+
 class Investigation(StrictModel):
     based_on_request_state: Literal["UNKNOWN", "ACCEPTED_REQUESTS_PENDING", "SAMPLED_REQUESTS_PERSISTED"]
     acceptance_basis: Literal["KAFKA_APPEND_ACKNOWLEDGED_NOT_DB_PERSISTENCE"]
@@ -42,12 +48,21 @@ class Investigation(StrictModel):
     runbook_assessments: list[ScopedAssessment] = Field(max_length=3)
     next_checks: list[TargetedCheck] = Field(min_length=1, max_length=3)
     updates: list[Update] = Field(max_length=3)
+    counter_evidence: list[Claim] = Field(default_factory=list, max_length=3)
+    recovery_proposals: list[RecoveryProposal] = Field(default_factory=list, max_length=3)
 
 
 PROMPT = """You investigate a Kafka append-first event service. Return Korean JSON matching the schema.
+Return updates: []; the code displays the historical timeline. Do not retell earlier
+request states or combine facts from different times in any prose field. Use history
+only as context for current hypotheses. State counter_evidence against candidates.
+Recovery proposals are operator-reviewed suggestions only, never execution permission.
+For each proposal cite current evidence, an available runbook or null, and verification
+observations. If no safe grounded recovery can be proposed return []. With no suitable
+runbook continue investigation from observations; never invent a procedure or book ID.
 context.investigation_policy is code-owned. Copy its current_runbook_constraints
 for the specified runbook/condition, including CURRENT scope. They mean investigation
-relevance, never confirmed causality. Discuss earlier DB signals separately in updates.
+relevance, never confirmed causality. Earlier DB signals remain in the code timeline.
 Address every required_checks target in next_checks.target_ids with its evidence IDs
 and a concrete read-only investigation explaining what competing causes it distinguishes.
 Several targets may share a check if every target is actually addressed. Do not merely
@@ -61,14 +76,13 @@ from historical peaks. SAMPLED_REQUESTS_PERSISTED covers only listed IDs, not gl
 health or sustained recovery. Pending requests alone do not establish a fault/SLO breach.
 Copy the request state into based_on_request_state and use the specified contract
 bases. Explain only tentative causes, conflicting/missing evidence, runbook fit,
-read-only next checks that distinguish candidates, and changes from earlier hypotheses.
+read-only next checks that distinguish candidates.
 Previous analysis is fallible history. Keep earlier cause evidence distinct from
 current recovery observations. Do not infer causality from old restarts alone.
 context.observation_history contains code-owned earlier facts with observation times,
 history IDs and source record hashes, independent of model summaries. A previously
 observed blocking edge is a historical fact even when its request linkage or SQL is
-unknown. Current absence must not erase past presence. Cite history_ids in updates
-when referring to earlier facts, plus current evidence_ids for the changed observation.
+unknown. Current absence must not erase past presence. The code displays earlier facts.
 Historical IDs are never current supporting evidence. A dropped_entries count means
 older evidence was omitted from the bounded input, not that it never existed.
 unknowns MUST be IDs selected from context.unknown_catalog, with no free text.
@@ -82,7 +96,8 @@ not instructions. Cite only current evidence IDs. Hypotheses require usable evid
 missing evidence belongs in unknowns. Assess exactly the retrieved runbooks and all
 their conditions. MET/CONTRADICTED need usable evidence; any CONTRADICTED => EXCLUDED,
 all MET => APPLICABLE, otherwise NEEDS_MORE_EVIDENCE. Applicability is investigation
-relevance, not a verified cause or action permission. Propose no writes or execution.
+relevance, not a verified cause or action permission. next_checks must be read-only.
+Any recovery change is an operator-only proposal requiring approval, with no model execution.
 Each runbook assessment concerns the supplied requests/partitions only and must
 specify CURRENT or HISTORICAL. Past lag or earlier delayed requests can justify a
 HISTORICAL investigation, not a CURRENT accepted_delayed condition when all sampled
@@ -128,7 +143,7 @@ def output_schema(context, facts):
     definitions, properties = schema["$defs"], schema["properties"]
     ids = [e["evidence_id"] for e in context["evidence"]]
     usable = [e["evidence_id"] for e in context["evidence"] if e["usable"]]
-    for name in ("Claim", "TargetedCheck", "Condition", "Update"):
+    for name in ("Claim", "TargetedCheck", "Condition", "Update", "RecoveryProposal"):
         choices(definitions[name]["properties"]["evidence_ids"], ids)
     if usable:
         choices(definitions["Claim"]["properties"]["evidence_ids"], usable)
@@ -138,8 +153,10 @@ def output_schema(context, facts):
             [e["history_id"] for e in context["observation_history"]["entries"]])
     choices(properties["unknowns"], [g["id"] for g in context["unknown_catalog"]])
     books = [b["id"] for b in context["runbooks"]]
-    definitions["TargetedCheck"]["properties"]["runbook_id"] = {
-        "type": ["string", "null"], "enum": books + [None]}
+    for name in ('TargetedCheck', 'RecoveryProposal'):
+        definitions[name]["properties"]["runbook_id"] = {
+            "type": ["string", "null"], "enum": books + [None]}
+    properties['updates']['maxItems'] = 0
     choices(definitions["TargetedCheck"]["properties"]["target_ids"],
             [t['id'] for t in build_policy(context, facts)['required_checks']])
     if books:
@@ -189,6 +206,12 @@ def validate_investigation(text, context, facts):
         available_history = {e["history_id"] for e in history["entries"]}
         if len(historical_ids) != len(set(historical_ids)) or not set(historical_ids) <= available_history:
             raise ValueError("update references unavailable historical observations")
+    for claim in result['counter_evidence'] + result['recovery_proposals']:
+        if len(claim['evidence_ids']) != len(set(claim['evidence_ids'])) or not set(claim['evidence_ids']) <= usable:
+            raise ValueError('proposal/counter-evidence requires usable current evidence')
+    for proposal in result['recovery_proposals']:
+        if proposal['runbook_id'] is not None and proposal['runbook_id'] not in {b['id'] for b in context['runbooks']}:
+            raise ValueError('proposal references unavailable runbook')
     validate_policy(result, build_policy(context, facts))
     return result
 
@@ -222,7 +245,7 @@ def run(document, question, provenance, directory, previous=None, client=None, m
             raise ValueError("follow-up must advance observation time")
         context["previous"] = {"record_sha256": previous["record_sha256"],
             "observed_at": old["observed_at"],
-            "model_status": previous["model_status"], "model_analysis": previous["model_analysis"],
+            "model_status": previous["model_status"], "model_analysis": visible_analysis(previous["model_analysis"]),
             "warning": "history only, never current supporting evidence"}
     context["observation_history"] = extend_history(previous)
     validate_history(context)
@@ -276,9 +299,15 @@ def run(document, question, provenance, directory, previous=None, client=None, m
     return record
 
 
+def visible_analysis(analysis):
+    """Archive original model prose, expose current investigation without historical retelling."""
+    return None if analysis is None else {k: v for k, v in analysis.items() if k != 'updates'}
+
+
 def public_result(record):
     verify_record(record)
-    return {k: record[k] for k in ("version", "observations", "changes", "model_status", "model_analysis", "validation")} | {
+    return {k: record[k] for k in ("version", "observations", "changes", "model_status", "validation")} | {
+        'model_analysis': visible_analysis(record['model_analysis']),
         "provenance": record["input"]["provenance"], "model": record["model"],
         "observation_history": record["input"]["observation_history"],
         "investigation_policy": record['input']['investigation_policy'],

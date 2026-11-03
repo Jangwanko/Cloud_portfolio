@@ -1,12 +1,65 @@
 # Ops Agent — CLI and execution boundaries
 
-현재 구현된 수집·진단·재생·실험 도구의 실행 안내다. 확정 목표와 구현 순서는 [설계 문서](../docs/OPS_AGENT.md#implementation-priorities), 결과와 한계는 [검증 기록](../docs/OPS_AGENT_EVALUATION.md)에 둔다. 저장 증거 기반 런북 조사와 후속 결과 연결은 구현했으며 상시 감시·지식 축적은 미완성이다. 과거 평가의 고정 Runbook 비교군은 코드 분류 규칙이다.
+현재 구현된 수집·진단·재생·실험 도구의 실행 안내다. 확정 목표와 구현 순서는 [설계 문서](../docs/OPS_AGENT.md#implementation-priorities), 결과와 한계는 [검증 기록](../docs/OPS_AGENT_EVALUATION.md)에 둔다. 로컬 통제 실험과 사건 경험 저장·검색을 연결했으며 상시 자동 감시는 후속 범위다. 과거 평가의 고정 Runbook 비교군은 코드 분류 규칙이다.
 
 The model has read-only investigation tools. Deterministic code owns condition,
 recovery and incident state. Experimental fault runners are separate operator
 tools; they do not grant the model cluster write access.
 
 ## Evidence and runbook assistance
+
+The default public JSON/text omits model `updates`; the original response and record
+remain unchanged on disk. New API requests constrain `updates` to an empty list and
+previous model updates are excluded from follow-up input. Code observations provide
+the historical timeline. Other prose remains UNREVIEWED. `counter_evidence` and
+`recovery_proposals` carry current citations; proposals require operator approval,
+an available runbook ID or null, and verification observations. Abstention is allowed.
+
+## Controlled local MVP
+
+`scripts/ops_agent_mvp.py` reuses the existing collectors, PG/Worker drills and grounded
+investigation. `preflight` reads only the fixed `kind-messaging-ha`/`messaging-app`
+scope, rejects non-loopback Kubernetes endpoints, records readiness/lag/PG partition
+and changes no workload. Review impact, stop conditions and rollback before approving
+each real experiment. `--approval` records an actual operator decision; the flag itself
+does not authorize a new fault.
+
+```powershell
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py preflight --output-dir results/ops-agent/shadow/<new-preflight>
+# Only after explicit approval of the concrete local plan:
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py execute --execute --scenario lock --approval <approval-reference> --output-dir results/ops-agent/shadow/<new-case>
+# Choose --scenario worker for the separately approved startup drill.
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py archive --scenario lock --output-dir results/ops-agent/shadow/<case> --review <review.json>
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py search --query "Worker startup"
+```
+
+The approved run budgets at most three calls per scenario; this MVP uses only two,
+one baseline and one during-fault snapshot. Diagnosis runs after safe rollback.
+Recovery has a code-only record and is NEVER sent to Luna. Private injection/rollback
+plans and review answers are excluded from model input. Each first request/response
+or failure is retained with no model retry. Logs, Pod states and metrics captured
+during the fault remain on disk even though diagnosis is post-capture.
+
+PG uses a new owned stream row, a 50-second server-bounded lock and at most 21 events.
+Worker uses the existing startup regression and 300-second rollback watchdog, with
+one seed and 20 fault-period events. After either drill, owned Worker/PG configuration
+hashes, PG Pod UIDs/restart counts and original Argo automated policy must match;
+exact accepted request persistence and service readiness are checked by the drill.
+Stop before another experiment on recovery/configuration failure and inspect the
+drill's `release.json` or `rollback.json`/`restored.json` plus watchdog results.
+Do not delete data or change PG rollout partition as a recovery shortcut.
+
+The searchable `ops.incident-experience.v1` sidecar references chronological grounded
+records and raw artifacts with verified hashes. It deliberately does not fabricate
+a calibrated `CORE_BACKLOG_PRESSURE` activation/closure for these small faults.
+Cases are `RECOVERY_VERIFIED_REVIEW_PENDING`; model quality and operator review stay
+separate from code-verified recovery. `--exclude-incident` omits the current case
+from lookup. Search requires no model or API key. `runbook-draft.json` is an observed
+procedure draft, not an automatically published catalog entry. Runtime `readyReplicas`
+can be omitted during outage; it stays UNKNOWN and explicit non-ready container
+observations provide the separate outage evidence.
+
+## Default assistance CLI
 
 The default CLI computes code-owned observations before optionally asking Luna for
 investigation. It retrieves three indexed sections of `docs/RUNBOOK.md` and retains
