@@ -4,7 +4,6 @@ preflight is read-only. execute requires explicit operator approval via --execut
 Only the two fixed local drills are supported; diagnosis runs AFTER safe rollback.
 """
 import argparse
-from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path

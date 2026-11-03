@@ -6,7 +6,6 @@ from typing import Any
 
 from ops_agent.diagnosis_models import (
     DiagnosisRun,
-    DiagnosisStopReason,
     HypothesisName,
     HypothesisSupportStatus,
 )

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from ops_agent.recovery_models import RecoveryEvaluationPolicy
