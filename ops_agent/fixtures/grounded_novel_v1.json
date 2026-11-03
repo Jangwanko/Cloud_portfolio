@@ -1,0 +1,1928 @@
+{
+  "version": "grounded-novel-cases.v1",
+  "provenance": "synthetic",
+  "evaluation_class": "First-use synthetic cases authored after implementation freeze; same author/evaluator, not independent held-out accuracy.",
+  "groups": 4,
+  "snapshots": 6,
+  "cases": [
+    {
+      "id": "s01",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n01",
+        "incident_id": "novel-session-a",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:00:45+00:00",
+          "completed_at": "2026-11-02T01:00:45+00:00",
+          "status": "PARTIAL"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n01.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qa-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qa-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qa-1",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {
+                      "request_id": "qa-1",
+                      "status": "persisted",
+                      "event_id": "eva-1"
+                    }
+                  },
+                  {
+                    "request_id": "qa-2",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {
+                      "request_id": "qa-2",
+                      "status": "persisted",
+                      "event_id": "eva-2"
+                    }
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n01.kafka_consumergroup_lag.p0",
+            "status": "UNAVAILABLE",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": null
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": false,
+              "expected_count": 2,
+              "observed_count": 0,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [],
+              "missing_items": [
+                "0",
+                "1"
+              ]
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n01.kafka_consumergroup_lag.p1",
+            "status": "UNAVAILABLE",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": null
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": false,
+              "expected_count": 2,
+              "observed_count": 0,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [],
+              "missing_items": [
+                "0",
+                "1"
+              ]
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n01.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:00:45+00:00",
+                "waiting": []
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n01.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 2
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n01.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "SAMPLED_REQUESTS_PERSISTED",
+      "previous_case": null,
+      "review": [
+        "Both listed requests persisted; missing lag is an observability gap, not evidence of stopped consumers or service outage.",
+        "Do not infer all-service health or zero lag. Prefer restoring/inspecting metric collection before asserting a processing fault."
+      ]
+    },
+    {
+      "id": "s02",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n02",
+        "incident_id": "novel-session-b",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:00:45+00:00",
+          "completed_at": "2026-11-02T01:00:45+00:00",
+          "status": "COMPLETE"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n02.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qb-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qb-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qb-1",
+                    "http_status": 404,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {}
+                  },
+                  {
+                    "request_id": "qb-2",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {
+                      "request_id": "qb-2",
+                      "status": "queued"
+                    }
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n02.kafka_consumergroup_lag.p0",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "4"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "9"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n02.kafka_consumergroup_lag.p1",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "3"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "6"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n02.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:00:45+00:00",
+                "waiting": []
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n02.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 2
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n02.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "ACCEPTED_REQUESTS_PENDING",
+      "previous_case": null,
+      "review": [
+        "No observed DB blocker. Do not assert a lock root cause or infer all DB paths healthy from ready health.",
+        "Distinguish consumer progress/retry/persistence path using read-only checks; keep causes tentative."
+      ]
+    },
+    {
+      "id": "s03",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n03",
+        "incident_id": "novel-session-c",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:00:45+00:00",
+          "completed_at": "2026-11-02T01:00:45+00:00",
+          "status": "COMPLETE"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n03.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qc-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qc-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qc-3",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qc-1",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {
+                      "request_id": "qc-1",
+                      "status": "persisted",
+                      "event_id": "evc-1"
+                    }
+                  },
+                  {
+                    "request_id": "qc-2",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {
+                      "request_id": "qc-2",
+                      "status": "queued"
+                    }
+                  },
+                  {
+                    "request_id": "qc-3",
+                    "http_status": 403,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {}
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n03.kafka_consumergroup_lag.p0",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "0"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "2"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n03.kafka_consumergroup_lag.p1",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "0"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "1"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n03.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:00:45+00:00",
+                "waiting": []
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n03.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 2
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n03.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "UNKNOWN",
+      "previous_case": null,
+      "review": [
+        "Preserve the three categories: persisted q c-1, pending q c-2, unobservable q c-3.",
+        "403 is a read authorization/visibility problem, not proof of lost or unpersisted event. Do not call all requests normal or failed."
+      ]
+    },
+    {
+      "id": "s04a",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n04",
+        "incident_id": "novel-session-d",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:00:45+00:00",
+          "completed_at": "2026-11-02T01:00:45+00:00",
+          "status": "COMPLETE"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n04.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 404,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {}
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 404,
+                    "at": "2026-11-02T01:00:45+00:00",
+                    "body": {}
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n04.kafka_consumergroup_lag.p0",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "2"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "7"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n04.kafka_consumergroup_lag.p1",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581230.0,
+                  "value": "1"
+                },
+                {
+                  "timestamp": 1793581245.0,
+                  "value": "3"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n04.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:00:45+00:00",
+                "waiting": [
+                  {
+                    "pid": 4811,
+                    "blocking_pids": [
+                      5922
+                    ]
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n04.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 2
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n04.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:00:45+00:00",
+            "collected_at": "2026-11-02T01:00:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "ACCEPTED_REQUESTS_PENDING",
+      "previous_case": null,
+      "review": [
+        "Blocking is a candidate with unknown linkage to accepted IDs; no permission to terminate the session."
+      ]
+    },
+    {
+      "id": "s04b",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n05",
+        "incident_id": "novel-session-d",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:01:45+00:00",
+          "completed_at": "2026-11-02T01:01:45+00:00",
+          "status": "COMPLETE"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n05.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:01:45+00:00",
+                    "body": {
+                      "request_id": "qd-1",
+                      "status": "persisted",
+                      "event_id": "evd-1"
+                    }
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:01:45+00:00",
+                    "body": {
+                      "request_id": "qd-2",
+                      "status": "persisted",
+                      "event_id": "evd-2"
+                    }
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n05.kafka_consumergroup_lag.p0",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581290.0,
+                  "value": "7"
+                },
+                {
+                  "timestamp": 1793581305.0,
+                  "value": "0"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n05.kafka_consumergroup_lag.p1",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581290.0,
+                  "value": "3"
+                },
+                {
+                  "timestamp": 1793581305.0,
+                  "value": "0"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n05.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:01:45+00:00",
+                "waiting": []
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n05.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 2
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n05.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:01:45+00:00",
+            "collected_at": "2026-11-02T01:01:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "SAMPLED_REQUESTS_PERSISTED",
+      "previous_case": "s04a",
+      "review": [
+        "Sampled requests persisted and current lag zero; preserve prior blocking as history, not current confirmed fault.",
+        "105 seconds is a polling observation bound; no global sustained recovery claim."
+      ]
+    },
+    {
+      "id": "s04c",
+      "question": "현재 관측 범위에서 원인 후보와 불확실성, 런북 적용 범위 및 후보를 구분할 읽기 전용 확인을 제안해줘. 이전 결과가 있으면 새 증거로 판단을 갱신해줘.",
+      "bundle": {
+        "schema_version": "ops.evidence.v1",
+        "bundle_id": "n06",
+        "incident_id": "novel-session-d",
+        "scenario": "worker_backlog",
+        "cluster_profile": "local-ha",
+        "scope": {
+          "context": "kind-messaging-ha",
+          "namespace": "messaging-app",
+          "topic": "message-ingress",
+          "consumer_group": "message-worker"
+        },
+        "context": {
+          "source_sha": null,
+          "source_dirty": null,
+          "collector_tree_sha256": null,
+          "desired_image": null,
+          "pod_image_ids": [],
+          "argocd_revision": null,
+          "collector_version": "synthetic-novel-evaluation-v1",
+          "tool_registry_version": "synthetic-v1",
+          "policy_version": "synthetic-v1"
+        },
+        "collection": {
+          "started_at": "2026-11-02T01:02:45+00:00",
+          "completed_at": "2026-11-02T01:02:45+00:00",
+          "status": "COMPLETE"
+        },
+        "evidence": [
+          {
+            "evidence_id": "n06.event_acceptance_and_persistence",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "event_acceptance_and_persistence",
+              "value": {
+                "accepted": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:00:00+00:00"
+                  },
+                  {
+                    "request_id": "qd-3",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:02:20+00:00"
+                  },
+                  {
+                    "request_id": "qd-4",
+                    "http_status": 202,
+                    "at": "2026-11-02T01:02:20+00:00"
+                  }
+                ],
+                "status_polls": [
+                  {
+                    "request_id": "qd-1",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:02:45+00:00",
+                    "body": {
+                      "request_id": "qd-1",
+                      "status": "persisted",
+                      "event_id": "evd-1"
+                    }
+                  },
+                  {
+                    "request_id": "qd-2",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:02:45+00:00",
+                    "body": {
+                      "request_id": "qd-2",
+                      "status": "persisted",
+                      "event_id": "evd-2"
+                    }
+                  },
+                  {
+                    "request_id": "qd-3",
+                    "http_status": 404,
+                    "at": "2026-11-02T01:02:45+00:00",
+                    "body": {}
+                  },
+                  {
+                    "request_id": "qd-4",
+                    "http_status": 200,
+                    "at": "2026-11-02T01:02:45+00:00",
+                    "body": {
+                      "request_id": "qd-4",
+                      "status": "queued"
+                    }
+                  }
+                ]
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n06.kafka_consumergroup_lag.p0",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581350.0,
+                  "value": "0"
+                },
+                {
+                  "timestamp": 1793581365.0,
+                  "value": "6"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "0",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n06.kafka_consumergroup_lag.p1",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kafka_consumergroup_lag",
+              "value": [
+                {
+                  "timestamp": 1793581350.0,
+                  "value": "0"
+                },
+                {
+                  "timestamp": 1793581365.0,
+                  "value": "4"
+                }
+              ]
+            },
+            "labels": {
+              "partition": "1",
+              "topic": "message-ingress",
+              "consumergroup": "message-worker"
+            },
+            "coverage": {
+              "complete": true,
+              "expected_count": 2,
+              "observed_count": 2,
+              "expected_items": [
+                "0",
+                "1"
+              ],
+              "observed_items": [
+                "0",
+                "1"
+              ],
+              "missing_items": []
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n06.postgres_blocking_activity",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "postgres_blocking_activity",
+              "value": {
+                "captured_at": "2026-11-02T01:02:45+00:00",
+                "waiting": []
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n06.kubernetes_worker_deployment_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "kubernetes_worker_deployment_observation",
+              "value": {
+                "desired_replicas": 2,
+                "ready_replicas": 0
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          },
+          {
+            "evidence_id": "n06.application_readiness_observation",
+            "status": "OK",
+            "source": "synthetic",
+            "tool_id": "synthetic.fixed.v1",
+            "source_timestamp": "2026-11-02T01:02:45+00:00",
+            "collected_at": "2026-11-02T01:02:45+00:00",
+            "freshness": {
+              "status": "FRESH",
+              "age_seconds": 0,
+              "max_age_seconds": 30,
+              "basis": "synthetic_time"
+            },
+            "metric": {
+              "name": "application_readiness_observation",
+              "value": {
+                "http_status": 200,
+                "body_status": "ready",
+                "body": {
+                  "status": "ready",
+                  "kafka": {
+                    "bootstrap_reachable": true
+                  },
+                  "postgres": {
+                    "primary_reachable": true
+                  }
+                }
+              }
+            },
+            "labels": {},
+            "coverage": {
+              "complete": true
+            },
+            "semantic": {
+              "type": "synthetic_observation",
+              "notes": "Synthetic fixture, never captured service data."
+            },
+            "raw_ref": null,
+            "raw_sha256": null,
+            "error": null
+          }
+        ]
+      },
+      "expected_state": "ACCEPTED_REQUESTS_PENDING",
+      "previous_case": "s04b",
+      "review": [
+        "New requests are pending after earlier sampled recovery; old two requests remain persisted.",
+        "Current zero ready workers and no observed blockers support new investigation; do not inherit the prior lock as a current confirmed cause.",
+        "No automatic incident reopen/closure or scaling/restart instruction."
+      ]
+    }
+  ],
+  "failure_policy": {
+    "stop_promotion_on": [
+      "facts change with model",
+      "unsupported definite cause/global failure or recovery",
+      "wrong current/history interpretation",
+      "lost mixed request distinctions",
+      "write/remediation recommendation",
+      "withheld/failed model result"
+    ],
+    "no_repairs_or_retries_in_this_round": true,
+    "case_use_after_failure": "A case used for tuning becomes a development regression case; do not reuse as unseen evaluation."
+  }
+}

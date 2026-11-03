@@ -1,0 +1,245 @@
+{
+  "scope": "Synthetic development pilot: 3 situations, 4 snapshots, 2 independent runs. No runtime collection or writes.",
+  "model": "gpt-5.6-luna",
+  "raw_directory": "results/ops-agent/shadow/20261101-runbook-assistance-01",
+  "rows": [
+    {
+      "case_id": "matching",
+      "repeat": 0,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 11.28100000001723,
+      "applicability": {
+        "RB-PG-HEALTH": "APPLICABLE"
+      },
+      "severity": "DEGRADED",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 3174,
+        "output_tokens": 1340
+      }
+    },
+    {
+      "case_id": "matching",
+      "repeat": 1,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 11.34399999998277,
+      "applicability": {
+        "RB-PG-HEALTH": "APPLICABLE"
+      },
+      "severity": "DEGRADED",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 3174,
+        "output_tokens": 1439
+      }
+    },
+    {
+      "case_id": "similar",
+      "repeat": 0,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 10.26600000000326,
+      "applicability": {
+        "RB-KAFKA-INTAKE": "NEEDS_MORE_EVIDENCE"
+      },
+      "severity": "UNKNOWN",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 2516,
+        "output_tokens": 1171
+      }
+    },
+    {
+      "case_id": "similar",
+      "repeat": 0,
+      "step": 1,
+      "status": "RECORDED",
+      "elapsed_seconds": 15.905999999988126,
+      "applicability": {
+        "RB-KAFKA-INTAKE": "EXCLUDED",
+        "RB-PG-HEALTH": "APPLICABLE"
+      },
+      "severity": "DEGRADED",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 4943,
+        "output_tokens": 2075
+      }
+    },
+    {
+      "case_id": "similar",
+      "repeat": 1,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 12.187000000005355,
+      "applicability": {
+        "RB-KAFKA-INTAKE": "NEEDS_MORE_EVIDENCE"
+      },
+      "severity": "UNKNOWN",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 2516,
+        "output_tokens": 1247
+      }
+    },
+    {
+      "case_id": "similar",
+      "repeat": 1,
+      "step": 1,
+      "status": "RECORDED",
+      "elapsed_seconds": 13.89100000000326,
+      "applicability": {
+        "RB-KAFKA-INTAKE": "EXCLUDED",
+        "RB-PG-HEALTH": "APPLICABLE"
+      },
+      "severity": "DEGRADED",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 5067,
+        "output_tokens": 1759
+      }
+    },
+    {
+      "case_id": "unmatched",
+      "repeat": 0,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 8.562000000005355,
+      "applicability": {},
+      "severity": "UNKNOWN",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 1752,
+        "output_tokens": 835
+      }
+    },
+    {
+      "case_id": "unmatched",
+      "repeat": 1,
+      "step": 0,
+      "status": "RECORDED",
+      "elapsed_seconds": 8.25,
+      "applicability": {},
+      "severity": "UNKNOWN",
+      "expected_applicability_matches": true,
+      "usage": {
+        "input_tokens": 1752,
+        "output_tokens": 912
+      }
+    }
+  ],
+  "repeat_comparison": [
+    {
+      "case_id": "matching",
+      "step": 0,
+      "recorded_repeats": 2,
+      "same_applicability": true,
+      "same_severity": true
+    },
+    {
+      "case_id": "similar",
+      "step": 0,
+      "recorded_repeats": 2,
+      "same_applicability": true,
+      "same_severity": true
+    },
+    {
+      "case_id": "similar",
+      "step": 1,
+      "recorded_repeats": 2,
+      "same_applicability": true,
+      "same_severity": true
+    },
+    {
+      "case_id": "unmatched",
+      "step": 0,
+      "recorded_repeats": 2,
+      "same_applicability": true,
+      "same_severity": true
+    }
+  ],
+  "recorded_responses": 8,
+  "expected_applicability_matches": 8,
+  "api_calls": 8,
+  "input_tokens": 24894,
+  "output_tokens": 10778,
+  "semantic_review": {
+    "reviewer": "Codex, not independent human adjudication",
+    "result": "Read-only checks, evidence-based switch from uncertain Kafka intake to DB-path investigation, and no invented runbook in the unmatched case.",
+    "limitations": [
+      "Two repeats do not establish reliability.",
+      "Exact recommended checks differ and usefulness versus search-only baseline was not measured.",
+      "Some answers list four or five checks instead of prioritizing a minimal next step.",
+      "The first similar-case answer in repeat 1 speaks of uncertainty increasing despite being the initial observation.",
+      "No live collector integration, automatic runbook updates, operator time saving or autonomous recovery claim."
+    ]
+  },
+  "provenance_review": {
+    "authoritative_live_sources": "sources/ and plan-private.json frozen before calls; original imported implementation used for all 8 responses",
+    "step_manifest_caveat": "An impact-evidence guard was added to the working file during execution; old per-step manifests hash disk contents at step start, so those code hashes do not consistently identify the imported code.",
+    "subsequent_fix": "Current runner captures code hashes at import time and separately fingerprints retrieved runbooks and prompt.",
+    "final_validator_offline_recheck": [
+      "matching/0/0/record.json",
+      "matching/1/0/record.json",
+      "similar/0/0/record.json",
+      "similar/0/1/record.json",
+      "similar/1/0/record.json",
+      "similar/1/1/record.json",
+      "unmatched/0/0/record.json",
+      "unmatched/1/0/record.json"
+    ],
+    "recheck_changes": "Non-UNKNOWN impact now requires usable evidence. All 8 saved responses pass this additional check; no API retry.",
+    "final_module_sha256": "e4801474711ba9efedffb8ea62bf57da7bfdc5fd3421ac80042249e274fcc1fb"
+  },
+  "artifact_sha256": {
+    "matching/0/0/input.json": "5ddf5555a58e8dd05ce5c4b9b255c3319bc0f3e5f60bef82154469bea6e6ef8b",
+    "matching/0/0/plan.json": "aa64dfbb3d47d1e484fc9cb1fc03152b0836b9546de9ece63f315520803991b7",
+    "matching/0/0/record.json": "d1f4d32719af34514c1d8d9aff9b33327ae591c2e63ffc682d0e049502d6bfc9",
+    "matching/0/0/request.json": "83646189c833c79889a8c1ec4b1b9803a59708d877b9a28947a735135e32d57b",
+    "matching/0/0/response.json": "cec04e38166cf7ff58ed83477fc98809f6a74869eb6de7f267d9ece3daf69126",
+    "matching/1/0/input.json": "5ddf5555a58e8dd05ce5c4b9b255c3319bc0f3e5f60bef82154469bea6e6ef8b",
+    "matching/1/0/plan.json": "ad9de5a7b0b0c422a4296fdec9c1ccbb4449aecf163e8adc4c4a1e4d654b3ec5",
+    "matching/1/0/record.json": "07de88c00943c97e4dcb4802b8765dccd736b2a4d5c4ca7702f28138da0f0295",
+    "matching/1/0/request.json": "83646189c833c79889a8c1ec4b1b9803a59708d877b9a28947a735135e32d57b",
+    "matching/1/0/response.json": "52e2cc4702a3d068648f445e266a3dfa70a8f98b3ee96d5609bd4510a8346c24",
+    "plan-private.json": "de07835386948dcde53b03c45824e0c1d4952f01924daad2424f40f60e03987c",
+    "similar/0/0/input.json": "cba5c58daebcff52df55dafcd7e2290dbcf332cd49bc1507fb94281ba3de815c",
+    "similar/0/0/plan.json": "0cd528938e77b050a8df90441f7c8df1e1c74188c26a6e0cac85436ea2f3406e",
+    "similar/0/0/record.json": "0926fc6a4c340892d6dee4494d26b7d403c976e1cc0e9744624042bac4443b9b",
+    "similar/0/0/request.json": "269c0fe55488a50f0c5113106bbf9f0a5c3858d338d523425697990c75913957",
+    "similar/0/0/response.json": "763753a33f74b3812ba012eaca3d191db8aaada45516ef712b9213bf95eeea1e",
+    "similar/0/1/input.json": "30cb15b4f7ec1c37a2b1b6762889d02bb47979e6b868862bb0eeaead6f8f8d89",
+    "similar/0/1/plan.json": "98569dca5698a1663cb1a59d4879389e75cbd3ecef139d2fd4892076270083fe",
+    "similar/0/1/record.json": "9aa3db801ef59000dc39201b6b0b1cb13675de559ae93ee76cf136eec0b0f6a6",
+    "similar/0/1/request.json": "e8d5a4b559f4182794b6a34a487a96a351a137fce7190cf5ed7a42a8465b8dc2",
+    "similar/0/1/response.json": "d83c2f925a35086a0ebe70fb297c294393ac4e61c2a2a3f0e46f7bd1b254c518",
+    "similar/1/0/input.json": "cba5c58daebcff52df55dafcd7e2290dbcf332cd49bc1507fb94281ba3de815c",
+    "similar/1/0/plan.json": "1bb7c37f7870480327aa2b18db7b0bcb6daa5a38a4c974a8ba4983c996551b82",
+    "similar/1/0/record.json": "640815f7baf675c3a04b263100294ce8a8587d087c83fdaad330fb6ddf9a861a",
+    "similar/1/0/request.json": "269c0fe55488a50f0c5113106bbf9f0a5c3858d338d523425697990c75913957",
+    "similar/1/0/response.json": "98d4d783c8b9bfa03ef28ec794ba5db76946f9bf64a9379485f8affc3463e348",
+    "similar/1/1/input.json": "09243f469e73fa940c2263f7223c9ddce63cd4c7da06c2002884ac0922325812",
+    "similar/1/1/plan.json": "7349591c4487177519e9eaeb9e1048cc2d1f6f1b1d3b3b19cfd9e93c225c386a",
+    "similar/1/1/record.json": "a9cdd8f1e2ab50dfd2f5ff8b7ddb419d367d05f63d47b81acfc4a152ded9b384",
+    "similar/1/1/request.json": "5ea213442b19854e00ac9e87972d353e677e51f315ccfcec7c72067456ae96e0",
+    "similar/1/1/response.json": "71a7bd8711f5aa236b32380cfea3f51fa1f94b2ae8d91e60bc89c17d804d3fb1",
+    "sources/docs/RUNBOOK.md": "97ab390111590f00c547821e49e522610bc69f167d93010470413746902309e8",
+    "sources/ops_agent/diagnosis_agent.py": "a58e18bb9420e9b716003c6222ffb549825f64012bff2d0eb41251931d241986",
+    "sources/ops_agent/fixtures/runbook_assistance_v1.json": "c5919d8d7ee2d1532bf25c7b199c0529ba7959230a0003b4fa67a3764b0af833",
+    "sources/ops_agent/runbook_assistant.py": "bbae764e6f92eb1f6b83c9b50364285cc462dc02018cfcc46f329f5724e7684d",
+    "sources/ops_agent/runbook_catalog.json": "8ee02928f5d49ace733bc5964c620f0a31df1aa3f93dd3e9c3f333248bee3f53",
+    "sources/scripts/evaluate_investigation.py": "3ff65a4f365360f9e498ebb60606574725bd489ca2c4388cd047028607324026",
+    "unmatched/0/0/input.json": "d2e99713036b834a6294fcccad7b16fd51ab83e56efbf20cc491c736425ed332",
+    "unmatched/0/0/plan.json": "845459f0d04b61fae5c6a2b7648cdf934f32ce5fff0fa71ec52934c48ed91fe4",
+    "unmatched/0/0/record.json": "145201098dfcc961d0153f18700853474ad1409fbee631817d1a99381616f61b",
+    "unmatched/0/0/request.json": "2dfbb0696a0c0c6ad5364f1fb9516be9a91ec2d0f5f70f5d84d940c28089ed43",
+    "unmatched/0/0/response.json": "c0e71b82f9af48356e72a1356724daa2e835134caa4c6fb4b43fd6b51c1cf519",
+    "unmatched/1/0/input.json": "d2e99713036b834a6294fcccad7b16fd51ab83e56efbf20cc491c736425ed332",
+    "unmatched/1/0/plan.json": "df71d1d4d28aa908c84156f350d96d7f63759b19c60d190569c027329a313741",
+    "unmatched/1/0/record.json": "98b3bffa944203d455b4b6e737d8982874798e832fa3d8fb042663605047354b",
+    "unmatched/1/0/request.json": "2dfbb0696a0c0c6ad5364f1fb9516be9a91ec2d0f5f70f5d84d940c28089ed43",
+    "unmatched/1/0/response.json": "def2f0aa7b2905bd4d7d1494ae58cc06491a889ff0c5b64585ad4c9f64e2a255"
+  }
+}

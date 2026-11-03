@@ -1,0 +1,17 @@
+{
+  "classification": "AUTHOR_CREATED_SYNTHETIC_TRANSFER_PROBE",
+  "case_count": 4,
+  "planned_attempts": 8,
+  "max_api_requests": 48,
+  "training_catalog_sha256": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+  "catalog_sha256": "6c80991a213c310d5129a7d51296ee0933b5976c89b2ff5300ecb495514e308b",
+  "rubric_sha256": "043d513398c1e9ffbdc361b2c6acb14ec8e850bcfc17ad11e9b8a7ea7b011abf",
+  "frozen_execution_identity": {
+    "version": "ops.diagnosis.execution.v3.2",
+    "sha256": "e976094b5337868fd6e1b3443ea2e27fbd5ab860fa9ed1a3f15acea77dd4b3a4"
+  },
+  "author_script_sha256": "e55e4853793cdf8b537b2ef489b598422f27fa5ddb5ce7420f843101915a34b9",
+  "activation_scope": "Historical PRESENT activation reused as controlled context; synthetic observations use frozen snapshot-relative freshness, not live source freshness.",
+  "unused_metadata": "expected_primary_hypothesis and branch_expectations are inherited schema placeholders, never sent to model or scored by v3.",
+  "protocol": "One 4x2 paid batch. Freeze model/prompt/schema/validator/scorer/normalizer and old development fixtures. Preserve first failures; no result-driven prompt adjustment in this evaluation."
+}

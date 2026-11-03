@@ -1,0 +1,385 @@
+{
+  "status": "MODEL_AUTHORED_EXPLANATION_VERIFIED_WITH_SEMANTIC_GAPS",
+  "scope": "One prior local row-lock incident, two post-hoc saved snapshots; no new cluster queries or injection",
+  "explanation_author": "gpt-5.6-luna",
+  "codex_rewrite_or_completion": false,
+  "model_calls": 6,
+  "automatic_retry": false,
+  "phases": [
+    {
+      "phase": "02-investigation",
+      "model": "gpt-5.6-luna",
+      "model_calls": 3,
+      "tools_requested_by_model": [
+        "read_request_states",
+        "read_service_health",
+        "read_worker_state",
+        "read_kafka_lag",
+        "read_database_activity",
+        "search_runbooks"
+      ],
+      "queries": [
+        {
+          "query": "accepted 202 requests persistence status 404, PostgreSQL transactionid lock blocking INSERT room_sequences, Kafka consumer lag and worker restart"
+        }
+      ],
+      "severity": "DEGRADED",
+      "model_explanation": {
+        "current_summary": {
+          "text": "애플리케이션은 Ready이고 Kafka 부트스트랩 및 PostgreSQL primary/동기 standby 연결은 정상으로 관측됐다. 그러나 최근 202 수락 요청 중 일부만 persisted로 확인되고 다수는 아직 404이며, Kafka lag와 PostgreSQL transactionid 대기가 함께 관측된다.",
+          "evidence_ids": [
+            "fec8fc49649727e1:e00",
+            "fec8fc49649727e1:e02",
+            "fec8fc49649727e1:e17",
+            "fec8fc49649727e1:e04",
+            "fec8fc49649727e1:e18"
+          ]
+        },
+        "impact": {
+          "text": "서비스 전체 중단은 보이지 않지만, 수락된 이벤트의 영속화가 지연되거나 상태 조회에서 아직 확인되지 않는 제한적 영향이 관측되어 DEGRADED로 판단한다. 404만으로 데이터 손실을 결론낼 수는 없다.",
+          "evidence_ids": [
+            "fec8fc49649727e1:e17",
+            "fec8fc49649727e1:e04",
+            "fec8fc49649727e1:e18"
+          ],
+          "severity": "DEGRADED"
+        },
+        "hypotheses": [
+          {
+            "text": "PostgreSQL의 transactionid lock 대기가 persistence 경로를 지연시키는 후보이다. INSERT INTO room_sequences가 대기 중이고 다른 활성 트랜잭션을 blocker로 가리킨다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e18"
+            ]
+          },
+          {
+            "text": "Worker가 처리 중인 일부 이벤트의 지연 또는 stream/partition 순서 보장에 따른 backpressure가 후보이다. 최근 lag가 partition 0에서 14, partition 2에서 1까지 관측됐고 Worker는 2개 replica로 유지된다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e04",
+              "fec8fc49649727e1:e06",
+              "fec8fc49649727e1:e12"
+            ]
+          },
+          {
+            "text": "Worker pod의 이전 재시작이 처리 지연에 기여했을 가능성은 있으나, 현재 두 pod가 Ready이고 해당 재시작과 이번 지연의 직접 시간 인과는 확인되지 않았다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e13"
+            ]
+          }
+        ],
+        "unknowns": [
+          "현재 관측 이후 404 요청들이 persisted로 전환됐는지 알 수 없다.",
+          "정확한 PostgreSQL commit latency와 실제 commit/insert rate telemetry는 제공되지 않았다.",
+          "transactionid blocker의 원인 쿼리와 lock 대기가 현재도 지속되는지는 이 저장 관측만으로 알 수 없다.",
+          "Kafka lag가 일시적 변동인지 지속 추세인지 추가 시간 관측이 필요하다."
+        ],
+        "runbook_assessments": [
+          {
+            "runbook_id": "RB-PG-HEALTH",
+            "applicability": "APPLICABLE",
+            "conditions": [
+              {
+                "id": "db_failure",
+                "status": "MET",
+                "evidence_ids": [
+                  "fec8fc49649727e1:e18"
+                ]
+              }
+            ],
+            "rationale": "PostgreSQL readiness와 복제 상태는 정상이나, 런북이 명시한 대로 healthy readiness만으로 lock contention을 배제할 수 없다. 현재 room_sequences INSERT의 transactionid lock 대기와 blocker가 persistence 경로 문제 조사 조건을 직접 충족한다."
+          },
+          {
+            "runbook_id": "RB-WORKER-LAG",
+            "applicability": "APPLICABLE",
+            "conditions": [
+              {
+                "id": "accepted_delayed",
+                "status": "MET",
+                "evidence_ids": [
+                  "fec8fc49649727e1:e17",
+                  "fec8fc49649727e1:e04",
+                  "fec8fc49649727e1:e06"
+                ]
+              }
+            ],
+            "rationale": "202로 수락된 알려진 요청 다수가 같은 시점 상태 조회에서 아직 404이고, 일부 partition에 유효한 lag가 있다. 따라서 수락 후 persistence 지연 및 consumer lag 조사 절차가 적용되지만 replica 부족이나 scale-out 필요성은 입증되지 않았다."
+          },
+          {
+            "runbook_id": "RB-KAFKA-INTAKE",
+            "applicability": "EXCLUDED",
+            "conditions": [
+              {
+                "id": "intake_failure",
+                "status": "CONTRADICTED",
+                "evidence_ids": [
+                  "fec8fc49649727e1:e00",
+                  "fec8fc49649727e1:e01",
+                  "fec8fc49649727e1:e17"
+                ]
+              }
+            ],
+            "rationale": "현재 readiness는 ready이고 Kafka bootstrap reachability가 true이며, 최근 event 요청은 202로 수락되고 일부는 persisted로 확인됐다. 이는 현재 Kafka intake 실패 조건과 반대이며, reachability만으로 Kafka append 성공을 완전히 증명하지는 않지만 이 런북의 직접 실패 조건은 충족하지 않는다."
+          }
+        ],
+        "next_checks": [
+          {
+            "text": "읽기 전용으로 PostgreSQL activity를 다시 관측해 동일 blocker PID, transactionid 대기, 대기 지속시간 및 원인 쿼리가 계속 존재하는지 확인한다. 정상 readiness만 확인하지 말고 persistence 경로의 lock 상태를 함께 비교한다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e18"
+            ],
+            "runbook_id": "RB-PG-HEALTH"
+          },
+          {
+            "text": "읽기 전용으로 현재 404였던 accepted request ID들을 재조회하고, persisted 전환 여부와 전환 지연시간을 확인한다. 이를 통해 일시적 처리 지연과 지속적인 persistence 문제를 구분한다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e17"
+            ],
+            "runbook_id": "RB-WORKER-LAG"
+          },
+          {
+            "text": "읽기 전용으로 Worker 로그, KEDA/ScaledObject 상태와 per-partition lag를 같은 시간 범위에서 대조해 retry, ordering backpressure, persistence 오류 또는 lag 지속 여부를 확인한다. 단순 lag만으로 replica 증설 원인을 단정하지 않는다.",
+            "evidence_ids": [
+              "fec8fc49649727e1:e04",
+              "fec8fc49649727e1:e06",
+              "fec8fc49649727e1:e12",
+              "fec8fc49649727e1:e14"
+            ],
+            "runbook_id": "RB-WORKER-LAG"
+          }
+        ],
+        "change": {
+          "text": "이전 관측은 제공되지 않아 이번 결과가 초기 평가이다. 현재는 readiness와 실제 일부 persisted 결과가 정상 신호인 동시에, accepted 요청의 다수 미확인 상태·partition lag·PostgreSQL lock 대기로 인해 전체 장애가 아닌 제한적 영속화 지연으로 평가했다.",
+          "evidence_ids": [
+            "fec8fc49649727e1:e00",
+            "fec8fc49649727e1:e17",
+            "fec8fc49649727e1:e04",
+            "fec8fc49649727e1:e18"
+          ]
+        }
+      },
+      "usage": {
+        "input_tokens": 37687,
+        "output_tokens": 2006
+      },
+      "operator_text": "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/explanation.txt",
+      "record_sha256": "d3f6e19637c75946ca3b2384851e78b0e8af4118ef4c1a6ba94e9d5d4a249c13"
+    },
+    {
+      "phase": "03-recovery",
+      "model": "gpt-5.6-luna",
+      "model_calls": 3,
+      "tools_requested_by_model": [
+        "read_request_states",
+        "read_service_health",
+        "read_worker_state",
+        "read_kafka_lag",
+        "read_database_activity",
+        "search_runbooks"
+      ],
+      "queries": [
+        {
+          "query": "accepted events persistence delay Kafka consumer lag PostgreSQL blocking activity readiness Kafka intake failure worker lag"
+        }
+      ],
+      "severity": "NORMAL",
+      "model_explanation": {
+        "current_summary": {
+          "text": "현재 애플리케이션은 Ready이고 PostgreSQL HA 및 동기 복제가 정상이며, 관측된 21개 수락 요청이 모두 persisted로 전환됐다. Kafka consumer lag는 현재 0이며, 직전 60초에는 partition 0과 2에서 일시적으로 최대 14 및 1이 관측됐다.",
+          "evidence_ids": [
+            "f095e732bfddddea:e00",
+            "f095e732bfddddea:e02",
+            "f095e732bfddddea:e17",
+            "f095e732bfddddea:e04",
+            "f095e732bfddddea:e06"
+          ]
+        },
+        "impact": {
+          "text": "현재 관측 시점에는 수락된 요청의 영속화가 모두 확인되고 lag도 0이므로 관측 가능한 지속 서비스 영향은 입증되지 않아 NORMAL로 판단한다. 다만 수락부터 persisted까지 약 68~73초가 걸린 지연 이력 자체는 확인된다.",
+          "evidence_ids": [
+            "f095e732bfddddea:e17",
+            "f095e732bfddddea:e04",
+            "f095e732bfddddea:e06"
+          ],
+          "severity": "NORMAL"
+        },
+        "hypotheses": [
+          {
+            "text": "일시적인 Worker 처리 또는 partition별 backpressure가 직전 lag와 persisted 전환 지연에 기여했을 가능성이 있다. 그러나 현재 lag가 0이고 모든 요청이 persisted여서 지속 중인 적체 원인으로 확정할 수 없다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e04",
+              "f095e732bfddddea:e06",
+              "f095e732bfddddea:e17"
+            ]
+          },
+          {
+            "text": "PostgreSQL lock contention은 현재 관측의 원인 후보로 지지되지 않는다. 현재 blocking activity의 waiting, blockers, locks가 모두 비어 있고 모든 요청이 persisted로 확인됐다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e18",
+              "f095e732bfddddea:e17"
+            ]
+          },
+          {
+            "text": "Worker 재시작은 과거에 존재했지만, 두 replica가 현재 Ready이고 이번 지연과의 직접 시간 인과는 확인되지 않는다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e12",
+              "f095e732bfddddea:e13"
+            ]
+          }
+        ],
+        "unknowns": [
+          "현재 관측 이후에도 동일한 persisted 지연이 반복되는지 알 수 없다.",
+          "PostgreSQL commit latency와 실제 commit/insert rate telemetry는 제공되지 않았다.",
+          "Worker retry, ordering backpressure, persistence 오류의 상세 로그는 확인되지 않았다.",
+          "Kafka append 성공 여부를 직접 나타내는 producer 결과나 timeout telemetry는 없다."
+        ],
+        "runbook_assessments": [
+          {
+            "runbook_id": "RB-PG-HEALTH",
+            "applicability": "NEEDS_MORE_EVIDENCE",
+            "conditions": [
+              {
+                "id": "db_failure",
+                "status": "UNKNOWN",
+                "evidence_ids": []
+              }
+            ],
+            "rationale": "현재 readiness, primary 연결, 동기 standby 및 replication delay는 정상이고 blocking activity도 비어 있지만, 런북 조건은 persistence 오류가 직접 확인되어야 충족된다. 정상 readiness만으로 모든 DB 경로 문제를 배제할 수 없고 현재 persistence 오류 증거도 없어 추가 증거가 필요하다."
+          },
+          {
+            "runbook_id": "RB-WORKER-LAG",
+            "applicability": "APPLICABLE",
+            "conditions": [
+              {
+                "id": "accepted_delayed",
+                "status": "MET",
+                "evidence_ids": [
+                  "f095e732bfddddea:e17",
+                  "f095e732bfddddea:e04",
+                  "f095e732bfddddea:e06"
+                ]
+              }
+            ],
+            "rationale": "수락된 요청들이 persisted까지 지연된 시간과 유효한 partition lag가 관측되어 조사 절차가 적용된다. 다만 현재 lag가 0이고 모두 persisted이므로 지속 적체나 replica 증설 필요성은 입증되지 않는다."
+          },
+          {
+            "runbook_id": "RB-KAFKA-INTAKE",
+            "applicability": "NEEDS_MORE_EVIDENCE",
+            "conditions": [
+              {
+                "id": "intake_failure",
+                "status": "UNKNOWN",
+                "evidence_ids": []
+              }
+            ],
+            "rationale": "현재 readiness와 Kafka bootstrap reachability는 정상이고 event 요청도 202로 수락됐지만, bootstrap reachability나 202만으로 Kafka append 성공을 직접 증명할 수 없다. 현재 Kafka unavailable 또는 produce timeout도 관측되지 않아 intake 실패 여부는 추가 확인이 필요하다."
+          }
+        ],
+        "next_checks": [
+          {
+            "text": "읽기 전용으로 새 관측을 수행해 새로 수락된 request ID의 persisted 전환 시간과 404 잔존 여부를 확인한다. 현재 모든 요청이 persisted로 전환된 상태가 계속되는지 확인하는 것이 우선이다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e17"
+            ],
+            "runbook_id": "RB-WORKER-LAG"
+          },
+          {
+            "text": "읽기 전용으로 per-partition consumer lag를 연속 관측하고 Worker 로그의 retry, ordering 대기, persistence 오류를 같은 시간 범위에서 대조한다. lag가 다시 발생하면서 persisted 지연도 재현되는지 확인한다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e04",
+              "f095e732bfddddea:e06",
+              "f095e732bfddddea:e12",
+              "f095e732bfddddea:e14"
+            ],
+            "runbook_id": "RB-WORKER-LAG"
+          },
+          {
+            "text": "읽기 전용으로 PostgreSQL activity와 애플리케이션 persistence 오류를 재확인하고, blocking session 또는 대기 쿼리가 다시 나타나는지 확인한다. commit latency와 insert rate telemetry가 계속 unavailable인지도 기록한다.",
+            "evidence_ids": [
+              "f095e732bfddddea:e18",
+              "f095e732bfddddea:e15",
+              "f095e732bfddddea:e16"
+            ],
+            "runbook_id": "RB-PG-HEALTH"
+          }
+        ],
+        "change": {
+          "text": "이전 관측의 404 다수, partition lag, transactionid blocker라는 평가는 현재 증거로 바뀌었다. 현재 21개 요청이 모두 persisted이고 blocking activity가 비어 있으며 lag도 0이므로 최근 지연은 해소된 것으로 보이지만, commit telemetry와 상세 처리 로그가 없어 지속성 및 정확한 원인은 여전히 확인되지 않았다.",
+          "evidence_ids": [
+            "f095e732bfddddea:e17",
+            "f095e732bfddddea:e04",
+            "f095e732bfddddea:e06",
+            "f095e732bfddddea:e18"
+          ]
+        }
+      },
+      "usage": {
+        "input_tokens": 41294,
+        "output_tokens": 2046
+      },
+      "operator_text": "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/explanation.txt",
+      "record_sha256": "0aa4f7486a084a47b20b1e9601c24b6411e8f13bc3ec41be727a9bf1dc4ae040"
+    }
+  ],
+  "verified": [
+    "Model itself emitted five observation function calls, then a runbook search in each phase",
+    "Initial request did not contain observation values, preselected runbooks, fault plan or answer key",
+    "Final citations reference only tool-returned evidence; original runbook excerpts retain source/version",
+    "Rendered explanation uses verbatim model text; labels/provenance are deterministic formatting",
+    "Pressure classified DEGRADED; recovery classified NORMAL with current zero lag and all 21 persisted"
+  ],
+  "remaining_gaps": [
+    "Model read all five available observation groups both times; selective or cost-efficient investigation not demonstrated",
+    "Recovery output calls accepted-to-status-poll intervals (68-73 seconds) actual persistence latency; polls provide observation bounds, not exact commit times",
+    "Recovery output says 202 cannot prove append success, contradicting this service append-before-202 contract; Kafka intake moved to NEEDS_MORE_EVIDENCE without a supporting new failure",
+    "Historical causal explanation and old restart hypothesis still need temporal discipline",
+    "Codex defined safe tools and selected saved snapshot boundaries. No claim of autonomous live monitoring or arbitrary database investigation",
+    "This is a development replay of a known incident; not an independent accuracy or stability evaluation"
+  ],
+  "validation": {
+    "tests": "968 passed in 53.18s",
+    "record": "results/validation/20261101T101949Z-2b3fe86f/summary.json",
+    "related_tests": "24 passed in 0.44s",
+    "cli_offline_smoke": "PREPARED without API or explanation claim"
+  },
+  "api_reference": "https://developers.openai.com/api/docs/guides/function-calling",
+  "artifact_sha256": {
+    "results/ops-agent/shadow/20261101-model-selected-01/plan.json": "49ab4cb76f077fb1a71fbb8c7478f7b34c2874237086dd19c1d50003d68fcab7",
+    "results/ops-agent/shadow/20261101-model-selected-01/run_experiment.py": "b0825f65334bdaea00e8e034f883043931261c05e7b18068cc0eb4095ffe3d0b",
+    "results/ops-agent/shadow/20261101-model-selected-01/summarize_experiment.py": "66a3f940501eec3c023927953c0ae75407bc7b1992b4efd3549c3e907027c46d",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/available-input.json": "0ab425e45e346848166265140b3c95e4b53788bf9f280d0f458c46cdf2dd9878",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/catalog-snapshot.json": "6114fa946bd95c0f4e4cc8a817ecf781a715bd302df94bc35c46f83218e88308",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/explanation.txt": "e35ecb7e90f46ed0b91585d41e9c85db732439cf3e649fdefab564ab7b32c6cf",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/plan.json": "b1bea33f317b34d265b557f659d9cca2565fac6de2910237fca3bc9e9fbd6d10",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/record.json": "23769d19fecbafb7da73cec9786c2484a6b1b43a1d710b1c81375d24e9892df7",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/trace.json": "278f31ff51756d3ccdda85da3f463c544462155ea87215b4d5b66e8bdbc08350",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-00-tool.json": "e650c3c1c7432de1be36b6b48b6ae3e16a540502eb33038aff6747c004f9a7a9",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-01-tool.json": "6733c2b26eaa80a4ad4eef991832260dacedac93d8dd2093e9aee169c644dc7c",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-02-tool.json": "5ec3e779bd144cd8911ba0ec54315ba12dc3f16c8445662480c5d67c1ef2f956",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-03-tool.json": "fe5b1fa79c1a2568d2b97e19b9875e9507dd62ee2d3aa08276be0260c75386bb",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-04-tool.json": "cdc388dedb6b40e886b4876c419fb28d4d45a78cfb3cc8ee29f4d2ea4c3b7c26",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-request.json": "a71f94e93e36d55de46d47d34ddbacf6ad1458bc619795ebdffc49da2caa1505",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/00-response.json": "4b771742c94787bddccad63b920f06b519c095ecbbf6b2de626a6b6d92690086",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/01-00-tool.json": "4b1c77bbdd58a9d294f1208c86ef4227f880614349a042476081bf3e67b6716a",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/01-request.json": "e62cd508aad5bbebb09e72645cb0dcf414e115b6909cd6016fd2a6af466450f7",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/01-response.json": "4eba5665ae04cf6c045be66756c267ee9e991b1e273810b0654204d524c059ce",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/02-request.json": "5c37ce45094d8919e7a4c5c4d9f47d92f6505b6a861b28fb07665fa49998b8f1",
+    "results/ops-agent/shadow/20261101-model-selected-01/02-investigation/calls/02-response.json": "211352942acfde11efe1a30f4979a2c9ec8ed65b63cafc860479bbee13d68898",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/available-input.json": "83bef4691bce7cd4f9533ab568d111bcd216a2ad1557d834b95af8d47d5d1436",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/catalog-snapshot.json": "6114fa946bd95c0f4e4cc8a817ecf781a715bd302df94bc35c46f83218e88308",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/explanation.txt": "6b6a78ead5c33086c2355fc7b1bf22d5b3a48107a7fb7dfcb80afab311464271",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/plan.json": "ec312835bd4da66ac34b27dd21fb29ea49084efe416958d2747071d8ab7b93fa",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/record.json": "ec0cd4baedb8c156ed4fbf78c800f65575f4ffecbdda00b394337f1520d73cbf",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/trace.json": "9929050e6f8f017d389e530bdc863b8c3b753e3f35cdfee5a7fe4b34e8cae999",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-00-tool.json": "8723b6a8ed49316b11ba64f60dc7402b225b48f691b368d07005ab0daa2a083d",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-01-tool.json": "671e1b9198980a8f9c439fd65bc3c0e2df6c053df22a82eb7ac211a393694594",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-02-tool.json": "1b667f9fec32c1148e57897e0629aaa288ee84c25c153fb3c5f4681a6c1996e1",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-03-tool.json": "e881f71149d5d921e6e7e822b90a8a3112173508217b998f3d3a4c44ee72dbbc",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-04-tool.json": "fb040cf5291fcf42838dbf6cc83dab45c0d21c0707f5859fcc51b63579900428",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-request.json": "deaac527af93639edc9c644ccdb1e7eec836962cf778b169722a8a9987aed814",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/00-response.json": "349401e5b41cc370f70bee713a024eec8743a8492283ce2ecfa6646b66589dfe",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/01-00-tool.json": "78d9cb2057988538d0a35009522ec882c5d0aeec52167cbbd6de48d1a533aaf5",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/01-request.json": "c7558d36e2f3c28de88a498b1cee516ae04fe763598e3ba1165a5105813e133e",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/01-response.json": "aa57112db10e05688369a2a708ff0fe4a2bf689fde73da43a61cb3b26da219ee",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/02-request.json": "33c31515b47dc96362eddb868a5a509533019e75e7f5d13249130861587b5266",
+    "results/ops-agent/shadow/20261101-model-selected-01/03-recovery/calls/02-response.json": "67f5e1fcf990831702c4b2cd84774c5617440a3b091b6df812538bedcd2f61db"
+  }
+}

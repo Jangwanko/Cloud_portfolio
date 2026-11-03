@@ -145,6 +145,19 @@ results/ops-agent/recovered-calibration/20260816T194023Z/*/*
 results/ops-agent/diagnosis/*
 !results/ops-agent/diagnosis/README.md
 !results/ops-agent/diagnosis/golden-eval-v1.json
+!results/ops-agent/diagnosis/pilot-20261029-summary.json
+!results/ops-agent/diagnosis/pilot-prompt-v2-20261029-summary.json
+!results/ops-agent/diagnosis/criteria-review-20261029-summary.json
+!results/ops-agent/diagnosis/pilot-v3-20261029-summary.json
+!results/ops-agent/diagnosis/pilot-v3-iteration-r1-20261029-summary.json
+!results/ops-agent/diagnosis/pilot-v3-novel-20261029-summary.json
+!results/ops-agent/diagnosis/repair-v33-regression-20261029-summary.json
+!results/ops-agent/diagnosis/investigation-v34-regression-20261029-summary.json
+!results/ops-agent/diagnosis/citation-v35-regression-20261029-summary.json
+!results/ops-agent/diagnosis/v35-second-probe-20261029-summary.json
+!results/ops-agent/diagnosis/observation-20261029-summary.json
+!results/ops-agent/diagnosis/runtime-adapter-20261030-summary.json
+!results/ops-agent/diagnosis/runtime-case-audit-20261031-summary.json
 !results/ops-agent/raw/
 results/ops-agent/raw/*
 !results/ops-agent/raw/ac4d45ac-6280-4eb7-9d35-ea735243f00b/
@@ -207,4 +220,26 @@ tools/helm-home/
 tools/downloads/
 
 # Local command/status evidence (sanitized selected snapshots live in docs/harness).
+!results/ops-agent/diagnosis/incident-followup-audit-20261031-summary.json
+!results/ops-agent/diagnosis/negative-lag-review-20261031-summary.json
+!results/ops-agent/diagnosis/followup-replay-20261031-summary.json
+!results/ops-agent/diagnosis/live-observation-20261031-summary.json
+!results/ops-agent/diagnosis/continuous-watch-20261031-summary.json
 results/validation/
+
+!results/ops-agent/diagnosis/worker-startup-fault-20261101-summary.json
+tools/helm-render/
+!results/ops-agent/diagnosis/postgres-restarts-20261101-summary.json
+!results/ops-agent/diagnosis/live-experiment-audit-20261101-summary.json
+!results/ops-agent/diagnosis/experiment-validation-fixed-20261101-summary.json
+!results/ops-agent/diagnosis/paired-investigation-20261101-summary.json
+!results/ops-agent/diagnosis/runbook-assistance-20261101-summary.json
+!results/ops-agent/diagnosis/local-burst-20261101-summary.json
+!results/ops-agent/diagnosis/row-lock-20261101-summary.json
+!results/ops-agent/diagnosis/model-selected-20261101-summary.json
+!results/ops-agent/diagnosis/grounded-assistance-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-novel-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-v3-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-strict-repeat-20261102-summary.json
+!results/ops-agent/diagnosis/grounded-policy-20261102-summary.json
+!results/ops-agent/diagnosis/mvp-20261103-summary.json

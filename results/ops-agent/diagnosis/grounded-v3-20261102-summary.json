@@ -1,0 +1,221 @@
+{
+  "version": "ops.grounded-v3-regression-evaluation.v1",
+  "date": "2026-11-02",
+  "timezone": "Asia/Seoul",
+  "status": "TARGETED_REPAIR_VERIFIED_WITH_MODEL_OUTPUT_FAILURE",
+  "provenance": "Development regression on reused synthetic failure cases; not unseen-case accuracy.",
+  "record_schema": "ops.grounded-assistance.v3",
+  "model": "gpt-5.6-luna",
+  "api_calls": 4,
+  "automatic_retries": 0,
+  "structural_results": {
+    "unreviewed_model_outputs": 3,
+    "withheld_model_outputs": 1,
+    "code_observations_preserved": 4,
+    "history_survives_withheld_model": true,
+    "record_hashes_verified": 8,
+    "response_normalization": "Optional absent history_ids become []; original response and all model text preserved."
+  },
+  "changes": [
+    "Code supplies per-request append acknowledgement, persistence, status-read availability and observation times.",
+    "Model unknowns can select only code-generated gap IDs. Invented IDs, known-as-unknown assertions and free-text unknowns are withheld.",
+    "Code facts from up to eight prior snapshots are retained independently of model summaries; source record hashes, observation times and scope are checked.",
+    "Historical IDs can support updates separately from current evidence. Evicted snapshot count is visible; omission is not evidence of historical absence."
+  ],
+  "semantic_review_author": "Codex inspection of raw responses and code facts; not independent operator evaluation",
+  "semantic_review": [
+    {
+      "case": "s03",
+      "finding": "All three append acknowledgements retained; correct scoped persistence/read-failure gaps selected for qc-3. Model proposes a read-only 403 authentication/authorization/visibility check. No recurrence of the prior append-unknown statement observed."
+    },
+    {
+      "case": "s04a",
+      "finding": "WITHHELD due to missing required next_checks.runbook_id fields. Raw response also contains a mistyped evidence ID. No retry, repair or replacement explanation."
+    },
+    {
+      "case": "s04b",
+      "finding": "Despite preceding model rejection, earlier observed DB blocking is explicitly described with its historical fact ID, while current persisted/zero-lag/empty graph remain separate."
+    },
+    {
+      "case": "s04c",
+      "finding": "Explicitly cites both earlier snapshots, preserves prior blocking as history and investigates current Worker readiness/new pending IDs separately."
+    }
+  ],
+  "limits": [
+    "Other free-text fields remain UNREVIEWED and can still contradict facts; closed unknown selection is not general semantic verification.",
+    "The unknown catalog is deliberately bounded; needs outside it remain unreviewed next-check proposals.",
+    "Only eight prior code snapshots are in the model input; older records remain in original artifacts and omissions are counted.",
+    "Protocol v2 records are rejected, not implicitly migrated; earlier experiment records remain unchanged.",
+    "One of four model responses failed output/citation contracts; no general reliability, operator-effort reduction or master readiness claim."
+  ],
+  "validation": {
+    "full_suite": "1030 passed in 54.70s",
+    "record": "results/validation/20261101T153111Z-cd6c1532/summary.json",
+    "focused": "86 passed in 2.07s",
+    "focused_record": "results/validation/20261101T153023Z-68009f02/summary.json"
+  },
+  "snapshots": [
+    {
+      "case": "s03",
+      "model_status": "UNREVIEWED",
+      "fixed_facts_equal": true,
+      "historical_code_facts_equal": true,
+      "history_entries": 0,
+      "schema_errors": [],
+      "unavailable_evidence_ids": [],
+      "usage": {
+        "input_tokens": 7418,
+        "output_tokens": 2520
+      }
+    },
+    {
+      "case": "s04a",
+      "model_status": "WITHHELD",
+      "fixed_facts_equal": true,
+      "historical_code_facts_equal": true,
+      "history_entries": 0,
+      "schema_errors": [
+        {
+          "location": [
+            "next_checks",
+            0,
+            "runbook_id"
+          ],
+          "type": "missing"
+        },
+        {
+          "location": [
+            "next_checks",
+            1,
+            "runbook_id"
+          ],
+          "type": "missing"
+        },
+        {
+          "location": [
+            "next_checks",
+            2,
+            "runbook_id"
+          ],
+          "type": "missing"
+        }
+      ],
+      "unavailable_evidence_ids": [
+        "47b0a074ce2e7d:e00"
+      ],
+      "usage": {
+        "input_tokens": 7192,
+        "output_tokens": 2205
+      }
+    },
+    {
+      "case": "s04b",
+      "model_status": "UNREVIEWED",
+      "fixed_facts_equal": true,
+      "historical_code_facts_equal": true,
+      "history_entries": 1,
+      "schema_errors": [],
+      "unavailable_evidence_ids": [],
+      "usage": {
+        "input_tokens": 8043,
+        "output_tokens": 2317
+      }
+    },
+    {
+      "case": "s04c",
+      "model_status": "UNREVIEWED",
+      "fixed_facts_equal": true,
+      "historical_code_facts_equal": true,
+      "history_entries": 2,
+      "schema_errors": [],
+      "unavailable_evidence_ids": [],
+      "usage": {
+        "input_tokens": 10550,
+        "output_tokens": 2875
+      }
+    }
+  ],
+  "raw_root": "results/ops-agent/shadow/20261102-grounded-v3-regression-01",
+  "sources": [
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s03/baseline/record.json",
+      "sha256": "62824fa8db00f3b034e66940fc5861f1be670c46d0ebb0934fdf95f9d37d3a76"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s03/model/record.json",
+      "sha256": "b33425916b1056f3d317c4b20303659cd187c6a81fc64e215298fd268a283725"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s03/model/request.json",
+      "sha256": "a7efa80a4548edc6b3cfd61abe8b6cf1958932f1602f6086b6a8a65b7f0c5d07"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s03/model/response.json",
+      "sha256": "6d52e8e25c09812f067d761471308ad4863d6d600a7966df83c25245552d0821"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s03/model/history.json",
+      "sha256": "ee92ac675fb85eecdc976229fba36263526f11ac6c39f048c5db232893899866"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04a/baseline/record.json",
+      "sha256": "be40d293e9c64d8249422a1a438f16604b77ceb30c36e579f0526c59ff7e92c3"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04a/model/record.json",
+      "sha256": "ccb3255c78418c23f891fb9a5dbedafc7034aafbc925a36e5952fa635d5ac98d"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04a/model/request.json",
+      "sha256": "e2ae8e97d667e9aaa5acd95e7ec4264201ba1ca4cf4a96be70186556fa788a5a"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04a/model/response.json",
+      "sha256": "43303b5c5ce9de40a41da8454e3811851966388f7317eb84c7f761e476159f88"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04a/model/history.json",
+      "sha256": "ee92ac675fb85eecdc976229fba36263526f11ac6c39f048c5db232893899866"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04b/baseline/record.json",
+      "sha256": "2cccfc3c46004e678f747e2c3e6e3d72c3eba33d04a322f1f56b8f9be6a21b42"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04b/model/record.json",
+      "sha256": "bb319a1ebe3af8f93e1824414d1161d751800fea6472ead415dc10a7503af09d"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04b/model/request.json",
+      "sha256": "4d7f94e2f31bb9ddb8139ef161dd34600cd0c57475ed9d0b52d00201f41f878f"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04b/model/response.json",
+      "sha256": "4be2aa06763500e55fd0ec73a261576937029893e0caa44285709cdce5e533bf"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04b/model/history.json",
+      "sha256": "c2ce00d6539934fbd1ae5ac8cc1f5b33a932b213c750d18f803e2a58995a5a72"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04c/baseline/record.json",
+      "sha256": "dd8e155232d651d16cbd87f3a767d2f371641fb354631458fe23a30e7a7de5bf"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04c/model/record.json",
+      "sha256": "ed0ba218f37131514f36e67889eea852c4c5e0016ac4f77e8a784add5a1e2518"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04c/model/request.json",
+      "sha256": "c815d1fdc0deae1e102b77ee1e034066baf231acf899b9884406ac3f7c9c8c2d"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04c/model/response.json",
+      "sha256": "ee88af8b2b4d05f2d0822eb2b0a6d2ebaf1f4fbeb9f5b48d95d4c68a3bdeb61e"
+    },
+    {
+      "path": "results/ops-agent/shadow/20261102-grounded-v3-regression-01/s04c/model/history.json",
+      "sha256": "8763df64f685aa2702432e8b3a6df98322003d6f9343ed4f1b04c493e400c9a7"
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "schema_version": "ops.diagnosis.pilot-summary.v1",
+  "classification": "LIVE_CONTROLLED_PILOT",
+  "observed_date_kst": "2026-10-29",
+  "model_requested": "gpt-5.6-luna",
+  "response_model_snapshot": "not_recorded",
+  "blinding_version": "opaque-scenario-id.v1",
+  "evaluation_identity": {
+    "catalog_sha256": "f567404085065895321319d9525f9f1b8db5ecfebe290f6592d61c8dddde7900",
+    "rubric_sha256": "7f61b7d01e0be618effa2909afd842319fb079479d5a527cf3f10e276f02d6fa",
+    "scorer_version": "ops.diagnosis.quality.v1"
+  },
+  "source_commit": "047a8f18b97d23f9bb4479c0ef800694f13ed15f",
+  "source_dirty": true,
+  "implementation_sha256": {
+    "scripts/run_diagnosis_pilot.py": "9d07d5fea9be719ec9041746b0d46f12496b34a08870ed844ddcb324dca66566",
+    "ops_agent/scenario_agent.py": "ff1730a64ee0e7b286f52cacf77c0bef998d429c0718b12d26413875c77a314a",
+    "ops_agent/diagnosis_agent.py": "a58e18bb9420e9b716003c6222ffb549825f64012bff2d0eb41251931d241986",
+    "ops_agent/fixed_runbook.py": "9d3c6d969c4459c67ccc6bd2d3505a852f1ca822e8204e1e52030a5779641f6d"
+  },
+  "local_source_directory": "results/ops-agent/quality-evaluation/step3-live-pilot-20261029",
+  "source_manifest_sha256": "0d6114441298149208ea671d5a73948ae387f473411b7bea5a53be6ed1f5ae9a",
+  "source_summary_sha256": "c9f4d0549cc14b7bb4b9c326c69769d17c1e198e8793abccad0fc0c9325bc4c0",
+  "summary": {
+    "scheduled_attempt_count": 8,
+    "executed_attempt_count": 8,
+    "unrun_attempt_count": 0,
+    "api_request_count": 47,
+    "live": {
+      "attempt_count": 8,
+      "execution_kind": "live",
+      "contract_success_rate": 0.0,
+      "quality_success_rate": 0.0,
+      "first_pass_contract_success_rate": 0.0,
+      "first_pass_unknown_count": 0,
+      "repaired_contract_success_count": 0,
+      "final_contract_failure_count": 8,
+      "telemetry": {
+        "elapsed_seconds": {
+          "known_attempt_count": 8,
+          "total_known": 149.03597179999997
+        },
+        "input_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 85942
+        },
+        "output_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 11837
+        }
+      }
+    },
+    "fixed_runbook": {
+      "attempt_count": 8,
+      "execution_kind": "scripted",
+      "contract_success_rate": 1.0,
+      "quality_success_rate": 1.0,
+      "first_pass_contract_success_rate": 1.0,
+      "first_pass_unknown_count": 0,
+      "repaired_contract_success_count": 0,
+      "final_contract_failure_count": 0,
+      "telemetry": {
+        "elapsed_seconds": {
+          "known_attempt_count": 8,
+          "total_known": 0.007578400000511465
+        },
+        "input_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 0
+        },
+        "output_tokens": {
+          "known_attempt_count": 8,
+          "total_known": 0
+        }
+      }
+    },
+    "usage_coverage_complete": true
+  },
+  "final_failure_counts": {
+    "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES": 1,
+    "REBALANCE_GAP_REQUIRED": 7
+  },
+  "raw_supported_set_exact_matches": 4,
+  "raw_review_classification": "POST_HOC_EXPLORATORY_NOT_VALIDATED_DIAGNOSIS_ACCURACY",
+  "limitations": [
+    "Four existing development fixtures repeated twice; no held-out generalization result.",
+    "Raw supported-set agreement ignores invalid output contracts and citation quality.",
+    "Runbook elapsed is local CPU time; LLM elapsed includes API/network/repair.",
+    "Monetary cost and actual response model snapshot were not recorded."
+  ],
+  "attempts": [
+    {
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "worker-db-path-pressure",
+      "final_failure_code": "CONFLICTED_REQUIRES_BOTH_CITATION_SIDES",
+      "raw_final_supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": true,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 19.691614699999946,
+      "source_state_sha256": "d31707b86f02a65d4d831778b558abcbfb70a4f7a9a0c939a3dbae1d3ec7858a"
+    },
+    {
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "worker-replica-shortfall",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": true,
+      "tool_results_observed_in_final_request": 3,
+      "repair_used": 1,
+      "elapsed_seconds": 18.58752350000009,
+      "source_state_sha256": "96f4284e0848a35c2c75c8238a71480076cc55068af5c6409fdaa9765bd57c78"
+    },
+    {
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "postgres-path-degradation",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "POSTGRES_PATH_DEGRADED_SUSPECTED",
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": false,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 18.962066999999934,
+      "source_state_sha256": "aaf840837e23d67c26b16b2c5665439f4c744e027d6c65d3b115ccb6bc44ffee"
+    },
+    {
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "telemetry-unavailable",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": false,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 18.030057599999964,
+      "source_state_sha256": "5f15da169b1ff645cbad70c70c8cf41f68765954d3ae80433e445c07d474d1de"
+    },
+    {
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "worker-db-path-pressure",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": true,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 20.83319950000009,
+      "source_state_sha256": "8899705f530c57a8c9b42e6f511db9708468d8baed0166d884c02c5d5b5d93c5"
+    },
+    {
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "worker-replica-shortfall",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": true,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 18.391171700000086,
+      "source_state_sha256": "f40320479d71df6d01092490f3d03d6958b18f36b93d4385a0a751fda77353f2"
+    },
+    {
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "postgres-path-degradation",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "POSTGRES_PATH_DEGRADED_SUSPECTED",
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": false,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 17.289326500000016,
+      "source_state_sha256": "80dab103687787ba64222b9129c8f155fba53a180dc2f66bbd7297b1b954765e"
+    },
+    {
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "telemetry-unavailable",
+      "final_failure_code": "REBALANCE_GAP_REQUIRED",
+      "raw_final_supported_hypotheses": [
+        "WORKER_PATH_PRESSURE_SUSPECTED"
+      ],
+      "raw_supported_set_exact_match": false,
+      "tool_results_observed_in_final_request": 4,
+      "repair_used": 1,
+      "elapsed_seconds": 17.251011299999846,
+      "source_state_sha256": "36dbc7e60419091fc09341307b2d6c7583324e15543a5c3f2581b74dd413cc24"
+    }
+  ]
+}

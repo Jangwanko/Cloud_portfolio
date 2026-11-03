@@ -1,0 +1,185 @@
+{
+  "version": "ops.grounded-strict-repeat-evaluation.v1",
+  "date": "2026-11-02",
+  "status": "STRUCTURAL_GATE_PASSED_SEMANTIC_CONSISTENCY_GATE_FAILED",
+  "model": "gpt-5.6-luna",
+  "record_schema": "ops.grounded-assistance.v3",
+  "evaluation_class": "Development exact-input repeats; frozen code-only history; not unseen or live sequence evaluation.",
+  "api_calls": 8,
+  "automatic_retries": 0,
+  "budget": {
+    "cases": 4,
+    "repeats_per_case": 2,
+    "max_output_tokens_per_call": 6000,
+    "timeout_seconds_per_call": 45,
+    "history": "Identical frozen code-only predecessors; no model-answer propagation."
+  },
+  "structural_results": {
+    "unreviewed": 8,
+    "failed_or_withheld": 0,
+    "facts_and_history_equal_to_baseline": 8,
+    "verified_records": 12,
+    "identical_input_pairs": 4
+  },
+  "comparisons": [
+    {
+      "case": "s03",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04a",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": false,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04b",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": false,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    },
+    {
+      "case": "s04c",
+      "identical_request": true,
+      "all_contracts_accepted": true,
+      "analysis_identical": false,
+      "runbook_decisions_identical": true,
+      "selected_gaps_identical": true,
+      "semantic_consistency": "MANUAL_REVIEW_REQUIRED"
+    }
+  ],
+  "semantic_review_author": "Codex inspection of raw responses; not independent operator review",
+  "semantic_review": [
+    {
+      "case": "s03",
+      "finding": "Both responses retain append acknowledgements and select the correct qc-3 persistence/read-failure gaps. Neither proposes the required qc-3 403 authorization/visibility investigation in next_checks; all three slots focus on Worker/KEDA/DB."
+    },
+    {
+      "case": "s04a",
+      "finding": "Identical blocking evidence yields PG db_failure MET/APPLICABLE in repeat 1 and UNKNOWN/NEEDS_MORE_EVIDENCE in repeat 2. Both preserve uncertain request causality and propose lock/Worker reads; the condition decision is not stable."
+    },
+    {
+      "case": "s04b",
+      "finding": "PG assessment changes from HISTORICAL/UNKNOWN/NEEDS_MORE_EVIDENCE to CURRENT/CONTRADICTED/EXCLUDED. Both preserve earlier blocking in history and separate sampled persistence from global recovery. Hypotheses and next-check priorities also vary."
+    },
+    {
+      "case": "s04c",
+      "finding": "Both retain old persisted IDs, new pending IDs and both earlier histories. Neither explicitly uses the observed ready_replicas=0 as a Worker availability candidate; proposed checks remain broad. Repeat 1 also says earlier requests were not stored, stronger than the code fact that storage was not yet observed."
+    }
+  ],
+  "decision": "Keep development candidate; do not infer diagnosis accuracy, operator-effort improvement or master readiness from 8/8 structural acceptance.",
+  "next_gaps": [
+    "Clarify required evidence and separate current/historical applicability for ambiguous DB runbook conditions.",
+    "Make missing per-request read-failure investigation and unused decisive observations reviewable without Codex supplying replacement model answers."
+  ],
+  "limits": [
+    "Two repeats per reused synthetic snapshot do not estimate general reliability.",
+    "Forced code-state/schema fields are interface compliance, not evidence of model reasoning accuracy.",
+    "Exact-input history excludes previous model answers; this is not a live sequential stability evaluation.",
+    "Unsupported schema, refusal and transport failures have no unstructured fallback or automatic retry.",
+    "All prose remains UNREVIEWED; successful citation validation does not establish semantic truth."
+  ],
+  "usage": {
+    "input_tokens": 63576,
+    "output_tokens": 16587
+  },
+  "validation": {
+    "full_suite": "1040 passed in 61.22s",
+    "full_suite_record": "results/validation/20261102T120118Z-daa7ba37/summary.json",
+    "focused": "90 passed in 5.77s",
+    "focused_record": "results/validation/20261102T120057Z-fe7a2e43/summary.json",
+    "audit_record": "results/validation/20261102T120525Z-f043875b/summary.json"
+  },
+  "raw_directory": "results/ops-agent/shadow/20261102-grounded-strict-repeat-01",
+  "raw_summary_sha256": "86a08cff63b9c48ae0816a3332f469d5e7640ed288afd92aa52145dccc03f8e3",
+  "source_sha256": {
+    "ops_agent/grounded_assistant.py": "30358bb97dc0c07ca3b25d18873b71cc21b056ccd7ab3aceb55797e44283be57",
+    "ops_agent/observation_facts.py": "cd981dc1459419e55eb0f54a6b382ad04890cc37e83a2614675e7c796be28f35",
+    "ops_agent/observation_history.py": "6efcd8fa04fb60682d0b2984a1fce10ec985a95cf53e75a253523df21d3d21fa",
+    "ops_agent/runbook_assistant.py": "696def108d3ffbcd41d11dfe887f093b9db46c080e065521de3886cc3997b39a",
+    "ops_agent/diagnosis_agent.py": "4a9ef5d3fc8b29798919c89046176e68721acf5e578c8e6c76ee246d6f0e8a40",
+    "ops_agent/models.py": "2eb6907924cbacca8a063811327d553bb8f906a826d769cc3963c23cda1965e8",
+    "ops_agent/evaluation_models.py": "f5cb2ca8cd6c3023d57fa2039f157cfbb9531cc8a6ad943cc45592467994c64b",
+    "ops_agent/runbook_catalog.json": "8ee02928f5d49ace733bc5964c620f0a31df1aa3f93dd3e9c3f333248bee3f53",
+    "docs/RUNBOOK.md": "97ab390111590f00c547821e49e522610bc69f167d93010470413746902309e8",
+    "scripts/evaluate_grounded_assistance.py": "85a94242d3b702825d93ee4fd6be86c66d5cbe419850d1873c8dae1ef49f72d0"
+  },
+  "responses": [
+    {
+      "case": "s03",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "88ab559629c5e149cd5a4787ebdc49a9a4ae76c29256c84e3bd1b3bd7022283a",
+      "record_sha256": "1fbb9f22964598595a48280d3bf139c98d292af281e4f983ad92e789f0e492d8",
+      "response_file_sha256": "01458d0f9479255bcc8cfb3b623b730d2f27347c8459bf742b948c5af22e86d0"
+    },
+    {
+      "case": "s03",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "88ab559629c5e149cd5a4787ebdc49a9a4ae76c29256c84e3bd1b3bd7022283a",
+      "record_sha256": "a1c4dd47bcf97c7f72432fee1e918822fb595421bfdca878b8e78f7a75dd71a0",
+      "response_file_sha256": "f50b6abffdea3c6c597b3e85eff9a78e6cc67754ec84d4e6019ca8f374ca2365"
+    },
+    {
+      "case": "s04a",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "b09a5ba4f9e058ab01a16d113ae224c38afdf030ab03aac8a32948926855b138",
+      "record_sha256": "9f226ab27ce5c5190d1dbfc1f388bfa08111068cac076386fc06d20b0ce01599",
+      "response_file_sha256": "132fd60cd83590a3a8cc7a04939ba0ccaccc4aefd99af83d34e010f8c3a1e477"
+    },
+    {
+      "case": "s04a",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "b09a5ba4f9e058ab01a16d113ae224c38afdf030ab03aac8a32948926855b138",
+      "record_sha256": "030af578e33cd57c81b9b02b4574069f55f7dd09320119a04de65cf34b64914c",
+      "response_file_sha256": "0b04078e38beae8422429b85a7f1235b5275502172a6c55ecfabbeff4a12eb0e"
+    },
+    {
+      "case": "s04b",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "335c8e5ebf717fa4822afaa2374ad0fb5d0d42115f793ea6291c1ba770ad4ffd",
+      "record_sha256": "a520140899133612e81ea31b9ad9a4c6a7050da6c0d9cdfbc6083ee9faffd062",
+      "response_file_sha256": "5599553f8ec354536954d2dc1d80230e5c03dae89c65a1ecf72517fe88b3786c"
+    },
+    {
+      "case": "s04b",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "335c8e5ebf717fa4822afaa2374ad0fb5d0d42115f793ea6291c1ba770ad4ffd",
+      "record_sha256": "4e66f2293d9c04511c838339f287f497fffd101b753b1a21129bbb9c08303abf",
+      "response_file_sha256": "3aa7a345cfb53ed4e21a1d74a1d4b944be54d1fee752bc9db8a868449c786bd1"
+    },
+    {
+      "case": "s04c",
+      "repeat": 1,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "8e90817fce31acf566958d856f378b0d439f500b4a7403fc0a8e8eb3fb1f2ccc",
+      "record_sha256": "f41f7a7afa23829f4c1568694ab18dc1a8fe8407b8ea8cd237e1250a3159cde4",
+      "response_file_sha256": "82fb22ff659472f7c44a2cf37bd7d5b350a4a1ae6e4fee14e292cc57684bd007"
+    },
+    {
+      "case": "s04c",
+      "repeat": 2,
+      "model_status": "UNREVIEWED",
+      "request_sha256": "8e90817fce31acf566958d856f378b0d439f500b4a7403fc0a8e8eb3fb1f2ccc",
+      "record_sha256": "667562a69547006b85623be93af032a64ba6c124604dc8ee4fedfbac5d79a458",
+      "response_file_sha256": "722750bf28193b06852b62deb6f9d6e938157752eeb18ea8ca81b14d623d08e4"
+    }
+  ],
+  "git_boundary": "Working tree only; no commit, push, merge, remote CI or runtime rollout."
+}

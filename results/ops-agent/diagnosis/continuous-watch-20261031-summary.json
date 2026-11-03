@@ -1,0 +1,195 @@
+{
+  "schema_version": "ops.continuous-watch-result.v1",
+  "date_kst": "2026-10-31",
+  "summary": {
+    "status": "ERROR_DETECTED",
+    "errors": [
+      {
+        "kind": "OBSERVATION_QUALITY",
+        "reasons": [
+          "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+          "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH"
+        ]
+      }
+    ],
+    "captures": 7,
+    "first_error_index": 6,
+    "elapsed_seconds": 91.91,
+    "batches": 2,
+    "model_calls": 0,
+    "automatic_remediation": false
+  },
+  "classification": "OBSERVATION_QUALITY_ERROR_NOT_CONFIRMED_SERVICE_FAILURE",
+  "plan": {
+    "incident_id": "watch-20261031T063616Z",
+    "minutes": 30,
+    "capture_interval_seconds": 15,
+    "max_events_per_batch": 60,
+    "max_rate_per_second": 1,
+    "context": "kind-messaging-ha",
+    "model_calls": 0,
+    "remediation": false,
+    "code_sha256": {
+      "scripts/watch_local_until_error.py": "7d87977d2b343cc1b22413a6a8ec78916ca2ca0b4064a63b3222708ea5a12c6c",
+      "scripts/run_local_event_probe.py": "313a8cd58ab82ec97b2ec10f43a0c864d7f4b88ff0049d098b10bf146c5d2f41"
+    }
+  },
+  "checks": [
+    {
+      "index": 0,
+      "observed_at": "2026-10-31T06:36:17.580456+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 1,
+      "observed_at": "2026-10-31T06:36:32.563425+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 2,
+      "observed_at": "2026-10-31T06:36:47.506724+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 3,
+      "observed_at": "2026-10-31T06:37:02.552813+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 4,
+      "observed_at": "2026-10-31T06:37:17.522693+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 5,
+      "observed_at": "2026-10-31T06:37:32.517565+00:00",
+      "required_evidence_usable": true,
+      "lag": 0,
+      "errors": []
+    },
+    {
+      "index": 6,
+      "observed_at": "2026-10-31T06:37:47.643206+00:00",
+      "required_evidence_usable": false,
+      "lag": null,
+      "errors": [
+        {
+          "kind": "OBSERVATION_QUALITY",
+          "reasons": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH"
+          ]
+        }
+      ]
+    }
+  ],
+  "traffic": [
+    {
+      "run_id": "observation-20261031T063618Z",
+      "target": "http://127.0.0.1",
+      "max_events": 60,
+      "maximum_rate_per_second": 1,
+      "status": "COMPLETE",
+      "accepted_count": 60,
+      "persisted_count": 60,
+      "model_calls": 0,
+      "data_reset": false,
+      "stream_id": 4979
+    },
+    {
+      "run_id": "observation-20261031T063733Z",
+      "target": "http://127.0.0.1",
+      "max_events": 60,
+      "maximum_rate_per_second": 1,
+      "status": "STOPPED",
+      "accepted_count": 15,
+      "persisted_count": 15,
+      "model_calls": 0,
+      "data_reset": false,
+      "stream_id": 4980
+    }
+  ],
+  "accepted_count": 75,
+  "persisted_count": 75,
+  "readiness_at_error": {
+    "http_status": 200,
+    "body_status": "ready",
+    "body": {
+      "app_version": "2.1.0",
+      "status": "ready",
+      "reason": [],
+      "grace_remaining_seconds": null,
+      "queue_backend": "kafka",
+      "kafka": {
+        "bootstrap_reachable": true
+      },
+      "postgres": {
+        "ha_mode": true,
+        "primary_reachable": true,
+        "standby_count": 2,
+        "sync_standby_count": 2,
+        "max_replication_delay_bytes": 0
+      }
+    }
+  },
+  "timestamp_findings": [
+    {
+      "metric": "kafka_topic_partition_current_offset",
+      "source_timestamp": "2026-10-31T06:37:41.789000Z",
+      "range_end_epoch": 1793428666.922,
+      "range_end_source_difference_seconds": 5.133,
+      "freshness": {
+        "status": "FRESH",
+        "age_seconds": 5.854206,
+        "max_age_seconds": 15.0,
+        "basis": "prometheus_timestamp_function"
+      }
+    },
+    {
+      "metric": "kafka_consumergroup_current_offset",
+      "source_timestamp": "2026-10-31T06:37:41.789000Z",
+      "range_end_epoch": 1793428666.922,
+      "range_end_source_difference_seconds": 5.133,
+      "freshness": {
+        "status": "FRESH",
+        "age_seconds": 5.854206,
+        "max_age_seconds": 15.0,
+        "basis": "prometheus_timestamp_function"
+      }
+    },
+    {
+      "metric": "kafka_consumergroup_lag",
+      "source_timestamp": "2026-10-31T06:37:41.789000Z",
+      "range_end_epoch": 1793428666.922,
+      "range_end_source_difference_seconds": 5.133,
+      "freshness": {
+        "status": "FRESH",
+        "age_seconds": 5.854206,
+        "max_age_seconds": 15.0,
+        "basis": "prometheus_timestamp_function"
+      }
+    }
+  ],
+  "coherence_limit_seconds": 5,
+  "error_bundle_sha256": "b5d9d4c4e1d9975ce2c71230fdeb0002980bd006e06c9a867e22de692794d9f5",
+  "raw_sha256_verified": {
+    "results/ops-agent/shadow/20261031-continuous-watch-01/raw/ee71c616-0ea4-46c6-8884-433ae03b946f/prometheus.json": "8d894f0da1dc84baa2c42cabc960d33017d39dfe402889cb1c38e9f570ea202a"
+  },
+  "summary_sha256": "1ef511dc54dd49889a061cca3e3a0b98653645774599a3a9f053c9c3fc6ca9cf",
+  "limits": [
+    "Stopped on first error; 30-minute budget not exhausted.",
+    "No injected fault or overload; no confirmed event processing failure.",
+    "New event sends stopped; accepted events checked for persistence before child exit.",
+    "No automatic remediation or model calls; no durable restart/resume controller."
+  ]
+}
