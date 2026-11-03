@@ -1,0 +1,1001 @@
+{
+  "schema_version": "ops.runtime-case-audit.v1",
+  "bundle_counts": {
+    "calibration": 71,
+    "negative-control": 51,
+    "recovery-calibration": 1002,
+    "recovered-calibration": 226,
+    "incident-e2e": 351,
+    "postgres-ha-recovery": 1
+  },
+  "bundle_file_count": 1702,
+  "candidate_snapshot_count": 21,
+  "candidate_signal_counts": {
+    "WORKER_REPLICA_SHORTFALL": 21
+  },
+  "eligible_count": 0,
+  "exclusion_counts": {
+    "THREE_CAPTURE_WINDOW_UNAVAILABLE": 5,
+    "BACKLOG_ACTIVATION_NOT_PRESENT": 16
+  },
+  "read_errors": [],
+  "model_calls": 0,
+  "cluster_writes": 0,
+  "limits": [
+    "Archive observations; not independently established root causes.",
+    "No historical activation combined with a later candidate snapshot.",
+    "A zero eligible count describes this archive and unchanged gate only."
+  ],
+  "candidates": [
+    {
+      "path": "calibration/20260816T032411Z/run-02/bundles/sample-001.json",
+      "file_sha256": "51a306d33a8af2f3997dcac4a66250153d8f7adc0358982cc4d8824cad524cb6",
+      "bundle_id": "271a1d64-f546-4dc0-8a97-dec1c9a4fe8c",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "THREE_CAPTURE_WINDOW_UNAVAILABLE",
+      "activation_state": null,
+      "causal_truth_verified": false
+    },
+    {
+      "path": "calibration/20260816T032411Z/run-03/bundles/sample-001.json",
+      "file_sha256": "0a46863f74dfd11a51fcb1b147ce295e0a3922259d925ce7bb3d73319a951f1a",
+      "bundle_id": "7a14edde-6cde-434d-bf06-3e7f13404b5b",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "THREE_CAPTURE_WINDOW_UNAVAILABLE",
+      "activation_state": null,
+      "causal_truth_verified": false
+    },
+    {
+      "path": "negative-control/20260816T040746Z/short-burst/bundles/sample-001.json",
+      "file_sha256": "0d00f919c333c810cc786cf3311019f566995125dac0caae36474144525ed66b",
+      "bundle_id": "379293a0-53ef-42c6-88b8-2d4c69dd9fc3",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "THREE_CAPTURE_WINDOW_UNAVAILABLE",
+      "activation_state": null,
+      "causal_truth_verified": false
+    },
+    {
+      "path": "negative-control/20260816T040746Z/sustainable-high/bundles/sample-001.json",
+      "file_sha256": "c90d29e1314fe8e7cf7433bf8bea37fa8cb769856d496c4065ae17d077c0e235",
+      "bundle_id": "8b53c41a-256a-475e-bb7d-5306d157a4f9",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "THREE_CAPTURE_WINDOW_UNAVAILABLE",
+      "activation_state": null,
+      "causal_truth_verified": false
+    },
+    {
+      "path": "recovery-calibration/20260816T071921Z/PREFLIGHT-run-01/bundles/sample-010.json",
+      "file_sha256": "fe49190bfb12c938cd5aadfba4f35ca8bfb6920e493ec09c1ebe95c0d337fd4f",
+      "bundle_id": "ad3483a9-a2e5-40ea-838e-7c76d643a303",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T071921Z/PREFLIGHT-run-01/bundles/sample-008.json",
+          "file_sha256": "32bdba7ca1bfc0d660440adf02d01faea35c0e8c7f1531051b33031f36cb5c3c",
+          "canonical_sha256": "2613ce2dd26986eaddddb4a066c79f032d2364ed8de7967e78d47b2ed79c7d71"
+        },
+        {
+          "path": "recovery-calibration/20260816T071921Z/PREFLIGHT-run-01/bundles/sample-009.json",
+          "file_sha256": "6331d4b26ce0a4fa0a76ca5cae14ce5934bf1a374f1c8cbb3f8e9696da2d4184",
+          "canonical_sha256": "f872f2f7ed70cc2ac2d7911ce9e09cf907b28f9c91702e835841977a75c01aa8"
+        },
+        {
+          "path": "recovery-calibration/20260816T071921Z/PREFLIGHT-run-01/bundles/sample-010.json",
+          "file_sha256": "fe49190bfb12c938cd5aadfba4f35ca8bfb6920e493ec09c1ebe95c0d337fd4f",
+          "canonical_sha256": "5b13f6b337b28083660454b1cf023a8d7fbb610eb865ed16e3cba44059fa4d99"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "e8baee6a95fc4c6ae3daa6138a4a3e45732abd1e21d15a35d19a306d196eb33c",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 34,
+          "slope": 0.55,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 49,
+          "slope": 0.8166666666666667,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 869,
+          "slope": 13.883333333333333,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-002.json",
+      "file_sha256": "395e469670ac538835022223dc406cca5c1b07e93bb9c89af1686552fdfd9433",
+      "bundle_id": "5ecaf563-5898-4c7c-bfec-c0c7028cd5c4",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-000.json",
+          "file_sha256": "68eeca6e68c74ea2e11670bcbe968d8c295318c8abd6974bce27c7633e6284ff",
+          "canonical_sha256": "2702772878cb26561e241d1bc48e2a95922ecfb7298f72c3b7df068e4365b197"
+        },
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-001.json",
+          "file_sha256": "5b2a262d1d9054de514c880db1df543145f61fdb440812bac7ce367fd8ba4032",
+          "canonical_sha256": "c1e23daa166033c88fbd14d2d31daf29524251496859ae04d4ba2a4c8b3ef7c1"
+        },
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-002.json",
+          "file_sha256": "395e469670ac538835022223dc406cca5c1b07e93bb9c89af1686552fdfd9433",
+          "canonical_sha256": "d6f4f029d235607e2972f36bd3c0f83719e6021d05d05aa711ef1ed98f8ba938"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "29b8a47f2f6e2fa7164eecd0c0b24e9cca7411ae80ef616ee15dbb8008229e7f",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 16,
+          "slope": 0.26666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 394,
+          "slope": 6.566666666666666,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-007.json",
+      "file_sha256": "0acc1d6ce530e3e1a831532253fd7deb05c2f12b1dfec43021552c318dd7bd68",
+      "bundle_id": "fd9b0b88-e2d7-41e2-b686-3f522d0b294f",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-005.json",
+          "file_sha256": "7eeea7de2cf9b00184af4bd4d77200c86d0c5f5618a9adcbade9a1d8ed038bc9",
+          "canonical_sha256": "d32fe9a5540ade06d2cebd2eef946a2778b9291703835f19f33d305b56a27408"
+        },
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-006.json",
+          "file_sha256": "fc56d44cd7f292cec5818e6fcf0ab15c30484801544bf50cc5754a7b208340a9",
+          "canonical_sha256": "3bd2a981e1569dce0a6d4cd7efe63714e937ff3d7f0542c62fdb0eb4b197f5e4"
+        },
+        {
+          "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-007.json",
+          "file_sha256": "0acc1d6ce530e3e1a831532253fd7deb05c2f12b1dfec43021552c318dd7bd68",
+          "canonical_sha256": "9adf8d3f60c188c4747c90ed5587825a3dda3f7ba90be2f98158ffe71a9f7048"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "0daa49769b796f9e287cd0a44a8d9c4bed915fabd910e2b8831457a309487652",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 15,
+          "slope": -0.016666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 1,
+          "slope": -6.55,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 2728,
+          "slope": 44.71666666666667,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T075514Z/E-run-01/bundles/sample-007.json",
+      "file_sha256": "a84d85107b079a7f69261958f527f36fdd38cfc98a6b55e7868de2752144cefc",
+      "bundle_id": "17f11196-cbd1-417b-aeda-8cb644a87e32",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T075514Z/E-run-01/bundles/sample-005.json",
+          "file_sha256": "33016014b99856ccb443dfb341cff4f5f1c19e6c7bf7eb2c6866f060d8bba95a",
+          "canonical_sha256": "70c0866f1ecf7e65942950258f466dab8abd6b4f458f20cfd7f15eeb0499e8fe"
+        },
+        {
+          "path": "recovery-calibration/20260816T075514Z/E-run-01/bundles/sample-006.json",
+          "file_sha256": "2ce66929bcf315396d373db5480c2a94c9728502d42a0553b7f3724416285357",
+          "canonical_sha256": "fa6d22afb50b10701a7ba563819abf8e3df9afef819a5de19ec897ea01fcabb7"
+        },
+        {
+          "path": "recovery-calibration/20260816T075514Z/E-run-01/bundles/sample-007.json",
+          "file_sha256": "a84d85107b079a7f69261958f527f36fdd38cfc98a6b55e7868de2752144cefc",
+          "canonical_sha256": "e9b3ad885b053ccc5efeee21c2cde403c4786e72f418dc468fb3d3266a28d54b"
+        }
+      ],
+      "activation_reason_codes": [
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+      ],
+      "sequence_evaluation_id": "d392dfcaa4e206e54e89ca1f50d09c83a348d2b505c649d157f4f55f3c9fd7a9",
+      "capture_observations": [
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T085521Z/C-run-01/bundles/sample-007.json",
+      "file_sha256": "b1b928058edffd4337578047043d38d8e8143c124818c1cb120b72228bc2ed76",
+      "bundle_id": "b45d4f51-404d-49f2-aa68-4855e439860a",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T085521Z/C-run-01/bundles/sample-005.json",
+          "file_sha256": "c1c234570a9190ce19b41574a2dee87559f9d1c3fdeb96c0083f2640b0ed928c",
+          "canonical_sha256": "58522970ac3db75171e7337422523dceca36e29a17e64c66144fc4f583e1f67a"
+        },
+        {
+          "path": "recovery-calibration/20260816T085521Z/C-run-01/bundles/sample-006.json",
+          "file_sha256": "2f455e6a76e35114eca8bacf398c3defe3865e78363dd12200cd1ba9445cd10b",
+          "canonical_sha256": "8db1d9528a2a08ee806966996e1edd730841408ef31cfa169c3ef11dcd4d8b11"
+        },
+        {
+          "path": "recovery-calibration/20260816T085521Z/C-run-01/bundles/sample-007.json",
+          "file_sha256": "b1b928058edffd4337578047043d38d8e8143c124818c1cb120b72228bc2ed76",
+          "canonical_sha256": "66b270bfcea2958738b0cc144445992e363481b94e30dee7a4eacafffddb814b"
+        }
+      ],
+      "activation_reason_codes": [
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+      ],
+      "sequence_evaluation_id": "256ced19ddc1fdd9a340678add3be296742d22247ee91e34314f4585fc561aa8",
+      "capture_observations": [
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T085521Z/E-run-01/bundles/sample-003.json",
+      "file_sha256": "12a9d8384ac865e4e7a92b261b1844d5177fdc61e4c63c4b7d7f7e3a9da34a43",
+      "bundle_id": "23e7f7db-6ff4-48db-9103-feb54cdd873b",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T085521Z/E-run-01/bundles/sample-001.json",
+          "file_sha256": "2bcaeeeaeb016dc2bad425fbeab14b27ee243e5dd9278e5c4d51c36a14ee4879",
+          "canonical_sha256": "892835a459437e03de43e322a6191fd68547c7aa7b5facd34089854f3e1b609d"
+        },
+        {
+          "path": "recovery-calibration/20260816T085521Z/E-run-01/bundles/sample-002.json",
+          "file_sha256": "737eb77178bb42c06173447538074ea0579fd2277630f408437a7f3ea60ef319",
+          "canonical_sha256": "b3de8c36f695e888f5ad531c7ade7546db391fb644781997da5e61b6013c6001"
+        },
+        {
+          "path": "recovery-calibration/20260816T085521Z/E-run-01/bundles/sample-003.json",
+          "file_sha256": "12a9d8384ac865e4e7a92b261b1844d5177fdc61e4c63c4b7d7f7e3a9da34a43",
+          "canonical_sha256": "6ff60c9541c5bde6ff28619e4e9a0b21b031571178991bea87d8f6aae80893a3"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "cd590121fdb63053517071c4dfd5409018439663950c325ff8a921f720119307",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 89,
+          "slope": 1.4833333333333334,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 410,
+          "slope": 6.833333333333333,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-007.json",
+      "file_sha256": "ea2fd423abe14d7262a8bad3b391758dd8106cb54532876d4710db9a335a103c",
+      "bundle_id": "0eae17f9-4835-44e1-9fc7-c1cdf2fe89ee",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-005.json",
+          "file_sha256": "fa66a0ef8723f0c6a77738ffe904b1eb6bf738dd1a2ae6afd612a0844080469e",
+          "canonical_sha256": "da0af39f23af524d7f1cfa57495d66bec09c8d7a4e8d88f70a3c3dcccab8ae62"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-006.json",
+          "file_sha256": "377e8d70cd74ec190fc82bbf81fadeadbe4bcd7887c6af8da1a3ab81360b02df",
+          "canonical_sha256": "9931a22b090e50d79d2846cf34e2b1c0a4ace450ab4761e2c77e6715dadc874e"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-007.json",
+          "file_sha256": "ea2fd423abe14d7262a8bad3b391758dd8106cb54532876d4710db9a335a103c",
+          "canonical_sha256": "f8e797a24aa8c57d094fac3b3a4a2e5da58712364b5cb0210e8f664f285303bf"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "29d07919f9f24e518a93f5c354510201ce4f4376b69e8ac8cc47a7414cbfcee1",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 32,
+          "slope": -0.03333333333333333,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 47,
+          "slope": 0.7833333333333333,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 4087,
+          "slope": 65.0,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-062.json",
+      "file_sha256": "d9123cbab2559673e6f087d97571de27aad94223f1df86df169e5ee6212dda10",
+      "bundle_id": "d7f93066-1c3c-411a-8c8f-2b708e3b227b",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-060.json",
+          "file_sha256": "2304451ba033f3cac02c10446c5ef0e38900a4e488fb950aeb0953cac78397b4",
+          "canonical_sha256": "2c21a8f2f9e99efacdb9b235af790f42d387acdbac9d9be5b5f8cd1ca0cf3e96"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-061.json",
+          "file_sha256": "621924beee0a5971373f26e66bdecf37aa793543d9918a5ff7fbafa7a43e7335",
+          "canonical_sha256": "8396bfdec619413f0001e051c9d5ed72ca17bf125c013b79cd6dcbe829741222"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-062.json",
+          "file_sha256": "d9123cbab2559673e6f087d97571de27aad94223f1df86df169e5ee6212dda10",
+          "canonical_sha256": "69fea04f29e190461432f7f4a8e5025ca7bc5806da1c7ce0b98a118159baf47f"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "2b485469b385ef533cee3da46fab7b9004974b4dd695e41029849af962bfc485",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 148,
+          "slope": 2.45,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 40,
+          "slope": 0.35,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 337,
+          "slope": 5.6,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-002.json",
+      "file_sha256": "cf583cd9f8c4a7846a4a9eacc9afa2db6e104e77fd0a2e54fa3d13e5c4273b99",
+      "bundle_id": "5c0eb644-53fd-437d-bd49-29c424b5b090",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-000.json",
+          "file_sha256": "19948740e0b478577283cabdd062734fbbebe9b3dd3b81c20d0160263c2cd10c",
+          "canonical_sha256": "96fcd6850cfd92a26c8c0ed776ffc1aff64fec96fcb7fa43a5054df8c3c9b9e8"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-001.json",
+          "file_sha256": "9d47703e0c10dc7fd6e312fdd8c6479c75eef49feba023ed47f27d8a6c64ed0c",
+          "canonical_sha256": "84e650ad7793b5c491d5f458d957154bb693d6a321ec448102ed6ec6a4212612"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-002.json",
+          "file_sha256": "cf583cd9f8c4a7846a4a9eacc9afa2db6e104e77fd0a2e54fa3d13e5c4273b99",
+          "canonical_sha256": "481fbfeff9b7e3f911599cd0da0294a1e69ae56fa1f8ef63ab3ca7ccf4e53f27"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "2431e5c3a751e77bfcd634ba09240ca529233c97ebd43a6da9ea5dd694aa9896",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 2,
+          "slope": 0.03333333333333333,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 273,
+          "slope": 4.55,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-007.json",
+      "file_sha256": "c02ecf35ac577784cbc7ff2ad4e045c9698ebeb9838870e647aed347aef2284e",
+      "bundle_id": "83b2e9c1-20bb-4cad-806e-8d3ed2c89a20",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-005.json",
+          "file_sha256": "f40fcb88e5f89238dabb484a472571fc980a396f32322402ec36255778927cec",
+          "canonical_sha256": "fcfe009021775022ebedaa3ccaae1b221504527dab8fea9a0bd17d270dd33722"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-006.json",
+          "file_sha256": "45e3c1bc659047925832f21590545dae46ef3069c3f66402feebfe0534e41645",
+          "canonical_sha256": "85f79148b77a22a719b742e751b7e7cdf8579ff915af9f4075df6c17f711583e"
+        },
+        {
+          "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-007.json",
+          "file_sha256": "c02ecf35ac577784cbc7ff2ad4e045c9698ebeb9838870e647aed347aef2284e",
+          "canonical_sha256": "ec421a1458619b25fb2bbc2b05e39ebc613f2fad103e0b6b3e671e0819291cb9"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "b44a8574550db48095f7f25daa5910557abf6bddf4cc914d0c2120ecdcf6b17b",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 1,
+          "slope": -0.016666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 24,
+          "slope": -4.15,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 2704,
+          "slope": 45.06666666666667,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-002.json",
+      "file_sha256": "e94076933008378c75f88b0a11f69718d8396979850e9fb2a272db629a5a9188",
+      "bundle_id": "e4d6ef5d-a17c-4b7b-a149-ac9706bb5dc2",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-000.json",
+          "file_sha256": "2884f61fc0b9d12e3a827947068b8031f2bc606c574202e1555d2229ddb52926",
+          "canonical_sha256": "325d0af0eb42b6c0c2c01286a563e4ee5c45e494d729daa33920a1af3d272618"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-001.json",
+          "file_sha256": "739308e3395c20c795b0a9acf72c1f732a2e5b336b7679a425f1c0268ce23d51",
+          "canonical_sha256": "d84a52c1c3258571568ed3699d4f2ac5461753e367af589c1a36609fceb70856"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-002.json",
+          "file_sha256": "e94076933008378c75f88b0a11f69718d8396979850e9fb2a272db629a5a9188",
+          "canonical_sha256": "d12e09c1abf644abf682c29dacac0d5f6538b43bc706b936ee7361974ffd8b88"
+        }
+      ],
+      "activation_reason_codes": [
+        "SEQUENCE_KAFKA_SOURCE_TIMESTAMPS_NOT_STRICTLY_INCREASING",
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE",
+        "SEQUENCE_SOURCE_IDENTITY_MISMATCH"
+      ],
+      "sequence_evaluation_id": "33a3aa2d56af05b9124c243253014ea568d50bbe60a04bb666b2fb22a57b276a",
+      "capture_observations": [
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "KAFKA_REQUIRED_SOURCE_TIMESTAMP_MISMATCH",
+            "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH",
+            "SEQUENCE_KAFKA_SOURCE_TIMESTAMP_UNUSABLE"
+          ]
+        },
+        {
+          "usable": true,
+          "lag": 10,
+          "slope": 0.16666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 465,
+          "slope": 7.75,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-052.json",
+      "file_sha256": "a8f3c3261498273d8842fdc9b6ce02701ec89917e80cb3823356965b3ea8222c",
+      "bundle_id": "34e2337b-dcb5-4916-9596-6752dd2ac52f",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-050.json",
+          "file_sha256": "58b292baf15849682b1a397dbbd079338a0a936263966afae07920da167e29cd",
+          "canonical_sha256": "bd15940625819cb70898edbb738274a44f6348c965561102b78a3ebe0071844b"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-051.json",
+          "file_sha256": "1327e5eb5bc306005ed68ed25bb8a509ad4cab13b21e1be47ef8d9064fec218a",
+          "canonical_sha256": "b64c73af6dadb11c6a0ac04d5073d92b3ee9d2271c5bd0109ad4bde40380b56f"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-052.json",
+          "file_sha256": "a8f3c3261498273d8842fdc9b6ce02701ec89917e80cb3823356965b3ea8222c",
+          "canonical_sha256": "f9549985c6c44db554f084fded84a6054cf220758c190bd2b40f7771766764d2"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "69e8b88c2b5bdfdf659f426ac42bafd2a738168739229ec2c1e2b8bc42348cff",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 575,
+          "slope": 9.583333333333334,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-063.json",
+      "file_sha256": "4823bbe7be71a2a8de440014d173f69884eac23e9dfc782b00c33c2af2c09088",
+      "bundle_id": "a74487d0-cd9a-4fcd-acfe-c254996eb93b",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-061.json",
+          "file_sha256": "be6689dff6cbec90dd0917e722f595a9339c2d96740925111a6112ee959722f7",
+          "canonical_sha256": "ccbe03db3ee2f9d394dfac7d9958ca7f712cb7fc65174418fabd275df1be3ef8"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-062.json",
+          "file_sha256": "21b360789bc39144503b2cfab24a39878284d7589a06360fa4f62c1dd454e6ae",
+          "canonical_sha256": "c84e04311ea8a993a1ea9eeffd4b3c75a9dfb0c4119c380a764004d0e330379b"
+        },
+        {
+          "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-063.json",
+          "file_sha256": "4823bbe7be71a2a8de440014d173f69884eac23e9dfc782b00c33c2af2c09088",
+          "canonical_sha256": "2b564742722a31e44e063e17edee5f4bcc443fa528b52204233037abf56609a5"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "778a0c70a512357e22ced5881179a9a1068e5a22652c5ae88ecb5c0a1f824dce",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 1,
+          "slope": 0.0,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": -0.016666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 441,
+          "slope": 7.35,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "incident-e2e/20260816T214911Z/run-01/bundles/sample-001.json",
+      "file_sha256": "dcd3ba1883e3af71f709f34785e62b1f24e32a8b67fd5ef0eea6daa5b2d5a102",
+      "bundle_id": "c3ebdf3b-20eb-499a-8f24-495cf069015b",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "THREE_CAPTURE_WINDOW_UNAVAILABLE",
+      "activation_state": null,
+      "causal_truth_verified": false
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-007.json",
+      "file_sha256": "fdbdd6cf95fe06ed345778015c826238f69565bdcceb96986d52ebb842706730",
+      "bundle_id": "4bf3e883-5bc0-4c7e-92ea-8cee635bc738",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-005.json",
+          "file_sha256": "08ebf611e5b4eb6e8ed5295cdca0cef24ec18b338ad823a29110796bcf87c145",
+          "canonical_sha256": "de22353026e5e6b4ffba4c8058e1064aace36b83bf7ef190e29e569e54dd9209"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-006.json",
+          "file_sha256": "22ddc007d64eb61217110a736588b36bb929be14137b763c93e41638abd21fdb",
+          "canonical_sha256": "843a3ab0f664f46e03aed150b85607b84bc58092d8ff15fb924592bde1fe5eee"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-007.json",
+          "file_sha256": "fdbdd6cf95fe06ed345778015c826238f69565bdcceb96986d52ebb842706730",
+          "canonical_sha256": "287dfb0e9b731784f9c278d44df630fc6ac2b225430c1288b64f3c2040c2c87a"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "ce3c7e519857c35fe8883feb4af307f3127f528a007476ad484dada1d054637e",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 119,
+          "slope": -2.75,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 206,
+          "slope": -0.21666666666666667,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 4531,
+          "slope": 72.5,
+          "reason_codes": []
+        }
+      ]
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-093.json",
+      "file_sha256": "d6dcc0e6d5b5c7cd2d8666c849625037fcc9050a75768d77fd0ffa1a1494adbd",
+      "bundle_id": "a212f7fa-7e6f-4816-a8f0-2c7edd54b0ca",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-091.json",
+          "file_sha256": "4b4aac9ead778b09a9d484188e405cda8d5cbddfbf4099bb515ef07e4ae1a8bf",
+          "canonical_sha256": "25ceb0b0035158afcc2389d70385253d2cbf541f10fbce9b567066cf6a21fe55"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-092.json",
+          "file_sha256": "61999df4b17256383ee22cb7360c60bbbf26870b011fba23fc0ee65e875223f9",
+          "canonical_sha256": "e2c7474fe98f2723981cabe19e151cbfad5a61febf18fc7955d7bcfa77a3587f"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-093.json",
+          "file_sha256": "d6dcc0e6d5b5c7cd2d8666c849625037fcc9050a75768d77fd0ffa1a1494adbd",
+          "canonical_sha256": "6e567bd797bfc390cbfaf8a4f9c658ea966df23cfd41eebaf1f7ef6f19e8bf71"
+        }
+      ],
+      "activation_reason_codes": [
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+      ],
+      "sequence_evaluation_id": "949aa6d1f876066792f583b2f22087f4993287e92f294e02a74fbec10e5442c9",
+      "capture_observations": [
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        },
+        {
+          "usable": false,
+          "lag": null,
+          "slope": null,
+          "reason_codes": [
+            "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-116.json",
+      "file_sha256": "ed5c47f855652943866e4aba2f00397784b75f96376b52bafaa312a32f4ace1c",
+      "bundle_id": "58b2df4a-fe6f-421c-8e6e-af37183928de",
+      "discovered_signals": [
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "eligible": false,
+      "exclusion": "BACKLOG_ACTIVATION_NOT_PRESENT",
+      "activation_state": "UNKNOWN",
+      "causal_truth_verified": false,
+      "window_sources": [
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-114.json",
+          "file_sha256": "4f5167f3baf1e999eace3153273bd7fd7ebb21a8761af93b4548a05d7382257f",
+          "canonical_sha256": "3adca1fddef0bbfd7ac9b169b7ab2cddfd268b330c895333b117a17d9125a02a"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-115.json",
+          "file_sha256": "00df708badcd9a6bca20ab49a3f73418f293ad3253eb1623060cf813bf0bbba4",
+          "canonical_sha256": "2d3d3dab0ba0343e9bf65f8bb3897f50f8a690aa1d06b520265c060edc102794"
+        },
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-116.json",
+          "file_sha256": "ed5c47f855652943866e4aba2f00397784b75f96376b52bafaa312a32f4ace1c",
+          "canonical_sha256": "963c669662e3ea1a15f08f788965e5a3cb0f67c39adf4629a1de48c0443ee0ad"
+        }
+      ],
+      "activation_reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "sequence_evaluation_id": "900d6c6eb574133c6eb0de98cf6f1abff5fe37feaec9d3f9a17f50894f608a05",
+      "capture_observations": [
+        {
+          "usable": true,
+          "lag": 0,
+          "slope": -0.016666666666666666,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 130,
+          "slope": 2.066666666666667,
+          "reason_codes": []
+        },
+        {
+          "usable": true,
+          "lag": 104,
+          "slope": 1.7166666666666666,
+          "reason_codes": []
+        }
+      ]
+    }
+  ],
+  "classification": "ARCHIVED_RUNTIME_CANDIDATE_ELIGIBILITY_AUDIT",
+  "audit_date_kst": "2026-10-31",
+  "rejection_details": {
+    "insufficient_capture_window": 5,
+    "activation_not_observed": 12,
+    "required_evidence_unusable": 4
+  },
+  "source_directory": "results/ops-agent/shadow/20261031-runtime-case-audit",
+  "source_artifact_sha256": {
+    "inventory.json": "71de1246da786f244ce7344efdf9c9ff037556cd2d55905799f4b2255cc4e007",
+    "plan.json": "3de5c317f4143b45fda7f2782b92b526ab45f790ce49d2f71c8be254b978dfbd",
+    "summary.json": "2e1a55b343d28056b643e434bb8aedbbd9dae218e8a6cf354fc636efa3211657"
+  },
+  "audit_script_sha256": "7827b85b93854ee55beef5073c9ab98ccaefd856fea41dacae1814e98e688342",
+  "verification": "Candidate and window file hashes rechecked before export; source inventory retained locally."
+}

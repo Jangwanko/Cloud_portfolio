@@ -1,0 +1,16 @@
+{
+  "classification": "AUTHOR_CREATED_SECOND_SYNTHETIC_TRANSFER_PROBE",
+  "case_count": 4,
+  "planned_attempts": 8,
+  "max_api_requests": 48,
+  "catalog_sha256": "29f0378bd9f5f71eb01e37113b919a5a3e3b5a341df6fdd33f4c7bbfab5df511",
+  "rubric_sha256": "72ad60cbb0de8a22fea9870b42f85917eff2ced586c8843a92cd36d966b1175a",
+  "frozen_execution_identity": {
+    "version": "ops.diagnosis.execution.v3.5",
+    "sha256": "313574caeb90c8ffe4ecd1b682b11f7368b4540e89428a59269e7bf329ebeae1"
+  },
+  "author_script_sha256": "5cb6d2e110afc211b0b87129b36cdc3b92e385587f40bcbef761707aea5d81e3",
+  "activation_scope": "Historical PRESENT activation reused; synthetic normalized observations and snapshot-relative freshness, no live incident or outage injection.",
+  "protocol": "One 4x2 model batch on newly authored combinations. Freeze v3.5 model, prompt, runtime policies, decision/semantic contracts, scorer and old fixtures. Preserve initial/final scores and failures, no paid retuning.",
+  "legacy_metadata": "UNSCORED_V3_METADATA and branch placeholders are not model input or v3 scoring criteria."
+}

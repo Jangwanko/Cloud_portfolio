@@ -4,7 +4,7 @@ Kubernetes & GitOps Operations Platform for Event Processing
 
 [한국어](README.md) | [English](README_EN.md)
 
-Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 장애 재현, 복구 검증**을 직접 실험한 Cloud·DevOps 포트폴리오입니다. 수집된 운영 증거로 장애 원인을 조사하는 AI Agent도 구현했습니다.
+Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하며 **consumer lag 기반 확장, 데이터 보존, 장애 복구, GitOps 배포**를 검증한 **Cloud / DevOps / SRE / Platform Engineering** 포트폴리오입니다. 운영 증거와 런북을 대조하는 Ops Agent를 장애 조사 보조 구성 요소로 연결했습니다.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
@@ -19,6 +19,7 @@ Kafka 기반 비동기 이벤트 처리 시스템을 Kubernetes에서 운영하�
 | PostgreSQL runtime 장애 | API 수락과 Worker persistence를 Kafka로 분리 | 복구 후 core·notification lag `0/0` |
 | 같은 stream 순서 보장 | `stream_id` partition과 DB commit 이후 offset commit | ordering `100/100`, missing·duplicate `0` |
 | 인프라 재현·사양 변경 | OpenStack에서 Terraform 적용 | 11개 리소스 재구축, CPU 2→3 변경·데이터 보존, 최종 plan 변경 없음 |
+| 운영 증거 기반 장애 조사 | PG 잠금·Worker 기동 실패를 승인된 로컬 실험으로 재현 | 2026-11-03: PG `21/21`, Worker `20/20` 저장·설정 복원; Luna 4회 |
 
 ## 아키텍처
 
@@ -49,6 +50,10 @@ Worker는 event·request status·notification outbox를 같은 PostgreSQL transa
 
 ## 핵심 운영 판단
 
+### Redis queue-first에서 Kafka event stream으로
+
+DB 장애 중 요청을 queue에 보존하는 구조에서 출발해, 같은 stream의 처리 순서와 재시도 경계·소비 진행을 설명할 수 있도록 Kafka partition과 offset 기반 처리로 전환했습니다. 확장 신호도 Redis queue depth에서 Kafka consumer lag로 바꿨습니다. Redis와 Kafka의 과거 성능 수치는 실험 조건이 달라 직접적인 교체 성능 비교로 사용하지 않습니다. [전환 판단과 근거](docs/PROJECT_EVOLUTION.md) · [Kafka 실험](docs/KAFKA_EXPERIMENT.md)
+
 ### API와 Worker를 다른 신호로 확장
 
 - API는 Kafka append까지의 동기 수락 경로이므로 CPU HPA를 사용합니다.
@@ -67,6 +72,12 @@ Worker는 event·request status·notification outbox를 같은 PostgreSQL transa
 - CI는 테스트·render·정적 검증 뒤 commit SHA image를 게시하고 overlay tag를 갱신합니다.
 - Argo revision, desired image, Pod runtime imageID를 함께 확인해 source와 runtime을 연결합니다.
 
+### 인프라 자동화와 운영 관측
+
+GitHub Actions는 테스트·Docker non-root 실행·Kubernetes render·Terraform 검증을 수행하고, Argo CD가 승인된 Git revision을 동기화합니다. Terraform은 OpenStack에서 11개 리소스 재구축과 VM CPU `2→3` 변경 후 데이터 보존·plan 변경 없음까지 검증했습니다. AWS는 별도 migration blueprint입니다.
+
+Prometheus·Grafana에서 Kafka append, consumer lag, Worker persistence와 DB 상태를 함께 봅니다. API의 빠른 수락과 최종 저장, 최신 lag와 과거 peak를 분리해 확장·복구를 판단합니다. [GitOps](docs/GITOPS.md) · [Terraform 실환경 검증](infra/terraform/envs/openstack-demo-lite/VALIDATION.md) · [관측 설계](docs/OBSERVABILITY.md)
+
 ## 대표 장애 재현
 
 2026-08-23 `local-ha` 환경에서 KEDA·Worker 설정을 바꾸지 않고 64개 stream에 `75→330→75 records/s` 부하를 가해 Worker backlog 장애를 재현했습니다.
@@ -84,24 +95,29 @@ Worker는 event·request status·notification outbox를 같은 PostgreSQL transa
 
 ## Ops Agent — Evidence-grounded Incident Diagnosis
 
-규칙 기반 로직이 장애를 감지하면 AI Agent가 미리 수집한 운영 증거에서 원인 후보와 근거를 조사합니다. 조사는 허용된 증거 안에서 진행하며, 출력은 validator로 검증합니다.
+플랫폼의 장애 대응을 돕기 위해 고정 관측·런북 검색·Luna 조사를 연결했습니다. 상태와 복구 확인은 코드가 담당하고, 모델은 수집된 증거로 원인 후보·반대 근거·다음 확인과 검토용 복구 제안을 작성합니다. 모델에는 클러스터 쓰기 권한이 없습니다.
 
 ```mermaid
 flowchart LR
     Signals[Operational Signals] --> Evidence[Frozen Evidence Bundle]
-    Evidence --> Detection[Deterministic Detection]
-    Detection -->|PRESENT| Diagnosis[Bounded LLM Diagnosis]
-    Diagnosis --> Validation[Deterministic Validation]
-    Validation --> Incident[Incident Record]
+    Evidence --> Detection[Code-owned Observations]
+    Evidence --> Runbooks[Runbook Search]
+    Detection --> Diagnosis[Bounded Luna Investigation]
+    Runbooks --> Diagnosis
+    Diagnosis --> Review[Operator Review]
+    Detection --> Recovery[Code Recovery Verification]
+    Review --> Incident[Incident Record]
+    Recovery --> Incident
 ```
 
-- 장애 가설별 지지·반박 근거와 추가 확인이 필요한 정보 분류
-- 존재하지 않는 evidence ID와 권한 밖의 복구 판단은 validator에서 거부
-- 장애·복구 판정과 runtime 변경 권한은 규칙 기반 로직에 유지
+2026-11-03 `kind-messaging-ha`에서 기존 주입기로 두 통제 실험을 실행했습니다. Luna는 rollback 후 정상·장애 시점의 저장 증거만 받았고, 주입 정답·미래 증거·복구 결과는 받지 않았습니다.
 
-Public Demo는 검증된 과거 incident를 재생합니다. Scenario Lab은 통제된 관측에 따라 Agent의 다음 조사 선택이 달라지는지 검증합니다.
+| 실험 | Luna가 확인한 근거 | 코드가 검증한 실제 복구 |
+| --- | --- | --- |
+| PostgreSQL row lock | 실제 waiter/blocker를 DB 잠금 후보로 제시 | `21/21` 저장, 잠금 해제, lag `0` |
+| Worker 기동 실패 | `No module named worker.consumer` 로그로 기동 실패 식별 | `20/20` 저장, Worker `2/2`, API ready |
 
-[Ops Agent 상세 설계 및 검증](docs/OPS_AGENT.md)
+총 4회 호출·자동 재시도 없음, Kubernetes 설정·Argo 정책 복원, 사건 기록의 저장·검색을 확인했습니다. 복구 제안은 두 장애 응답 모두 보류했으며 의미 정확도·운영자 시간 절감은 미입증입니다. Public Demo는 과거 기록 재생입니다. [MVP 결과와 한계](docs/OPS_AGENT_EVALUATION.md) · [검증 요약](results/ops-agent/diagnosis/mvp-20261103-summary.json) · [설계](docs/OPS_AGENT.md)
 
 ## AI 개발 방식 — Codex Harness
 
@@ -276,7 +292,7 @@ Runtime data path와 운영 판단 path는 분리되어 있습니다. Diagnosis 
 
 Public Demo의 Investigation은 실제 incident의 sanitized static artifact를 재생합니다. OpenAI API를 다시 호출하지 않으며 현재 demo-lite 상태와 recorded `local-ha` incident를 구분합니다.
 
-Public Demo `2.4.1`은 검증된 과거 incident를 재생합니다. `demo-dev` UI `2.5.0` 후보는 같은 activation에 대한 네 controlled scenario를 별도 static artifact로 투영하며 아직 public runtime에 배포되지 않았습니다.
+2026-08-29에는 Public Demo `2.4.1`과 `demo-dev` UI `2.5.0` source candidate를 구분했습니다. 이후 2026-09-14 공개 endpoint에서 UI `2.5.0`을 확인했습니다. Controlled scenario는 정적 기록 재생이며 현재 서버의 실시간 AI 진단을 뜻하지 않습니다. [날짜별 배포 관측](docs/DEPLOYMENT_STATUS.md).
 
 [Ops Agent](docs/OPS_AGENT.md) · [Evidence Guide](results/README.md)
 

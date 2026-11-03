@@ -1,1 +1,4 @@
 *.sh text eol=lf
+# Frozen fixture provenance hashes the author scripts byte-for-byte.
+scripts/build_diagnosis_v35_probe.py text eol=lf
+scripts/build_diagnosis_v3_novel_cases.py text eol=lf

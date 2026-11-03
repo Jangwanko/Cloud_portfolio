@@ -153,6 +153,7 @@ kubectl logs -n messaging-app statefulset/messaging-postgresql-ha-postgresql --t
 - Pgpool pod 재시작, PostgreSQL primary reachable, standby 수, replication lag 순서 확인
 - `reason`: `postgres_primary_unreachable`, ready/sync standby minimum, replication delay 구분
 - PostgreSQL StatefulSet 재시작 뒤 `postgres_sync_standbys_below_minimum`: `scripts/configure_postgres_sync.ps1 -Namespace messaging-app` 실행
+- standby clone 도중 liveness 실패·Killing·재시작이 반복되면 sync 설정 재적용만으로 해결했다고 판단하지 않음. [startup probe 복구 기록](OPS_AGENT_EVALUATION.md#model-evidence)의 로그·probe 비교와 적용 범위를 확인. 로컬 partition 1을 임의로 제거하면 primary까지 rollout되므로 주의.
 - helper 완료 조건: 모든 ready PostgreSQL pod의 `postgresql.auto.conf`에 `synchronous_commit=on`과 `synchronous_standby_names=ANY 1` 저장, 현재 primary의 streaming `sync`/`quorum` standby `>=1`
 - 여러 `ALTER SYSTEM`을 한 `psql -c`에 묶지 않음; 각 문장을 별도 실행한 뒤 `pg_reload_conf()` 확인
 - PostgreSQL write path 불안정: Worker inline retry
@@ -164,6 +165,19 @@ kubectl logs -n messaging-app statefulset/messaging-postgresql-ha-postgresql --t
 - `postgres.sync_standby_count >= 1`
 - `scripts/test_db_down.ps1 -SkipReset` 통과
 - DLQ event `failed_reason` 반복 증가 없음
+
+<a id="ops-agent-local-pg-correction"></a>
+### Local-ha startup probe 부분 적용 기록 — 2026-11-01
+
+- 대상: `kind-messaging-ha`, `messaging-app/messaging-postgresql-ha-postgresql`
+- 관측: standby clone 중 liveness 실패·Killing 반복. 모델 제안과 운영자 검토를 거쳐 startup probe 추가
+- 설정: 로컬 `pg_isready`, initial delay 5초·period 10초·timeout 5초·failure threshold 30. 기존 readiness·liveness·리소스·동기 복제 조건 유지
+- 적용: StatefulSet `RollingUpdate.partition=1`, ordinal 1·2만 순차 교체. Primary UID·restartCount 보존
+- 남은 범위: primary startup probe rollout과 Helm release 반영 미완료. 소스 values와 수동 runtime patch를 구분
+- **partition 1 제거는 primary rollout을 유발할 수 있으므로 단순 정리·rollback으로 실행 금지**. 변경 전 probe·strategy와 primary 보호 조건을 확인한 별도 배포 계획 필요
+- 근거: [검증 범위](OPS_AGENT_EVALUATION.md#model-evidence), [원본 연결 요약](../results/ops-agent/diagnosis/postgres-restarts-20261101-summary.json). 로컬 `results/ops-agent/shadow/20261101-postgres-restarts-01/`에 적용 전 상태와 patch 보존
+
+이 기록의 Startup Probe 소스 후보는 `dev-kafka`의 `564b112`와 후속 커밋에 보존한다. Ops Agent 통합 PR #1에서는 values 변경을 제외했으며, 현재 통합 브랜치의 values를 probe 적용 완료 증거로 사용하지 않는다. 별도 primary rollout·Helm 검증 전에는 기존 부분 적용 범위를 유지한다.
 
 ## Worker Consumer Lag 증가
 

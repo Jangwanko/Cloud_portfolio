@@ -1,0 +1,507 @@
+{
+  "schema_version": "ops.observation.v1",
+  "classification": "READ_ONLY_RUNTIME_OBSERVATION",
+  "scope": {
+    "context": "kind-messaging-ha",
+    "namespace": "messaging-app",
+    "topic": "message-ingress",
+    "consumer_group": "message-worker"
+  },
+  "sequence_evaluation_id": "316740e0723ca24c4f961733857fd3c79ee5af81459de77698c5bd20a553ee04",
+  "activation_state": "ABSENT",
+  "activation_reason_codes": [
+    "LATEST_FULL_WINDOW_BACKLOG_ZERO_WITHOUT_SEQUENCE_ACTIVATION"
+  ],
+  "diagnosis_gate": "SKIPPED_NO_BACKLOG_PRESSURE",
+  "model": {
+    "status": "NOT_RUN",
+    "api_request_count": 0
+  },
+  "fixed_diagnosis_runbook": {
+    "status": "NOT_RUN"
+  },
+  "diagnosis_comparison": "NOT_EVALUATED",
+  "runtime_v35_adapter": "PENDING",
+  "captures": [
+    {
+      "bundle_id": "6af77ae3-c820-4a9f-9c68-69630c464744",
+      "bundle_sha256": "b99e1dbe67218366c7dc610447216df8c3108350328fcca931e81ede5bfc9c3a",
+      "collection": {
+        "started_at": "2026-10-29T14:58:43.431212Z",
+        "completed_at": "2026-10-29T14:58:44.276406Z",
+        "status": "PARTIAL"
+      },
+      "context": {
+        "source_sha": "047a8f18b97d23f9bb4479c0ef800694f13ed15f",
+        "source_dirty": true,
+        "collector_tree_sha256": "537f7ffa0944e3ce04f34f1c9f73f9b95e9a2fe073de39b07020dfc6221762a5",
+        "desired_image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+        "pod_image_ids": [
+          "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22"
+        ],
+        "argocd_revision": "036e003842e1a9cedc981996f0cdac0a4a5afead",
+        "collector_version": "0.7.0",
+        "tool_registry_version": "ops.readonly.v1",
+        "policy_version": "local-ha.evidence.v1"
+      },
+      "conditions": {
+        "CORE_BACKLOG_PRESSURE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "BACKLOG_ZERO_FOR_FULL_WINDOW"
+          ]
+        },
+        "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+          ]
+        },
+        "DB_DEGRADED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_POSTGRES_DEGRADATION_REASON"
+          ]
+        },
+        "WORKER_REPLICA_UNAVAILABLE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+          ]
+        }
+      },
+      "required_evidence_usable": true,
+      "total_lag_records": 0,
+      "lag_slope_60s_records_per_second": 0.0,
+      "worker_context": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 431
+      },
+      "keda_context": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "worker_stage_latency_context": {
+        "status": "MISSING",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 1,
+        "evidence_status_counts": {
+          "MISSING": 1
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 1
+        }
+      },
+      "evidence_status_counts": {
+        "OK": 110,
+        "MISSING": 2,
+        "UNAVAILABLE": 4
+      },
+      "freshness_counts": {
+        "FRESH": 110,
+        "UNKNOWN": 6
+      },
+      "unusable_evidence": [
+        {
+          "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+          "metric": "messaging_worker_processed_total",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+          "metric": "messaging_worker_stage_latency_seconds",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "excludes_transaction_commit",
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "instrumentation.exact_postgres_commit_insert_rate.aae9903ec96d",
+          "metric": "exact_postgres_commit_insert_rate",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.postgres_transaction_commit_latency.bd2c67690a95",
+          "metric": "postgres_transaction_commit_latency",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.consumer_rebalance_event.e3bcfa187dc0",
+          "metric": "consumer_rebalance_event",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.cpu_throttling.83cc96eeb751",
+          "metric": "cpu_throttling",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        }
+      ]
+    },
+    {
+      "bundle_id": "6e90d2cd-3b4d-4ae8-8cb3-46f9824bb656",
+      "bundle_sha256": "c17f82dd9182c012e0d9317f65a4d34abe5b22fbe746d742e04f2cc38bd8ecef",
+      "collection": {
+        "started_at": "2026-10-29T14:58:58.430469Z",
+        "completed_at": "2026-10-29T14:58:59.255530Z",
+        "status": "PARTIAL"
+      },
+      "context": {
+        "source_sha": "047a8f18b97d23f9bb4479c0ef800694f13ed15f",
+        "source_dirty": true,
+        "collector_tree_sha256": "537f7ffa0944e3ce04f34f1c9f73f9b95e9a2fe073de39b07020dfc6221762a5",
+        "desired_image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+        "pod_image_ids": [
+          "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22"
+        ],
+        "argocd_revision": "036e003842e1a9cedc981996f0cdac0a4a5afead",
+        "collector_version": "0.7.0",
+        "tool_registry_version": "ops.readonly.v1",
+        "policy_version": "local-ha.evidence.v1"
+      },
+      "conditions": {
+        "CORE_BACKLOG_PRESSURE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "BACKLOG_ZERO_FOR_FULL_WINDOW"
+          ]
+        },
+        "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+          ]
+        },
+        "DB_DEGRADED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_POSTGRES_DEGRADATION_REASON"
+          ]
+        },
+        "WORKER_REPLICA_UNAVAILABLE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+          ]
+        }
+      },
+      "required_evidence_usable": true,
+      "total_lag_records": 0,
+      "lag_slope_60s_records_per_second": 0.0,
+      "worker_context": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 431
+      },
+      "keda_context": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "worker_stage_latency_context": {
+        "status": "MISSING",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 1,
+        "evidence_status_counts": {
+          "MISSING": 1
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 1
+        }
+      },
+      "evidence_status_counts": {
+        "OK": 110,
+        "MISSING": 2,
+        "UNAVAILABLE": 4
+      },
+      "freshness_counts": {
+        "FRESH": 110,
+        "UNKNOWN": 6
+      },
+      "unusable_evidence": [
+        {
+          "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+          "metric": "messaging_worker_processed_total",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+          "metric": "messaging_worker_stage_latency_seconds",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "excludes_transaction_commit",
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "instrumentation.exact_postgres_commit_insert_rate.aae9903ec96d",
+          "metric": "exact_postgres_commit_insert_rate",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.postgres_transaction_commit_latency.bd2c67690a95",
+          "metric": "postgres_transaction_commit_latency",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.consumer_rebalance_event.e3bcfa187dc0",
+          "metric": "consumer_rebalance_event",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.cpu_throttling.83cc96eeb751",
+          "metric": "cpu_throttling",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        }
+      ]
+    },
+    {
+      "bundle_id": "347b61c4-bc95-4bed-833b-3f4d86260de7",
+      "bundle_sha256": "442045d200570a3c344d285845c6af6d8d92e69a9b0797940f33b6e301fead87",
+      "collection": {
+        "started_at": "2026-10-29T14:59:13.420203Z",
+        "completed_at": "2026-10-29T14:59:14.172817Z",
+        "status": "PARTIAL"
+      },
+      "context": {
+        "source_sha": "047a8f18b97d23f9bb4479c0ef800694f13ed15f",
+        "source_dirty": true,
+        "collector_tree_sha256": "537f7ffa0944e3ce04f34f1c9f73f9b95e9a2fe073de39b07020dfc6221762a5",
+        "desired_image": "ghcr.io/jangwanko/cloud_portfolio:5e8addfb10d0",
+        "pod_image_ids": [
+          "ghcr.io/jangwanko/cloud_portfolio@sha256:fd6d2c88fc683c61685d145042ffd679da11b61e61bd1c21dcfc69d02b79ce22"
+        ],
+        "argocd_revision": "036e003842e1a9cedc981996f0cdac0a4a5afead",
+        "collector_version": "0.7.0",
+        "tool_registry_version": "ops.readonly.v1",
+        "policy_version": "local-ha.evidence.v1"
+      },
+      "conditions": {
+        "CORE_BACKLOG_PRESSURE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "BACKLOG_ZERO_FOR_FULL_WINDOW"
+          ]
+        },
+        "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+          ]
+        },
+        "DB_DEGRADED": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "NO_POSTGRES_DEGRADATION_REASON"
+          ]
+        },
+        "WORKER_REPLICA_UNAVAILABLE": {
+          "state": "ABSENT",
+          "reason_codes": [
+            "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+          ]
+        }
+      },
+      "required_evidence_usable": true,
+      "total_lag_records": 0,
+      "lag_slope_60s_records_per_second": 0.0,
+      "worker_context": {
+        "desired_replicas": 2,
+        "current_replicas": 2,
+        "ready_replicas": 2,
+        "available_replicas": 2,
+        "observed_generation": 431
+      },
+      "keda_context": {
+        "scale_target_name": "worker",
+        "min_replicas": 2,
+        "max_replicas": 4,
+        "polling_interval_seconds": 5,
+        "cooldown_period_seconds": 120,
+        "conditions": {
+          "Ready": "True",
+          "Active": "False",
+          "Fallback": "False",
+          "Paused": "False"
+        }
+      },
+      "worker_stage_latency_context": {
+        "status": "MISSING",
+        "semantic": "_persist_message_with_cursor stage only; transaction commit excluded",
+        "observation_count_delta": null,
+        "sum_seconds_delta": null,
+        "mean_seconds": null,
+        "p95_finite_bucket_upper_bound_seconds": null,
+        "count_series": 0,
+        "sum_series": 0,
+        "counter_decrease": false,
+        "source_timestamps": [],
+        "matching_evidence_items": 1,
+        "evidence_status_counts": {
+          "MISSING": 1
+        },
+        "freshness_status_counts": {
+          "UNKNOWN": 1
+        }
+      },
+      "evidence_status_counts": {
+        "OK": 110,
+        "MISSING": 2,
+        "UNAVAILABLE": 4
+      },
+      "freshness_counts": {
+        "FRESH": 110,
+        "UNKNOWN": 6
+      },
+      "unusable_evidence": [
+        {
+          "evidence_id": "prometheus.messaging_worker_processed_total.f596dcfe9696",
+          "metric": "messaging_worker_processed_total",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "prometheus.messaging_worker_stage_latency_seconds.571b95eb6f69",
+          "metric": "messaging_worker_stage_latency_seconds",
+          "status": "MISSING",
+          "freshness": "UNKNOWN",
+          "semantic_flags": [
+            "excludes_transaction_commit",
+            "source_timestamp_missing"
+          ]
+        },
+        {
+          "evidence_id": "instrumentation.exact_postgres_commit_insert_rate.aae9903ec96d",
+          "metric": "exact_postgres_commit_insert_rate",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.postgres_transaction_commit_latency.bd2c67690a95",
+          "metric": "postgres_transaction_commit_latency",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.consumer_rebalance_event.e3bcfa187dc0",
+          "metric": "consumer_rebalance_event",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        },
+        {
+          "evidence_id": "instrumentation.cpu_throttling.83cc96eeb751",
+          "metric": "cpu_throttling",
+          "status": "UNAVAILABLE",
+          "freshness": "UNKNOWN",
+          "semantic_flags": []
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "No model or causal diagnosis evaluated in this capture-only step.",
+    "Collection-time freshness; sequential sources are not an atomic snapshot.",
+    "No event writes, fault injection, remediation or recovery judgment."
+  ],
+  "source_directory": "results/ops-agent/shadow/20261029-observation-01",
+  "file_integrity": {
+    "inventory_sha256": "00cd0d82a37014059f082eb8bc3608479abc299857fa1e1ef6371df45b6c53ba",
+    "verified_file_count": 18,
+    "all_sha256_match": true,
+    "frozen_summary_replay_match": true
+  },
+  "inventory": {
+    "schema_version": "ops.observation.inventory.v1",
+    "status": "COMPLETED",
+    "files": {
+      "bundles/sample-001.json": "bd716015dbc9e73399096704d19ff86c1e2f64b8669f4b14c61103fa12ed572a",
+      "bundles/sample-002.json": "bfe1c973dff99d2b08d382dc1b56c48dd634a396d1587e89de47efcf3cda5f27",
+      "bundles/sample-003.json": "3030568872b60318592d9168edfc29ab0c9cc6b2d688bd76cb8f64f410b5059a",
+      "conditions.json": "9a12c701e730c645e40bd276f50e92b924d9dfb083633381ae4a0bd4174eb811",
+      "plan.json": "8c4dc68a3d6a2e559123e7511485130535a6399e84459e1d56d2ae428eecd1bb",
+      "raw/347b61c4-bc95-4bed-833b-3f4d86260de7/application.json": "076898bb01126ff05b25cd7bf9097388a352adbaccd73f2cbaba43a7c1085784",
+      "raw/347b61c4-bc95-4bed-833b-3f4d86260de7/argocd.json": "6fbb05037cadfb4d0a6803d89c419fcb962f7352d87d724d1379bfe5b55a077f",
+      "raw/347b61c4-bc95-4bed-833b-3f4d86260de7/kubernetes.json": "a67796674d572bf2853213ca86f6a6839ba7b6303e16bbbfde5d4edca97ee711",
+      "raw/347b61c4-bc95-4bed-833b-3f4d86260de7/prometheus.json": "69ccac40655d270bb485970870256bc2cf081a263e416091ffc2a3545e47c217",
+      "raw/6af77ae3-c820-4a9f-9c68-69630c464744/application.json": "b35d5621c6cc155f8030bcb09f4b33630bcbafbe0254a61e384228019bfba147",
+      "raw/6af77ae3-c820-4a9f-9c68-69630c464744/argocd.json": "03653b7db0ba7850cf559b725f62c0b52ea369381967d6c7b9418b97c6b2bccb",
+      "raw/6af77ae3-c820-4a9f-9c68-69630c464744/kubernetes.json": "3ff6c5a463e156eb170962538e07b488812bfbfccdfca68de6201709633a5c4a",
+      "raw/6af77ae3-c820-4a9f-9c68-69630c464744/prometheus.json": "0bf740225b38971ed7236b381915dafe9e63983089c3fb5fb16c3b3a4c4d9418",
+      "raw/6e90d2cd-3b4d-4ae8-8cb3-46f9824bb656/application.json": "75fd6e69fa069f7ca0269ef1780d4ebf68f6fade4301f76b434e7f21996499d2",
+      "raw/6e90d2cd-3b4d-4ae8-8cb3-46f9824bb656/argocd.json": "f83a7bcdd949a6fc26b4f84ee7f39976d90360fab988e6b720c0b1ba603a0f74",
+      "raw/6e90d2cd-3b4d-4ae8-8cb3-46f9824bb656/kubernetes.json": "7a570694a8f5ccb34b37e14804301fef86b8f5dfabb4b156d93b461c532f2936",
+      "raw/6e90d2cd-3b4d-4ae8-8cb3-46f9824bb656/prometheus.json": "0e17056ac46d226358ab37fbd8a112b650565184020fa0137c921b417e4bd0b7",
+      "summary.json": "4b788a016e12b26e53dbd8e67d7cb4e6e48e3e02d120036f760a5842d3fbcf4b"
+    }
+  }
+}

@@ -1,360 +1,449 @@
-# Ops Agent
+# Ops Agent — CLI and execution boundaries
 
-Phase 1 collection, the Phase 2 deterministic evaluators, the Phase 3
-Evidence-grounded Diagnosis Agent, Phase 4 deterministic recovery, and the
-Phase 5 incident lifecycle are implemented.
-`ops_agent` collects normalized, read-only operational evidence for the Worker
-backlog scenario. The v1 evaluator reads one frozen bundle; the calibrated v2
-evaluator reads an ordered bundle sequence. The single Phase 3 Agent starts only
-from `CORE_BACKLOG_PRESSURE=PRESENT`, selects fixed read-only investigation
-tools, and emits `ops.diagnosis.v1`. It cannot change the condition, decide
-recovery, or execute remediation. Phase 5 binds the validated condition,
-diagnosis, and recovery artifacts into `ops.incident.v1` without granting the
-Agent new authority.
+현재 구현된 수집·진단·재생·실험 도구의 실행 안내다. 확정 목표와 구현 순서는 [설계 문서](../docs/OPS_AGENT.md#implementation-priorities), 결과와 한계는 [검증 기록](../docs/OPS_AGENT_EVALUATION.md)에 둔다. 로컬 통제 실험과 사건 경험 저장·검색을 연결했으며 상시 자동 감시는 후속 범위다. 과거 평가의 고정 Runbook 비교군은 코드 분류 규칙이다.
 
-The complete evidence, condition, diagnosis, recovery, and lifecycle contract is documented in
-[docs/OPS_AGENT.md](../docs/OPS_AGENT.md). Synthetic fixtures live under
-`ops_agent/fixtures/`; captured runtime evidence lives under
-`results/ops-agent/live-baseline/`. Controlled calibration summaries live under
-`results/ops-agent/calibration/`.
+The model has read-only investigation tools. Deterministic code owns condition,
+recovery and incident state. Experimental fault runners are separate operator
+tools; they do not grant the model cluster write access.
 
-## Evidence boundaries
+## Evidence and runbook assistance
 
-- `messaging_worker_processed_total` is a terminal-processing counter. It is not
-  a PostgreSQL commit or insert counter.
-- `messaging_event_persist_lag_seconds` observes the path from the API-provided
-  `queued_at` timestamp to the Worker's post-commit timestamp. It includes Kafka
-  wait, retry, Worker, and database work and is not isolated transaction commit
-  latency.
-- `messaging_worker_stage_latency_seconds{stage="db_persist"}` ends before the
-  request-status update and `conn.commit()`.
-- Kafka offset `-1`, missing partitions, partial coverage, and offset decreases
-  remain explicit evidence. Collectors never coerce them to zero.
+The default public JSON/text omits model `updates`; the original response and record
+remain unchanged on disk. New API requests constrain `updates` to an empty list and
+previous model updates are excluded from follow-up input. Code observations provide
+the historical timeline. Other prose remains UNREVIEWED. `counter_evidence` and
+`recovery_proposals` carry current citations; proposals require operator approval,
+an available runbook ID or null, and verification observations. Abstention is allowed.
 
-The versioned `local-ha.yaml` policy uses JSON syntax, which is a valid YAML
-subset. This keeps Phase 1 free from an additional YAML runtime dependency.
-Freshness defaults follow the current 5-second Prometheus scrape and 15-second
-`/ops/summary` cache contracts. They are evidence-age limits, not incident or
-recovery thresholds.
+## Controlled local MVP
 
-Source artifacts are written only after source-specific safe projection and
-recursive credential redaction. The bundle contains the artifact path and
-SHA-256; future diagnosis receives normalized evidence rather than source
-artifacts.
-
-Bundle provenance records the repository `HEAD` as `source_sha`, the repository
-dirty state, and a SHA-256 over the Python collector and policy files actually
-used for the run. This keeps an uncommitted collector run distinguishable from
-its Git baseline.
-
-New collections also record credential-free Application and Prometheus
-endpoint identities, including canonical base URL, Host routing, and whether
-the value came from policy or a trusted operator override. This is transport
-configuration provenance; it is not remote-server attestation.
-
-The collector invokes only HTTP GETs and fixed `kubectl get` or
-`kubectl config current-context` commands. Existing kubeconfig credentials are
-not claimed to be least-privilege credentials.
-The Windows local profile connects to `127.0.0.1` with `Host: localhost` to
-avoid the known `urllib` localhost delay while retaining the Ingress host route.
-HTTP redirects are not followed. Windows kubectl execution is restricted to an
-`.exe` binary. URL, context, and executable overrides are trusted local operator
-inputs; they are not exposed as an unauthenticated service API. Ambient HTTP
-proxy variables are ignored so loopback evidence cannot be redirected through
-another endpoint.
-
-## CLI
+`scripts/ops_agent_mvp.py` reuses the existing collectors, PG/Worker drills and grounded
+investigation. `preflight` reads only the fixed `kind-messaging-ha`/`messaging-app`
+scope, rejects non-loopback Kubernetes endpoints, records readiness/lag/PG partition
+and changes no workload. Review impact, stop conditions and rollback before approving
+each real experiment. `--approval` records an actual operator decision; the flag itself
+does not authorize a new fault.
 
 ```powershell
-python -m ops_agent collect --profile local-ha --context kind-messaging-ha
-python -m ops_agent collect --profile local-ha --context kind-messaging-ha --output results/ops-agent/evidence.json
-python -m ops_agent collect --profile local-ha --context kind-messaging-ha --incident-id phase1-live-validation --output results/ops-agent/evidence-live.json
-python -m ops_agent evaluate --input results/ops-agent/evidence.json --output results/ops-agent/conditions.json
-$inputs = Get-ChildItem results/ops-agent/calibration/20260816T032411Z/run-01/bundles/sample-*.json | Sort-Object Name | ForEach-Object FullName
-python -m ops_agent evaluate-sequence --input $inputs --output results/ops-agent/conditions-v2.json
-$conditions = 'results/ops-agent/sequence-replay/20260816/positive-run-01.conditions.json'
-python -m ops_agent diagnose --conditions $conditions --input $inputs --output results/ops-agent/diagnosis/positive-run-01.json --live
-.venv\Scripts\python.exe scripts\worker_backlog_calibration.py --runs 3 --streams 64 --vus 100 --duration 30s --think-time 0.05 --sample-interval-seconds 15 --context kind-messaging-ha
-.venv\Scripts\python.exe scripts\worker_backlog_negative_controls.py --sample-interval-seconds 15 --context kind-messaging-ha
-.venv\Scripts\python.exe scripts\worker_incident_e2e.py --context kind-messaging-ha
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py preflight --output-dir results/ops-agent/shadow/<new-preflight>
+# Only after explicit approval of the concrete local plan:
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py execute --execute --scenario lock --approval <approval-reference> --output-dir results/ops-agent/shadow/<new-case>
+# Choose --scenario worker for the separately approved startup drill.
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py archive --scenario lock --output-dir results/ops-agent/shadow/<case> --review <review.json>
+.venv\Scripts\python.exe scripts\ops_agent_mvp.py search --query "Worker startup"
 ```
 
-Without `--output`, the bundle is written to stdout. With `--output`, the JSON
-result is atomically written to that path and stdout contains the path. Redacted raw
-artifacts default to `results/ops-agent/raw/` or an output-adjacent `raw/`
-directory.
+The approved run budgets at most three calls per scenario; this MVP uses only two,
+one baseline and one during-fault snapshot. Diagnosis runs after safe rollback.
+Recovery has a code-only record and is NEVER sent to Luna. Private injection/rollback
+plans and review answers are excluded from model input. Each first request/response
+or failure is retained with no model retry. Logs, Pod states and metrics captured
+during the fault remain on disk even though diagnosis is post-capture.
 
-`evaluate` accepts only a strict `ops.evidence.v1` JSON file, enforces a 16 MiB
-local input limit, and emits `ops.conditions.v1`. The evaluator uses freshness
-already frozen in the source bundle and performs no network, Kubernetes, or
-artifact access. A `PARTIAL` source collection can produce a `COMPLETE`
-evaluation when every condition's required evidence is usable.
+PG uses a new owned stream row, a 50-second server-bounded lock and at most 21 events.
+Worker uses the existing startup regression and 300-second rollback watchdog, with
+one seed and 20 fault-period events. After either drill, owned Worker/PG configuration
+hashes, PG Pod UIDs/restart counts and original Argo automated policy must match;
+exact accepted request persistence and service readiness are checked by the drill.
+Stop before another experiment on recovery/configuration failure and inspect the
+drill's `release.json` or `rollback.json`/`restored.json` plus watchdog results.
+Do not delete data or change PG rollout partition as a recovery shortcut.
 
-The evaluator bounds evidence count, identifier and label sizes, binds the
-canonical source-bundle SHA-256 and evaluator/ruleset versions into the
-evaluation ID, and verifies the ID again before serialization. Kafka absence
-requires aligned range/source/collection timestamps and a common raw source.
-The local-ha DB rule accepts only the deployed PostgreSQL readiness reasons and
-returns `UNKNOWN` when their component values conflict with the versioned HA
-guardrails.
+The searchable `ops.incident-experience.v1` sidecar references chronological grounded
+records and raw artifacts with verified hashes. It deliberately does not fabricate
+a calibrated `CORE_BACKLOG_PRESSURE` activation/closure for these small faults.
+Cases are `RECOVERY_VERIFIED_REVIEW_PENDING`; model quality and operator review stay
+separate from code-verified recovery. `--exclude-incident` omits the current case
+from lookup. Search requires no model or API key. `runbook-draft.json` is an observed
+procedure draft, not an automatically published catalog entry. Runtime `readyReplicas`
+can be omitted during outage; it stays UNKNOWN and explicit non-ready container
+observations provide the separate outage evidence.
 
-The v1 evaluator proves backlog and partition concentration `ABSENT` only when
-all 13 samples in the fixed 60-second Kafka window have zero lag. Positive lag
-remains `UNKNOWN` until pressure and concentration sustain policies are
-calibrated. A one-snapshot Worker replica shortfall also remains `UNKNOWN`
-because it cannot prove the two-minute availability grace.
+## Default assistance CLI
 
-`evaluate-sequence` accepts ordered `ops.evidence.v1` files and emits
-`ops.conditions.v2` under `local-ha.conditions.v2`. It preserves the v1 gate
-for every bundle and marks `CORE_BACKLOG_PRESSURE=PRESENT` only when three
-adjacent captures each have total lag at least `7,000` and 60-second lag slope
-at least `100 records/s`, with total lag increasing across both transitions.
-Produce rate minus committed-offset rate is checked only for arithmetic
-consistency with lag slope. KEDA, Worker replica, and Worker stage latency are
-retained as context and do not activate the condition.
-
-All sequence bundles must have the same profile, scope, eight-partition set,
-collector/endpoint configuration identity, and Kafka exporter identity. The
-existing freshness, coverage, offset `-1`/decrease, full-grid arithmetic, and
-timestamp provenance checks apply to every capture. Any required failure makes
-the sequence condition `UNKNOWN`. The evaluation ID binds the ordered canonical
-bundle digests, collection and Kafka source times, v2 policy, ruleset, and
-result payload.
-
-The Phase 2.5 calibration runner uses the existing multi-stream k6 workload and
-current KEDA policy. It does not reset Kafka or PostgreSQL and does not patch
-KEDA, HPA, or Deployment replicas. Every run starts from lag zero and Worker
-`2/2`, samples complete Evidence Bundles through pressure and drain, and stops
-only after KEDA and Worker return to the starting replica count. The 2026-08-16
-three-run result and its negative controls calibrate the v2 activation policy.
-
-## Phase 4 recovery calibration and evaluation boundary
-
-The Phase 4 measurement harness and Phase 4.1 Recovery Evaluator are separate.
-The host-local k6 workload uses `constant-arrival-rate`, 64 streams, and the
-generic v2 event contract. It does not create Kubernetes workload objects or
-patch KEDA, HPA, Deployments, Argo CD, Kafka offsets, or DLQ state. The
-evaluator performs no runtime I/O; it reads only frozen activation/evidence
-artifacts. Only the calibration workload writes test events through the public
-API.
+The default CLI computes code-owned observations before optionally asking Luna for
+investigation. It retrieves three indexed sections of `docs/RUNBOOK.md` and retains
+source versions, requests/responses and prior-record hashes. Model output has no
+current-summary/severity field and cannot replace the deterministic observation object.
+APPLICABLE means investigation relevance, not a proven cause or permission to act.
 
 ```powershell
-.venv\Scripts\python.exe scripts\worker_recovery_calibration.py `
-  --mode calibrate `
-  --context kind-messaging-ha `
-  --low-rate 30 --medium-rate 75 --high-rate 110 --overload-rate 330 `
-  --overload-seconds 90 --recovery-phase-seconds 900 --e-repeats 3
+# Offline: save fixed observations and retrieved sources; no model call.
+.venv\Scripts\python.exe scripts\assist_incident.py --example similar `
+  --output-dir results/ops-agent/shadow/<new-prepared-directory>
+
+# One API call per step; follow-ups retain earlier code observations separately.
+.venv\Scripts\python.exe scripts\assist_incident.py --example similar --live `
+  --output-dir results/ops-agent/shadow/<new-first-directory>
+.venv\Scripts\python.exe scripts\assist_incident.py --example similar --step 1 --live `
+  --previous results/ops-agent/shadow/<new-first-directory>/record.json `
+  --output-dir results/ops-agent/shadow/<new-next-directory>
 ```
 
-The runner executes A/B/C, then E and F once. Additional E repetitions are
-allowed only after the initial pair has a real v2 activation, negative-lag
-slope, acceptable PostgreSQL readiness, and a usable load-aware envelope
-re-entry candidate. Each capture remains an immutable `ops.evidence.v1`
-bundle. Phase 4 replays the original v2 evaluator on each ordered three-capture
-window so a later exporter anomaly cannot erase an earlier valid activation;
-the full-sequence result and every excluded anomaly are preserved separately.
+Examples `matching`, `similar`, `unmatched` are synthetic. For captured evidence,
+replace `--example` with `--bundle <ops.evidence.v1.json> --provenance recorded
+--question "<operator question>"`. Select 1–40 evidence items, preserve their original
+metadata, and keep the same incident ID, scope and profile for follow-ups. Inputs
+are limited to 2 MiB and projected content to 90 KB. Freshness is relative to the
+saved observation time; this CLI does not collect a new live snapshot.
 
-The tracked result contains only the compact manifest, run summaries, and
-analysis. The 349 bundles, 1,396 raw projections, condition outputs, and k6
-logs remain Git-ignored. Their canonical bundle and raw SHA-256 checks passed.
+The default saves `input.json`, `observations.json`, `history.json`, `plan.json` and `record.json` even
+without a model call. Code reports only the listed requests as pending/persisted/unknown,
+latest lag separately from historical peak, and observed DB blocking edges. Unsupported,
+stale or incomplete data stays UNKNOWN; the older examples use custom metrics and may
+produce UNKNOWN facts. Read errors do not prove stalled writes. Poll intervals are not
+exact commit latency. DB server time is retained separately from collector freshness.
 
-`ops.recovery.v1` consumes an integrity-valid
-`CORE_BACKLOG_PRESSURE=PRESENT` `ops.conditions.v2` artifact, ordered
-post-activation bundles, their expected canonical SHA-256 values, and the
-versioned `worker-backlog-local-ha.recovery.v1` policy:
+With `--live`, one request is allowed, at most 6,000 output tokens, 45-second timeout
+and no repair/retry. Model transport errors produce FAILED; invalid output or a typed
+contract conflict produces WITHHELD, with raw response/failure retained and CLI exit 1.
+Both keep code observations in the record and standard output. Valid model analysis
+remains UNREVIEWED: references/structured checks do not verify the truth or safety of
+all prose. Runbook assessments declare CURRENT or HISTORICAL; historical peak cannot
+establish current sampled-request delay after persistence with latest lag zero.
+No automatic action, lifecycle closure or runbook update is performed.
+
+The default request uses strict JSON Schema through Responses API `text.format`.
+All fields are required on the wire (an unrelated next check uses `runbook_id: null`),
+and current evidence, history, runbook and unknown IDs are restricted to this input.
+Hypotheses require usable current evidence; empty available sets allow only empty lists.
+The local semantic/relationship validators still run after generation. Refusal or
+incomplete output is WITHHELD even if an included JSON fragment parses. There is no
+unstructured fallback or retry. The per-call plan records the actual schema hash.
+The earlier strict-output change preserved v3 records. The new investigation policy
+and required check targets use v4; older artifacts remain with their archived sources.
+
+The current record schema is `ops.grounded-assistance.v4`. Previous records must use
+the same version, incident/scope/profile/provenance and an earlier observation time;
+failed-model records can still provide earlier code observations. Legacy records are
+not migrated implicitly. Use `--legacy-assistance` for the original model-authored
+state/impact experiment, or `--investigate` for optional model-selected reads. These
+comparison modes retain their earlier contracts; the new fixed-fact boundary is the
+default path only. `--format text` labels code facts and unreviewed model text separately.
+
+Per-request facts separate `append`, `persistence`, `status_read` and their observation
+times. `unknowns` selects IDs from the code-generated `unknown_catalog`; it accepts
+neither arbitrary prose nor invented IDs. For a known 202 receipt with a 403/503
+status read, persistence/read visibility may be unknown but append acknowledgement
+is retained. `selected_unknowns` provides deterministic wording scoped to each
+request. Other model prose is still UNREVIEWED; the catalog is bounded, and needs
+outside it can only be proposed as unreviewed next checks.
+
+`observation_history` retains up to eight earlier code snapshots, even after a
+WITHHELD/FAILED model result. Observation times, source-record/content hashes and
+incident scope are preserved; `updates.history_ids` is separate from current
+`evidence_ids`. Duplicate/future/foreign histories are rejected. `dropped_entries`
+exposes eviction from the model input; original records remain on disk. No automatic
+summary or silent trimming bypasses the 90 KB projected-input limit. v2/v3 records
+are not implicitly migrated; replay original bundles in a new directory for v4.
+
+`investigation_policy` is code-owned and saved before calling the model. For the
+retrieved PG runbook, a current observed blocking edge or explicit primary reachability
+failure makes CURRENT investigation applicable. With no supported positive signal it
+remains UNKNOWN/NEEDS_MORE_EVIDENCE; healthy readiness/empty waits cannot establish
+global DB health. This bounded rule supports the saved DB wait and application
+readiness observation shapes, not arbitrary persistence logs. Causal linkage to request
+IDs remains unproven; earlier DB signals belong in model updates, not a switched scope.
+
+Required targets cover unavailable request-status reads (including each request and
+HTTP result), Worker desired>0/ready=0, and current DB blocking. Worker counts require
+a unique, fresh, complete typed observation; intentional desired=0 is not a zero-ready
+failure target. No global severity or restart/scaling authority follows from a target.
+Each model next check supplies `target_ids` and the corresponding evidence IDs, with
+at most three checks; targets may share a check. Missing targets or mismatched citations
+withhold the whole model response, preserving facts and the visible code policy.
+Target tags do not prove useful prose: a counterexample test deliberately passes an
+unrelated sentence with valid tags. Human/explicit evaluation review is still required.
+
+```powershell
+# Four synthetic development cases; freezes baseline and rubric before any calls.
+# Omit --execute for zero API calls. Maximum four calls, no retries.
+.venv\Scripts\python.exe scripts\evaluate_grounded_assistance.py --execute `
+  --output-dir results/ops-agent/shadow/<new-grounded-evaluation>
+```
+
+This compares the same fixed observations/retrieved runbooks with optional Luna
+interpretation. The evaluator reports structural results and requires a separate
+semantic review; it does not score operator usefulness or held-out accuracy automatically.
+
+For exact-input variability checks, add `--repeat 2` (allowed 1–3, maximum 16 total
+calls). Repeated requests use the same frozen code-only predecessor, including the
+same history and no prior model analysis. Request hashes must match within each
+case. This tests repeated snapshots, not propagation of model answers through a
+live sequence. Every response/failure is saved separately. Runbook decisions and
+selected-gap equality are reported separately from prose, whose consistency and
+usefulness require review. Repeats never stop at the first success.
+
+Use `--fixtures <frozen-cases.json>` for a separate evaluation set (1–8 selected
+snapshots). The evaluator saves source copies and hashes before calls, checks source
+stability before each snapshot and at completion, validates predecessor order, and
+never sends private `review` criteria as model input. Preserve first outputs and
+record semantic findings separately; a zero exit status only means structural checks
+and fixed-fact equality passed. The latest new-case evaluation found a prose
+contradiction despite those checks passing; see [the evaluation record](../docs/OPS_AGENT_EVALUATION.md).
+Its frozen synthetic input and private rubric are retained in
+[grounded_novel_v1.json](fixtures/grounded_novel_v1.json). Reusing it for a fix or
+rerun does not constitute another unseen-case evaluation.
+Pass `--regression` when reusing such cases; it explicitly labels the plan and summary
+as development regression. The v3 repair run used `--case s03 --case s04a --case s04b
+--case s04c` and preserved one withheld response without retrying or repairing it.
+
+The bounded synthetic pilot reuses the existing evaluation runner:
+
+```powershell
+.venv\Scripts\python.exe scripts\evaluate_investigation.py --mode runbook-assistance `
+  --execute --output-dir results/ops-agent/shadow/<new-pilot-directory>
+```
+
+This performs up to eight API calls (three cases, four snapshots, two independent
+runs). Source fixtures and acceptance criteria freeze before calls. Offline mode
+omits `--execute`. Results do not measure operator time savings or search-only superiority.
+
+### Model-selected investigation and direct explanation
+
+```powershell
+.venv\Scripts\python.exe scripts\assist_incident.py `
+  --bundle <selected-observation-bundle.json> --provenance recorded `
+  --question "현재 상태와 원인 후보, 런북 적용 여부를 설명해줘" `
+  --investigate --live --format text `
+  --output-dir results/ops-agent/shadow/<new-investigation-directory>
+```
+
+`--investigate` gives the model five fixed observation readers and a runbook search
+tool. Initially it sees the question, scope, timestamp and optional earlier model
+answer; observation values and runbook excerpts arrive only through its selected
+tools. The adapter supports the standard application/Worker/lag metric groups and
+the request-status/DB-activity observations produced by `run_local_lock_fault.py`.
+It reads **saved evidence only**, not a live cluster. Missing groups return
+UNAVAILABLE. No SQL, shell, arbitrary URL/file reads or writes are exposed.
+
+There are at most five model calls, six unique tool calls and 6,000 output tokens
+per model call, with no retry/repair. Final output requires observation reads and
+runbook search, and may cite only returned evidence. A failed explanation remains
+a failure; no Codex-authored replacement is produced. The function-call exchange
+uses the [official OpenAI protocol](https://developers.openai.com/api/docs/guides/function-calling)
+with the existing client and configured model.
+
+`record.json` and `calls/` retain the model output and exact requested tools.
+`explanation.txt` (also `--format text`) displays model wording unchanged, with
+deterministic labels, citation IDs and source metadata. Runbook application
+rationales are labeled as **model judgments**, not quoted runbook instructions.
+The original excerpts remain in the recorded input. `--previous` uses the same
+incident/scope/time gates as the existing assistance path. Model authorship and
+valid citations do not prove semantic correctness.
+
+## Collect and evaluate
+
+Use the repository virtual environment and a new output directory for each run.
+
+```powershell
+.venv\Scripts\python.exe scripts\observe_worker_backlog.py `
+  --context kind-messaging-ha --interval-seconds 15 `
+  --output-dir results/ops-agent/shadow/<new-observation-directory>
+```
+
+This captures three local-ha bundles and replays the existing activation policy.
+It does not invoke a model. `ABSENT` and `UNKNOWN` are not positive incidents.
+
+The lower-level CLI exposes collection and deterministic evaluation separately:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent collect `
+  --profile local-ha --context kind-messaging-ha `
+  --output results/ops-agent/evidence.json
+.venv\Scripts\python.exe -m ops_agent evaluate `
+  --input results/ops-agent/evidence.json --output results/ops-agent/conditions.json
+$inputs = Get-ChildItem <run-directory>/bundles/sample-*.json |
+  Sort-Object Name | ForEach-Object FullName
+.venv\Scripts\python.exe -m ops_agent evaluate-sequence `
+  --input $inputs --output <conditions.v2.json>
+```
+
+The single-bundle evaluator emits `ops.conditions.v1`; the sequence evaluator
+emits `ops.conditions.v2`. Both use frozen evidence freshness, without runtime I/O.
+Sequence activation requires three adjacent valid captures with lag ≥ 7,000,
+60-second slope ≥ 100 records/s and increasing total lag, under the same
+eight-partition/source/configuration identity. Missing or inconsistent required
+evidence remains UNKNOWN.
+
+## Diagnose a verified activation
+
+```powershell
+.venv\Scripts\python.exe scripts\run_runtime_diagnosis_v3.py `
+  --conditions <conditions.v2.json> --input $inputs `
+  --output-dir results/ops-agent/shadow/<new-diagnosis-directory>
+```
+
+By default this prepares frozen projection and a fixed Runbook decision.
+Add `--live` for the actual model comparison. A verified PRESENT gate runs before
+key loading; normal evidence skips the model. Runtime input limits are 256 files,
+16 MiB per file and 64 MiB total. Existing output directories are rejected.
+
+The v3.5 adapter projects the final capture of the first activation window.
+Its four zero-argument tools expose stage, PG, replica and KEDA evidence.
+Required investigation, evidence-ID selection and validation are enforced by this
+path; runtime stage elevation remains unavailable without an operational baseline.
+Replay describes the saved observation time, not current service health.
+
+The original diagnosis entry point remains available:
+
+```powershell
+.venv\Scripts\python.exe -m ops_agent diagnose `
+  --conditions <conditions.v2.json> --input $inputs `
+  --output <diagnosis.json> --live
+```
+
+This emits the older `ops.diagnosis.v1` contract. Its allowlist covers partition
+lag, Worker stage/replicas, KEDA, PG/application readiness, runtime image, Pod
+restart and Argo CD. It allows at most four tool calls, 1,600 output tokens and
+one tool-free output repair. Do not confuse this contract with v3.5 or the newer
+experimental log-diagnosis runner.
+
+## Recovery and follow-up replay
 
 ```powershell
 .venv\Scripts\python.exe -m ops_agent evaluate-recovery `
   --activation <conditions.v2.activation.json> `
-  --input <ordered post-activation bundle paths> `
-  --source-digest <one ordered digest per input> `
-  --incident-id <logical incident prefix> `
-  --profile local-ha `
-  --output results\ops-agent\recovery-evaluation\recovery.json
+  --input <ordered-post-activation-bundles> `
+  --source-digest <one-canonical-digest-per-input> `
+  --incident-id <incident> --profile local-ha --policy-version v2 `
+  --output <recovery.json>
 ```
 
-It emits only `WORKER_BACKLOG_ACTIVE`, `WORKER_BACKLOG_RECOVERING`, or
-`WORKER_BACKLOG_UNKNOWN`. RECOVERING requires three consecutive fresh,
-complete Kafka captures with negative 60-second lag slope, committed rate at
-least produce rate as the same-offset arithmetic guard, and acceptable
-PostgreSQL readiness. Produce rate zero is valid when committed progress drains
-the backlog. KEDA/Worker replicas and stage latency remain optional context.
-
-Kafka exporter v1.7.0 reads topic end offsets before it fetches group committed
-offsets in the same scrape. A commit between those operations can yield a
-negative exporter lag under one Prometheus scrape timestamp. The policy is
-`INVALID_ONLY`: raw negative values remain invalid, no value is clamped to
-zero, and no derived replacement is created because query-range steps do not
-retain the two Kafka read timestamps.
-
-`WORKER_BACKLOG_RECOVERED` is reserved but rejected by the v1 output contract.
-Every output records `recovery_completion.status=CALIBRATION_PENDING`. Clearing
-hysteresis, a Recovery LLM, and remediation commands are not implemented.
-
-Recovery policy v2 is an explicit opt-in and leaves v1 as the CLI default. It
-uses the calibrated local-ha MEDIUM profile only: measured produce rate
-`74.98333333333333..77.08333333333333 records/s`, total lag at most `22`, and
-lag slope at most `0`. After RECOVERING has been observed, the latest three
-fresh usable captures must remain in that envelope with acceptable PostgreSQL
-readiness and the existing 9-to-21-second cadence provenance gate.
+Recovery v1 is the compatibility default and emits ACTIVE/RECOVERING/UNKNOWN.
+Explicit v2 adds RECOVERED after RECOVERING and three fresh, usable observations
+inside the calibrated MEDIUM envelope: produce rate
+74.98333333333333–77.08333333333333 records/s, lag ≤ 22, slope ≤ 0,
+acceptable PG readiness and the 9–21 second cadence gate. It does not require lag
+zero or two Worker replicas. This is backlog-incident completion, not global health.
+Negative exporter lag remains invalid; no clamping or derived replacement.
 
 ```powershell
-.venv\Scripts\python.exe -m ops_agent evaluate-recovery `
-  --activation <conditions.v2.activation.json> `
-  --input <ordered post-activation bundles> `
-  --source-digest <ordered canonical digests> `
-  --incident-id <incident> --policy-version v2
+.venv\Scripts\python.exe scripts\replay_followup_diagnosis.py `
+  --run-dir <archived-run-directory> --activation-end <sample-index> `
+  --output-dir results/ops-agent/shadow/<new-followup-directory>
 ```
 
-V2 can emit `WORKER_BACKLOG_RECOVERED` with completion `COMPLETE`. It does not
-require lag zero, Worker replica count two, KEDA inactivity, or zero ingress.
-An UNKNOWN capture resets the stable count. Negative exporter lag remains
-`INVALID_ONLY`. RECOVERED is Worker-backlog incident completion, not global
-health. Clearing and post-recovery regression incident management remain out
-of scope.
+The follow-up candidate consumes one bundle at a time after verified activation,
+without future observations. UNKNOWN blocks further projection; closure cannot
+reopen. This runner uses the fixed Runbook only and has no model API option.
 
-## Phase 3 diagnosis boundary
+## Experimental tools and audit
 
-`diagnose` requires explicit `--live`; normal pytest and GitHub Actions paths do
-not call OpenAI. The model defaults to `gpt-5.6-luna` and can be changed through
-`OPENAI_MODEL`. `OPENAI_API_KEY` is loaded from the process environment or the
-Git-ignored `.env.local` file. The key is never included in prompts, IDs, logs,
-artifacts, fixtures, or tracked files.
+Read [known gaps](../docs/OPS_AGENT_EVALUATION.md#known-gaps) before reusing these
+runners. Successful exit or the existence of a result file is not sufficient
+acceptance evidence.
 
-The Agent has four tool steps, four tool calls, 1,600 output tokens, a 30-second
-request timeout, one bounded transport retry, and a separate
-`max_output_repairs=1` semantic repair budget. Output repair receives the
-machine-readable validator error and the existing structured result. It has no
-tools and cannot add evidence. A second invalid result terminates as
-`validation_failure` without writing a completed artifact. The allowlist is:
+| Script | Side effects and scope |
+| --- | --- |
+| `run_local_event_probe.py` | Creates a user/stream and 1–60 test events, ≤1 event/s; requires unique request/event IDs and matching counts; retains sanitized status polls. No reset |
+| `run_local_burst.py` | Localhost-only traffic: ≤20 seconds, ≤300 events/s, ≤6,000 events, ≤32 in flight; creates one test user and 16 streams, retains receipts, observes up to 120 seconds of recovery and checks ≤60 persistence samples. No model calls or configuration changes |
+| `run_local_lock_fault.py` | Default is read-only preflight. `--execute` locks one newly created stream sequence row for 50 seconds with server timeouts and rollback, creates 21 events across 9 streams, verifies every accepted ID. `--live` adds up to 3 sequential model calls after release |
+| `watch_local_until_error.py` | Read-only observations plus repeated event probes, ≤30 minutes. Unreachable readiness is an evidence warning; probe failure is separately retained |
+| `run_worker_fault_diagnosis.py` | `--execute` actually changes Worker command/strategy and temporarily disables Argo automatic sync; model calls and rollback follow. Explicit local fault experiment |
+| `diagnose_postgres_restarts.py` | Collects PG status/logs/probes/config history and immediately calls the configured model; no cluster changes. No separate `--live` flag |
+| `audit_live_experiments.py` | Offline artifact comparison and mocked counterexamples; no model or cluster calls |
+| `verify_postgres_recovery.py` | Read-only exact 3-Pod/UID/restart/readiness sampled verification; requires pre-intervention primary identity. No traffic, patches or failover |
+| `evaluate_investigation.py` | Three synthetic cases vs a frozen adaptive Runbook. Offline by default; `--execute` makes up to 15 model calls, no cluster access |
 
-- `get_partition_lag`
-- `get_worker_stage_latency`
-- `get_worker_replica_status`
-- `get_keda_status`
-- `get_postgres_health`
-- `get_application_readiness`
-- `get_runtime_image`
-- `get_pod_restart_status`
-- `get_argocd_status`
-
-Tools reduce the activation window's normalized Evidence Items and issue a new
-diagnosis evidence ID. They do not expose raw bodies, arbitrary arguments,
-PromQL, URLs, shell, or kubectl. Exact PostgreSQL commit/insert rate,
-transaction commit latency, consumer rebalance events, and CPU throttling remain
-unavailable. Rebalance therefore cannot be confirmed or excluded.
-`CONSUMER_REBALANCE_SUSPECTED` must remain `INSUFFICIENT` with empty supporting
-and conflicting citation lists and the telemetry-unavailable evidence gap.
-
-The deterministic output validator rejects fabricated evidence IDs, repeated or
-unknown tools, step overruns, unsupported rebalance confirmation, condition
-re-evaluation, recovery claims, and action/remediation codes. Hypotheses are
-restricted to the versioned allowlist and contain supporting IDs, conflicting
-IDs, and evidence gaps without a model-reported confidence percentage.
-
-Offline golden evaluation and five output-repair fixtures use scripted model
-responses and make no API calls. Live Diagnosis Run files are local ignored
-artifacts under `results/ops-agent/diagnosis/`. The 2026-08-16 Luna rerun used
-the captured positive run-01 sequence, selected four normalized tools, failed
-the initial stop-consistency validation, and passed after one tool-free output
-repair. The completed run stopped with `insufficient_evidence`; no causal
-hypothesis was promoted beyond the available citations.
-
-## Phase 3.2 controlled acquisition
-
-`ops.diagnosis.v1` and its frozen tool registry remain unchanged. The separate
-`ops.diagnosis.v2` contract adds acquisition-specific provenance and two
-operationally distinct hypotheses:
-
-- `WORKER_CAPACITY_SHORTFALL_SUSPECTED`
-- `POSTGRES_PATH_DEGRADED_SUSPECTED`
-
-Evidence provenance is a discriminated union. `FROZEN_PROJECTED` requires source
-bundle and evidence references. `CONTROLLED_SCENARIO` requires a fixture ID,
-canonical fixture digest, and scenario contract version. `LIVE_READ_ONLY`
-requires source identity, a fixed query contract, and request/source timestamps.
-The live provenance type and registry interface are defined, but runtime source
-acquisition is not connected in this phase.
-
-The tracked scenario catalog contains four complete normalized observation sets.
-The deterministic normalizer computes stage-latency ratios, Worker availability
-gaps, PostgreSQL guardrail state, partition totals, and image consistency. The
-Agent still chooses the next zero-argument allowlisted tool. Recorded offline
-runs use the same loop and v2 validator without making an API call:
+The two experimental diagnosis runners return collected snapshots through
+allowlisted tools. They require investigation, JSON fields and citations to acquired
+evidence; semantic correctness remains separate from structural validation. They must
+not be used to report general accuracy or autonomous remediation success.
 
 ```powershell
-.venv\Scripts\python.exe -m ops_agent diagnose-scenario `
-  --scenario worker-replica-shortfall `
-  --model-mode recorded `
-  --output results\ops-agent\scenario-lab\worker-replica-shortfall.json
+.venv\Scripts\python.exe scripts\run_local_burst.py `
+  --output-dir results/ops-agent/shadow/<new-burst-directory> `
+  --rate 300 --seconds 20 --workers 32
 ```
 
-Use `--model-mode live` only for an explicit model-backed local run. It loads the
-same Git-ignored OpenAI configuration as Phase 3. The public replay never uses
-this path. Rebuild the deterministic local UI artifact with:
+The rate is an upper bound, not achieved throughput. New event requests stop on
+5 consecutive failures, 10 failures in the last 50 completions, 2 consecutive
+readiness/collector failures, or a `STOP` file in the run directory. In-flight
+requests have a 3-second timeout and are not retried. Polling and collector time
+affect stop latency. Recovery means three consecutive sampled healthy/zero-lag
+observations plus sampled persistence; it does not prove every accepted event
+persisted. Test data remains in the service. This is a local load observation,
+not a DDoS resilience or service capacity benchmark.
 
 ```powershell
-.venv\Scripts\python.exe scripts\build_scenario_lab_artifact.py
+# Fixed kind-messaging-ha / messaging-app; no fault without --execute.
+.venv\Scripts\python.exe scripts\run_local_lock_fault.py
+.venv\Scripts\python.exe scripts\run_local_lock_fault.py --execute --live `
+  --output-dir results/ops-agent/shadow/<new-row-lock-directory>
 ```
 
-The local Scenario Lab is `/admin/scenario-lab/`. It displays expected and
-selected next tools and preserves `BranchEvaluation=FAIL` when a model takes an
-unexpected allowlisted path.
+The fault holds `SELECT ... FOR UPDATE` on one owned `room_sequences` row, with
+50-second server sleep, 55-second statement timeout, 2-second lock acquisition
+timeout, and 60-second idle transaction timeout. It changes no stored row values,
+deployments or HA settings. Worker serialization can delay other streams sharing
+the consuming Worker/partition; the affected scope is measured, not assumed.
+Recovery requires no remaining owned session, every request persisted with unique
+event IDs, three zero-lag/ready observations, no DB waiters and unchanged PG Pod
+UIDs/restart counts. User/stream/event test data remains.
 
-The negative-control runner applies that frozen candidate to a short burst, a
-180-second sustainable high load, and a single transient lag spike. It treats
-lag slope as the only growth signal; produce minus committed is an arithmetic
-consistency check. The 2026-08-16 controls all returned `NOT_PRESENT`.
-Replaying the captured condition sequences with v2 returns `PRESENT` for all three
-positive runs and no `PRESENT` for short burst, sustainable high load, or
-transient spike. The v1 single-bundle policy is unchanged. Recovery v1 handles
-ACTIVE/RECOVERING/UNKNOWN under the compatibility policy. Recovery policy v2
-adds calibrated RECOVERED; clearing hysteresis is not implemented.
+Model input progresses from symptoms and actual request receipts to a later DB
+wait graph, then recovery evidence. The fixed SQL reader supplies observed waiter
+and blocker PIDs, wait type, transaction age and relations; sleeping SQL, session
+names and the injection plan are withheld. Calls occur after capture/release and
+are recorded replay, not automatic live investigation. Existing runbook sections
+are unchanged before the experiment; no new lock-resolution procedure is supplied
+as an answer key. Failed runs and raw artifacts remain alongside later attempts.
 
-The 2026-08-12 captured no-backlog reference is intentionally `PARTIAL`: two
-label-on-use Worker series were absent after process restart. Kafka partition
-coverage, Application, Kubernetes, PostgreSQL HA, and Argo CD evidence were
-collected from the live runtime. Missing series remain `MISSING/UNKNOWN`; they
-are not converted to zero.
+```powershell
+.venv\Scripts\python.exe scripts\audit_live_experiments.py `
+  --output-dir results/ops-agent/shadow/<new-audit-directory>
+```
 
-## Phase 5 incident lifecycle boundary
+This audit needs the existing local raw archives. It checks current counterexample
+handling and separately reports the frozen old PG predicate. Preserve failed and
+interrupted runs, including accepted IDs whose persistence was not confirmed.
 
-`scripts/worker_incident_e2e.py` runs one gated actual `local-ha` incident. It
-requires branch `dev-kafka`, current context `kind-messaging-ha`, a clean
-baseline, a usable OpenAI configuration for the bounded diagnosis step, and the
-existing KEDA `2 -> 4` policy. The script submits only workload events through
-the public API; it does not scale or patch workloads, change KEDA, reset Kafka
-offsets, or write to Kubernetes, Argo CD, or PostgreSQL control planes.
+```powershell
+# Add --execute for bounded API evaluation; otherwise freezes fixtures/baseline only.
+.venv\Scripts\python.exe scripts\evaluate_investigation.py `
+  --output-dir results/ops-agent/shadow/<new-pilot-directory>
 
-Every workload phase must meet its target with HTTP failures and dropped
-iterations both equal to zero. A failed workload-quality gate stops before
-recovery and canonical promotion even when backlog activation is valid or final
-lag later reaches zero.
+# Supply the primary identity captured BEFORE an intervention, not after it.
+.venv\Scripts\python.exe scripts\verify_postgres_recovery.py `
+  --output-dir results/ops-agent/shadow/<new-verification-directory> `
+  --primary-uid <captured-primary-uid> --primary-restarts <captured-count>
+```
 
-The incident identity is the canonical SHA-256 of incident type, `local-ha`
-profile, condition evaluation ID, ordered source bundle digests, complete source
-identity, and logical source incident ID. The public ID is `inc-` plus the first
-24 hex characters. Diagnosis and recovery artifact hashes must match that
-identity before they are attached.
+The new PG verifier requires a 180-second sampled span with gaps no greater than
+21 seconds, and saves UID and HTTP status on every sample. Its tests use mocked
+collectors; it has not yet been rerun against the cluster. Synthetic pilot scores
+compare cause labels/citations; prose quality and operator usefulness need review.
 
-Lifecycle transitions are `DETECTED -> ACTIVE -> RECOVERING -> RECOVERED ->
-CLOSED`. A closed record is immutable lifecycle history. A later recovery
-evaluation is stored as `current_observation`; it does not reopen or overwrite
-the incident. Automatic reopen and new-incident correlation are not
-implemented.
+## Credentials, provenance and safety
 
-The 2026-08-23 Gate 2 run used 64 streams and `75 -> 330 -> 75 records/s`.
-Accepted events were `6,750 / 29,697 / 135,000`, with zero HTTP failures and
-zero drops. It produced incident `inc-88a1eeaa17897f6a8a929bba`, closed as
-RECOVERED after `809.557s`; 133 bundles and 532 raw projections passed hash
-validation. The canonical directory is local-only under
-`results/ops-agent/incidents/inc-88a1eeaa17897f6a8a929bba/`.
+- Existing model configuration: process environment or ignored `.env.local`,
+  `OPENAI_MODEL` and `OPENAI_API_KEY`; recorded recent runs used `gpt-5.6-luna`
+- No keys in prompts, logs, fixtures or tracked files; normal pytest/CI makes no API calls
+- Core collector: fixed HTTP GET and kubectl get/config operations, safe projection
+  and credential redaction; no arbitrary PromQL, shell or write tool for the model
+- Windows local routing: `127.0.0.1` with `Host: localhost`; redirects and ambient
+  proxies disabled; kubectl override restricted to an executable
+- Existing kubeconfig is not claimed to be least privilege. Operator endpoint,
+  context and executable overrides are trusted local inputs
+- Preserve source HEAD/dirty state, collector identity, source timestamps,
+  canonical bundle digests and artifact hashes. Hashes do not attest a remote server
+- Worker processed count, stage latency and end-to-end persistence lag are distinct;
+  stage timing excludes the later request-status update and transaction commit
+- Closed incidents remain immutable history; later observations do not imply
+  automatic reopen. [Public replay](../docs/OPS_AGENT.md#public-replay-boundary)
+  reads sanitized recorded data without model/runtime calls
 
-Phase 5.2 was deferred at the Phase 5 incident checkpoint. The later
-2026-08-28 public demo-lite validation recorded UI `2.4.1`, release `2fc8649`,
-image `ece446d47370`, and a successful recorded replay response. The replay
-uses the sanitized `demo/verified-incident-replay.json` projection; canonical
-incident artifacts and raw evidence remain local-only. Playback makes no
-OpenAI API or runtime-source calls. See the
-[public replay boundary](../docs/OPS_AGENT.md#public-replay-boundary) and
-[release history](../docs/PATCH_NOTES.md).
+The current local PG correction is a **standby-only runtime patch with partition 1**.
+Primary rollout and Helm release reconciliation remain separate work. See
+[the runbook](../docs/RUNBOOK.md#ops-agent-local-pg-correction) before changing that partition.
+
+## Local validation
+
+```powershell
+.venv\Scripts\python.exe -m pytest -q tests/ops_agent
+.venv\Scripts\python.exe scripts\check_docs.py docs/OPS_AGENT.md docs/OPS_AGENT_EVALUATION.md ops_agent/README.md
+```
+
+Unit-test totals are implementation checks. Use the evaluation document's
+case-level evidence and limitations when discussing model capabilities.

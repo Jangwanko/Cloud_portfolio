@@ -1,0 +1,182 @@
+{
+  "version": "ops.mvp-acceptance.v1",
+  "date": "2026-11-03",
+  "status": "CONTROLLED_LOCAL_MVP_FLOW_VERIFIED_WITH_MODEL_QUALITY_LIMITS",
+  "model": "gpt-5.6-luna",
+  "calls_attempted": 4,
+  "approved_maximum_calls": 6,
+  "per_call_output_token_limit": 6000,
+  "timeout_seconds": 45,
+  "automatic_retries": 0,
+  "scope": "Two approved controlled kind-messaging-ha experiments. Post-capture baseline/during diagnosis; no recovery/oracle input to Luna.",
+  "experiments": [
+    {
+      "scenario": "lock",
+      "incident_id": "local-observation-2f33427eda41",
+      "incident_record": {
+        "path": "results/ops-agent/shadow/20261103-mvp-lock-01/incident-record.json",
+        "sha256": "ec22b94d59c249508d14352f24139cddad83d8a4fc394612fcd240b476dbb9f3"
+      },
+      "runbook_draft": {
+        "path": "results/ops-agent/shadow/20261103-mvp-lock-01/runbook-draft.json",
+        "sha256": "77a52ad5da123affe7635c14009ad8502cb874a87525fc80ab4aef7c7f309de9"
+      },
+      "configuration_verification": {
+        "verified": true,
+        "fields": {
+          "worker_fields_sha256": true,
+          "pg_fields_sha256": true,
+          "pg_pods": true,
+          "argocd_automated": true
+        },
+        "at": "2026-11-03T10:45:25.929320+00:00"
+      },
+      "review": {
+        "reviewer": "Codex experiment manager; not independent operator approval",
+        "format_and_citations": "PASSED",
+        "cause_judgment": "CORRECT_BLOCKING_CANDIDATE_REQUEST_LINK_UNCONFIRMED",
+        "runbook_fit": "PG investigation matches observed blocking; Worker lag is symptom relevance, not a distinct proven cause.",
+        "recovery_proposal_usefulness": "ABSTAINED: both original model outputs returned no recovery proposals. Operator followed the pre-approved bounded rollback.",
+        "incorrect_or_unconfirmed_hypotheses": [
+          "Rebalance was an additional unconfirmed candidate. Collected logs include pre-fault joins, so current request causality is not established."
+        ],
+        "limits": [
+          "Baseline Kafka exclusion uses reachability without a sampled append.",
+          "Broad Kafka rechecks add work; operator time savings unmeasured."
+        ],
+        "operator_semantic_approval": "PENDING"
+      },
+      "responses": [
+        {
+          "path": "results/ops-agent/shadow/20261103-mvp-lock-01/investigation/baseline/response.json",
+          "sha256": "34659013e0eb63fca83d485d7e90ebe4321bc749aa7c0337d75412c9534a9778"
+        },
+        {
+          "path": "results/ops-agent/shadow/20261103-mvp-lock-01/investigation/during/response.json",
+          "sha256": "1972e28c2511237247969072342cbe90214f25d3d528ac8871e04fc0b6740f25"
+        }
+      ],
+      "recovery": {
+        "status": "COMPLETE",
+        "accepted": 21,
+        "persisted": 21,
+        "all_accepted_verified": true,
+        "pg_uids_and_restarts_unchanged": true,
+        "remaining_owned_sessions": 0,
+        "final_kafka_lag": 0,
+        "consecutive_healthy_zero_lag_samples": 3,
+        "failure": null
+      }
+    },
+    {
+      "scenario": "worker",
+      "incident_id": "local-observation-d20efd24a134",
+      "incident_record": {
+        "path": "results/ops-agent/shadow/20261103-mvp-worker-01/incident-record.json",
+        "sha256": "d0be68ab4f39458a2d99c1d928c478122668ee7c5e2de3c081c242b7dbf0e939"
+      },
+      "runbook_draft": {
+        "path": "results/ops-agent/shadow/20261103-mvp-worker-01/runbook-draft.json",
+        "sha256": "aed33f27ab40c968734add0433507220152efd17dd385a90c10c13fed8c35e6e"
+      },
+      "configuration_verification": {
+        "verified": true,
+        "fields": {
+          "worker_fields_sha256": true,
+          "pg_fields_sha256": true,
+          "pg_pods": true,
+          "argocd_automated": true
+        },
+        "at": "2026-11-03T10:48:43.708793+00:00"
+      },
+      "review": {
+        "reviewer": "Codex experiment manager; not independent operator approval",
+        "format_and_citations": "PASSED",
+        "cause_judgment": "STARTUP_MODULE_FAILURE_MATCHES_OBSERVED_LOG_AND_CONTROLLED_INJECTION",
+        "runbook_fit": "Worker lag procedure fits symptoms; no dedicated startup-module repair runbook is fabricated. PG path remains uncertain.",
+        "recovery_proposal_usefulness": "ABSTAINED: original model outputs returned no recovery proposals, but suggested inspecting image module and command. Operator used the pre-approved configuration restoration.",
+        "incorrect_or_unconfirmed_hypotheses": [
+          "Baseline accepted_delayed APPLICABLE overstates one persisted request plus transient lag 1.",
+          "Additional PostgreSQL candidate has no direct DB fault evidence."
+        ],
+        "limits": [
+          "Kubernetes omitted readyReplicas; aggregate policy remains UNKNOWN. Explicit observed non-ready container states witness the outage.",
+          "Useful recovery recommendation not demonstrated in this round."
+        ],
+        "operator_semantic_approval": "PENDING"
+      },
+      "responses": [
+        {
+          "path": "results/ops-agent/shadow/20261103-mvp-worker-01/investigation/baseline/response.json",
+          "sha256": "4b0fb0b77e112e08935f7328adae763851b7092a85931b7c0b2e51404bfaa3a6"
+        },
+        {
+          "path": "results/ops-agent/shadow/20261103-mvp-worker-01/investigation/during/response.json",
+          "sha256": "2bf4b2b94edc17c1f6ec8d5a22ff49ea230e78ae3acc2f60a924b35789412f22"
+        }
+      ],
+      "recovery": {
+        "model": null,
+        "accepted": 20,
+        "persisted_after_restore": 20,
+        "restored": true,
+        "failure_type": null,
+        "model_output_recorded": false,
+        "model_executed_remediation": false,
+        "recovery_verified": true
+      }
+    }
+  ],
+  "blinding_audit": "PASSED",
+  "runbook_coverage": {
+    "path": "results/ops-agent/shadow/20261103-mvp-runbook-coverage.json",
+    "sha256": "459ed15a669871359ac920bad21553e02e2773140d42184b80ca815d2dc9767a"
+  },
+  "runbook_coverage_boundary": "Current lexical retrieval regression plus retained historical Luna matching/similar/unmatched evaluation; no new unseen accuracy claim.",
+  "knowledge_reuse": "Verified artifact references, chronological same-incident records, lexical CLI search with self-case exclusion; no model dependency or automatic catalog publication.",
+  "semantic_review_boundary": "Codex comparison to private injection and runtime evidence. Operator semantic approval remains PENDING. Schema pass and code policy compliance are separate from cause accuracy and recovery usefulness.",
+  "remaining": [
+    "Neither fault response proposed a concrete recovery action; abstentions preserved.",
+    "Baseline runbook over-application and broad/old-log hypotheses remain quality limits.",
+    "No always-on watcher, general reliability or operator-time-savings result.",
+    "Knowledge draft promotion requires operator review; known controlled cases remain marked review pending."
+  ],
+  "merge_assessment": {
+    "master_is_ancestor": false,
+    "local_committed_ref_conflicts": [
+      "docs/OPS_AGENT.md",
+      "docs/TEST_RESULTS.md"
+    ],
+    "scope": "Read-only local merge-tree preview excludes new working-tree changes. No master merge, remote deployment or public README edits."
+  },
+  "validation": {
+    "full_suite": "1080 passed in 57.77s",
+    "full_suite_record": "results/validation/20261103T105315Z-4a57e740/summary.json",
+    "focused": "137 passed in 3.19s",
+    "focused_record": "results/validation/20261103T104311Z-5c53e969/summary.json",
+    "case_regression": "9 passed in 0.97s",
+    "case_regression_record": "results/validation/20261103T105147Z-dc722f00/summary.json",
+    "artifact_blinding_reuse_audit": "results/validation/20261103T105252Z-3620f919/summary.json",
+    "final_preflight": "results/ops-agent/shadow/20261103-mvp-final-preflight/preflight.json",
+    "cli_search": "results/validation/20261103T105318Z-38a4928b/summary.json",
+    "first_failed_check": "results/validation/20261103T104212Z-1c9f132a/summary.json - Windows UTF-8 test file reading, fixed without changing live results"
+  },
+  "runbook_coverage_cases": [
+    {
+      "case": "matching",
+      "current_retrieved_runbooks": [
+        "RB-PG-HEALTH"
+      ]
+    },
+    {
+      "case": "similar",
+      "current_retrieved_runbooks": [
+        "RB-KAFKA-INTAKE"
+      ]
+    },
+    {
+      "case": "unmatched",
+      "current_retrieved_runbooks": []
+    }
+  ]
+}

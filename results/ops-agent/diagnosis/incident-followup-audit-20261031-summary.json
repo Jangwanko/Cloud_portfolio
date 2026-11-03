@@ -1,0 +1,323 @@
+{
+  "schema_version": "ops.incident-followup-audit.v1",
+  "candidate_count": 21,
+  "status_counts": {
+    "INSUFFICIENT_CAPTURE_HISTORY": 5,
+    "NO_OBSERVED_ACTIVATION": 11,
+    "CONTINUITY_UNVERIFIED": 5
+  },
+  "reviewable_followup_count": 0,
+  "model_calls": 0,
+  "cluster_writes": 0,
+  "limits": [
+    "Temporal eligibility only; adverse signal validity and causality not established.",
+    "Existing runtime adapter still projects activation, not these follow-ups.",
+    "UNKNOWN blocks automatic linkage; it does not prove incident absence."
+  ],
+  "date_kst": "2026-10-31",
+  "full_report_sha256": "983d06dc33141352304b9aff78e3ba38fa666792050e10a40384af8c8ccf0b0f",
+  "source_file_hashes_reverified": 296,
+  "code_sha256": {
+    "scripts\\audit_incident_followups.py": "4dc14f38181ce114af15cdcb10610236125060fd6566e3f57b37c7186ee10e80",
+    "ops_agent\\recovery_evaluator.py": "fe1cedc884e26d4910f03657ea70cf47a3b8962bf8ceebd64e58fca012eab581",
+    "ops_agent\\sequence_evaluator.py": "a61cbb3d91a625c2433f02f0150530ccfdf5e03ddd4ff1596aa7f6672ac42295"
+  },
+  "candidates": [
+    {
+      "path": "calibration/20260816T032411Z/run-02/bundles/sample-001.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "INSUFFICIENT_CAPTURE_HISTORY",
+      "source_file_count": 0,
+      "first_boundary": []
+    },
+    {
+      "path": "calibration/20260816T032411Z/run-03/bundles/sample-001.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "INSUFFICIENT_CAPTURE_HISTORY",
+      "source_file_count": 0,
+      "first_boundary": []
+    },
+    {
+      "path": "negative-control/20260816T040746Z/short-burst/bundles/sample-001.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "INSUFFICIENT_CAPTURE_HISTORY",
+      "source_file_count": 0,
+      "first_boundary": []
+    },
+    {
+      "path": "negative-control/20260816T040746Z/sustainable-high/bundles/sample-001.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "INSUFFICIENT_CAPTURE_HISTORY",
+      "source_file_count": 0,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T071921Z/PREFLIGHT-run-01/bundles/sample-010.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 11,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-002.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 3,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T072503Z/E-run-01/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T075514Z/E-run-01/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T085521Z/C-run-01/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T085521Z/E-run-01/bundles/sample-003.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 4,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/E-run-02/bundles/sample-062.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "CONTINUITY_UNVERIFIED",
+      "activation_evaluation_id": "1a828a73dae30365fccd9492e99e0efa0d2a1a1016c2f74d3d25b3ce6ac0a7d6",
+      "activation_end_index": 10,
+      "candidate_index": 62,
+      "activation_bundle_digests": [
+        "3b4ec4dd25333587e52ca2a86a9635c5e9ee02954db0795232f808fbe55ee5d2",
+        "e853ff170aac4d1a381a67d7a1e547cdf04607fb510f558ba401596b9ab7621b",
+        "95d5f920b1678a1a44de0a207d77e8c3cc38d8e75428a0dff003717479060d7e"
+      ],
+      "source_file_count": 63,
+      "first_boundary": [
+        {
+          "through_index": 53,
+          "evaluation_id": "228e9de1c596852dcf887faa8186b4625eba5f37a3bdbad919666e028ddf7bcf",
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_2_NEGATIVE_LAG",
+            "KAFKA_PARTITION_3_NEGATIVE_LAG",
+            "KAFKA_PARTITION_6_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-002.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 3,
+      "first_boundary": []
+    },
+    {
+      "path": "recovery-calibration/20260816T100600Z/F-run-01/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-002.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 3,
+      "first_boundary": []
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-052.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "CONTINUITY_UNVERIFIED",
+      "activation_evaluation_id": "73918d93ae9e7c5f460968df66a57bdd900d2088b96a8b8c812a450ed5e223f9",
+      "activation_end_index": 11,
+      "candidate_index": 52,
+      "activation_bundle_digests": [
+        "692f73f1d30584d298ed6e15c9930f45b266b893fd9c19b0a307a3ca832f5b74",
+        "0b0a2e08a96dba5376e43dba08bf3078ee7cbf78c2d4dc7b63988b7006b4d1cd",
+        "c63b49febd967fb908c57138606530dd9485a5b76fb6cc58723a11b31280d7f7"
+      ],
+      "source_file_count": 53,
+      "first_boundary": [
+        {
+          "through_index": 45,
+          "evaluation_id": "6289cd617b1b41e49f8787e54ba5b6320d1b855cc4181164ffd92af1e8f3d7ba",
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_0_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "recovered-calibration/20260816T194023Z/E-run-05/bundles/sample-063.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "CONTINUITY_UNVERIFIED",
+      "activation_evaluation_id": "73918d93ae9e7c5f460968df66a57bdd900d2088b96a8b8c812a450ed5e223f9",
+      "activation_end_index": 11,
+      "candidate_index": 63,
+      "activation_bundle_digests": [
+        "692f73f1d30584d298ed6e15c9930f45b266b893fd9c19b0a307a3ca832f5b74",
+        "0b0a2e08a96dba5376e43dba08bf3078ee7cbf78c2d4dc7b63988b7006b4d1cd",
+        "c63b49febd967fb908c57138606530dd9485a5b76fb6cc58723a11b31280d7f7"
+      ],
+      "source_file_count": 64,
+      "first_boundary": [
+        {
+          "through_index": 45,
+          "evaluation_id": "6289cd617b1b41e49f8787e54ba5b6320d1b855cc4181164ffd92af1e8f3d7ba",
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_0_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "incident-e2e/20260816T214911Z/run-01/bundles/sample-001.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "INSUFFICIENT_CAPTURE_HISTORY",
+      "source_file_count": 0,
+      "first_boundary": []
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-007.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "NO_OBSERVED_ACTIVATION",
+      "source_file_count": 8,
+      "first_boundary": []
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-093.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "CONTINUITY_UNVERIFIED",
+      "activation_evaluation_id": "2a8c68ad1758de197416741213bf07dc9b2c8488c68dbf67a689493d46b8bb47",
+      "activation_end_index": 10,
+      "candidate_index": 93,
+      "activation_bundle_digests": [
+        "11e87110553623c06e53034d757e6a57ca61a24c58278b05a91bd3a27ee76bc8",
+        "8d99e544b788760e5e484e51c0676b77a24e48d1c93c066b4d209488c1b5a9f3",
+        "00767a39c3f65fcc17f9e7c318245e99a9e47872e533f384e05d4f8a9d7f80be"
+      ],
+      "source_file_count": 94,
+      "first_boundary": [
+        {
+          "through_index": 62,
+          "evaluation_id": "c56cef28d26b049923ec0f04ce13dd08b5e73ad70b4605702f93a31b83b22bcd",
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_6_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "incident-e2e/20260816T223837Z/run-01/bundles/sample-116.json",
+      "reviewable_followup": false,
+      "runtime_adapter_eligible": false,
+      "causal_truth_verified": false,
+      "status": "CONTINUITY_UNVERIFIED",
+      "activation_evaluation_id": "2a8c68ad1758de197416741213bf07dc9b2c8488c68dbf67a689493d46b8bb47",
+      "activation_end_index": 10,
+      "candidate_index": 116,
+      "activation_bundle_digests": [
+        "11e87110553623c06e53034d757e6a57ca61a24c58278b05a91bd3a27ee76bc8",
+        "8d99e544b788760e5e484e51c0676b77a24e48d1c93c066b4d209488c1b5a9f3",
+        "00767a39c3f65fcc17f9e7c318245e99a9e47872e533f384e05d4f8a9d7f80be"
+      ],
+      "source_file_count": 117,
+      "first_boundary": [
+        {
+          "through_index": 62,
+          "evaluation_id": "c56cef28d26b049923ec0f04ce13dd08b5e73ad70b4605702f93a31b83b22bcd",
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_6_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+{
+  "scope": "Post-fix offline acceptance counterexamples; historical artifacts unchanged; no new cluster observation",
+  "cluster_mutations": 0,
+  "model_calls": 0,
+  "worker": {
+    "hash_integrity": {
+      "checked": 12,
+      "mismatches": []
+    },
+    "wire": {
+      "requests": 2,
+      "delivered_tools": [
+        "get_readiness",
+        "get_worker_status",
+        "get_worker_logs",
+        "get_kafka_lag"
+      ],
+      "tool_output_mismatches": [],
+      "initial_input_contains_worker_fault_module": false,
+      "contains_private_plan_filename": false
+    },
+    "accepted_unique": 20,
+    "observed_http_statuses": [
+      404
+    ],
+    "recovered_request_ids_match": true,
+    "recovered_unique_event_ids": 20,
+    "recovered_statuses": [
+      "persisted"
+    ]
+  },
+  "postgres": {
+    "hash_integrity": {
+      "checked": 58,
+      "mismatches": []
+    },
+    "wire": {
+      "requests": 2,
+      "delivered_tools": [
+        "get_pg_pods",
+        "get_pg_events",
+        "get_pg_logs",
+        "get_pg_configuration",
+        "get_probe_implementation",
+        "get_change_history"
+      ],
+      "tool_output_mismatches": [],
+      "initial_input_contains_worker_fault_module": false,
+      "contains_private_plan_filename": false
+    },
+    "samples": 19,
+    "healthy_suffix_samples": 13,
+    "healthy_suffix_all_healthy": true,
+    "sampled_span_seconds": 183.498482,
+    "largest_sample_gap_seconds": 15.678465,
+    "pod_uids_saved_in_samples": false,
+    "pre_correction_timestamp": "2026-10-31T16:34:56.077542+00:00",
+    "verification_plan_timestamp": "2026-10-31T16:36:01.489480+00:00",
+    "raw_traffic_poll_responses_saved": false,
+    "accepted_files": 20,
+    "accepted_unique": 20,
+    "traffic_summary": {
+      "run_id": "observation-20261031T164037Z",
+      "target": "http://127.0.0.1",
+      "max_events": 20,
+      "maximum_rate_per_second": 1,
+      "status": "COMPLETE",
+      "accepted_count": 20,
+      "persisted_count": 20,
+      "model_calls": 0,
+      "data_reset": false,
+      "stream_id": 5003
+    }
+  },
+  "unfinished_watch": {
+    "checks": 98,
+    "first": "2026-10-31T06:47:38.931359+00:00",
+    "last": "2026-10-31T07:11:53.951159+00:00",
+    "summary_exists": false,
+    "completed_batches": 19,
+    "persisted_in_completed_batches": 1140,
+    "accepted_files": 1181
+  },
+  "counterexamples": {
+    "null_http_status": "NO_EXCEPTION",
+    "null_http_status_real_evaluators": "NO_EXCEPTION",
+    "empty_model_output_recorded_as_completed": false,
+    "stall_gate_rejects_by_http_status": {
+      "401": true,
+      "404": false,
+      "503": true
+    },
+    "frozen_old_pg_gate_accepts_only_primary_with_ready_health": true,
+    "current_pg_gate_accepts_only_primary": false,
+    "watchdog_marks_restored_without_field_verification": false,
+    "duplicate_request_id_probe": {
+      "exit_code": 1,
+      "summary": {
+        "run_id": "observation-20261101T014824Z-72a2b12d",
+        "target": "http://127.0.0.1",
+        "max_events": 3,
+        "maximum_rate_per_second": 1,
+        "status": "FAILED",
+        "accepted_count": 2,
+        "persisted_count": 0,
+        "model_calls": 0,
+        "data_reset": false,
+        "stream_id": 2,
+        "error_type": "ValueError"
+      }
+    }
+  },
+  "source_sha256": {
+    "scripts/audit_live_experiments.py": "cfd04f82aa6ba9a102f7f8098627be92af2f274ca500658547974af994e03bb1",
+    "scripts/run_worker_fault_diagnosis.py": "7470ee78980ca326ac50e4912d81aebe26b4fbd65ee4375ccd4b192c219be930",
+    "scripts/watch_local_until_error.py": "7bd18b5939dd9fa40991dc1efca72e4496af7f51da7e55c1a8362a5e963fb8c6",
+    "scripts/run_local_event_probe.py": "f1b56c03eed3abf2b2b291c99a6757cbbb0b5c66bf222c71db26b2dce06c62d3"
+  },
+  "validation": {
+    "command": ".venv/Scripts/python.exe -m pytest -q",
+    "passed": 936,
+    "seconds": 48.33
+  },
+  "additional_current_source_sha256": {
+    "ops_agent/experiment_validation.py": "6e826d998cfe66f5d6f36942110394d50cb4e464432d0f7f962d4a8892ab9472",
+    "scripts/verify_postgres_recovery.py": "0ea84921556af44bf7733dda612f1fbed6cb136d380288aaf3af6ccdb67fd27e"
+  }
+}

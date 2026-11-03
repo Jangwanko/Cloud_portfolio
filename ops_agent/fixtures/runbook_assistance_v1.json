@@ -1,0 +1,532 @@
+{
+  "provenance": "synthetic",
+  "cases": [
+    {
+      "id": "matching",
+      "question": "PostgreSQL readiness degraded and persistence failure. What should I check?",
+      "steps": [
+        {
+          "schema_version": "ops.evidence.v1",
+          "bundle_id": "synthetic-matching-2026-11-01T02:00:00+00:00",
+          "incident_id": "synthetic-matching",
+          "scenario": "worker_backlog",
+          "cluster_profile": "local-ha",
+          "scope": {
+            "context": "kind-messaging-ha",
+            "namespace": "messaging-app",
+            "topic": "message-ingress",
+            "consumer_group": "message-worker"
+          },
+          "context": {
+            "source_sha": null,
+            "source_dirty": null,
+            "collector_tree_sha256": null,
+            "desired_image": null,
+            "pod_image_ids": [],
+            "argocd_revision": null,
+            "collector_version": "synthetic-runbook-pilot-v1",
+            "tool_registry_version": "synthetic-v1",
+            "policy_version": "synthetic-v1"
+          },
+          "collection": {
+            "started_at": "2026-11-01T02:00:00Z",
+            "completed_at": "2026-11-01T02:00:00Z",
+            "status": "COMPLETE"
+          },
+          "evidence": [
+            {
+              "evidence_id": "E1",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:00Z",
+              "collected_at": "2026-11-01T02:00:00Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "postgresql_readiness",
+                "value": {
+                  "status": "degraded",
+                  "reason": "postgres_primary_unreachable"
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            },
+            {
+              "evidence_id": "E2",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:00Z",
+              "collected_at": "2026-11-01T02:00:00Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "persistence_errors",
+                "value": {
+                  "error": "database connection refused",
+                  "affected_requests": 20,
+                  "duration_seconds": 60
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "RB-PG-HEALTH": "APPLICABLE"
+        }
+      ]
+    },
+    {
+      "id": "similar",
+      "question": "Kafka intake failure suspected after an HTTP 503. Check whether the runbook applies.",
+      "steps": [
+        {
+          "schema_version": "ops.evidence.v1",
+          "bundle_id": "synthetic-similar-2026-11-01T02:00:00+00:00",
+          "incident_id": "synthetic-similar",
+          "scenario": "worker_backlog",
+          "cluster_profile": "local-ha",
+          "scope": {
+            "context": "kind-messaging-ha",
+            "namespace": "messaging-app",
+            "topic": "message-ingress",
+            "consumer_group": "message-worker"
+          },
+          "context": {
+            "source_sha": null,
+            "source_dirty": null,
+            "collector_tree_sha256": null,
+            "desired_image": null,
+            "pod_image_ids": [],
+            "argocd_revision": null,
+            "collector_version": "synthetic-runbook-pilot-v1",
+            "tool_registry_version": "synthetic-v1",
+            "policy_version": "synthetic-v1"
+          },
+          "collection": {
+            "started_at": "2026-11-01T02:00:00Z",
+            "completed_at": "2026-11-01T02:00:00Z",
+            "status": "PARTIAL"
+          },
+          "evidence": [
+            {
+              "evidence_id": "E1",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:00Z",
+              "collected_at": "2026-11-01T02:00:00Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "http_error",
+                "value": {
+                  "http_status": 503,
+                  "endpoint": "unknown",
+                  "body": "not collected"
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            },
+            {
+              "evidence_id": "E2",
+              "status": "UNAVAILABLE",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:00Z",
+              "collected_at": "2026-11-01T02:00:00Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "kafka_readiness",
+                "value": {
+                  "error": "collector unavailable"
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": false,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            }
+          ]
+        },
+        {
+          "schema_version": "ops.evidence.v1",
+          "bundle_id": "synthetic-similar-2026-11-01T02:00:15+00:00",
+          "incident_id": "synthetic-similar",
+          "scenario": "worker_backlog",
+          "cluster_profile": "local-ha",
+          "scope": {
+            "context": "kind-messaging-ha",
+            "namespace": "messaging-app",
+            "topic": "message-ingress",
+            "consumer_group": "message-worker"
+          },
+          "context": {
+            "source_sha": null,
+            "source_dirty": null,
+            "collector_tree_sha256": null,
+            "desired_image": null,
+            "pod_image_ids": [],
+            "argocd_revision": null,
+            "collector_version": "synthetic-runbook-pilot-v1",
+            "tool_registry_version": "synthetic-v1",
+            "policy_version": "synthetic-v1"
+          },
+          "collection": {
+            "started_at": "2026-11-01T02:00:15Z",
+            "completed_at": "2026-11-01T02:00:15Z",
+            "status": "COMPLETE"
+          },
+          "evidence": [
+            {
+              "evidence_id": "E1",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:15Z",
+              "collected_at": "2026-11-01T02:00:15Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "kafka_intake",
+                "value": {
+                  "readiness": "ready",
+                  "event_POST": 202,
+                  "accepted_request_ids": [
+                    "r1",
+                    "r2"
+                  ],
+                  "produce_errors": 0
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            },
+            {
+              "evidence_id": "E2",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:15Z",
+              "collected_at": "2026-11-01T02:00:15Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "postgresql_readiness",
+                "value": {
+                  "status": "degraded",
+                  "reason": "postgres_primary_unreachable"
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            },
+            {
+              "evidence_id": "E3",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:15Z",
+              "collected_at": "2026-11-01T02:00:15Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "request_read",
+                "value": {
+                  "endpoint": "GET /v2/event-requests/r1",
+                  "http_status": 503,
+                  "body": "database unavailable"
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "RB-KAFKA-INTAKE": "NEEDS_MORE_EVIDENCE"
+        },
+        {
+          "RB-KAFKA-INTAKE": "EXCLUDED",
+          "RB-PG-HEALTH": "APPLICABLE"
+        }
+      ]
+    },
+    {
+      "id": "unmatched",
+      "question": "The edge TLS certificate expires soon. Which observation should I verify next?",
+      "steps": [
+        {
+          "schema_version": "ops.evidence.v1",
+          "bundle_id": "synthetic-unmatched-2026-11-01T02:00:00+00:00",
+          "incident_id": "synthetic-unmatched",
+          "scenario": "worker_backlog",
+          "cluster_profile": "local-ha",
+          "scope": {
+            "context": "kind-messaging-ha",
+            "namespace": "messaging-app",
+            "topic": "message-ingress",
+            "consumer_group": "message-worker"
+          },
+          "context": {
+            "source_sha": null,
+            "source_dirty": null,
+            "collector_tree_sha256": null,
+            "desired_image": null,
+            "pod_image_ids": [],
+            "argocd_revision": null,
+            "collector_version": "synthetic-runbook-pilot-v1",
+            "tool_registry_version": "synthetic-v1",
+            "policy_version": "synthetic-v1"
+          },
+          "collection": {
+            "started_at": "2026-11-01T02:00:00Z",
+            "completed_at": "2026-11-01T02:00:00Z",
+            "status": "COMPLETE"
+          },
+          "evidence": [
+            {
+              "evidence_id": "E1",
+              "status": "OK",
+              "source": "synthetic-authored-observation",
+              "tool_id": "fixture",
+              "source_timestamp": "2026-11-01T02:00:00Z",
+              "collected_at": "2026-11-01T02:00:00Z",
+              "freshness": {
+                "status": "FRESH",
+                "age_seconds": 0.0,
+                "max_age_seconds": 30.0,
+                "basis": "fixture_observation_time"
+              },
+              "metric": {
+                "name": "tls_certificate_expiry",
+                "value": {
+                  "endpoint": "edge.example.test",
+                  "expires_in_hours": 3,
+                  "handshake_succeeded": true
+                },
+                "unit": null,
+                "window": null,
+                "aggregation": null,
+                "sample_count": null
+              },
+              "labels": {},
+              "coverage": {
+                "expected_count": null,
+                "observed_count": null,
+                "complete": true,
+                "expected_items": [],
+                "observed_items": [],
+                "missing_items": [],
+                "extra_items": [],
+                "notes": null
+              },
+              "semantic": {
+                "type": "observation",
+                "notes": "Authored synthetic input, not a runtime capture.",
+                "is_db_commit_rate": null,
+                "flags": []
+              },
+              "raw_ref": null,
+              "raw_sha256": null,
+              "error": null
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {}
+      ]
+    }
+  ]
+}

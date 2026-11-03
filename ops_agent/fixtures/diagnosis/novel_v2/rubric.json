@@ -1,0 +1,59 @@
+{
+  "schema_version": "ops.diagnosis.quality-rubric.v3.1",
+  "policy": "Second author-created synthetic transfer probe. Unchanged v3 scorer semantics: exact observations and supported causes, separate attempted investigation coverage, all executed attempts in denominators. Freeze v3.5 and preserve first 4x2 batch; no result-driven tuning. Not independent production ground truth.",
+  "cases": {
+    "probe2-01": {
+      "observations": [],
+      "supported_causes": [],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status"
+      ]
+    },
+    "probe2-02": {
+      "observations": [
+        "WORKER_STAGE_ELEVATED",
+        "WORKER_REPLICA_SHORTFALL"
+      ],
+      "supported_causes": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED"
+      ],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ]
+    },
+    "probe2-03": {
+      "observations": [
+        "POSTGRES_GUARDRAIL_DEGRADED"
+      ],
+      "supported_causes": [
+        "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED"
+      ],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status"
+      ]
+    },
+    "probe2-04": {
+      "observations": [
+        "WORKER_REPLICA_SHORTFALL",
+        "POSTGRES_GUARDRAIL_DEGRADED"
+      ],
+      "supported_causes": [
+        "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+        "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED"
+      ],
+      "required_tools": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ]
+    }
+  }
+}

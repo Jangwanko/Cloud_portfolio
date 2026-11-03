@@ -1,5 +1,9 @@
 # Validation Results
 
+Ops Agent의 기능별 검증·실험 한계·판정 결함 수정 결과는 [검증 기록](OPS_AGENT_EVALUATION.md)에 통합했다. 실제 장애 설명과 복구 관측은 확인했지만 일반 정확도·자율 복구는 미입증이다.
+
+2026-11-03 통제된 로컬 MVP에서는 PG 잠금 후 `21/21`, Worker 기동 실패 후 `20/20` 저장과 Kubernetes/Argo 설정 복원을 확인했다. Luna 4회·재시도 없음이며 아래 역사적 backlog lifecycle·성능 수치와 별도 실험이다. [MVP 원본 대조 요약](../results/ops-agent/diagnosis/mvp-20261103-summary.json).
+
 이 문서는 현재 검증 상태와 역사적 측정 원본을 분리합니다. 최신 actual incident lifecycle E2E는 `2026-08-23`, recovery calibration은 `2026-08-17`, no-backlog live reference는 `2026-08-12`, public demo-lite endpoint 확인은 `2026-09-14`입니다. [현재 배포 관측](DEPLOYMENT_STATUS.md)에서 접근 범위를 구분합니다. 판정 기준은 [SERVICE_REQUIREMENTS.md](SERVICE_REQUIREMENTS.md), 전체 점검 순서는 [SERVICE_PROCESS_CHECKLIST.md](SERVICE_PROCESS_CHECKLIST.md)를 사용합니다.
 
 ## Terraform 실환경 검증 — OpenStack, 2026-09-25

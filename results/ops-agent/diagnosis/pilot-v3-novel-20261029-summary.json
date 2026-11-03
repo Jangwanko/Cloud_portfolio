@@ -1,0 +1,650 @@
+{
+  "classification": "LIVE_CONTROLLED_DEVELOPMENT_PILOT",
+  "schema_version": "ops.diagnosis.compact.v3.1",
+  "source_directory": "results\\ops-agent\\quality-evaluation\\step10-novel-cases-20261029\\live",
+  "source_sha256": {
+    "manifest.json": "0b420ce38cf32aaf2220c5fd51fc6804dde686374af3c89fa4da246ae4d04389",
+    "summary.json": "9887b27f6fafaeddbdf6c8157d0bb99f202fdf9d76c36f4e0f10a2f0edee4cf2",
+    "rubric.json": "d6e57add169be437e9a93149043ddd606f2e3eb4009b13f2175c193320f03d7e",
+    "catalog.json": "ff3b50ffc5c6853c8de2532fff71849374c4eb7df8ef6499b91c92d5c8f0dc5c",
+    "execution-contract.json": "0d18a8a1d551f2caf9ddf5b8acbdcb377caaf4344ad6bb138c6f34f3f0d2badc"
+  },
+  "model": "gpt-5.6-luna",
+  "execution_identity": {
+    "version": "ops.diagnosis.execution.v3.2",
+    "sha256": "e976094b5337868fd6e1b3443ea2e27fbd5ab860fa9ed1a3f15acea77dd4b3a4"
+  },
+  "rubric_sha256": "043d513398c1e9ffbdc361b2c6acb14ec8e850bcfc17ad11e9b8a7ea7b011abf",
+  "summary": {
+    "schema_version": "ops.diagnosis.pilot-summary.v3.1",
+    "scheduled_attempt_count": 8,
+    "executed_attempt_count": 8,
+    "unrun_attempt_count": 0,
+    "api_request_count": 41,
+    "live": {
+      "attempt_count": 8,
+      "first_pass_contract": 7,
+      "contract_pass": 7,
+      "observations_pass": 7,
+      "causes_pass": 7,
+      "completeness_pass": 8,
+      "joint_pass": 7,
+      "repair_used": 1,
+      "tool_call_count": 32
+    },
+    "fixed_runbook": {
+      "attempt_count": 8,
+      "first_pass_contract": 8,
+      "contract_pass": 8,
+      "observations_pass": 8,
+      "causes_pass": 8,
+      "completeness_pass": 8,
+      "joint_pass": 8,
+      "repair_used": 0,
+      "tool_call_count": 32
+    },
+    "elapsed_seconds": 88.8216648000016,
+    "input_tokens": 112192,
+    "output_tokens": 4782,
+    "usage_coverage_complete": true,
+    "comparison_limit": "Frozen v3.2 execution on four author-created novel synthetic combinations. New expected sets with unchanged scoring semantics; no result-driven tuning or population generalization claim."
+  },
+  "attempts": [
+    {
+      "attempt_id": "pilot-1-1",
+      "fixture_id": "novel-01",
+      "state_sha256": "d05cf161a089b52ca084cdd139fdb60f644e7efee33ab5eeef196c9c49ed4d7c",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Hot-key, poison-record retry, sequence-contention, and consumer-rebalance telemetry were not acquired."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "trace_usage": {
+        "input_tokens": 13652,
+        "output_tokens": 642,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 12.09768669999994,
+      "turn_sha256": {
+        "turn-01.json": "2c98bfec681283aecf729da766dd70120dbf9c7d915f03951519aadd406bc135",
+        "turn-02.json": "f015099126642a728bd505958c08dd5acabadd76db8101d0171fd0382a26aad4",
+        "turn-03.json": "053eccf1b8bd68bb9c3faf9d2fef6f8b6c7f38fd94c5d6c86c3e1a45cfb3e0df",
+        "turn-04.json": "c18b0a2a2280edb42bf46c7c036b3f03fa8be64f4d4ec6a0d09ed512f7fc31e9",
+        "turn-05.json": "9940db9796302391688cdae16fece9805854ffaff538377b18d336dc3a311337"
+      }
+    },
+    {
+      "attempt_id": "pilot-1-2",
+      "fixture_id": "novel-02",
+      "state_sha256": "cdb80d36ec9fc1123e9fa4b42bb687db6c8e8fd8d44d8f0f82d8941737db88ad",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.8d7fe2eb170689b942817941"
+        ],
+        "investigation_gaps": [
+          "Fresh worker replica status is unavailable; the available replica-shortfall measurement is stale, so worker capacity shortfall^s"
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "trace_usage": {
+        "input_tokens": 13626,
+        "output_tokens": 429,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 9.915274099999806,
+      "turn_sha256": {
+        "turn-01.json": "5bb033b1b62459909556cc2b415c0aea54f8528886e2c0ba9f8e5297549365a7",
+        "turn-02.json": "5d4f4498720d7896044fd4960358deb7c288ba9c0adf2fd62656c35ec7aba664",
+        "turn-03.json": "83b906ba8d9cee400ea04c9c681f0fff80ba8de7b9eda47ca4e525318097f348",
+        "turn-04.json": "23aeb68b439b4e420d91b6753f498d4efbb7403104cfb8373cfb670801ea8e9c",
+        "turn-05.json": "fb60c8f77a32a312babac5868742df2e5676a75dae35d8ae8372ee28ba43f29c"
+      }
+    },
+    {
+      "attempt_id": "pilot-1-3",
+      "fixture_id": "novel-03",
+      "state_sha256": "b48540ea72caf323e1a37e8a0e1a88863c5c9de9e71a99dda596483cf5756306",
+      "live_score": {
+        "contract_pass": false,
+        "observations_pass": false,
+        "causes_pass": false,
+        "completeness_pass": true,
+        "joint_pass": false,
+        "first_pass_contract": false,
+        "repair_used": 1,
+        "tool_call_count": 4,
+        "failure_code": "ValueError"
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": null,
+      "trace_usage": {
+        "input_tokens": 17190,
+        "output_tokens": 1079,
+        "response_count": 6,
+        "request_count": 6,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 15.658149600000797,
+      "turn_sha256": {
+        "turn-01.json": "f4941a74210dc83a1fc15733c7494f675d7f49a49108904b2df0adbb91190216",
+        "turn-02.json": "e7905fd5982a4c2ed8b0238fbd3255886613c38138ef91e8536e278ffbec6792",
+        "turn-03.json": "1186042cb93903afad766f773b5d5216fc2bb44d78552c3ca50c8b60c6665e43",
+        "turn-04.json": "b081df19397d2ec8593d17b15e981daeca27c328a82243f3dd7bc597dcced18d",
+        "turn-05.json": "0d4b4aa44dbf30273a4638ec20dd1ae46681eaa5671cfb0d82a49588772678f5",
+        "turn-06.json": "56ace62ef9d7b89d0b04bfb69985cd665aa82559930f6f324bf849f91e4a87e0"
+      }
+    },
+    {
+      "attempt_id": "pilot-1-4",
+      "fixture_id": "novel-04",
+      "state_sha256": "5a059c74a609592002fc264a1de74343ee58f63cdd45a1f029a136cc41c15bb3",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.d861b103d7144fbdfa64a0e9"
+        ],
+        "investigation_gaps": [
+          "No direct causal telemetry supports a candidate cause: worker stage latency is within the scenario baseline, worker capacity is3",
+          "PostgreSQL guardrails are healthy, and other causal telemetry is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "trace_usage": {
+        "input_tokens": 13603,
+        "output_tokens": 429,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 9.50168660000054,
+      "turn_sha256": {
+        "turn-01.json": "5f3c0adfbdc23a8b6d547b38a2f7619de423be9ea9b3afc5d023ca319d5fcb8d",
+        "turn-02.json": "07e20cd040c8beef3f9e76398b4ab579a3bf78dde9f49d9b1d8851d365ec9ad3",
+        "turn-03.json": "8043ec22cd6a342f1e6c45cf797c69ac45884984db1adf77ac977715bca6ca81",
+        "turn-04.json": "1bfcaed92b14dfb97de65a03c5f3bf9b832f3e54e2b340f8ce33dfac366c9b71",
+        "turn-05.json": "8594e43bbafd28bef9400b0f59f5d8a3fbe63c52e710e46e7e8e95fcead7eb96"
+      }
+    },
+    {
+      "attempt_id": "pilot-2-1",
+      "fixture_id": "novel-01",
+      "state_sha256": "bd5bbe382d3ed5c9b435f23f56e08a76b208d1263f67d7389b9726519f9a950e",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ]
+          },
+          {
+            "signal": "POSTGRES_GUARDRAIL_DEGRADED",
+            "evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.04c3ee01cbb6e8a749aa13a3"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          },
+          {
+            "hypothesis": "POSTGRES_GUARDRAIL_PRESSURE_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_postgres_health.1f44cc12bdfaa8837a82cd88"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.ed0445c56b0c6295b7584a3c"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency was within the scenario baseline; no additional causal telemetry was available to distinguish the relative "
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "trace_usage": {
+        "input_tokens": 13659,
+        "output_tokens": 651,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 11.038675499999954,
+      "turn_sha256": {
+        "turn-01.json": "1d1dd2a2835c40f2de26e4a7ff4edfb70258ec47bc2815cd4dba58987e89ec30",
+        "turn-02.json": "859a2d6d6c697c3833e3d1bdd746561c00f0967c0fb907b191411520c053aacb",
+        "turn-03.json": "f35b721ada0d9851567b92dba8c4ba3d70993d6de2379f1963520e66922a2d77",
+        "turn-04.json": "117b2bdd81052a2150cc98d4017b26ef7963419d488c4f9315c3b2be05191a2e",
+        "turn-05.json": "7bb3939b34b865ccf75c349ae9d929111dab2667591a9c744bfc6aeeffbcb87f"
+      }
+    },
+    {
+      "attempt_id": "pilot-2-2",
+      "fixture_id": "novel-02",
+      "state_sha256": "78809ce8b5c8b90ae13f80a4ee2392eb2f972edf5a0b446b18a80d5599e767dd",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_STAGE_ELEVATED",
+            "evidence_ids": [
+              "diagnosis.get_worker_stage_latency.af49613d86b32c4dc5a3611f"
+            ]
+          }
+        ],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.8d7fe2eb170689b942817941"
+        ],
+        "investigation_gaps": [
+          "Fresh direct causal evidence is unavailable for worker capacity shortfall and PostgreSQL guardrail pressure; the replica and, in"
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "trace_usage": {
+        "input_tokens": 13560,
+        "output_tokens": 472,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 9.241114899999957,
+      "turn_sha256": {
+        "turn-01.json": "ff98822484132d14ca7252fe529628a53976162f3ace20fb30e87c5122be2f92",
+        "turn-02.json": "7e1e0fd905b7266162abe0ac18b692c7c844729a823ae756ccb22c24cf0f8d4e",
+        "turn-03.json": "64acac38243615ecd2cd463c274e20d8cb7c94a4109f117ddce9dad429358ff8",
+        "turn-04.json": "ecb4bfc3d07b44e949b199ce96b46ea3964581eca349a895d012081344040428",
+        "turn-05.json": "9494ac35e72c077585cd24ae6bb0c255f0d92caa0b4d82193398c72d01b7dc8c"
+      }
+    },
+    {
+      "attempt_id": "pilot-2-3",
+      "fixture_id": "novel-03",
+      "state_sha256": "7d5a5ad9fb5693eda554ee8f17b1eb587cbd04bb88a327740d59a29eb77b3397",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [
+          {
+            "signal": "WORKER_REPLICA_SHORTFALL",
+            "evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ]
+          }
+        ],
+        "hypotheses": [
+          {
+            "hypothesis": "WORKER_CAPACITY_SHORTFALL_SUSPECTED",
+            "support_status": "SUPPORTED",
+            "supporting_evidence_ids": [
+              "diagnosis.get_worker_replica_status.7844fa1e438fe4c8af308fc8"
+            ],
+            "conflicting_evidence_ids": [],
+            "evidence_gaps": []
+          }
+        ],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc"
+        ],
+        "investigation_gaps": [
+          "Worker stage latency measurement was unavailable.",
+          "KEDA status measurement was unavailable.",
+          "No direct telemetry was acquired for hot keys, poison-record retries, sequence contention, or consumer rebalances."
+        ],
+        "conclusion": "SUPPORTED_CANDIDATES"
+      },
+      "trace_usage": {
+        "input_tokens": 13263,
+        "output_tokens": 533,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 10.126797300000362,
+      "turn_sha256": {
+        "turn-01.json": "c8b7aac9b741b4595b9ff73fcb1314dda8183c54afaadb4439f769d8b11a25bc",
+        "turn-02.json": "d965f5ec95757dc08b495fa64549fd12aefab28220af468f887cf01b37226804",
+        "turn-03.json": "349d348902b3e8667256d343a9889828e423067da49a90607b071c833ba33cd7",
+        "turn-04.json": "3ee052d709edf04e50ec83a96d8ae61f8bd074da58c7a295fb78568b7c803b45",
+        "turn-05.json": "4dc715771e36ae37c9c17121a9f63f647065fad34417ab3b17a01a88a77374c7"
+      }
+    },
+    {
+      "attempt_id": "pilot-2-4",
+      "fixture_id": "novel-04",
+      "state_sha256": "26cd4198f17327cd9cffcdafd3161af44980487e5b5f97013b89871081702d57",
+      "live_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "fixed_runbook_score": {
+        "contract_pass": true,
+        "observations_pass": true,
+        "causes_pass": true,
+        "completeness_pass": true,
+        "joint_pass": true,
+        "first_pass_contract": true,
+        "repair_used": 0,
+        "tool_call_count": 4,
+        "failure_code": null
+      },
+      "tool_calls": [
+        "get_worker_stage_latency",
+        "get_postgres_health",
+        "get_worker_replica_status",
+        "get_keda_status"
+      ],
+      "decision": {
+        "schema_version": "ops.diagnosis.decision.v3",
+        "input_condition": "CORE_BACKLOG_PRESSURE=PRESENT",
+        "observations": [],
+        "hypotheses": [],
+        "context_evidence_ids": [
+          "prometheus.kafka_consumergroup_lag.3250192dc6aa",
+          "prometheus.kafka_consumergroup_lag.47658d42fc91",
+          "prometheus.kafka_consumergroup_lag.5faeb6beddfc",
+          "diagnosis.get_keda_status.d861b103d7144fbdfa64a0e9"
+        ],
+        "investigation_gaps": [
+          "No fresh positive causal signal was observed: worker stage latency was within the scenario baseline, worker capacity was fully\n\n",
+          "available, and PostgreSQL guardrails were healthy; direct telemetry for other candidate causes is unavailable."
+        ],
+        "conclusion": "ABSTAIN"
+      },
+      "trace_usage": {
+        "input_tokens": 13639,
+        "output_tokens": 547,
+        "response_count": 5,
+        "request_count": 5,
+        "usage_coverage_complete": true
+      },
+      "elapsed_seconds": 11.242280100000244,
+      "turn_sha256": {
+        "turn-01.json": "52ee8221f57ad66ed0b883afdbd13faa0fefff70c4288f7bd8e75e6295633189",
+        "turn-02.json": "ba7b4503030de0c74cedb7c08348ecbc04b30c692898c0736a4394b82ebe626c",
+        "turn-03.json": "3b2d73396decc35c481a5fb08baa54f87a0ac4946a551200c890c6e637efa342",
+        "turn-04.json": "381c48c4ab50271d5fd8f4777c84d818b32dbb403c59dc16e4476709bb53d9ed",
+        "turn-05.json": "fbf0cb25c47c46276ea8bdd38671f4783c4b0db293cb29280a52dde0348c75f4"
+      }
+    }
+  ]
+}

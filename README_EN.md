@@ -2,7 +2,7 @@
 
 [Korean](README.md) | [English](README_EN.md)
 
-A hands-on Kubernetes operations project built around an asynchronous Kafka workload, focused on **lag-based autoscaling, observability, failure recovery, and GitOps delivery**. An AI agent investigates incidents using previously collected operational evidence.
+A hands-on Kubernetes operations project for **Cloud / DevOps / SRE / Platform Engineering**, built around a Kafka event workload. It validates **lag-based scaling, data preservation, failure recovery and GitOps delivery**, with an Ops Agent assisting investigation from operational evidence and runbooks.
 
 [Public Demo](https://vm118.js-banjiha.cloud/demo/order-dashboard.html) · [Grafana](https://vm118.js-banjiha.cloud/grafana/d/messaging-portfolio-overview/reliable-event-processing-operations-overview?orgId=1&refresh=5s) · [Swagger](https://vm118.js-banjiha.cloud/docs) · [Architecture](docs/ARCHITECTURE.md) · [Test Results](docs/TEST_RESULTS.md)
 
@@ -17,6 +17,7 @@ A hands-on Kubernetes operations project built around an asynchronous Kafka work
 | PostgreSQL runtime outage | Separate API acceptance from Worker persistence with Kafka | Core and notification lag returned to `0/0` after recovery |
 | Same-stream ordering | Partition by `stream_id` and commit offsets after database commit | Ordering `100/100`, missing and duplicate `0` |
 | Infrastructure rebuild and resize | Apply Terraform on OpenStack | Rebuilt 11 resources; resized CPU 2→3 with data preserved; final plan showed no changes |
+| Evidence-based incident investigation | Approved local PG lock and Worker startup drills | 2026-11-03: PG `21/21`, Worker `20/20` persisted and settings restored; four Luna calls |
 
 ## Architecture
 
@@ -45,6 +46,10 @@ The Worker commits the event, request status and notification outbox in one Post
 
 ## Key engineering decisions
 
+### From Redis queue-first to a Kafka event stream
+
+The initial queue-first design preserved requests during database outages. Kafka partitions and offsets made same-stream ordering, retry boundaries and consumer progress explicit, and the scaling signal moved from Redis queue depth to Kafka consumer lag. Historical Redis and Kafka measurements use different conditions and are not a controlled migration performance comparison. [Evolution and evidence](docs/PROJECT_EVOLUTION.md) · [Kafka experiments](docs/KAFKA_EXPERIMENT.md)
+
 ### Different scaling signals for API and Worker
 
 - The API uses a CPU HPA because its synchronous path ends after a Kafka append.
@@ -63,6 +68,12 @@ The Worker commits the event, request status and notification outbox in one Post
 - CI runs tests, rendering, and static checks before publishing an immutable commit-SHA image.
 - Argo revision, desired image, Pod image, and imageID connect source to the running workload.
 
+### Infrastructure automation and observability
+
+GitHub Actions validates tests, non-root container execution, Kubernetes rendering and Terraform. Argo CD reconciles the selected Git revision. Live OpenStack Terraform evidence covers an 11-resource rebuild and a VM resize from 2 to 3 vCPU with data preserved and a final no-change plan. AWS remains a separate migration blueprint.
+
+Prometheus and Grafana expose Kafka append, consumer lag, Worker persistence and database state. API acceptance is tracked separately from durable storage, and current lag from historical peaks. [GitOps](docs/GITOPS.md) · [Terraform validation](infra/terraform/envs/openstack-demo-lite/VALIDATION.md) · [Observability](docs/OBSERVABILITY.md)
+
 ## Verified incident
 
 On 2026-08-23, an actual `local-ha` run applied `75→330→75 records/s` across 64 streams without changing the existing Worker or KEDA policy.
@@ -80,24 +91,29 @@ On 2026-08-23, an actual `local-ha` run applied `75→330→75 records/s` across
 
 ## Ops Agent: Evidence-grounded Incident Diagnosis
 
-After rule-based incident detection, an AI agent investigates possible causes using previously collected operational evidence. It works within an allowlisted evidence set, and a validator checks its output.
+The Ops Agent connects fixed observations, runbook retrieval and Luna investigation to support platform operations. Code owns observed state and recovery verification; the model proposes causes, counter-evidence, next checks and operator-reviewed recovery suggestions. The model has no cluster write access.
 
 ```mermaid
 flowchart LR
     Signals[Operational Signals] --> Evidence[Frozen Evidence Bundle]
-    Evidence --> Detection[Deterministic Detection]
-    Detection -->|PRESENT| Diagnosis[Bounded LLM Diagnosis]
-    Diagnosis --> Validation[Deterministic Validation]
-    Validation --> Incident[Incident Record]
+    Evidence --> Detection[Code-owned Observations]
+    Evidence --> Runbooks[Runbook Search]
+    Detection --> Diagnosis[Bounded Luna Investigation]
+    Runbooks --> Diagnosis
+    Diagnosis --> Review[Operator Review]
+    Detection --> Recovery[Code Recovery Verification]
+    Review --> Incident[Incident Record]
+    Recovery --> Incident
 ```
 
-- It classifies supporting evidence, conflicting evidence, and gaps for predefined hypotheses.
-- The validator rejects fabricated evidence IDs and attempts to declare recovery or remediation.
-- Deterministic logic retains authority over incident detection, recovery, and runtime changes.
+On 2026-11-03, two controlled drills reused the existing fault runners on `kind-messaging-ha`. After rollback, Luna received only saved baseline/during-fault evidence. Injection truth, future observations and recovery results were withheld.
 
-The Public Demo replays a verified past incident. The Scenario Lab tests whether controlled observations change the agent's next investigation step.
+| Drill | Luna's evidence-based finding | Code-verified recovery |
+| --- | --- | --- |
+| PostgreSQL row lock | Observed waiter/blocker supported a DB-lock candidate | `21/21` persisted, lock released, lag `0` |
+| Worker startup failure | `No module named worker.consumer` identified a startup failure | `20/20` persisted, Worker `2/2`, API ready |
 
-[Ops Agent design and validation](docs/OPS_AGENT.md)
+Four calls ran without automatic retries. Kubernetes settings and Argo policy were restored, and incident storage/search was verified. Both fault responses abstained from recovery actions; general diagnostic accuracy and operator time savings remain unproven. The Public Demo replays historical records. [MVP evidence and limits](docs/OPS_AGENT_EVALUATION.md) · [Summary](results/ops-agent/diagnosis/mvp-20261103-summary.json) · [Design](docs/OPS_AGENT.md)
 
 ## AI development workflow — Codex Harness
 

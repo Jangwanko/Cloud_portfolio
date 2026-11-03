@@ -1,0 +1,1049 @@
+{
+  "schema_version": "ops.live-observation-probe.v1",
+  "date_kst": "2026-10-31",
+  "classification": "BOUNDED_LOCAL_LIVE_TRAFFIC_AND_OBSERVATION",
+  "traffic": {
+    "run_id": "observation-20261031T062823Z",
+    "target": "http://127.0.0.1",
+    "max_events": 60,
+    "maximum_rate_per_second": 1,
+    "status": "COMPLETE",
+    "accepted_count": 60,
+    "persisted_count": 60,
+    "model_calls": 0,
+    "data_reset": false,
+    "stream_id": 4978
+  },
+  "phases": [
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-startup",
+      "interval_seconds": 15.0,
+      "summary_sha256": "ea849a89f06c5d4e9e623ac341450734588340564f22ed992b751c9b350f6ce6",
+      "inventory_sha256": "8980808920763cf5b8c7bd6a73b0ac6b8c0e012539905de1e6d2115de98f00e2",
+      "activation_state": "UNKNOWN",
+      "reason_codes": [
+        "SEQUENCE_KAFKA_SOURCE_TIMESTAMPS_NOT_STRICTLY_INCREASING",
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE",
+        "SEQUENCE_SOURCE_IDENTITY_MISMATCH"
+      ],
+      "diagnosis_gate": "SKIPPED_INSUFFICIENT_ACTIVATION_EVIDENCE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "481e89ff-6c54-4d40-86f8-7c9177631f52",
+          "bundle_sha256": "bc0ebc8faaf6d70c9f0c238361a255f15b657abc09cc74f21fc423dbfe59767a",
+          "collection": {
+            "started_at": "2026-10-31T06:25:39.555829Z",
+            "completed_at": "2026-10-31T06:25:40.316220Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": false,
+          "total_lag_records": null,
+          "lag_slope_60s_records_per_second": null,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": null,
+            "available_replicas": null,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+                "KAFKA_REQUIRED_EXPORTER_IDENTITY_MISMATCH",
+                "KAFKA_REQUIRED_SOURCE_TIMESTAMP_MISMATCH",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_ERROR",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_CONCENTRATION_OBSERVED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_ERROR",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "DB_DEGRADED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_MISSING",
+                "REQUIRED_EVIDENCE_STATUS_ERROR"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "WORKER_REPLICA_UNAVAILABLE_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_FIELD_INVALID"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "6f75b29c-04d7-4236-8d28-d43e933a0aae",
+          "bundle_sha256": "05afe01f00d7a56fd9f8f93b77a77cb68c2e7bf2f56d73ec2d2dd312c5b38af1",
+          "collection": {
+            "started_at": "2026-10-31T06:25:54.544640Z",
+            "completed_at": "2026-10-31T06:25:55.514244Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": false,
+          "total_lag_records": null,
+          "lag_slope_60s_records_per_second": null,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+                "KAFKA_REQUIRED_EXPORTER_IDENTITY_MISMATCH",
+                "KAFKA_REQUIRED_SOURCE_TIMESTAMP_MISMATCH",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_MISSING",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_CONCENTRATION_OBSERVED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_MISSING",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "DB_DEGRADED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_MISSING",
+                "REQUIRED_EVIDENCE_STATUS_ERROR"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "3c36f499-0880-43e3-9bf2-2564c49ac02a",
+          "bundle_sha256": "b2034361f4f4da5cee7349534319063f582901c202d4e32498f5215b0abe136a",
+          "collection": {
+            "started_at": "2026-10-31T06:26:09.549044Z",
+            "completed_at": "2026-10-31T06:26:10.306066Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": false,
+          "total_lag_records": null,
+          "lag_slope_60s_records_per_second": null,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+                "KAFKA_REQUIRED_EXPORTER_IDENTITY_MISMATCH",
+                "KAFKA_REQUIRED_SOURCE_TIMESTAMP_MISMATCH",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_MISSING",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_CONCENTRATION_OBSERVED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_COLLECTION_TIMESTAMP_MIXED",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_STATUS_MISSING",
+                "REQUIRED_EXPORTER_IDENTITY_MIXED",
+                "REQUIRED_LABEL_SELECTOR_MISMATCH",
+                "REQUIRED_PARTITION_COVERAGE_INCOMPLETE",
+                "REQUIRED_RAW_SOURCE_MIXED",
+                "REQUIRED_SAMPLE_GRID_MISMATCH",
+                "REQUIRED_SEMANTIC_ANOMALY",
+                "REQUIRED_SOURCE_TIMESTAMP_MISSING",
+                "REQUIRED_SOURCE_TIMESTAMP_MIXED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "DB_DEGRADED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_EVIDENCE_FRESHNESS_UNKNOWN",
+                "REQUIRED_EVIDENCE_MISSING",
+                "REQUIRED_EVIDENCE_STATUS_ERROR"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-post-startup",
+      "interval_seconds": 15.0,
+      "summary_sha256": "23942e46ddd8055097f34cdb00fc76c4234b93917a09be5439e11cb43002f7e7",
+      "inventory_sha256": "81018ffcf67f77e12eb0396821f61ebe23a790da720f7e0b404f66c623da4f4a",
+      "activation_state": "ABSENT",
+      "reason_codes": [
+        "LATEST_FULL_WINDOW_BACKLOG_ZERO_WITHOUT_SEQUENCE_ACTIVATION"
+      ],
+      "diagnosis_gate": "SKIPPED_NO_BACKLOG_PRESSURE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "fd727f6f-a6af-4b6c-a65c-a183ebf4b3cf",
+          "bundle_sha256": "8f592e64456b107b26fc2a3eacfd373701f1fc966e5ded902f75a76e3fa3222a",
+          "collection": {
+            "started_at": "2026-10-31T06:27:33.167459Z",
+            "completed_at": "2026-10-31T06:27:34.243592Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "PRESENT",
+              "reason_codes": [
+                "APPLICATION_READINESS_POSTGRES_SYNC_STANDBYS_BELOW_MINIMUM"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "8ecdcd73-8f72-420e-9d70-646859fc38e7",
+          "bundle_sha256": "eec0a587d6aad8d2653181dde1acd73c588a77b3b5a600a7e1b6f337e8e19be9",
+          "collection": {
+            "started_at": "2026-10-31T06:27:48.156804Z",
+            "completed_at": "2026-10-31T06:27:49.016924Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "f2e2b5c0-1bb4-47fe-801e-fd660f4d340d",
+          "bundle_sha256": "e4fd785329fc2cb449e6b0c9cbb318b11bb34284371041bd1eef43638fb34cdf",
+          "collection": {
+            "started_at": "2026-10-31T06:28:03.158864Z",
+            "completed_at": "2026-10-31T06:28:03.907918Z",
+            "status": "PARTIAL"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-during-traffic",
+      "interval_seconds": 15.0,
+      "summary_sha256": "7eb3163909cf58346825207e3bc3011b8c493ea70c34ef3df1a4c3787a319d2d",
+      "inventory_sha256": "5baab01f2800506ae1ff2cc2450ad0c8bde79d1608500e1084b3f6be1690777a",
+      "activation_state": "UNKNOWN",
+      "reason_codes": [
+        "CALIBRATED_BACKLOG_ACTIVATION_SEQUENCE_NOT_OBSERVED"
+      ],
+      "diagnosis_gate": "SKIPPED_INSUFFICIENT_ACTIVATION_EVIDENCE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "5bcf2f59-e656-4222-9432-3606c7c7efc9",
+          "bundle_sha256": "08825f6ebf62268763b63e17c2c49c73533878c103c3e3029a3be28922c46fca",
+          "collection": {
+            "started_at": "2026-10-31T06:28:33.682498Z",
+            "completed_at": "2026-10-31T06:28:34.403280Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "BACKLOG_OBSERVED_IN_WINDOW",
+                "PRESSURE_POLICY_UNCALIBRATED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_OBSERVED_IN_WINDOW",
+                "CONCENTRATION_POLICY_UNCALIBRATED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "320a56aa-46a8-4e12-94ee-d05b14420273",
+          "bundle_sha256": "f37166946afb6fea635a94597c6f4f70b0998cc35eb28d669225177b205ecf60",
+          "collection": {
+            "started_at": "2026-10-31T06:28:48.674183Z",
+            "completed_at": "2026-10-31T06:28:49.356258Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "BACKLOG_OBSERVED_IN_WINDOW",
+                "PRESSURE_POLICY_UNCALIBRATED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_OBSERVED_IN_WINDOW",
+                "CONCENTRATION_POLICY_UNCALIBRATED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "f6f34d4e-f544-416b-8445-4881f64e6f99",
+          "bundle_sha256": "aa89ae97f108b13ae0b50db039b288d5e50e27b9eb8e5116480e1c27b98b7fa8",
+          "collection": {
+            "started_at": "2026-10-31T06:29:03.680577Z",
+            "completed_at": "2026-10-31T06:29:04.426002Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "BACKLOG_OBSERVED_IN_WINDOW",
+                "PRESSURE_POLICY_UNCALIBRATED"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_OBSERVED_IN_WINDOW",
+                "CONCENTRATION_POLICY_UNCALIBRATED"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-after-traffic",
+      "interval_seconds": 30.0,
+      "summary_sha256": "e771793b812e14e76f1c75c555be4efacd3ea28b65f3723ee8a0486ec512d851",
+      "inventory_sha256": "3534c6ef1fd52abcbc5a75917eb1f4da3e3413ebf4521f168e94f676ba7703d0",
+      "activation_state": "ABSENT",
+      "reason_codes": [
+        "LATEST_FULL_WINDOW_BACKLOG_ZERO_WITHOUT_SEQUENCE_ACTIVATION"
+      ],
+      "diagnosis_gate": "SKIPPED_NO_BACKLOG_PRESSURE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "f88d16d5-dce0-4da1-bb62-3e14b9fb4155",
+          "bundle_sha256": "b4fed5556d33c39b33493d4a1b0f4f4aa6e563719d8fc0fbfe924713992aeed8",
+          "collection": {
+            "started_at": "2026-10-31T06:29:43.077210Z",
+            "completed_at": "2026-10-31T06:29:43.895517Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "56c5ed86-5cb5-4df9-819d-0aaf3697c921",
+          "bundle_sha256": "dbff932fa852a35794b695a8411cc9c4cb4537706ee951817e0eb7c128a1403d",
+          "collection": {
+            "started_at": "2026-10-31T06:30:13.083067Z",
+            "completed_at": "2026-10-31T06:30:13.835123Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "eaf4b554-ae88-4594-a126-109b85bb233f",
+          "bundle_sha256": "4172dcabab6c19b68c6983e6a7248fdd7f848e314c31411d234043be284af9e4",
+          "collection": {
+            "started_at": "2026-10-31T06:30:43.085373Z",
+            "completed_at": "2026-10-31T06:30:43.896100Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-after-traffic-calibrated",
+      "interval_seconds": 15.0,
+      "summary_sha256": "887be7ed4d99b95c6b799e7dec69988146709b9a821d61164403db2b2f869496",
+      "inventory_sha256": "41e50046fda1463c476b801f91fd0c4988517986ccc9088904fb19bcbfbc4d1c",
+      "activation_state": "UNKNOWN",
+      "reason_codes": [
+        "SEQUENCE_RATE_LAG_ARITHMETIC_MISMATCH",
+        "SEQUENCE_REQUIRED_EVIDENCE_UNUSABLE"
+      ],
+      "diagnosis_gate": "SKIPPED_INSUFFICIENT_ACTIVATION_EVIDENCE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "86f89d3b-dec9-4b88-9379-6c422dbfa611",
+          "bundle_sha256": "98d678b97779db231013d3613e1f8fa3823a0048a93ad2dfea27383ad3b13261",
+          "collection": {
+            "started_at": "2026-10-31T06:30:12.406202Z",
+            "completed_at": "2026-10-31T06:30:13.185694Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "7fde7ad4-b8c3-416f-9b33-cf1b9daf19e2",
+          "bundle_sha256": "dbc689332ad57618bad8a848135a555a227ab7f2350c740dadf9ff8d0b020616",
+          "collection": {
+            "started_at": "2026-10-31T06:30:27.404339Z",
+            "completed_at": "2026-10-31T06:30:28.103286Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": false,
+          "total_lag_records": null,
+          "lag_slope_60s_records_per_second": null,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "CORE_BACKLOG_PRESSURE_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "UNKNOWN",
+              "reason_codes": [
+                "PARTITION_LAG_CONCENTRATION_OBSERVED_REQUIRED_EVIDENCE_UNUSABLE",
+                "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "6c744961-3d0a-4cec-8a8f-c1dc9f9f4d74",
+          "bundle_sha256": "21365f58346124e40c66ed59da520213d595c822b445c1d2834a510ac0fe6ead",
+          "collection": {
+            "started_at": "2026-10-31T06:30:42.404940Z",
+            "completed_at": "2026-10-31T06:30:43.394070Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "directory": "results/ops-agent/shadow/20261031-live-final-confirmation",
+      "interval_seconds": 15.0,
+      "summary_sha256": "baba9d96cdf6055942e919e15edbd31235aa3ecf791cb32433e1739e8ebb42df",
+      "inventory_sha256": "3277d59d367ce399741e021f4c9d967a28ff33723656a85a91185c2d901221d7",
+      "activation_state": "ABSENT",
+      "reason_codes": [
+        "LATEST_FULL_WINDOW_BACKLOG_ZERO_WITHOUT_SEQUENCE_ACTIVATION"
+      ],
+      "diagnosis_gate": "SKIPPED_NO_BACKLOG_PRESSURE",
+      "verified_files": 18,
+      "captures": [
+        {
+          "bundle_id": "0f0a563c-5427-4edd-83cb-e8bf94094a07",
+          "bundle_sha256": "da19ad4b2074e495da89a42597fc281ee2ee5c65813d3fcb0c7f33764304600b",
+          "collection": {
+            "started_at": "2026-10-31T06:31:54.288254Z",
+            "completed_at": "2026-10-31T06:31:55.011306Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "c7096c67-048d-475f-b9bd-d451324bae92",
+          "bundle_sha256": "b5932f247445b70d999b58bf225533c3581133e4c1adaef8e97e1b660d2bd290",
+          "collection": {
+            "started_at": "2026-10-31T06:32:09.292265Z",
+            "completed_at": "2026-10-31T06:32:09.990338Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        },
+        {
+          "bundle_id": "fc3ab49a-d932-4465-af0e-be420f258d5c",
+          "bundle_sha256": "63b86e061ba58c96b14e06a593b633d56dda67cb3e2b2e86f1e34977a29f3c02",
+          "collection": {
+            "started_at": "2026-10-31T06:32:24.285371Z",
+            "completed_at": "2026-10-31T06:32:25.229341Z",
+            "status": "COMPLETE"
+          },
+          "required_evidence_usable": true,
+          "total_lag_records": 0,
+          "lag_slope_60s_records_per_second": 0.0,
+          "worker_context": {
+            "desired_replicas": 2,
+            "current_replicas": 2,
+            "ready_replicas": 2,
+            "available_replicas": 2,
+            "observed_generation": 431
+          },
+          "conditions": {
+            "CORE_BACKLOG_PRESSURE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "BACKLOG_ZERO_FOR_FULL_WINDOW"
+              ]
+            },
+            "PARTITION_LAG_CONCENTRATION_OBSERVED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_LAG_TO_CONCENTRATE_FOR_FULL_WINDOW"
+              ]
+            },
+            "DB_DEGRADED": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "NO_POSTGRES_DEGRADATION_REASON"
+              ]
+            },
+            "WORKER_REPLICA_UNAVAILABLE": {
+              "state": "ABSENT",
+              "reason_codes": [
+                "ALL_DESIRED_WORKER_REPLICAS_AVAILABLE"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "final_readiness": {
+    "app_version": "2.1.0",
+    "status": "ready",
+    "reason": [],
+    "grace_remaining_seconds": null,
+    "queue_backend": "kafka",
+    "kafka": {
+      "bootstrap_reachable": true
+    },
+    "postgres": {
+      "ha_mode": true,
+      "primary_reachable": true,
+      "standby_count": 2,
+      "sync_standby_count": 2,
+      "max_replication_delay_bytes": 0
+    }
+  },
+  "model_calls": 0,
+  "traffic_script_sha256": "957bdef2feb7bd60e79dde5cdea85d84728e6ea4971855ea293b766dc67fc76d",
+  "traffic_summary_sha256": "99e923d1b81e99c55d45e7dce1181563a5f113736c3e2bc229531f46d221c73c",
+  "operational_changes": {
+    "postgres_sync_configuration_restored": true,
+    "procedure": "scripts/configure_postgres_sync.ps1",
+    "validation_log": "results/validation/20261031T062722Z-541a86f1/output.log",
+    "final_primary": "messaging-postgresql-ha-postgresql-0",
+    "sync_or_quorum_standbys": 2,
+    "note": "Readiness became ready before helper completion; do not attribute all recovery to the helper."
+  },
+  "quality_exception": {
+    "directory": "20261031-live-after-traffic-calibrated",
+    "capture": 2,
+    "reason": "REQUIRED_RANGE_END_SOURCE_TIME_MISMATCH",
+    "observed_seconds": 5.019,
+    "limit_seconds": 5.0,
+    "threshold_changed": false
+  },
+  "limits": [
+    "Bounded observation only; continuous daemon and restartable incident state are not implemented here.",
+    "One user and stream with test events retained; no data reset, fault injection, primary promotion or load-capacity claim.",
+    "30-second post-traffic window retained separately from standard 15-second runs.",
+    "No PRESENT activation; live follow-up diagnosis and LLM comparison not exercised."
+  ]
+}

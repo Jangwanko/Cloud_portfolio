@@ -1,0 +1,361 @@
+{
+  "status": "FAULT_AND_RECOVERY_VERIFIED_DIAGNOSIS_PARTIAL",
+  "scope": "Local kind-messaging-ha/messaging-app; model explanation of saved observations, not autonomous live investigation",
+  "fault": {
+    "mechanism": "50-second transaction holding one newly-created room_sequences row FOR UPDATE",
+    "real_world_analogue": "Long-lived transaction blocking concurrent sequence updates",
+    "overlap": "Generic Worker/DB runbook symptoms overlap; indexed procedures do not supply pg_blocking_pids diagnosis or a lock-release answer key",
+    "new_runbook_added_before_test": false,
+    "server_bounded_release": true,
+    "configuration_changes": false,
+    "directly_modified_row_values": false
+  },
+  "observation": {
+    "status": "COMPLETE",
+    "accepted": 21,
+    "persisted": 21,
+    "all_accepted_verified": true,
+    "pg_uids_and_restarts_unchanged": true,
+    "remaining_owned_sessions": 0,
+    "final_kafka_lag": 0,
+    "consecutive_healthy_zero_lag_samples": 3,
+    "failure": null
+  },
+  "steps": [
+    {
+      "phase": "01-symptoms",
+      "accepted": 21,
+      "persisted": 6,
+      "http_404": 15,
+      "target_pending": 12,
+      "control_pending": 3,
+      "waiting": [
+        {
+          "pid": 34804,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "blocking_pids": [
+            36018
+          ],
+          "transaction_age_seconds": 9.723837,
+          "statement_kind": "INSERT INTO room_sequences ... ON CONFLICT DO UPDATE"
+        }
+      ],
+      "blockers": [
+        {
+          "pid": 36018,
+          "state": "active",
+          "transaction_age_seconds": 9.763445
+        }
+      ]
+    },
+    {
+      "phase": "02-investigation",
+      "accepted": 21,
+      "persisted": 6,
+      "http_404": 15,
+      "target_pending": 12,
+      "control_pending": 3,
+      "waiting": [
+        {
+          "pid": 34804,
+          "state": "active",
+          "wait_event_type": "Lock",
+          "wait_event": "transactionid",
+          "blocking_pids": [
+            36018
+          ],
+          "transaction_age_seconds": 15.62723,
+          "statement_kind": "INSERT INTO room_sequences ... ON CONFLICT DO UPDATE"
+        }
+      ],
+      "blockers": [
+        {
+          "pid": 36018,
+          "state": "active",
+          "transaction_age_seconds": 15.666872
+        }
+      ]
+    },
+    {
+      "phase": "03-recovery",
+      "accepted": 21,
+      "persisted": 21,
+      "http_404": 0,
+      "target_pending": 0,
+      "control_pending": 0,
+      "waiting": [],
+      "blockers": []
+    }
+  ],
+  "model_results": [
+    {
+      "phase": "01-symptoms",
+      "model": "gpt-5.6-luna",
+      "severity": "DEGRADED",
+      "summary": "애플리케이션 readiness와 Kafka bootstrap 연결은 정상이며 Worker 2개도 모두 Ready 상태다. 그러나 최근 수락된 21건 중 일부만 즉시 persisted로 확인되고 다수는 아직 상태 조회에서 404이며, consumer lag도 일부 파티션에서 14까지 관측된다.",
+      "hypotheses": [
+        "Worker의 Kafka 소비 이후 persistence 처리 지연 또는 특정 파티션의 재시도/backpressure가 원인 후보다. 파티션 0 lag 14와 일부 accepted 요청의 미확정 상태가 이를 시사하지만 원인은 아직 확정되지 않았다.",
+        "두 Worker pod 모두 현재 Ready이지만 각각 restart_count 1과 원인 불명 exit code 255가 있어, 과거 재시작이 처리 지연에 기여했을 가능성은 확인 대상이다."
+      ],
+      "runbook_applicability": {
+        "RB-PG-HEALTH": "NEEDS_MORE_EVIDENCE",
+        "RB-WORKER-LAG": "APPLICABLE",
+        "RB-KAFKA-INTAKE": "EXCLUDED"
+      },
+      "change": "이전 판단은 제공되지 않아 이번이 초기 평가다. 현재의 202 수락·일부 persisted 결과와 파티션 lag 증거를 반영해 전면 장애가 아닌 제한적 persistence 지연으로 분류했으며, readiness 정상만으로 원인을 확정하거나 배제하지 않았다.",
+      "usage": {
+        "input_tokens": 16756,
+        "output_tokens": 2071
+      },
+      "record_sha256": "daf6b5d466c173b696468e87a71e59a7aa6c6eace465856eb6581d1232a2d234"
+    },
+    {
+      "phase": "02-investigation",
+      "model": "gpt-5.6-luna",
+      "severity": "DEGRADED",
+      "summary": "애플리케이션 readiness와 Kafka bootstrap 연결, Worker 2개 및 PostgreSQL HA 구성은 현재 정상 관측된다. 그러나 최근 21건이 202로 수락된 뒤 15건이 즉시 persisted로 확인되지 않았고, consumer lag가 파티션 0에서 14까지 상승했으며 PostgreSQL transactionid lock 대기가 직접 관측되었다.",
+      "hypotheses": [
+        "PostgreSQL의 room_sequences 갱신이 transactionid lock에 대기하면서 Worker persistence가 지연되고, 그 결과 특정 파티션 lag가 상승했을 가능성이 있다. 이는 현재 원인 후보이며 확정 원인은 아니다.",
+        "두 Worker pod가 현재 Ready이지만 각각 최근 restart_count 1과 exit code 255가 있어, 재시작 전후 처리 지연 또는 재시도에 기여했을 가능성을 확인할 필요가 있다."
+      ],
+      "runbook_applicability": {
+        "RB-PG-HEALTH": "APPLICABLE",
+        "RB-WORKER-LAG": "APPLICABLE",
+        "RB-KAFKA-INTAKE": "EXCLUDED"
+      },
+      "change": "이전에는 DB 경로 문제를 직접 입증할 lock 증거가 없어 RB-PG-HEALTH를 추가 확인 상태로 분류했지만, 이번 관측에서는 room_sequences INSERT의 transactionid lock 대기와 blocker가 직접 확인되어 해당 런북 조건을 MET으로 변경했다. 수락 이벤트 일부 미확정과 lag에 따른 DEGRADED 평가는 유지하되, Kafka intake 장애로 확대 해석하지 않는다.",
+      "usage": {
+        "input_tokens": 19523,
+        "output_tokens": 2095
+      },
+      "record_sha256": "959e36b2d92420caaea87750cc6b227955547a1fd27a5a12c1bfa9ad5c8dc5d2"
+    },
+    {
+      "phase": "03-recovery",
+      "model": "gpt-5.6-luna",
+      "severity": "DEGRADED",
+      "summary": "현재 readiness, Kafka bootstrap 연결, PostgreSQL HA, Worker 2개가 정상이며, 관측된 21건의 202 수락 이벤트는 모두 persisted 상태로 확인되었다. 다만 최근 60초에 일부 파티션 lag가 일시적으로 14와 1까지 상승한 뒤 0으로 회복되어, 현재는 해소된 제한적 처리 지연이 관측된다.",
+      "hypotheses": [
+        "Worker 처리 또는 persistence 경로의 일시적 지연으로 일부 파티션 lag가 잠시 상승했을 가능성이 있다. 현재 lag가 0으로 회복되고 모든 표본이 persisted여서 지속 장애나 특정 원인은 확정할 수 없다.",
+        "두 Worker pod의 최근 restart_count 1과 exit code 255가 지연에 기여했을 가능성은 있으나, 재시작과 lag의 인과관계는 현재 증거만으로 입증되지 않는다."
+      ],
+      "runbook_applicability": {
+        "RB-PG-HEALTH": "NEEDS_MORE_EVIDENCE",
+        "RB-WORKER-LAG": "APPLICABLE",
+        "RB-KAFKA-INTAKE": "EXCLUDED"
+      },
+      "change": "이전에는 일부 404 상태와 직접 관측된 transactionid lock을 근거로 DEGRADED 및 DB 런북 적용을 판단했지만, 현재 증거에서는 21건 모두 persisted이고 현재 PostgreSQL waiting·blocker·lock이 비어 있다. 따라서 지연 및 Worker lag 평가는 일시적 DEGRADED로 유지하되, DB 장애 런북은 NEEDS_MORE_EVIDENCE로 낮추고 이전의 확정적 lock 원인 주장은 유지하지 않는다.",
+      "usage": {
+        "input_tokens": 19010,
+        "output_tokens": 2202
+      },
+      "record_sha256": "7f4cb4fb1c163e78f69405ce550c6e5c93a0e9935722e0ee6638f345aac10938"
+    }
+  ],
+  "model_calls": 3,
+  "automatic_retry": false,
+  "first_attempt": {
+    "directory": "results/ops-agent/shadow/20261101-row-lock-01",
+    "status": "PROJECTION_FAILED",
+    "failure": "relative artifact path compared against absolute repository root",
+    "model_calls": 0,
+    "all_21_accepted_persisted_verified_after_release": true,
+    "remaining_owned_sessions": 0,
+    "fix": "Resolve output/artifact paths; regression test covers relative paths. First artifacts preserved."
+  },
+  "review": {
+    "supported": [
+      "Symptom-only diagnosis keeps cause uncertain and identifies limited downstream delay",
+      "Actual blocking evidence narrows cause to room_sequences transactionid lock wait",
+      "PG applicability changes from NEEDS_MORE_EVIDENCE to APPLICABLE using new evidence",
+      "Kafka intake exclusion cites actual 202 acceptance as well as readiness",
+      "No model write actions, failed-response repair, data-loss claim or private injection plan"
+    ],
+    "gaps": [
+      "Recovery summary recognizes all 21 persisted and current lag/waiters zero, but severity remains DEGRADED based on historical values in the 60-second window",
+      "Recovery wording weakens prior lock evidence because no lock exists now; historical observed cause and current active cause need distinct fields",
+      "Old Worker restart evidence repeatedly remains a hypothesis despite no demonstrated temporal association with this incident",
+      "DB wait-graph reader and observation timing were chosen by Codex; model did not autonomously select or execute the SQL query"
+    ],
+    "next_change": "Separate current impact, recent impact, observed historical cause and current active cause before another model evaluation; retain this captured sequence as a regression case",
+    "general_accuracy_or_stability_claim": false
+  },
+  "test_data_remaining": {
+    "users": 2,
+    "streams": 18,
+    "accepted_events": 42
+  },
+  "validation": {
+    "full_suite": "958 passed in 57.60s",
+    "record": "results/validation/20261101T100911Z-85920954/summary.json",
+    "raw_files_hash_verified": 40,
+    "model_record_hashes_verified": 3
+  },
+  "technical_references": [
+    "https://www.postgresql.org/docs/17/explicit-locking.html",
+    "https://www.postgresql.org/docs/17/runtime-config-client.html"
+  ],
+  "artifact_sha256": {
+    "results/ops-agent/shadow/20261101-row-lock-01/baseline.json": "7a53be40e7fc5e3d83a26693e8391a58ad942c353da109d534435a2bf2a8feaa",
+    "results/ops-agent/shadow/20261101-row-lock-01/injection-private.json": "993945a5284bd83c390244ee0334c50033a995f539780b98b823eeb0fa8b7ce2",
+    "results/ops-agent/shadow/20261101-row-lock-01/lock-session-error.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "results/ops-agent/shadow/20261101-row-lock-01/lock-session-output.txt": "2f584110c17a6357797fe20356be01bf8c2038074ed5da3d927957bec41d0bd8",
+    "results/ops-agent/shadow/20261101-row-lock-01/observation-failure.json": "53f48bf58862ed19d805f4a54f7373cc59c8f3f0983fa273e5cccd37c54e4ce7",
+    "results/ops-agent/shadow/20261101-row-lock-01/pg-before.json": "9439ae7d350d28b82338150249f6b78c199c1eea7648c14891c74021f2a651ed",
+    "results/ops-agent/shadow/20261101-row-lock-01/plan-private.json": "552c5d91dfd31247bf5db367c97085dffbc4bbf971b12036c8b199adcaaacc85",
+    "results/ops-agent/shadow/20261101-row-lock-01/release.json": "d9e81879cbdf1a7ae6b4e934e9ae6525029ffbd1a885ccd96dfc6eb8a27449db",
+    "results/ops-agent/shadow/20261101-row-lock-01/runner-source.py": "e19bfd25a26aadd1ddaf73a8fa4ac6c4b786a8c1e797a87f3810c4e4103d2e60",
+    "results/ops-agent/shadow/20261101-row-lock-01/seed-persistence.json": "4057fec703a63ac410055dcd9c91e0b59a835dfaa1ece32acf23a63320cdde65",
+    "results/ops-agent/shadow/20261101-row-lock-01/streams.json": "8bd6fca7424c6da9c498377384ae99348ffe133982bdf7672163d0e7a502c59d",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/bundle-full.json": "714c6815e45c3eafce7b59fef335262486496afa209163fbd881c344f7abc17a",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/database-waits.json": "4584d792934a8765790d8f5b0e8f86539169b298fb00e6ee22587c471d8cc1a0",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/requests.json": "935e4bd277c68a5f206751cb57f14171807e1f2cbc559c81395df2aec6dd4106",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/raw/b98c47e3-d584-49e3-ab21-39bff3d1b3ca/application.json": "cd4802224f6abf712e6648fbb410d26c13c7596ad38ab6e03d3453bc157a7e67",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/raw/b98c47e3-d584-49e3-ab21-39bff3d1b3ca/argocd.json": "22afcc1feba972f57ef64bcc2899f49d91c6ebe14cd29774917991b208f45eaa",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/raw/b98c47e3-d584-49e3-ab21-39bff3d1b3ca/kubernetes.json": "668af58cfb91f844148747d991ee6aa82bb53946202e4ac47be5d27682e2066d",
+    "results/ops-agent/shadow/20261101-row-lock-01/01-symptoms/raw/b98c47e3-d584-49e3-ab21-39bff3d1b3ca/prometheus.json": "a3e9b38181e66d2c9c79b58793be124fffceced1b7e8db85f713001f62607666",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/000.json": "6808d37d43cbf9a1ee1e60c0c88285b39457a5fb7883fde4712f3efcbc6da011",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/001.json": "36f9a205d4acee748316a92412b75a63447f58c561a67d93cb9454f80c592762",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/002.json": "2e5ac8c0acc30cef48e49f304b7c8b076704fbca9cf5aaa89f9341a9e69bb97e",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/003.json": "eede44e62a7b93fe3feaa215ce267280dcbd521ab27886f24f2afbd89ca8779b",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/004.json": "579cf6736c2534a3dc915f042fa75d7e21f9da63854d929385c2bbee471f1056",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/005.json": "f0beac396b758e4b7dd79f1b40426ec45b7585a9272eebc3638821649a1b2fd6",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/006.json": "428c4e7613c0d91914ab5c2c7fa93bc3c4fe58790e2831a530fa9cb43b1c2d79",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/007.json": "d51f0b49b19facefa00d1b259d737437e96ddac7efdf101242eb87381350a2d3",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/008.json": "2bdbb8975aec44751f3453a41500698e43dfb9565db6e75aef66f0111c92efb1",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/009.json": "ede390c0b82df15075a0fb871ad103177798483a4cbfcbffd87ac1c60c0263c8",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/010.json": "84ea9293c80496166d0063fd195bd3be4d0f188e5ebfe9bb10d286cdfc66a85e",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/011.json": "f31f05402e31cfa74db43fcfc3fa947f2044fe2cbc70744d701c8811026a2155",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/012.json": "084011b18b0d5cefa0877c53ee51cf4f584027bf96c110df6510fff165d041a9",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/013.json": "e11ca342371495a42418c07fb8f43c26795c8546062784a2bc2cd6f5d8084d2a",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/014.json": "d3cfd42ab40a1b18608078b61479abc3389b65fcc6bef9a208d402b19e147c0c",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/015.json": "f122b674af9f552639089f2796e2ae66917fe7572d431d7028a13dbf5135a828",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/016.json": "d8d94d7414c0818530467b0e728265b3969e6688f553504a6c64d11f79e97d29",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/017.json": "7c780bd70e1414295bd52a49dd5318cd5b59707f65e7c3fad5ad800188f1bb66",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/018.json": "63319c0668cdbb8e844bcb1533bdf846c4a2d0dad6e68d14c971abe2c55e393c",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/019.json": "cb57f0cfa35b6da102c494cb0a04f3a9b78393c86e03e308eb66122325c688cd",
+    "results/ops-agent/shadow/20261101-row-lock-01/accepted/020.json": "200425739871a957306edc1916416e02fc524c2e4496ba8bb6442028f8cd42ce",
+    "results/ops-agent/shadow/20261101-row-lock-01/raw/b50e53bd-c8e6-4e3e-8ceb-8ced4c510ebe/application.json": "a3cd504e704cfe89796ee770d4065d7005e086c9a570dd02fd2061a3e03126f8",
+    "results/ops-agent/shadow/20261101-row-lock-01/raw/b50e53bd-c8e6-4e3e-8ceb-8ced4c510ebe/argocd.json": "27d5bb637f7b8fdf9a8d86ca442cbbebaa5cb3b4fdd63a5ed243b4d63540bc36",
+    "results/ops-agent/shadow/20261101-row-lock-01/raw/b50e53bd-c8e6-4e3e-8ceb-8ced4c510ebe/kubernetes.json": "2337e303ff5e130d30c1488a06e41fec419854a747333262b9b978fb293d6285",
+    "results/ops-agent/shadow/20261101-row-lock-01/raw/b50e53bd-c8e6-4e3e-8ceb-8ced4c510ebe/prometheus.json": "53e986c718f1970f5fee572b63ccdc7c808fe96317628d5c5f8967cf63707439",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/bundle-full.json": "802568a614947c18bb8c785e76d42d98f2354756f0379439333f98c3224f72e0",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/database-waits.json": "f8f79dce6950ae03cd6b0181a96aa7f2ddeb2339fc94fb5218c42c1ecda33edc",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/requests.json": "38133f2dd50ad386b2f69c77d50ea7f5169fa0268a668ba179219509a5acad1c",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/raw/cf68b746-0d62-475e-8e96-a7fe0c134f7e/application.json": "fe96a52804c4b5ba872a0bdbcb3ecdd15881bb5b5413e3d3206f905f57fe26a0",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/raw/cf68b746-0d62-475e-8e96-a7fe0c134f7e/argocd.json": "069abefe746d6c9dea888e982c365f42297255f92d2e7e1377436d49e0284395",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/raw/cf68b746-0d62-475e-8e96-a7fe0c134f7e/kubernetes.json": "2757cb8a0059e368443528c7685d65a40a88824a016ccee36924b3187ead364f",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-check-00/raw/cf68b746-0d62-475e-8e96-a7fe0c134f7e/prometheus.json": "cde94338bb29b5274f181eea428d112174fcd9217238a9f850d3c6d7c99503b7",
+    "results/ops-agent/shadow/20261101-row-lock-01/recovery-polls/000.json": "bd0d33ae726a4644942e8bca182feb4fe62bbea65f6c63530d200759fc4ec835",
+    "results/ops-agent/shadow/20261101-row-lock-02/baseline.json": "4bd6fd0021518767e4ac50bb136a63ca0e11c0d16354d2ccca5e1a1af579faad",
+    "results/ops-agent/shadow/20261101-row-lock-02/injection-private.json": "298736ea8ab83a5e7c47b716d0bbae6f02c798834873742647324815d60e4e6d",
+    "results/ops-agent/shadow/20261101-row-lock-02/lock-session-error.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "results/ops-agent/shadow/20261101-row-lock-02/lock-session-output.txt": "26b29bddd477a3765cec5039374e98ff8fea75f85fe176fd0e35f575364dc176",
+    "results/ops-agent/shadow/20261101-row-lock-02/observation-summary.json": "823badb7913c6955e9f6468403830b3d44a58c6563600e945aab763745b5d427",
+    "results/ops-agent/shadow/20261101-row-lock-02/pg-after.json": "9439ae7d350d28b82338150249f6b78c199c1eea7648c14891c74021f2a651ed",
+    "results/ops-agent/shadow/20261101-row-lock-02/pg-before.json": "9439ae7d350d28b82338150249f6b78c199c1eea7648c14891c74021f2a651ed",
+    "results/ops-agent/shadow/20261101-row-lock-02/plan-private.json": "8ae9e3b3bb1b7b220dad52ad290033f0c7dc3c6085c1bb6ab70f918321fda524",
+    "results/ops-agent/shadow/20261101-row-lock-02/release.json": "00cd76454c61e928d18419dabf6d132222d84f1d36922b14a0f4e4d024d11559",
+    "results/ops-agent/shadow/20261101-row-lock-02/runner-source.py": "b51d1e70caf845355bff2960206013fa9d8d3b252f3257a36e5badf0bc96791e",
+    "results/ops-agent/shadow/20261101-row-lock-02/seed-persistence.json": "35894f50a686b316e2b4cb4ea6a7bb40db098eeaa3f9cd6f05377d10c955f663",
+    "results/ops-agent/shadow/20261101-row-lock-02/streams.json": "c50e6d0942971433dc03e233256f4926471d282646b3c83c5596f21e23bd4552",
+    "results/ops-agent/shadow/20261101-row-lock-02/summarize_experiment.py": "85c49e0d74b28e3e654101c3b250ea2bdef06497488a0eb557de228070e88a41",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/bundle-full.json": "88cc40743fcf21ca3998e0d378d111526b7c3f6a7e2f95d0063c81e8ed60b4de",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/bundle-model.json": "2adf585ec7cbea2cd2584817d340e3aefead5de09e15291d851653079c8ba0d6",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/database-waits.json": "388254b87b89678758bcaf309381f48d143d8ea8cc08103fef81029eabf71f51",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/requests.json": "34fb348cb26fb026b27fc7262470cac7d1e718e2710507581e77f60a6ce4d497",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/selection.json": "2733aab6a00e05843e46ee9fc28c18b2d29943f3deb6a550b69fb49cb1f0e750",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/raw/973d4b6f-507c-41d5-b361-1fb3790e1608/application.json": "8278b099d1054b9ded6d34634e23dbf8e43897aed8575d92cff0a4cbfdd9de88",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/raw/973d4b6f-507c-41d5-b361-1fb3790e1608/argocd.json": "589cc436732728f2793fd4d85a8060da3e55007e8774d5976bdc589fdee9c894",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/raw/973d4b6f-507c-41d5-b361-1fb3790e1608/kubernetes.json": "a94cc49cad518c7b5c5bbb19a51ded2e6daeda289bf5a68f7f9f381f15cd8ded",
+    "results/ops-agent/shadow/20261101-row-lock-02/01-symptoms/raw/973d4b6f-507c-41d5-b361-1fb3790e1608/prometheus.json": "986928cc1373458a4753c0de708dfce02b6277dd0b46596a45d5442a2e50ea72",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/bundle-full.json": "b3396f2a3810926cf0f4380a15eb4eef2c9a61e7971d9c82e7e432b855216a58",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/bundle-model.json": "f50cb61362aab4f5562bf8cbde271dd82a236109273e90cba3d4baa7bfba34b2",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/database-waits.json": "063950259f40bbdf1c812c92ed1cfb86a7cc874536a918fc93028a048a0e7380",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/requests.json": "998f64ed768b0222eb3bb96aa0a1c447c984f8a293b7a7ac1b487e98967dae5e",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/selection.json": "141f508236a7ad7bcd872abc32deb97d2ac11d4b34c6839258587fd0347f290b",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/raw/f19019db-e272-4921-a363-66e6188d9920/application.json": "c8517db428bbe6900ba32b726604162a76f7d4c353dacb36fd2ccc19f0462b50",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/raw/f19019db-e272-4921-a363-66e6188d9920/argocd.json": "8c1db42523a395f2eb88e11b0d0be3acb080600f4b7f25d88c3f6f3c155d6888",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/raw/f19019db-e272-4921-a363-66e6188d9920/kubernetes.json": "a77291ae9133fbe1115a4c6550ee861f0fd568ef0050724919f7c7cac504a908",
+    "results/ops-agent/shadow/20261101-row-lock-02/02-investigation/raw/f19019db-e272-4921-a363-66e6188d9920/prometheus.json": "2f125b0f7a6ec54c9b7b4454852489e1ca7f2e5355ed1a86028647b9b83cf94d",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/bundle-full.json": "8bf2288b5d7de835d32fe4d90a4f076640d83dd5ac72a221b83eae941aaf74e9",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/bundle-model.json": "8dfed9290875074232a35b46f4223faf84b4516289257bf1b74eac49dd1f1049",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/database-waits.json": "eb04716a80ef92d82b9bbc2d405cdf613680d131312dab006b13ad8e28d59bd7",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/requests.json": "6afde175d70a7958dfa6ef8e7f9bbc4cbdb3f4a39f8235257f873bec26dd5b70",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/selection.json": "6f17dbf631c9e6fd52ed43858a9b40d0b57487157cd555e11b0687ef7325da66",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/raw/c7a21ff8-bbfe-4f3b-baba-71ebdc9daffe/application.json": "e9860c39400d0793262526b4e21b27d61e4289f76cca0a2f441e3eb9fc5f3401",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/raw/c7a21ff8-bbfe-4f3b-baba-71ebdc9daffe/argocd.json": "f78ca56dfbbfe2b923fa3c049c3f67f4024c07e711c3e30d3358e3a266673a94",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/raw/c7a21ff8-bbfe-4f3b-baba-71ebdc9daffe/kubernetes.json": "447bf4e0fee8898f8f641a3df6aea42bfa09428467cfeeb436f49298657fc084",
+    "results/ops-agent/shadow/20261101-row-lock-02/03-recovery/raw/c7a21ff8-bbfe-4f3b-baba-71ebdc9daffe/prometheus.json": "f4a76ba008a2a65aa6137709ac0e414594f399e50eaf0a2402c2200f3376ae8c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/000.json": "38640d67a3b788f826383194343faa90b97837a964085ebc74f0834a383c37a9",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/001.json": "de585b2ae09c50bfb91f77c62f6169a16463f817807ede1138e9c611926913c1",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/002.json": "df8f3f2dcf8152a3586b2f676358dcd4162a2f1bef7471a88b8a795dac71b14c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/003.json": "7e05b7769dc0f879321bddb1a210285793ca4e22e5f424c35be27a35ffe94714",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/004.json": "92bcc072649719136b368413fc61bc72c2642b1101a6e898c526bd15b32e8e5c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/005.json": "acfa780569c3842e438adcfea00c160375c272b902a7851c02bfc3d89cf8b54c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/006.json": "7fcd13d42f3608801ad425902f5d82811d5e8ea424f881a863d6ae55cef37f52",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/007.json": "b59252edf78943b998d5d450377f783ae174738047dfb5331a4a30c12df8e86e",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/008.json": "0739a715db162ff7ba13b04ba812ab39ebdc8216bc68a6394e90df6cda259f67",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/009.json": "45f0c652b9a45af752096d50400d01bf984b699eea525a7f7b8e07379d2feaeb",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/010.json": "a47c5f2b7dab2ffd24e99c0f10f5d8f8a56349ac62b3072e5e2bddfabcc54304",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/011.json": "57fc4a1b6a4c525f438c0c257104971d67beb87644f043a182adb72f59783c23",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/012.json": "2e681c3256dc18b53f0cbd45b97b555aa941a12510283633dae4bdcfc0835175",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/013.json": "a87455d58fc11b86155051d414769fed08a638273228b4fc57b96ece9f428b6f",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/014.json": "d4b55f84f8424d13dc83faa5b8496e9567b61b4187365378b6ca736100c7698c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/015.json": "de69923328d268c8c4c04c08503b67d05f8d2418c84e43d7795fb12eff21436c",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/016.json": "e5aef1900d5f293db9b7f28d2fd9750921a52ae39be2b54c9977102ff35896d2",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/017.json": "6b5d2f524269df62b7485332e730f2aed3a65e3d89d0182c8028d15e1907c041",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/018.json": "cd4642909fac1ac0a64edff711ab0a6263a099dd4b9c9c49cba58a1019979818",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/019.json": "8799738e866f5af4c5d4fcfa066c51e1c6153966ea7d437d061c019934d15eb8",
+    "results/ops-agent/shadow/20261101-row-lock-02/accepted/020.json": "88a6ea1215e66ebc047264ba353a4f1b2644ec77d42782c4092844d3a81dd180",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/01-symptoms/input.json": "b5d999cdec52cec1846c0dc3c9d9a529c9ed490ff5a02065d0ec045813db0139",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/01-symptoms/plan.json": "99fd78685b49c78cab87f6d93fc9d82f9ec42e7072125cd9d28130155a59b47d",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/01-symptoms/record.json": "fba79642214ec177bfbd1c04ed76555f001295d134cbf132c31018afaf725502",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/01-symptoms/request.json": "27523b2fcb15713506e97b1dba61fe492fa9370e7ff030d5920acfd8245b379b",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/01-symptoms/response.json": "5101062b8468dcbeb17d0e4a885cc8f0cbbab94d7128aaefcf6a6375afafa86f",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/02-investigation/input.json": "5c937f9d56524e0a1bdf8bc95206c78dc93f45424385035b1db3d893f0ae88d9",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/02-investigation/plan.json": "f9968ed479f0bde8c3bb8154b4f2981e35fcd2a0bf50d69f32b61faf62a864fa",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/02-investigation/record.json": "653fe0ee4d45c05019035cbe3d2e48fa92a27f75decbe887ac3e3ca3e0cbf450",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/02-investigation/request.json": "0187402e04aeb435bf650ab5afe70e40661f7920d0635728966a0968153ca443",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/02-investigation/response.json": "c0153eea1195e175d196a55537618f99b3c0b7e88001e817d9a6078562dc5f33",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/03-recovery/input.json": "6f9de4031ba5ca2590a7753af01a7dc9ae5003e7bc7dedb0675cf052b583d12f",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/03-recovery/plan.json": "23a447ab3c425a5b76982e1d471948e7ecc0616b713bba3d0dde29a088064c99",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/03-recovery/record.json": "b9483f4145ae150cebb5341bba646545273db4298a39850554122abef63cb028",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/03-recovery/request.json": "32c8b0ce96dea2967139c19a4ea488e792180f164ee10499c75c1133e45d28c1",
+    "results/ops-agent/shadow/20261101-row-lock-02/model/03-recovery/response.json": "09474768e368783d95ee9bdc79c1490521ed79af550a3f7dea3211652135f18f",
+    "results/ops-agent/shadow/20261101-row-lock-02/raw/aff1ef35-1341-4ac7-8406-808a24d80b2a/application.json": "b7640993c76045b7e46e33546216299da7dc52ba7d27246d39e83fab92e2ba0b",
+    "results/ops-agent/shadow/20261101-row-lock-02/raw/aff1ef35-1341-4ac7-8406-808a24d80b2a/argocd.json": "3f426bea4efef6cbfb1736c097e827b0faa7fa854c07feccd881fb42514ea29f",
+    "results/ops-agent/shadow/20261101-row-lock-02/raw/aff1ef35-1341-4ac7-8406-808a24d80b2a/kubernetes.json": "cb481b59b019d48ef31650be8ba272870a60cfd99a0c0f8d874810d6725a4d3e",
+    "results/ops-agent/shadow/20261101-row-lock-02/raw/aff1ef35-1341-4ac7-8406-808a24d80b2a/prometheus.json": "36eb316a46db219b3869a89b126dfc688816f1a6357bae14e54d59aaa1b37a5f",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/bundle-full.json": "7546f492d7336d725be5b32f490793f1389bef445784afe6a86a1dd773a1f20a",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/bundle-model.json": "7965080852faad10343bacecd5ad652b3d1336b477fbeb1dd3da0c2c503acfa9",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/database-waits.json": "999a4d3bfc8b0a669cf087b99ecede0058eeb0aaa86947198aa9e525d99eb5c0",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/requests.json": "c4c6b06dcf72d87728e29f82c9ec63d0b53b724085c9eb72e85b5a46cbb2ef47",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/selection.json": "7661c76208df441bd116873b1d87e3b438be1fed520420b09e78bbc32249c280",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/raw/fdee5aec-cbc4-4d27-b5cd-7c14394b95b7/application.json": "b4ecf3dad87034619502cd85eedb6f00db3348f04c4f78bbaa39f2905d0e59f4",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/raw/fdee5aec-cbc4-4d27-b5cd-7c14394b95b7/argocd.json": "aae911e42a372873e88b80a16335b076f4f0d134ee1dd373efd1748bcff386b8",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/raw/fdee5aec-cbc4-4d27-b5cd-7c14394b95b7/kubernetes.json": "9e0b3a1d6ce4968784a82d5ecf2ba812d579c97edb24b995474efbcf13582b95",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-00/raw/fdee5aec-cbc4-4d27-b5cd-7c14394b95b7/prometheus.json": "2a1c5637fd6c1b85b00e362809ef2729c4e885973b26144a6867eb3cdf5d8d98",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/bundle-full.json": "9a0b27aa654394b52c96dd8da0078d0dbf9f51638edc9083fcf70498074913db",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/bundle-model.json": "83d154fe703fd1509a67388c3127bf4b2640a9d619996cff15b108416cef1b3b",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/database-waits.json": "619a45c616b8cb005b6f271892c8dc514df32e266e2b468de0c699a2c7923088",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/requests.json": "83e98efe2f4a8487e902316516fdf4bd4dcf624cb8eb6a8601dea794a69fe7ba",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/selection.json": "2c8074a6cf5a71f19ca9ada6f96d20dca94492455f4273a53194775d70be48c7",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/raw/224236e9-f300-49ba-892a-0dc9d5fb725d/application.json": "e485fdd23e70de29275e586b551a6df18f6a8a2d171a37fa5ba8beb2822f872f",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/raw/224236e9-f300-49ba-892a-0dc9d5fb725d/argocd.json": "3bfe208bf3260141ad643a43b5fbe8dcac87e39fb89515b70e354146820aa033",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/raw/224236e9-f300-49ba-892a-0dc9d5fb725d/kubernetes.json": "45cd6f1e6f4a74d3bb01207ac95861937e621034449a112a4f5d49495fc2974b",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-01/raw/224236e9-f300-49ba-892a-0dc9d5fb725d/prometheus.json": "7e52fe5448241ea81a2364816ea70c097d6de9de09a7fa68b303a96d8f8251ad",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/bundle-full.json": "bb4b052268ddcd47755d8aa183b132d12d73b22f38de38de522832a1c2c60c69",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/bundle-model.json": "b4ddd13b7eec3e32a46c31b1387213c52800b7aa343b38e0f425e4daecb2a78e",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/database-waits.json": "6956d792cd122fa9f66147f63ec30e709426a68eed3515d22c17fd404c8aa0f1",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/requests.json": "455933a70c3dee64c7e046ba4377d404a1bc130cb9861291c894b2160b7db264",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/selection.json": "126684eedc7f3ab2388c74b2b12bc0d343539ed018a1f94e8b9c48336c9f64b7",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/raw/62211df9-43ab-46ba-b0e9-20c03d20cf66/application.json": "34c48450674d68097164cb68a09946c31ca250442f3b4d9c0f842eac63838ae9",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/raw/62211df9-43ab-46ba-b0e9-20c03d20cf66/argocd.json": "916698bc880825f6f0a1bbda6aa4354ce91a1e00166871d177097dddd97326c2",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/raw/62211df9-43ab-46ba-b0e9-20c03d20cf66/kubernetes.json": "ebcf84b7358e1b12a71c7a5be18c59054511ffd3ae15d0ebfded96d4e0f58c61",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-check-02/raw/62211df9-43ab-46ba-b0e9-20c03d20cf66/prometheus.json": "15829041d85b8a91afa5ecc6a4713e5c5e8d6fd036f6be4a1bc5e694e1d08787",
+    "results/ops-agent/shadow/20261101-row-lock-02/recovery-polls/000.json": "1172019e2cd38d4bf38881a44afd5bacec5e56bd647c717e3d50ba2980e9940c"
+  }
+}

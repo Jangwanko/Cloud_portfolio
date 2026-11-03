@@ -1,0 +1,423 @@
+{
+  "schema_version": "ops.negative-lag-history-audit.v1",
+  "runs": [
+    {
+      "run": "recovery-calibration/20260816T100600Z/E-run-02",
+      "capture_count": 73,
+      "activation_end_index": 10,
+      "first_unknown_index_from_prior_audit": 53,
+      "negative_capture_count": 15,
+      "negative_range_point_count": 70,
+      "negative_values": {
+        "-1": 57,
+        "-2": 13
+      },
+      "negative_points_matching_offset_difference": 70,
+      "offset_decrease_capture_count": 0,
+      "first_recovered_prefix_index": null,
+      "saved_incidents": [],
+      "boundary_neighbors": [
+        {
+          "index": 52,
+          "collected_at": "2026-08-16T11:13:07.930260Z",
+          "matched_series_count": 24,
+          "negative_points": [],
+          "latest_source_timestamps": [
+            "2026-08-16T11:13:06.705000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 53,
+          "collected_at": "2026-08-16T11:13:22.955074Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "2",
+              "range_evaluation_timestamp": 1786878797.207,
+              "exporter_lag": -1,
+              "end_offset": 116759,
+              "committed_offset": 116760,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "3",
+              "range_evaluation_timestamp": 1786878797.207,
+              "exporter_lag": -2,
+              "end_offset": 131627,
+              "committed_offset": 131629,
+              "end_minus_committed": -2
+            },
+            {
+              "partition": "6",
+              "range_evaluation_timestamp": 1786878797.207,
+              "exporter_lag": -2,
+              "end_offset": 134327,
+              "committed_offset": 134329,
+              "end_minus_committed": -2
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T11:13:21.704000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 54,
+          "collected_at": "2026-08-16T11:13:37.952866Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "1",
+              "range_evaluation_timestamp": 1786878817.121,
+              "exporter_lag": -1,
+              "end_offset": 147545,
+              "committed_offset": 147546,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "2",
+              "range_evaluation_timestamp": 1786878797.121,
+              "exporter_lag": -1,
+              "end_offset": 116759,
+              "committed_offset": 116760,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "2",
+              "range_evaluation_timestamp": 1786878817.121,
+              "exporter_lag": -1,
+              "end_offset": 116971,
+              "committed_offset": 116972,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "3",
+              "range_evaluation_timestamp": 1786878797.121,
+              "exporter_lag": -2,
+              "end_offset": 131627,
+              "committed_offset": 131629,
+              "end_minus_committed": -2
+            },
+            {
+              "partition": "3",
+              "range_evaluation_timestamp": 1786878817.121,
+              "exporter_lag": -1,
+              "end_offset": 131861,
+              "committed_offset": 131862,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "4",
+              "range_evaluation_timestamp": 1786878817.121,
+              "exporter_lag": -1,
+              "end_offset": 115372,
+              "committed_offset": 115373,
+              "end_minus_committed": -1
+            },
+            {
+              "partition": "6",
+              "range_evaluation_timestamp": 1786878797.121,
+              "exporter_lag": -2,
+              "end_offset": 134327,
+              "committed_offset": 134329,
+              "end_minus_committed": -2
+            },
+            {
+              "partition": "7",
+              "range_evaluation_timestamp": 1786878817.121,
+              "exporter_lag": -1,
+              "end_offset": 112040,
+              "committed_offset": 112041,
+              "end_minus_committed": -1
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T11:13:36.704000Z"
+          ],
+          "offset_decreases_within_range": []
+        }
+      ],
+      "candidate_states": [
+        {
+          "index": 62,
+          "state": "WORKER_BACKLOG_ACTIVE",
+          "reason_codes": [
+            "BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS"
+          ],
+          "evaluation_id": "2d5cb3d500623e9a9f1fec63dcef88233c057c2b7bd65f2f6d44ca790ad9ecad",
+          "closure_already_observed": false
+        }
+      ],
+      "first_usable_after_boundary": {
+        "index": 61,
+        "state": "WORKER_BACKLOG_ACTIVE",
+        "reason_codes": [
+          "BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS"
+        ],
+        "evaluation_id": "80c7f409e4e4b0d1f51392cdef5b09dfa9e1825e0ea4649fad9bb64665265c2a",
+        "closure_already_observed": false
+      },
+      "automatic_relink_allowed": false,
+      "exporter_root_cause_verified": false,
+      "saved_activation": {
+        "path": "results/ops-agent/recovery-calibration/20260816T100600Z/E-run-02/conditions.v2.activation.json",
+        "file_sha256": "9c9feb5ed955fa8a98a526ececc7241a9555c3e6f44f5d77f5e7ff297888e1fd",
+        "evaluation_id_matches_prior_replay": true
+      },
+      "source_hashes_reverified": 146
+    },
+    {
+      "run": "recovered-calibration/20260816T194023Z/E-run-05",
+      "capture_count": 73,
+      "activation_end_index": 11,
+      "first_unknown_index_from_prior_audit": 45,
+      "negative_capture_count": 13,
+      "negative_range_point_count": 16,
+      "negative_values": {
+        "-1": 16
+      },
+      "negative_points_matching_offset_difference": 16,
+      "offset_decrease_capture_count": 0,
+      "first_recovered_prefix_index": 51,
+      "saved_incidents": [],
+      "boundary_neighbors": [
+        {
+          "index": 44,
+          "collected_at": "2026-08-16T20:10:51.913781Z",
+          "matched_series_count": 24,
+          "negative_points": [],
+          "latest_source_timestamps": [
+            "2026-08-16T20:10:46.640000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 45,
+          "collected_at": "2026-08-16T20:11:06.782401Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "0",
+              "range_evaluation_timestamp": 1786911061.103,
+              "exporter_lag": -1,
+              "end_offset": 177491,
+              "committed_offset": 177492,
+              "end_minus_committed": -1
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T20:11:01.638000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 46,
+          "collected_at": "2026-08-16T20:11:21.878655Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "0",
+              "range_evaluation_timestamp": 1786911061.175,
+              "exporter_lag": -1,
+              "end_offset": 177491,
+              "committed_offset": 177492,
+              "end_minus_committed": -1
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T20:11:16.639000Z"
+          ],
+          "offset_decreases_within_range": []
+        }
+      ],
+      "candidate_states": [
+        {
+          "index": 52,
+          "state": "WORKER_BACKLOG_ACTIVE",
+          "reason_codes": [
+            "BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS"
+          ],
+          "evaluation_id": "84c5121fe0bd19b8b698e32e5325e51802c6a6c08874c2c4da4caf568e996c47",
+          "closure_already_observed": true
+        },
+        {
+          "index": 63,
+          "state": "WORKER_BACKLOG_ACTIVE",
+          "reason_codes": [
+            "BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS"
+          ],
+          "evaluation_id": "83b39c698e2553b15929238038b48213d3ac169aad98e82866a5df4e2ebbad07",
+          "closure_already_observed": true
+        }
+      ],
+      "first_usable_after_boundary": {
+        "index": 51,
+        "state": "WORKER_BACKLOG_RECOVERED",
+        "reason_codes": [
+          "MEDIUM_ENVELOPE_REENTRY_STABLE_THREE_CAPTURES",
+          "REQUIRED_EVIDENCE_USABLE_AND_FRESH",
+          "POSTGRES_READINESS_ACCEPTABLE",
+          "GLOBAL_SYSTEM_HEALTH_NOT_INFERRED"
+        ],
+        "evaluation_id": "4563bd9e48b46d710d092c460194c5acafb02cec34d25c650888cd7928f55a2b",
+        "closure_already_observed": true
+      },
+      "automatic_relink_allowed": false,
+      "exporter_root_cause_verified": false,
+      "saved_activation": {
+        "path": "results/ops-agent/recovered-calibration/20260816T194023Z/E-run-05/conditions.v2.activation.json",
+        "file_sha256": "96f5aab788d8b87ed13884e9d17ddd7c472d23d86cccc4ef9572d44e39b4355c",
+        "evaluation_id_matches_prior_replay": true
+      },
+      "source_hashes_reverified": 146,
+      "historical_calibration": {
+        "promotion_status": "CALIBRATION_PENDING",
+        "recovered_state_emitted": false,
+        "file_sha256": "f3ef01d0f2ededf6444f42d5625b859edb765204952b8e8e4c2d949503d7788a"
+      }
+    },
+    {
+      "run": "incident-e2e/20260816T223837Z/run-01",
+      "capture_count": 133,
+      "activation_end_index": 10,
+      "first_unknown_index_from_prior_audit": 62,
+      "negative_capture_count": 22,
+      "negative_range_point_count": 28,
+      "negative_values": {
+        "-1": 28
+      },
+      "negative_points_matching_offset_difference": 28,
+      "offset_decrease_capture_count": 0,
+      "first_recovered_prefix_index": 69,
+      "saved_incidents": [
+        {
+          "path": "incident-e2e/20260816T223837Z/run-01/incident.active.json",
+          "sha256": "e1cafc51a4385015dcb3784b45864ded3cfcbb8151ed8bc27c2e0fdb8cc49e8d",
+          "lifecycle_state": "ACTIVE",
+          "closed_at": null,
+          "last_observed_at": "2026-08-16T22:41:48.799476Z",
+          "recovery_evaluation_count": 0,
+          "activation_identity_matches": true
+        }
+      ],
+      "boundary_neighbors": [
+        {
+          "index": 61,
+          "collected_at": "2026-08-16T22:54:32.084424Z",
+          "matched_series_count": 24,
+          "negative_points": [],
+          "latest_source_timestamps": [
+            "2026-08-16T22:54:31.177000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 62,
+          "collected_at": "2026-08-16T22:54:47.032365Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "6",
+              "range_evaluation_timestamp": 1786920886.261,
+              "exporter_lag": -1,
+              "end_offset": 221386,
+              "committed_offset": 221387,
+              "end_minus_committed": -1
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T22:54:46.177000Z"
+          ],
+          "offset_decreases_within_range": []
+        },
+        {
+          "index": 63,
+          "collected_at": "2026-08-16T22:55:01.943765Z",
+          "matched_series_count": 24,
+          "negative_points": [
+            {
+              "partition": "6",
+              "range_evaluation_timestamp": 1786920886.267,
+              "exporter_lag": -1,
+              "end_offset": 221386,
+              "committed_offset": 221387,
+              "end_minus_committed": -1
+            }
+          ],
+          "latest_source_timestamps": [
+            "2026-08-16T22:55:01.174000Z"
+          ],
+          "offset_decreases_within_range": []
+        }
+      ],
+      "candidate_states": [
+        {
+          "index": 93,
+          "state": "WORKER_BACKLOG_UNKNOWN",
+          "reason_codes": [
+            "KAFKA_PARTITION_0_NEGATIVE_LAG",
+            "NEGATIVE_EXPORTER_LAG_INVALID",
+            "RECOVERY_RATE_MEASUREMENT_UNAVAILABLE",
+            "REQUIRED_NEGATIVE_VALUE",
+            "REQUIRED_SEMANTIC_ANOMALY"
+          ],
+          "evaluation_id": "2a2a1a146e4d06fcd5b20f3899d5e78ac85b79c8ab001801678231ea762c9e5a",
+          "closure_already_observed": true
+        },
+        {
+          "index": 116,
+          "state": "WORKER_BACKLOG_ACTIVE",
+          "reason_codes": [
+            "BACKLOG_REGROWTH_OR_DRAIN_STOPPED_ACTIVE_REMAINS"
+          ],
+          "evaluation_id": "ceafdf3b898e8000ca08b950ae71ae5a5e8c3399149ac4ff4b22ad5ad1ac64f6",
+          "closure_already_observed": true
+        }
+      ],
+      "first_usable_after_boundary": {
+        "index": 69,
+        "state": "WORKER_BACKLOG_RECOVERED",
+        "reason_codes": [
+          "MEDIUM_ENVELOPE_REENTRY_STABLE_THREE_CAPTURES",
+          "REQUIRED_EVIDENCE_USABLE_AND_FRESH",
+          "POSTGRES_READINESS_ACCEPTABLE",
+          "GLOBAL_SYSTEM_HEALTH_NOT_INFERRED"
+        ],
+        "evaluation_id": "1268c004098d29f943c52d9755f72d7f5245f94cfe194ddb11a9d7b2064081cb",
+        "closure_already_observed": true
+      },
+      "automatic_relink_allowed": false,
+      "exporter_root_cause_verified": false,
+      "saved_activation": {
+        "path": "results/ops-agent/incident-e2e/20260816T223837Z/run-01/conditions.v2.activation.json",
+        "file_sha256": "a2eab1c0324f020f83fbcb0281e4e38685b082b1743b907964be91831aadedee",
+        "evaluation_id_matches_prior_replay": true
+      },
+      "source_hashes_reverified": 266
+    }
+  ],
+  "model_calls": 0,
+  "cluster_writes": 0,
+  "limits": [
+    "Range evaluation timestamps do not establish per-point scrape simultaneity.",
+    "Overlapping range points are not independent exporter events.",
+    "Recovery prefix replay is retrospective; saved incident records are not rewritten."
+  ],
+  "date_kst": "2026-10-31",
+  "detail_sha256": {
+    "results/ops-agent/shadow/20261031-negative-lag-history/run-1.json": "c662ff354ad7d28d53075b815236a90f193e59aef398676aca35a3d017ae7cfe",
+    "results/ops-agent/shadow/20261031-negative-lag-history/run-2.json": "ac53865cfb91c282bde27967b4915c6c6d0d7dd4440a5ebf2f462986b69f0d1c",
+    "results/ops-agent/shadow/20261031-negative-lag-history/run-3.json": "29482b14b51ef597f457c36f1705b6dfaa3f9baf0e6bfdaf857dddb0d0d77ef1"
+  },
+  "source_code_sha256": {
+    "scripts\\audit_negative_lag_history.py": "082bba32b89cb9657eb612f85cdd34933c32fb63bcb48fa98c338f3eb1dcbe5a",
+    "ops_agent\\recovery_evaluator.py": "fe1cedc884e26d4910f03657ea70cf47a3b8962bf8ceebd64e58fca012eab581",
+    "ops_agent\\incident_lifecycle.py": "ad031405fcd0e0c5aae7ceaeb3a5657b8cb7d52dfe866bd3592dad846ab11db9"
+  },
+  "full_summary_sha256": "b3ab8576bb12f78bdd971b3ccc8f56f7088f4dd35a01d6b60b1a81ce5b18fb8e",
+  "candidate_classification": {
+    "after_retrospective_v2_recovery": 4,
+    "continuity_gap_without_observed_recovery": 1
+  }
+}
