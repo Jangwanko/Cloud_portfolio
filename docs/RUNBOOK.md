@@ -177,6 +177,8 @@ kubectl logs -n messaging-app statefulset/messaging-postgresql-ha-postgresql --t
 - **partition 1 제거는 primary rollout을 유발할 수 있으므로 단순 정리·rollback으로 실행 금지**. 변경 전 probe·strategy와 primary 보호 조건을 확인한 별도 배포 계획 필요
 - 근거: [검증 범위](OPS_AGENT_EVALUATION.md#model-evidence), [원본 연결 요약](../results/ops-agent/diagnosis/postgres-restarts-20261101-summary.json). 로컬 `results/ops-agent/shadow/20261101-postgres-restarts-01/`에 적용 전 상태와 patch 보존
 
+이 기록의 Startup Probe 소스 후보는 `dev-kafka`의 `564b112`와 후속 커밋에 보존한다. Ops Agent 통합 PR #1에서는 values 변경을 제외했으며, 현재 통합 브랜치의 values를 probe 적용 완료 증거로 사용하지 않는다. 별도 primary rollout·Helm 검증 전에는 기존 부분 적용 범위를 유지한다.
+
 ## Worker Consumer Lag 증가
 
 대표 증상:

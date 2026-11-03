@@ -164,4 +164,6 @@ Lifecycle은 `DETECTED → ACTIVE → RECOVERING → RECOVERED → CLOSED`이며
 
 ## 이전 검증과 master 통합 범위
 
-기존 Phase 1–5 수집·calibration·incident lifecycle·public replay 검증과 수치는 [TEST_RESULTS](TEST_RESULTS.md)에 보존한다. master의 Public Controlled Scenario Replay candidate 기록은 [평가 문서](OPS_AGENT_EVALUATION.md#public-controlled-scenario-replay-candidate---2026-08-29)에 유지한다. MVP는 이 기록을 대체하거나 production 정확도·자동 복구로 승격하지 않는다.
+기존 수집 baseline·calibration·recovery·Gate 2의 수치와 실패 실행은 [TEST_RESULTS](TEST_RESULTS.md)에 보존한다. 축약 때 빠진 진단 입력·예산·Scenario Lab provenance·incident identity·공개 projection 조건은 [기존 master 계약 보존](OPS_AGENT_EVALUATION.md#기존-master의-진단lifecycle-검증-조건-보존)에 보강했다. master의 [Public Controlled Scenario Replay candidate 기록](OPS_AGENT_EVALUATION.md#public-controlled-scenario-replay-candidate---2026-08-29)도 유지한다. 이 과거 계약과 최신 MVP의 검증 범위·호출 예산을 구분한다.
+
+PG Startup Probe 후보는 이번 통합에서 제외했다. PR의 `k8s/values/postgresql-ha-values.yaml`은 master와 동일하며, 기존 변경은 `dev-kafka`의 `564b112` 및 후속 커밋에 보존한다. Primary rollout·Helm 반영 검증은 별도 작업으로 남긴다.

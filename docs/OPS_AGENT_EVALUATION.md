@@ -267,6 +267,15 @@ Worker에 제공된 로그에는 실제 `No module named worker.consumer`가 있
 
 Codex의 사후 문장 검토에서, 시작 실패의 세부 원인을 빌드/명령 오류 중 하나로 단정하지 않은 점과 수집 불능 시 추가 읽기 권한 확보를 제안한 점은 적절했다. DB 답변의 “이미 누락된 이벤트의 존재 여부”는 누락 증거 없이 불필요한 전제를 도입한 표현이다. 분류·인용 통과를 자유 서술 전체의 정확성으로 확대하지 않는다. 모델 교체보다 다음 조사 질문의 유용성과 과도한 단정 억제를 평가할 근거다. [결과·원본 hash](../results/ops-agent/diagnosis/paired-investigation-20261101-summary.json).
 
+## 기존 master의 진단·lifecycle 검증 조건 보존
+
+통합 전 [master `5660e8a`의 계약](https://github.com/Jangwanko/Cloud_portfolio/blob/5660e8a400486e18363160a261df0b8db7aac61b/docs/OPS_AGENT.md)을 대조했다. 수집 baseline·positive/negative calibration·recovery envelope·Gate 2의 수치와 실패 실행은 [TEST_RESULTS](TEST_RESULTS.md)에 유지한다. 축약 과정에서 빠진 아래 조건은 해당 과거 경로의 검증 범위로 보존한다. 이를 최신 MVP의 입력 조건·호출 예산·기능 보장으로 적용하지 않는다.
+
+- **Phase 3 입력과 비용 경계:** 같은 ordered bundle로 `ops.conditions.v2`의 `CORE_BACKLOG_PRESSURE=PRESENT`, condition evaluation ID와 canonical source digest를 재계산해 일치시킨 뒤 모델 호출. `ABSENT/UNKNOWN` 또는 ID/digest 불일치는 호출 전 거부. 당시 v1 예산은 tool step/call 각각 `4`, output token `1,600`, timeout `30s`, transport retry `1`. 별도 tool-free output repair는 최대 `1`회이며 새 evidence·fabricated citation 금지. 두 번째 결과도 invalid이면 `validation_failure`로 종료하고 completed artifact를 만들지 않음. 당시 최초 invalid와 repair 결과는 [Phase 3 기록](TEST_RESULTS.md#ops-agent-phase-3-diagnosis-agent---2026-08-16)에 보존
+- **Phase 3.2의 provenance와 branch 판정:** 공통 actual activation을 고정하고 observation만 통제. `CONTROLLED_SCENARIO`는 fixture ID·canonical digest·scenario contract version을 요구하고, `FROZEN_PROJECTED`와 구분. 당시 v2의 `LIVE_READ_ONLY`는 source identity·fixed query·request/source timestamp schema를 예약한 상태이며 collector 연결 완료를 뜻하지 않음. Stage가 scenario baseline 위/범위 안일 때 다음 도구가 달라지는 paired 검증에서 다른 allowlisted 도구를 선택하면 `BranchEvaluation=FAIL`을 그대로 보존. diagnosis contract VALID와 branch PASS는 별도 결과. [네 fixture·adversarial 실행](TEST_RESULTS.md#ops-agent-phase-32-scenario-lab---2026-08-28)
+- **Phase 5 identity와 종료 범위:** integrity-valid activation의 condition evaluation ID, ordered bundle digest, complete source identity, logical source incident ID를 canonicalize한 SHA-256 앞 24자리로 `inc-...` 생성. diagnosis/recovery는 같은 identity와 artifact hash를 확인한 뒤 연결. 모든 부하 phase의 target attainment 통과·HTTP failure `0`·dropped iteration `0`을 요구하며, 하나라도 미충족이면 recovery와 canonical 승격을 진행하지 않음. `CLOSED` 뒤 관측은 `current_observation`/`OBSERVATION_UPDATED`에 보존하며 history를 다시 열거나 덮어쓰지 않음. [실패 두 회차·actual Gate 2](TEST_RESULTS.md#ops-agent-phase-5-incident-lifecycle-and-gate-2---2026-08-23)
+- **공개 replay의 원본 검증·비공개 필드:** exporter는 canonical diagnosis hash가 reference와 일치할 때만 projection 생성. raw Evidence Bundle, source evidence ID, bundle digest, model response ID는 공개 파일에서 제외. validator `VALID`·repair·stop은 schema/citation/tool/budget/stop 계약 결과이며 causal truth 또는 실행 권한이 아님. 공개 화면은 정적 artifact만 재생하며 API key·모델 호출·runtime source/write를 제공하지 않음. [exporter](../scripts/export_verified_incident_replay.py)
+
 ## 원본과 재현
 
 실행 명령은 [CLI 안내](../ops_agent/README.md)에 둔다. 로컬 원본은 Git-ignored 경로라 저장소만 내려받으면 모두 재실행할 수 있는 것은 아니다.
