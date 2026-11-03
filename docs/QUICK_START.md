@@ -37,11 +37,6 @@ python -m pytest -q
 - `.venv`는 `.gitignore`와 `.dockerignore`에 포함되어 있습니다.
 - 시스템 Python 3.13은 그대로 두고, 이 저장소만 `.venv`의 Python 3.11을 사용합니다.
 
-Windows quick start가 `tools/` 아래에 자동으로 준비하는 도구:
-- `tools/kind.exe`
-- `tools/kubectl.exe`
-- `tools/helm/windows-amd64/helm.exe`
-
 Linux 에서는 아래 도구가 PATH 에 있어야 합니다.
 - `docker`
 - `kind`

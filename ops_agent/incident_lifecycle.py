@@ -21,7 +21,6 @@ from ops_agent.incident_models import (
     IncidentRecord,
     IncidentRecovery,
     IncidentRecoveryEvaluation,
-    IncidentTimelineEvent,
     ObservationQuality,
     incident_identity_sha256,
 )
