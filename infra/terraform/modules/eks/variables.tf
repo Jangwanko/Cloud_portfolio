@@ -55,3 +55,8 @@ variable "node_min_size" {
 variable "node_max_size" {
   type = number
 }
+variable "include_oidc_root_ca_thumbprint" {
+  type        = bool
+  description = "Fetch the issuer TLS thumbprint in Terraform; false delegates retrieval to IAM on AWS"
+  default     = true
+}

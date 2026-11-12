@@ -15,6 +15,8 @@
 
 ## Tracked Evidence
 
+- [AWS Emulator — 2026-11-12](aws-emulator/20261112/summary.json): 선택한 로컬 import 구성의 85개 apply·무변경 재계획·destroy 결과, 최초 실패·drift와 한계, 원본 로그 hash. [재현 조건](../infra/terraform/README.md#aws-emulator-로컬-검증--2026-11-12), 고정 upstream용 EC2 패치와 빌드 recipe를 함께 보관한다. 원시 로그·state·plan·개인키는 로컬 보존이며 Git 추적 제외다.
+
 - `kafka-performance/latest.txt`: Kafka 성능 suite의 마지막 완료 출력
 - `kafka-performance/worker-ab-fixed.txt`: 2026-07-21 historical 64-stream Worker fixed `2` arm 전체 출력
 - `kafka-performance/worker-ab-keda.txt`: 2026-07-21 historical 64-stream Worker KEDA `2→8` arm 전체 출력

@@ -10,10 +10,11 @@ module "eks" {
 
   cluster_endpoint_private_access          = true
   cluster_endpoint_public_access           = var.cluster_endpoint_public_access
-  cluster_endpoint_public_access_cidrs     = var.cluster_endpoint_public_access_cidrs
+  cluster_endpoint_public_access_cidrs     = var.cluster_endpoint_public_access ? var.cluster_endpoint_public_access_cidrs : null
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
 
-  enable_irsa = true
+  enable_irsa                     = true
+  include_oidc_root_ca_thumbprint = var.include_oidc_root_ca_thumbprint
 
   eks_managed_node_groups = {
     default = {

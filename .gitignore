@@ -40,6 +40,15 @@ logs/
 # Keep the canonical latest evidence and its provenance guide in Git.
 results/*
 !results/README.md
+# Only the sanitized AWS Emulator summary and its source build recipe are shared.
+!results/aws-emulator/
+results/aws-emulator/*
+!results/aws-emulator/20261112/
+results/aws-emulator/20261112/*
+!results/aws-emulator/20261112/summary.json
+!results/aws-emulator/20261112/ec2-fixes.patch
+!results/aws-emulator/20261112/Dockerfile
+!results/aws-emulator/20261112/prepare-build.py
 !results/kafka-performance/
 results/kafka-performance/*
 !results/kafka-performance/latest.txt
@@ -190,6 +199,7 @@ results/release-failure/20260905T133642Z/*
 !results/release-failure/20260905T133642Z/migration-failure-log.json
 
 .dockerignore
+!results/aws-emulator/20261112/.dockerignore
 
 # Backup files
 backups/

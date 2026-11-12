@@ -532,13 +532,15 @@ def test_argocd_scope_and_replica_ignores_are_minimal() -> None:
 
 def test_terraform_uses_consistent_password_and_supported_versions() -> None:
     rds = _read("infra/terraform/modules/rds_postgres/main.tf")
+    rds_variables = _read("infra/terraform/modules/rds_postgres/variables.tf")
     eks = _read("infra/terraform/modules/eks/main.tf")
     variables = _read("infra/terraform/envs/dev/variables.tf")
     ecr = _read("infra/terraform/modules/ecr/main.tf")
     lockfile = _read("infra/terraform/envs/dev/.terraform.lock.hcl")
     assert "manage_master_user_password = false" in rds
     assert "password                    = random_password.db.result" in rds
-    assert 'engine_version       = "16.14"' in rds
+    assert "engine_version       = var.engine_version" in rds
+    assert 'default     = "16.14"' in rds_variables
     assert "cluster_endpoint_private_access" in eks
     assert "enable_cluster_creator_admin_permissions" in eks
     assert 'default     = "1.36"' in variables
