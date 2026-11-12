@@ -33,6 +33,7 @@ module "eks" {
   cluster_endpoint_public_access           = local.eks_public_endpoint_access
   cluster_endpoint_public_access_cidrs     = var.eks_endpoint_public_access_cidrs
   enable_cluster_creator_admin_permissions = var.enable_cluster_creator_admin_permissions
+  include_oidc_root_ca_thumbprint          = var.include_oidc_root_ca_thumbprint
   node_instance_types                      = var.node_instance_types
   node_desired_size                        = var.node_desired_size
   node_min_size                            = var.node_min_size
@@ -43,6 +44,8 @@ module "rds_postgres" {
   source = "../../modules/rds_postgres"
 
   name_prefix                = local.name_prefix
+  engine_version             = var.db_engine_version
+  port                       = var.db_port
   db_name                    = var.db_name
   username                   = var.db_username
   instance_class             = var.db_instance_class
@@ -83,8 +86,12 @@ module "route53_acm" {
 
   source = "../../modules/route53_acm"
 
-  zone_name   = var.route53_zone_name
-  domain_name = var.domain_name
+  zone_name               = var.route53_zone_name
+  domain_name             = var.domain_name
+  certificate_mode        = var.acm_certificate_mode
+  certificate_body_pem    = var.acm_certificate_body_pem
+  certificate_private_key = var.acm_certificate_private_key
+  certificate_chain_pem   = var.acm_certificate_chain_pem
   record_names = [
     "grafana.${var.domain_name}",
     "prometheus.${var.domain_name}",

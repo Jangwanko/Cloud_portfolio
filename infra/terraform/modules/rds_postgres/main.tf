@@ -29,7 +29,7 @@ module "db" {
   identifier = "${var.name_prefix}-postgres"
 
   engine               = "postgres"
-  engine_version       = "16.14"
+  engine_version       = var.engine_version
   family               = "postgres16"
   major_engine_version = "16"
   instance_class       = var.instance_class
@@ -41,7 +41,7 @@ module "db" {
   username                    = var.username
   manage_master_user_password = false
   password                    = random_password.db.result
-  port                        = 5432
+  port                        = var.port
 
   multi_az                = true
   storage_encrypted       = true

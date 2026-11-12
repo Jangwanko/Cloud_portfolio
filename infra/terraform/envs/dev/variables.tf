@@ -166,3 +166,44 @@ variable "domain_name" {
   type    = string
   default = ""
 }
+variable "db_engine_version" {
+  type        = string
+  description = "PostgreSQL 16 minor version"
+  default     = "16.14"
+}
+
+variable "db_port" {
+  type        = number
+  description = "5432 or null for the service default (a mapped local port in the emulator)"
+  default     = 5432
+}
+
+variable "include_oidc_root_ca_thumbprint" {
+  type        = bool
+  description = "Fetch issuer TLS thumbprint in Terraform; false uses IAM's automatic retrieval on AWS"
+  default     = true
+}
+
+variable "acm_certificate_mode" {
+  type        = string
+  description = "dns requests a public ACM certificate; imported uses an externally issued PEM certificate"
+  default     = "dns"
+}
+
+variable "acm_certificate_body_pem" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "acm_certificate_private_key" {
+  type      = string
+  default   = ""
+  sensitive = true
+}
+
+variable "acm_certificate_chain_pem" {
+  type      = string
+  default   = ""
+  sensitive = true
+}

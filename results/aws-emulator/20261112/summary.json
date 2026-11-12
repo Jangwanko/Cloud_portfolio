@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "kind": "sanitized-emulator-iac-summary",
+  "date": "2026-11-12",
+  "status": "SUPPORTED_LOCAL_PROFILE_APPLY_AND_NO_CHANGE_PLAN_PASSED",
+  "source": {
+    "base_commit": "641c8afed62f80b097dd64d29ad30005745cc8c1",
+    "dirty_during_execution": true,
+    "terraform_and_test_source_sha256": {
+      "infra/terraform/envs/dev/main.tf": "2d688d6127a14745ba9a313704d743ee72bab1f1102ae148674605cd1fba6aa1",
+      "infra/terraform/envs/dev/variables.tf": "e1e5753a3311ab0bca88eb06afb1703befc82062a07b90fa3119d67353143acd",
+      "infra/terraform/modules/eks/main.tf": "73192d67b597471a4fcc5e67d6ae206065f56cd2d1b9e2ca9901e404e3d66549",
+      "infra/terraform/modules/eks/variables.tf": "1dae559cb589439ac729f2bcada81350972d6e674bd25d7dd52ee1759c0b4d0e",
+      "infra/terraform/modules/rds_postgres/main.tf": "7e503c31fe1e427b725aa48fc75a8545267549d2bf0f665c12d957dd0e881d8a",
+      "infra/terraform/modules/rds_postgres/variables.tf": "78d87057bd116fce57aa69e644221a640245200276e2e370494eae868da6e09b",
+      "infra/terraform/modules/route53_acm/main.tf": "4ee7bec08cff11868d31865c3f18209f4680708ce12de29782b1bfb65b4e4ac2",
+      "infra/terraform/modules/route53_acm/outputs.tf": "b68f27f57273d715c11b096e0fd9b1018d4ce2af82ce60fbcf0477c5042cd070",
+      "infra/terraform/modules/route53_acm/variables.tf": "1bab7b279efbbc19d12d2a1f168abc8195786aa6fb1263b59ce938ff6ae0194c",
+      "tests/test_infrastructure_contracts.py": "c5883c69407b1a53ae7f43703f84a711f1c2b5279d1e730506b1f69928351247"
+    },
+    "hash_note": "Exact file bytes from the dirty Windows worktree at execution; Git line-ending normalization can change blob bytes without changing source text."
+  },
+  "emulator": {
+    "version": "1.0.322-local-ec2fix",
+    "upstream_commit": "7753983c6e495ec3612695b1336bf4936fc7b7fd",
+    "source_archive_sha256": "2d99a991920488c894622e86b3a143ec30743b0b05309a4465dfa8fa2a755be5",
+    "image_id": "sha256:239d598e47b7c772ff0b0dd01867b0a150e938571aedca3cb7eab520ff672ecc",
+    "binary_sha256": "131b76a76012c4729f1c70fc47e7c2d07b467e086c05f11de8d887701fe6fa87",
+    "official_full_service_release": false,
+    "mounted_service_crates": [
+      "service-com-amazonaws-acm-certificatemanager",
+      "service-com-amazonaws-autoscaling-autoscaling-2011-01-01",
+      "service-com-amazonaws-cloudhsmv2-baldrapiservice",
+      "service-com-amazonaws-cloudwatch-graniteserviceversion20100801",
+      "service-com-amazonaws-cloudwatchlogs-logs-20140328",
+      "service-com-amazonaws-cognitoidentityprovider-awscognitoidentityproviderservice",
+      "service-com-amazonaws-ebs-ebs",
+      "service-com-amazonaws-ec2-amazonec2",
+      "service-com-amazonaws-ecr-amazonec2containerregistry-v20150921",
+      "service-com-amazonaws-eks-awswesleyfrontend",
+      "service-com-amazonaws-iam-awsidentitymanagementv20100508",
+      "service-com-amazonaws-kafka-kafka",
+      "service-com-amazonaws-kms-trentservice",
+      "service-com-amazonaws-rds-amazonrdsv19",
+      "service-com-amazonaws-route53-awsdnsv20130401",
+      "service-com-amazonaws-s3-amazons3",
+      "service-com-amazonaws-secretsmanager-secretsmanager",
+      "service-com-amazonaws-signer-wallabyservice",
+      "service-com-amazonaws-ssm-amazonssm",
+      "service-com-amazonaws-sts-awssecuritytokenservicev20110615",
+      "service-com-amazonaws-wafv2-awswaf-20190729"
+    ],
+    "functional_patches": [
+      "Register network_acls in EC2 resource_tags_mut",
+      "Ignore port fields for all-protocol SG rule identity only"
+    ],
+    "build_archive_files_sha256": {
+      ".dockerignore": "61ea0d3f72f59b8dd132cd8e25dcd343dfe697a278bc87d2d5345961720ce9ce",
+      "Dockerfile": "c5b847ea941915a53e6548e51aa24e8b8998875b394f69c3f3bf652a1d31a770",
+      "ec2-fixes.patch": "f457a0d4d0a3c6a7dc2a25f6c65e53c5e4db91cd6f046c7824027d8bcdb84639",
+      "prepare-build.py": "14f9e53f83518d81d7bf3c176bc1f4ad2ccab33263b1b7f86f583fb92b86d0ec"
+    },
+    "archived_recipe_change": "Base image tags pinned to the exact digests recorded in the successful original build log; no new binary build in archival task"
+  },
+  "terraform": {
+    "version": "1.15.8",
+    "aws_provider": "5.100.0",
+    "region": "us-west-2",
+    "account": "000000000000",
+    "profile": {
+      "db_engine_version": "16.4",
+      "db_port": null,
+      "irsa": true,
+      "include_oidc_root_ca_thumbprint": false,
+      "acm_certificate_mode": "imported",
+      "certificate": "Local CA-signed RSA2048, three SANs, leaf2days/CA7days; chain checked by OpenSSL"
+    },
+    "gates": {
+      "init": 0,
+      "validate": 0,
+      "fmt_check": 0,
+      "diff_check": 0,
+      "default_dns_plan": {
+        "add": 89,
+        "change": 0,
+        "destroy": 0
+      },
+      "supported_plan": {
+        "add": 85,
+        "change": 0,
+        "destroy": 0
+      },
+      "apply": {
+        "exit_code": 0,
+        "duration_seconds": 113.953,
+        "managed_instances": 85,
+        "aws_instances": 80
+      },
+      "first_replan": {
+        "detailed_exit_code": 2,
+        "add": 0,
+        "change": 2,
+        "destroy": 0,
+        "preserved": true
+      },
+      "final_replan": {
+        "detailed_exit_code": 0,
+        "changes": 0
+      },
+      "infrastructure_contracts": {
+        "passed": 27,
+        "exit_code": 0
+      },
+      "wrong_certificate_key": {
+        "http": 400,
+        "rejected": true
+      },
+      "destroy": {
+        "exit_code": 0,
+        "reported_destroyed": 85,
+        "remaining_managed": 0
+      }
+    }
+  },
+  "earlier_attempts": [
+    {
+      "stage": "official binary full DNS profile",
+      "plan_add": 89,
+      "apply": "failed",
+      "managed_instances": 57,
+      "issues": [
+        "SG default egress revoke",
+        "default ACL tagging",
+        "ACM .test refusal"
+      ]
+    },
+    {
+      "stage": "EC2 fixes, full DNS profile",
+      "plan_add": 89,
+      "apply": "failed",
+      "managed_instances": 86,
+      "issues": [
+        "ACM public DNS issuance",
+        "EKS issuer TLS lookup",
+        "postgres16.14 unavailable"
+      ]
+    },
+    {
+      "stage": "PostgreSQL16.4, full DNS profile",
+      "plan_add": 89,
+      "apply": "failed",
+      "managed_instances": 87,
+      "issues": [
+        "ACM public DNS issuance",
+        "EKS issuer TLS lookup"
+      ]
+    }
+  ],
+  "acm_contract_review": {
+    "fixture": "emulator-only public-form example.com zone",
+    "exact_validation_cnames_read_back": 3,
+    "route53_change": "INSYNC",
+    "certificate_status": "PENDING_VALIDATION",
+    "additional_observation_seconds": 35.408,
+    "timeout_72h_observed_at_runtime": false
+  },
+  "interpretation": {
+    "not_verified": [
+      "Original public DNS issuance profile full apply",
+      "Real AWS OIDC/JWT/IRSA trust and permissions",
+      "Public CA trust or renewal",
+      "SQL/Kafka/application data plane, HA/performance"
+    ],
+    "scope": "Selected imported-certificate local IaC/API profile only; not an AWS security or runtime result",
+    "raw_materials": "Raw logs, certificate keys, credential files, state and plans are local-only; this file is a selected summary, not the raw transcript"
+  },
+  "cleanup": {
+    "managed_instances_remaining": 0,
+    "owned_container_and_network_removed": true,
+    "existing_infrastructure_preserved": true,
+    "temporary_override_cache_and_standalone_key_inputs_removed": true
+  },
+  "evidence_log_hashes": [
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115226Z-aa6782b7",
+      "label": "emulator-image-build",
+      "exit_code": 1,
+      "duration_seconds": 3.062,
+      "raw_log_sha256": "099d782f1740a4d79d7391730d23183c0e6eb3c25b0ec9ea220a6d12f00b7f9a",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115311Z-67df4057",
+      "label": "emulator-image-build-local-package",
+      "exit_code": 0,
+      "duration_seconds": 56.219,
+      "raw_log_sha256": "556c356511baa9eecb0a8c46063713877e74dc339a2014c957a6fdb33870232f",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115334Z-fb9f711b",
+      "label": "terraform-runtime-version",
+      "exit_code": 0,
+      "duration_seconds": 6.594,
+      "raw_log_sha256": "354b2e1bfe9da6213fc9c9aa51fb8858de6413dfe88f2a924db4fc80f99aeb18",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115545Z-383863f7",
+      "label": "emulator-terraform-init",
+      "exit_code": 0,
+      "duration_seconds": 53.265,
+      "raw_log_sha256": "5969d8a63e9fb498cfd53a1c44ef7bf88e2a8fa7ef591968680426ac2897d4fd",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115711Z-feb73a00",
+      "label": "emulator-terraform-validate",
+      "exit_code": 0,
+      "duration_seconds": 10.563,
+      "raw_log_sha256": "f7997225125835fdd14060ac776d273f394b874f9a481b9e2122c83dc8adc5c1",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115722Z-eb2d1f1d",
+      "label": "emulator-terraform-plan",
+      "exit_code": 0,
+      "duration_seconds": 14.516,
+      "raw_log_sha256": "3e37f4021a3813529dedf93c5016aee6841d98aadaa9f7284504c2345c96ec10",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T115759Z-890a1520",
+      "label": "emulator-terraform-apply",
+      "exit_code": 1,
+      "duration_seconds": 52.578,
+      "raw_log_sha256": "a184d51109fb1b81481e48d286c15634a1f827438c9c9d12719c0f7905075579",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-full-terraform-01",
+      "run_id": "20261112T120031Z-e412fbd7",
+      "label": "emulator-terraform-destroy",
+      "exit_code": 0,
+      "duration_seconds": 52.062,
+      "raw_log_sha256": "a3c48822a8e912a68ff4b3d283e41ad63fbee11409bcd407c03261c7d5159eb8",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T122637Z-871eb30b",
+      "label": "patched-emulator-source-build",
+      "exit_code": 0,
+      "duration_seconds": 1191.078,
+      "raw_log_sha256": "01b6008460f0eb89ed04c9c089a5abdd03074bcf7d26d0dd89dda3c004cf77a0",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T123229Z-8ac25b42",
+      "label": "emulator-terraform-init",
+      "exit_code": 0,
+      "duration_seconds": 56.375,
+      "raw_log_sha256": "5708fc7b61674ff295be31796f5ede056b1adfb5c80be494531751a3d91ddbb7",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125009Z-77b6d6c6",
+      "label": "patched-emulator-identity-and-zone",
+      "exit_code": 2,
+      "duration_seconds": 0.125,
+      "raw_log_sha256": "eb2049ce419e8460f55cfbe0ab3d9aadbeb417184959de13f282c6df2eba02e0",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125043Z-97c33759",
+      "label": "patched-emulator-identity-and-zone-lf",
+      "exit_code": 0,
+      "duration_seconds": 0.36,
+      "raw_log_sha256": "367c3630a57699d0b55a724d2581f6970cb98a6d5a18c2ec40064dd16bbfdc3d",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125044Z-b07c37b0",
+      "label": "patched-ec2-api-checks",
+      "exit_code": 0,
+      "duration_seconds": 0.656,
+      "raw_log_sha256": "0cf5254c48a7d876b221c6cc277039c3d97d609b182534d212257511b03dafa2",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125134Z-76ec3c2d",
+      "label": "emulator-terraform-validate",
+      "exit_code": 1,
+      "duration_seconds": 6.265,
+      "raw_log_sha256": "1928b2c85774f59a912f05716d4d8ef96212b94ac30d95adc29451d2fcf21cfb",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125254Z-eb704f20",
+      "label": "emulator-terraform-init",
+      "exit_code": 0,
+      "duration_seconds": 26.547,
+      "raw_log_sha256": "343f019915c07d7fcc2ebdddfc59b1ae5d3d3d40bc86c4b76ceec78a1eb4428e",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125359Z-be833aa1",
+      "label": "emulator-terraform-validate",
+      "exit_code": 0,
+      "duration_seconds": 10.547,
+      "raw_log_sha256": "f7997225125835fdd14060ac776d273f394b874f9a481b9e2122c83dc8adc5c1",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125410Z-7e74c1c1",
+      "label": "emulator-terraform-plan",
+      "exit_code": 0,
+      "duration_seconds": 15.516,
+      "raw_log_sha256": "1c49260c4392abc569e0f9bc8480d9bf579eeceb04131cf48606598fd3239387",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125456Z-82cf41e6",
+      "label": "emulator-terraform-apply",
+      "exit_code": 1,
+      "duration_seconds": 92.922,
+      "raw_log_sha256": "803dd4795316933458491c67c764bebc938b1c21c2f139a56c751bbbcf26a416",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-patched-rerun-01",
+      "run_id": "20261112T125840Z-6a95026d",
+      "label": "emulator-terraform-destroy",
+      "exit_code": 0,
+      "duration_seconds": 70.625,
+      "raw_log_sha256": "8a0484bf1cd2e0af1ded52dc60ef990734bbd1a6c98168c12f6fcfa38e0d0a4a",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-pg-version-rerun-01",
+      "run_id": "20261112T131331Z-120fe080",
+      "label": "emulator-terraform-init",
+      "exit_code": 0,
+      "duration_seconds": 53.578,
+      "raw_log_sha256": "6d0d27868587c7e9e774848f5225940e2b69fced34f71e20855b9d5f50a3a423",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-pg-version-rerun-01",
+      "run_id": "20261112T131440Z-f958bba6",
+      "label": "emulator-terraform-validate",
+      "exit_code": 0,
+      "duration_seconds": 11.282,
+      "raw_log_sha256": "f7997225125835fdd14060ac776d273f394b874f9a481b9e2122c83dc8adc5c1",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-pg-version-rerun-01",
+      "run_id": "20261112T131700Z-bce29c63",
+      "label": "emulator-terraform-plan",
+      "exit_code": 0,
+      "duration_seconds": 14.687,
+      "raw_log_sha256": "bf31602f810ab4c9f080470abe0a693691ea8b6e446b6f8d5bc6f4e119092a85",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-pg-version-rerun-01",
+      "run_id": "20261112T132057Z-fae50f19",
+      "label": "emulator-terraform-apply",
+      "exit_code": 1,
+      "duration_seconds": 134.766,
+      "raw_log_sha256": "9e0a1252d0da3b58a70f771522fcba90acab072743330e8105ced1a3d8195935",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-pg-version-rerun-01",
+      "run_id": "20261112T132358Z-f06867c0",
+      "label": "emulator-terraform-destroy",
+      "exit_code": 0,
+      "duration_seconds": 92.375,
+      "raw_log_sha256": "2060705e9b129ead425448ebcb84fcd536d7b32a4deadaf6af6a88042321cd93",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135200Z-a887f8db",
+      "label": "emulator-terraform-init",
+      "exit_code": 0,
+      "duration_seconds": 52.984,
+      "raw_log_sha256": "cc7914f1473eec8c45c3a05d0594884c5e653f21302eb4e0f76dfd0604e0f746",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135419Z-4ff3d324",
+      "label": "infrastructure-contracts",
+      "exit_code": 0,
+      "duration_seconds": 2.766,
+      "raw_log_sha256": "bb61f10ab6968ea96bfb3ef2b3575dee72babe212f32c0f1feb4909536f45c66",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135519Z-f4add5d1",
+      "label": "emulator-terraform-validate",
+      "exit_code": 0,
+      "duration_seconds": 12.141,
+      "raw_log_sha256": "f7997225125835fdd14060ac776d273f394b874f9a481b9e2122c83dc8adc5c1",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135602Z-38058e04",
+      "label": "emulator-terraform-plan-default",
+      "exit_code": 0,
+      "duration_seconds": 15.531,
+      "raw_log_sha256": "73ab69d9c810f3511974b999d8fdb8aa376e1698cdafc827d59f286fa36c1596",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135700Z-92096930",
+      "label": "emulator-terraform-plan",
+      "exit_code": 0,
+      "duration_seconds": 14.938,
+      "raw_log_sha256": "7391ac3f5dffa20efe4d2acb05f625b5972b4ac8e9073f4ec58dc8046ee08856",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T135812Z-f354582f",
+      "label": "emulator-terraform-apply",
+      "exit_code": 0,
+      "duration_seconds": 113.953,
+      "raw_log_sha256": "8d038e4432f013872149115e2b33f08fc3e9c079b388c7581916c5b82c476e77",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T140030Z-21df9fc2",
+      "label": "emulator-terraform-plan-again",
+      "exit_code": 2,
+      "duration_seconds": 16.344,
+      "raw_log_sha256": "60417fbfb7155555edf578816dd5a7e3bfed9bfd92ed79075d1ff9c963aa74b0",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T140317Z-cc581346",
+      "label": "emulator-terraform-plan-again",
+      "exit_code": 0,
+      "duration_seconds": 15.36,
+      "raw_log_sha256": "8839e40858369391e306ba94b0cd24945c625b457b1d5276ecbd100649ba16d8",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T140736Z-d8e49af9",
+      "label": "infrastructure-contracts-final",
+      "exit_code": 0,
+      "duration_seconds": 2.515,
+      "raw_log_sha256": "ca1d80b0be45f1d329aaf3f03ea24fa19a560e24b4e5ae40cd17ab62f0a91e76",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T140737Z-4e7eb491",
+      "label": "emulator-terraform-plan-default",
+      "exit_code": 0,
+      "duration_seconds": 15.203,
+      "raw_log_sha256": "c4db2f600a7f05ef38679f1492c32135230bde24b4b94890f3a51367a1eda97d",
+      "raw_log_local_only": true
+    },
+    {
+      "attempt": "20261112-supported-profile-01",
+      "run_id": "20261112T140810Z-bf2b47ee",
+      "label": "emulator-terraform-destroy",
+      "exit_code": 0,
+      "duration_seconds": 88.656,
+      "raw_log_sha256": "63b7381748d125746e6cb6dec8475867fa689e7d9a1bd1a3f5d6e319a89d8442",
+      "raw_log_local_only": true
+    }
+  ]
+}

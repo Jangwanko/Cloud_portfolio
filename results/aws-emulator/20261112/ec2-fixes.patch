@@ -1,0 +1,38 @@
+﻿--- a/services/service-com-amazonaws-ec2-amazonec2/src/state/instance_ids_and_instance_types.rs
++++ b/services/service-com-amazonaws-ec2-amazonec2/src/state/instance_ids_and_instance_types.rs
+@@ -64,6 +64,7 @@
+             mac_modification_tasks => view,
+             managed_prefix_lists => view,
+             nat_gateways,
++            network_acls,
+             network_insights_access_scope_analyses => view,
+             network_insights_access_scopes,
+             network_insights_analyses => view,
+--- a/services/service-com-amazonaws-ec2-amazonec2/src/state/vpcs_and_security_groups.rs
++++ b/services/service-com-amazonaws-ec2-amazonec2/src/state/vpcs_and_security_groups.rs
+@@ -1928,9 +1928,8 @@
+     /// carries them in ([`canonical_ip_protocol`], [`canonical_rule_source`]), so a request
+     /// that spells either differently still names the same rule.
+     ///
+-    /// The port range is kept exactly as given — a rule's ports are values a request "must
+-    /// match … exactly" (`RevokeSecurityGroupIngress`), so neither end is dropped or
+-    /// defaulted for any protocol.
++    /// All-protocol rules ignore port fields when matching. Other protocols
++    /// retain the supplied range.
+     pub fn new(
+         ip_protocol: Option<&str>,
+         from_port: Option<i32>,
+@@ -1939,6 +1938,13 @@
+         description: Option<String>,
+     ) -> Self {
+         let ip_protocol = canonical_ip_protocol(ip_protocol.unwrap_or(ALL_IP_PROTOCOLS).trim());
++        // All-protocol rules do not have a port range. AWS Provider sends 0/0
++        // when revoking the default rule, while the stored rule omits ports.
++        let (from_port, to_port) = if ip_protocol == ALL_IP_PROTOCOLS {
++            (None, None)
++        } else {
++            (from_port, to_port)
++        };
+         Self {
+             ip_protocol,
+             from_port,
